@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "vercel-install": "npm install --legacy-peer-deps",
     "dev": "SET NODE_TLS_REJECT_UNAUTHORIZED=0 && next dev",
     "build": "next build",
     "start": "next start",
