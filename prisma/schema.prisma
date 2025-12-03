@@ -1,0 +1,170 @@
+// Prisma Schema for N&G Ventures Real Estate Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model - For Brands, Property Owners, and Admins
+model User {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  name            String
+  password        String?     // Hashed password
+  userType        String      // 'brand', 'owner', 'admin'
+  phone           String?
+  company         String?
+  
+  // Brand-specific fields
+  brandName       String?
+  industry        String?
+  businessType    String?
+  
+  // Property Owner specific fields
+  ownerType       String?     // 'individual', 'company'
+  
+  // Relations
+  properties      Property[]  @relation("OwnerProperties")
+  savedProperties SavedProperty[]
+  inquiries       Inquiry[]
+  searchHistory   SearchHistory[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([email])
+  @@index([userType])
+}
+
+// Property Model - Commercial Real Estate Listings
+model Property {
+  id              String      @id @default(cuid())
+  title           String
+  description     String      @db.Text
+  
+  // Location Details
+  address         String
+  city            String
+  state           String
+  country         String      @default("India")
+  zipCode         String
+  latitude        Float?
+  longitude       Float?
+  
+  // Property Details
+  size            Int         // in square feet
+  propertyType    String      // 'retail', 'restaurant', 'qsr', 'office', 'kiosk', 'commercial'
+  condition       String      // 'excellent', 'good', 'fair', 'needs-renovation'
+  
+  // Pricing
+  price           Float
+  priceType       String      // 'monthly', 'yearly', 'one-time'
+  securityDeposit Float?
+  negotiable      Boolean     @default(true)
+  
+  // Amenities & Features
+  amenities       String[]    // ['parking', 'wifi', 'ac', 'security', 'storage']
+  images          String[]    // Array of image URLs
+  
+  // Availability & Status
+  availability    Boolean     @default(true)
+  availableFrom   DateTime?
+  isVerified      Boolean     @default(false)
+  isFeatured      Boolean     @default(false)
+  
+  // Accessibility
+  parking         Boolean     @default(false)
+  publicTransport Boolean     @default(false)
+  accessibility   Boolean     @default(false)
+  
+  // Owner Information
+  ownerId         String
+  owner           User        @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  savedBy         SavedProperty[]
+  inquiries       Inquiry[]
+  
+  // Metadata
+  views           Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([city, propertyType])
+  @@index([ownerId])
+  @@index([availability])
+  @@index([priceType, price])
+}
+
+// Saved Properties - Brands save properties they're interested in
+model SavedProperty {
+  id          String      @id @default(cuid())
+  userId      String
+  propertyId  String
+  notes       String?     @db.Text
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime    @default(now())
+  
+  @@unique([userId, propertyId])
+  @@index([userId])
+}
+
+// Inquiries - Communication between Brands and Property Owners
+model Inquiry {
+  id          String      @id @default(cuid())
+  
+  // Parties involved
+  brandId     String
+  brand       User        @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  
+  propertyId  String
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  // Inquiry Details
+  message     String      @db.Text
+  status      String      @default("pending") // 'pending', 'responded', 'closed'
+  response    String?     @db.Text
+  
+  // Contact Details
+  contactEmail String?
+  contactPhone String?
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  @@index([brandId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+// Search History - Track AI search queries for learning
+model SearchHistory {
+  id          String      @id @default(cuid())
+  
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  query       String      @db.Text
+  queryType   String      // 'brand-search', 'owner-listing'
+  
+  // AI Response
+  aiResponse  String?     @db.Text
+  matchedProperties Json?   // Store array of matched property IDs and scores
+  
+  // Analytics
+  resultsCount Int        @default(0)
+  clickedPropertyId String?
+  
+  createdAt   DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([queryType])
+  @@index([createdAt])
+}
