@@ -43,9 +43,14 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
               },
               targetDemographics: ['young professionals', 'students'],
               crmRecord: {
-                source: 'web',
-                activities: [],
-                preferences: {}
+                id: 'crm-001',
+                userId: 'brand-001',
+                userType: 'brand',
+                details: {},
+                timestamp: new Date(),
+    
+                   activity: 'onboarding'
+               
               },
               // Required fields
               email: 'contact@urbancoffee.com',

@@ -24,6 +24,13 @@ const mockProperties: Property[] = [
     priceType: 'monthly',
     condition: 'excellent',
     amenities: ['Parking', 'Storage', 'Loading Dock', 'Security System'],
+    accessibility: true,
+    parking: true,
+    publicTransport: true,
+    ownerId: 'owner-001',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isAvailable: true,
     locationIntelligence: {
       footfallData: {
         dailyAverage: 15000,
@@ -49,41 +56,40 @@ const mockProperties: Property[] = [
       accessibilityScore: 92
     }
   },
+
   {
-    id: 'prop-002',
-    title: 'Modern Office Space Downtown',
-    description: 'Flexible office space perfect for growing businesses, featuring modern amenities and great natural light.',
-    address: '456 Wall Street',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10005',
-    size: 2500,
-    propertyType: 'office',
-    price: 8500,
-    priceType: 'monthly',
-    condition: 'good',
-    yearBuilt: 2015,
-    amenities: ['Parking', 'Conference Rooms', 'Kitchen', 'High-Speed Internet'],
-    availableFrom: new Date('2024-03-01'),
-    images: [],
-    locationIntelligence: {
-      walkScore: 88,
-      transitScore: 95,
-      bikeScore: 70,
-      demographics: {
-        averageAge: 35,
-        incomeLevel: 'high',
-        educationLevel: 'college+',
-        primaryOccupations: ['finance', 'legal', 'consulting']
-      },
-      footTraffic: {
-        daily: 8000,
-        peak_hours: ['09:00-10:00', '17:00-18:00'],
-        seasonal_trends: 'steady_weekdays'
-      },
-      competitors: []
-    }
+  id: 'prop-002',
+  title: 'Modern Office Space Downtown',
+  description: 'Flexible office space perfect for growing businesses, featuring modern amenities and great natural light.',
+  address: '456 Wall Street',
+  city: 'New York',
+  state: 'NY',
+  zipCode: '10005',
+  size: 2500,
+  propertyType: 'office',
+  price: 8500,
+  priceType: 'monthly',
+  condition: 'good',
+  amenities: ['Parking', 'Conference Rooms', 'Kitchen', 'High-Speed Internet'],
+  accessibility: true,
+  parking: true,
+  publicTransport: true,
+  ownerId: 'owner-002',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  isAvailable: true,
+  locationIntelligence: {
+    demographics: {
+      ageGroups: [
+        { range: '35-44', percentage: 40 },
+        { range: '25-34', percentage: 35 },
+      ],
+      incomeLevel: 'high',
+      lifestyle: ['finance professionals', 'legal workers', 'consultants']
+    },
+    competitors: []
   }
+}
 ]
 
 export default function DemoPage() {
