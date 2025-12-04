@@ -70,6 +70,20 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
     setMessages(prev => [...prev, thinkingMessage])
 
     try {
+      // Get user type from session if available
+      let userType: 'brand' | 'owner' | null = null
+      try {
+        const sessionJson = localStorage.getItem('ngventures_session')
+        if (sessionJson) {
+          const session = JSON.parse(sessionJson)
+          if (session.userType === 'brand' || session.userType === 'owner') {
+            userType = session.userType
+          }
+        }
+      } catch (e) {
+        // Ignore errors getting user type
+      }
+
       // Build conversation history for context (only actual messages, not thinking/loading states)
       const conversationHistory = messages
         .filter(m => (m.role === 'assistant' || m.role === 'user') && !m.id.includes('thinking'))
@@ -79,7 +93,12 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
       const response = await fetch('/api/ai-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, userId: 'guest', conversationHistory })
+        body: JSON.stringify({ 
+          query, 
+          userId: userType ? `user-${userType}` : 'guest',
+          userType: userType,
+          conversationHistory 
+        })
       })
 
       const data = await response.json()
