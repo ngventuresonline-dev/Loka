@@ -22,9 +22,13 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('Processing...')
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // CRITICAL: Store extracted requirements to maintain context
+  const [extractedRequirements, setExtractedRequirements] = useState<any>(null)
+  const [confirmedEntityType, setConfirmedEntityType] = useState<'brand' | 'owner' | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -35,8 +39,14 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
   }, [messages])
 
   useEffect(() => {
-    if (isOpen && initialQuery && messages.length === 0) {
-      handleSearch(initialQuery)
+    // Only auto-search if modal opens with initialQuery and no messages yet
+    // But don't auto-search if user is just opening to edit
+    if (isOpen && initialQuery && messages.length === 0 && initialQuery.trim()) {
+      // Small delay to ensure modal is fully rendered
+      const timer = setTimeout(() => {
+        handleSearch(initialQuery)
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [isOpen, initialQuery])
 
@@ -60,35 +70,59 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
     setInputValue('')
     setIsLoading(true)
 
+    // Get user type from session if available (before determining message type)
+    let userType: 'brand' | 'owner' | null = null
+    try {
+      const sessionJson = localStorage.getItem('ngventures_session')
+      if (sessionJson) {
+        const session = JSON.parse(sessionJson)
+        if (session.userType === 'brand' || session.userType === 'owner') {
+          userType = session.userType
+        }
+      }
+    } catch (e) {
+      // Ignore errors getting user type
+    }
+
+    // Determine thinking message based on user type and query
+    const lowerQuery = query.toLowerCase()
+    const isListingQuery = lowerQuery.includes('have') || lowerQuery.includes('list') || 
+                          lowerQuery.includes('available') || lowerQuery.includes('for rent') ||
+                          userType === 'owner'
+    const isSearchQuery = lowerQuery.includes('looking for') || lowerQuery.includes('need') ||
+                         lowerQuery.includes('want') || lowerQuery.includes('find') ||
+                         userType === 'brand'
+    
+    let thinkingContent = 'Let me help you with that...'
+    if (isListingQuery) {
+      thinkingContent = 'Processing your property details...'
+      setLoadingMessage('Processing your property details...')
+    } else if (isSearchQuery) {
+      thinkingContent = 'Searching for properties...'
+      setLoadingMessage('Searching for properties...')
+    } else {
+      setLoadingMessage('Processing...')
+    }
+    
     // Add a "thinking" message
     const thinkingMessage: Message = {
       id: `thinking-${Date.now()}`,
       role: 'assistant',
-      content: 'Let me help you with that...',
+      content: thinkingContent,
       timestamp: new Date()
     }
     setMessages(prev => [...prev, thinkingMessage])
 
     try {
-      // Get user type from session if available
-      let userType: 'brand' | 'owner' | null = null
-      try {
-        const sessionJson = localStorage.getItem('ngventures_session')
-        if (sessionJson) {
-          const session = JSON.parse(sessionJson)
-          if (session.userType === 'brand' || session.userType === 'owner') {
-            userType = session.userType
-          }
-        }
-      } catch (e) {
-        // Ignore errors getting user type
-      }
 
       // Build conversation history for context (only actual messages, not thinking/loading states)
-      const conversationHistory = messages
-        .filter(m => (m.role === 'assistant' || m.role === 'user') && !m.id.includes('thinking'))
-        .map(m => `${m.role}: ${m.content}`)
+      // Include the current user message in history for better context
+      const conversationHistory = [...messages, userMessage]
+        .filter(m => (m.role === 'assistant' || m.role === 'user') && !m.id.includes('thinking') && !m.id.includes('redirect'))
+        .map(m => `${m.role === 'user' ? 'user' : 'assistant'}: ${m.content}`)
         .join('\n')
+      
+      console.log('[Frontend] Conversation history:', conversationHistory.substring(0, 200))
       
       const response = await fetch('/api/ai-search', {
         method: 'POST',
@@ -97,19 +131,104 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
           query, 
           userId: userType ? `user-${userType}` : 'guest',
           userType: userType,
-          conversationHistory 
+          conversationHistory,
+          // CRITICAL: Pass context for simple search
+          context: extractedRequirements ? {
+            entityType: confirmedEntityType,
+            collectedDetails: extractedRequirements._fullState ? undefined : extractedRequirements,
+            conversationHistory: messages
+              .filter(m => m.role === 'user' || m.role === 'assistant')
+              .map(m => ({ role: m.role, content: m.content }))
+          } : undefined
         })
       })
 
+      // Check if response is ok
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`)
+      }
+
       const data = await response.json()
+      
+      // Check if response has error
+      if (!data.success && data.error) {
+        throw new Error(data.error || 'Unknown error from server')
+      }
+      
+      // CRITICAL: Store context from response
+      if (data.extractedRequirements) {
+        setExtractedRequirements(data.extractedRequirements)
+        console.log('[Frontend] Stored details:', Object.keys(data.extractedRequirements))
+      }
+      if (data.confirmedEntityType) {
+        setConfirmedEntityType(data.confirmedEntityType)
+        console.log('[Frontend] Confirmed entity type:', data.confirmedEntityType)
+      }
+      
+      console.log('[Frontend] API response received:', { 
+        hasMessage: !!data.message, 
+        propertiesCount: data.properties?.length || 0,
+        intent: data.intent,
+        readyToRedirect: data.readyToRedirect,
+        hasRequirements: !!data.extractedRequirements
+      })
 
       // Remove thinking message
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id))
 
+      // Handle redirect for owners with collected details
+      if (data.readyToRedirect && data.collectedDetails) {
+        // Store collected details in localStorage for form pre-filling
+        localStorage.setItem('propertyListingDetails', JSON.stringify(data.collectedDetails))
+        
+        // Show informative message about redirect
+        const redirectMessage: Message = {
+          id: `redirect-${Date.now()}`,
+          role: 'assistant',
+          content: `${data.message}\n\nI'm taking you to our property listing form where all the details we discussed will be pre-filled. You can review, add any additional information, and submit your listing.`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, redirectMessage])
+        setIsLoading(false)
+        
+        // Redirect after showing the message
+        setTimeout(() => {
+          window.location.href = '/onboarding/owner'
+        }, 3000)
+        return
+      }
+      
+      // Handle redirect for brands (if needed in future)
+      if (data.redirectTo && data.redirectTo.includes('brand')) {
+        const redirectMessage: Message = {
+          id: `redirect-${Date.now()}`,
+          role: 'assistant',
+          content: `${data.message}\n\nI'm taking you to our brand onboarding form where you can complete your profile and start finding perfect properties.`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, redirectMessage])
+        setIsLoading(false)
+        
+        setTimeout(() => {
+          window.location.href = data.redirectTo
+        }, 3000)
+        return
+      }
+
+      // Ensure we have a message to display
+      if (!data.message && !data.error) {
+        throw new Error('No response message from server')
+      }
+
       // Create assistant message with streaming
       const assistantMessageId = `assistant-${Date.now()}`
-      const fullText = data.message || data.error || 'No response from server'
+      const fullText = data.message || data.error || 'I apologize, but I could not generate a response.'
       const properties = data.properties || []
+
+      console.log('[Frontend] Displaying response:', { 
+        messageLength: fullText.length, 
+        propertiesCount: properties.length 
+      })
 
       // Add empty message that will be streamed
       setMessages(prev => [...prev, {
@@ -141,21 +260,23 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
           : msg
       ))
       setStreamingMessageId(null)
+      setIsLoading(false)
+      setLoadingMessage('Processing...')
 
-    } catch (error) {
-      console.error('Search error:', error)
+    } catch (error: any) {
+      console.error('[Frontend] Search error:', error)
       // Remove thinking message
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id))
       
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: 'Something went wrong. Please try again.',
+        content: `I apologize, but I encountered an error: ${error.message || 'Something went wrong'}. Please try again or rephrase your query.`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
-    } finally {
       setIsLoading(false)
+      setLoadingMessage('Processing...')
     }
   }
 
@@ -179,8 +300,8 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">AI Property Search</h2>
-              <p className="text-sm text-slate-400">Find your perfect commercial space</p>
+              <h2 className="text-xl font-bold text-white">Find your perfect match</h2>
+              <p className="text-sm text-slate-400">AI-powered property discovery</p>
             </div>
           </div>
           <button
@@ -342,7 +463,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
                     <div className="w-2 h-2 bg-[#E4002B] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                     <div className="w-2 h-2 bg-[#FF6B35] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
-                  <span className="text-sm text-gray-400">Searching properties...</span>
+                  <span className="text-sm text-gray-400">{loadingMessage}</span>
                 </div>
               </div>
             </div>
@@ -354,14 +475,28 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
         {/* Input Area */}
         <div className="px-6 py-4 border-t border-[#FF5200]/20 bg-black/50">
           <form onSubmit={handleSubmit} className="flex gap-3">
-            <input
-              ref={inputRef}
-              type="text"
+            <textarea
+              ref={inputRef as any}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Describe what you're looking for..."
-              className="flex-1 px-4 py-3 bg-gray-900/50 text-white rounded-xl border border-gray-700 focus:border-[#FF5200] focus:outline-none focus:ring-2 focus:ring-[#FF5200]/20 transition-all"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  if (!isLoading && inputValue.trim()) {
+                    handleSearch(inputValue)
+                  }
+                }
+              }}
+              placeholder="Describe what you're looking for... (Shift+Enter for new line)"
+              rows={1}
+              className="flex-1 px-4 py-3 bg-gray-900/50 text-white rounded-xl border border-gray-700 focus:border-[#FF5200] focus:outline-none focus:ring-2 focus:ring-[#FF5200]/20 transition-all resize-none min-h-[48px] max-h-[120px] overflow-y-auto"
               disabled={isLoading}
+              style={{ height: 'auto' }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement
+                target.style.height = 'auto'
+                target.style.height = `${Math.min(target.scrollHeight, 120)}px`
+              }}
             />
             <button
               type="submit"
