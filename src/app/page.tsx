@@ -356,7 +356,7 @@ export default function Home() {
               <button 
                 onClick={() => {
                   setSearchQuery('Looking for retail space in Koramangala, Bangalore, around 1200 sqft')
-                  setIsAiModalOpen(true)
+                  // Don't open modal - let user edit and click search
                 }}
                 className="px-4 py-2 border-2 rounded-full text-sm font-medium transition-all duration-500 bg-white border-gray-200 text-gray-700 hover:border-[#FF5200] hover:text-[#FF5200] hover:shadow-md"
               >
@@ -365,7 +365,7 @@ export default function Home() {
               <button 
                 onClick={() => {
                   setSearchQuery('I have a 1500 sqft retail space available on MG Road, Bangalore')
-                  setIsAiModalOpen(true)
+                  // Don't open modal - let user edit and click search
                 }}
                 className="px-4 py-2 border-2 rounded-full text-sm font-medium transition-all duration-500 bg-white border-gray-200 text-gray-700 hover:border-[#E4002B] hover:text-[#E4002B] hover:shadow-md"
               >
@@ -1925,7 +1925,7 @@ export default function Home() {
       <AiSearchModal 
         isOpen={isAiModalOpen} 
         onClose={() => setIsAiModalOpen(false)} 
-        initialQuery={searchQuery}
+        initialQuery={isAiModalOpen ? searchQuery : ''}
       />
     </div>
   )

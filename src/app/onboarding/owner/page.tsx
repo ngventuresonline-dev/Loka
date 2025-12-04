@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
@@ -21,6 +21,32 @@ export default function OwnerOnboarding() {
     photos: [] as File[],
     videos: [] as File[]
   })
+
+  // Load pre-filled data from chat
+  useEffect(() => {
+    try {
+      const storedDetails = localStorage.getItem('propertyListingDetails')
+      if (storedDetails) {
+        const details = JSON.parse(storedDetails)
+        console.log('Loading pre-filled details:', details)
+        
+        setFormData(prev => ({
+          ...prev,
+          propertyType: details.propertyType || prev.propertyType,
+          location: details.location || prev.location,
+          size: details.size ? `${details.size} sq ft` : prev.size,
+          rent: details.rent || prev.rent,
+          deposit: details.deposit || prev.deposit,
+          amenities: details.amenities ? details.amenities.join(', ') : prev.amenities
+        }))
+        
+        // Clear stored details after loading
+        localStorage.removeItem('propertyListingDetails')
+      }
+    } catch (error) {
+      console.error('Error loading pre-filled details:', error)
+    }
+  }, [])
 
   const handlePinLocation = () => {
     if (navigator.geolocation) {

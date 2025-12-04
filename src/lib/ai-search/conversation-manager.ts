@@ -40,7 +40,7 @@ export function getOrCreateContext(
     lastQuery: fullState.messageHistory[fullState.messageHistory.length - 1]?.content || '',
     suggestionsMade: [],
     confirmedEntityType: fullState.entityIdentity.type || undefined,
-    fullState // Include full state for comprehensive tracking
+    fullState: fullState as ConversationState // Include full state for comprehensive tracking
   }
 }
 
@@ -61,7 +61,7 @@ export async function updateContext(
   fullState = addMessageToHistory(fullState, 'user', newQuery, requirements)
   
   // Establish entity identity if provided (NEVER CHANGES ONCE SET)
-  if (entityType && entityType !== 'needs_clarification') {
+  if (entityType && (entityType === 'brand' || entityType === 'owner')) {
     const evidence = `User query: "${newQuery.substring(0, 50)}"`
     fullState = establishEntityIdentity(fullState, entityType, 0.9, evidence, false)
   }

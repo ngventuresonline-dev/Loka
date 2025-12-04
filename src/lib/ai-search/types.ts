@@ -25,11 +25,14 @@ export interface ConversationContext {
   lastQuery: string
   suggestionsMade: string[]
   // Full conversation state (optional, for comprehensive tracking)
-  fullState?: ConversationState
+  fullState?: import('./conversation-state').ConversationState
 }
 
 // Re-export ConversationState for convenience
 export type { ConversationState } from './conversation-state'
+
+// Import the actual type to use in ConversationContext
+import type { ConversationState as FullConversationState } from './conversation-state'
 
 // ============================================================================
 // BRAND REQUIREMENTS (What they NEED)
@@ -220,7 +223,7 @@ export interface OwnerRequirements {
       distance: number  // meters
     }>
     categoryDensity: {
-      F&B: number  // count within 500m
+      'F&B': number  // count within 500m
       retail: number
       services: number
     }
@@ -378,14 +381,7 @@ export type SearchResponse = BrandSearchResponse | OwnerSearchResponse
 // ============================================================================
 // CONVERSATION STATE
 // ============================================================================
-
-export interface ConversationState {
-  sessionId: string
-  entityType: 'brand' | 'owner'
-  requirementsCollected: Partial<BrandRequirements | OwnerRequirements>
-  completionPercentage: number
-  missingCritical: string[]
-  lastQuery: string
-  suggestionsMade: string[]
-}
+// NOTE: ConversationState is defined in conversation-state.ts
+// This duplicate definition has been removed to avoid type conflicts
+// Use: import { ConversationState } from './conversation-state'
 

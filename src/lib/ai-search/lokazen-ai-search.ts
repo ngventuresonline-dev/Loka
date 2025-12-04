@@ -10,7 +10,8 @@ import {
   OwnerSearchResponse,
   ConversationContext,
   ScoredMatch,
-  ConversationState
+  ConversationState,
+  OwnerRequirements
 } from './types'
 import { classifyEntityType, processQuery } from './nlu-engine'
 import { 
@@ -567,9 +568,11 @@ I'm ready to help you create your listing! Let me take you to the listing form w
     let message: string
     if (entityType === 'owner') {
       const missing = context.missingCritical || []
-      const hasLocation = context.extractedRequirements?.location?.area || context.extractedRequirements?.location?.city
-      const hasSize = context.extractedRequirements?.property?.area
-      const hasRent = context.extractedRequirements?.rentExpectations?.monthlyRent
+      const ownerReqs = context.extractedRequirements as Partial<OwnerRequirements>
+      const ownerLocation = ownerReqs?.location as any
+      const hasLocation = (ownerLocation?.area || ownerLocation?.city) && ownerLocation?.city
+      const hasSize = ownerReqs?.property?.area
+      const hasRent = ownerReqs?.rentExpectations?.monthlyRent
       
       if (!hasLocation) {
         message = "Great! I'd love to help you list your property. Where is your property located? (Please share the city and area)"

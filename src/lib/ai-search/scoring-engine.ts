@@ -33,7 +33,7 @@ export function calculateBFI(
   // Infrastructure Match (10% weight)
   scores.infrastructureMatch = calculateInfrastructureScore(brand.infrastructure, property) * 0.10
   
-  const overall = Object.values(scores).reduce((a: number, b: number) => a + b, 0)
+  const overall = (Object.values(scores) as number[]).reduce((a: number, b: number) => a + b, 0)
   
   return {
     overall,
@@ -58,7 +58,7 @@ export function calculatePFI(
   const scores: any = {}
   
   // Category Match (25% weight)
-  scores.categoryMatch = calculateCategoryScore(property.desiredTenant, brand.brandProfile) * 0.25
+  scores.categoryMatch = calculateCategoryScore((property as any).desiredTenant || property.property?.type, brand.brandProfile) * 0.25
   
   // Brand Reputation (20% weight) - simplified
   scores.reputationMatch = 0.8 * 0.20
@@ -75,7 +75,7 @@ export function calculatePFI(
   // Space Utilization (10% weight)
   scores.spaceUtilization = calculateSpaceUtilization(property.property, brand.area) * 0.10
   
-  const overall = Object.values(scores).reduce((a: number, b: number) => a + b, 0)
+  const overall = (Object.values(scores) as number[]).reduce((a: number, b: number) => a + b, 0)
   
   return {
     overall,
