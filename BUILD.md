@@ -1,0 +1,992 @@
+# BUILD TRUTH - N&G Ventures Commercial Real Estate Platform
+
+**Version:** 0.1.0  
+**Last Updated:** 2024  
+**Platform:** Next.js 15 Commercial Real Estate Matching Platform
+
+---
+
+## 📋 Table of Contents
+
+1. [Platform Overview](#platform-overview)
+2. [Technology Stack](#technology-stack)
+3. [Project Structure](#project-structure)
+4. [Core Features](#core-features)
+5. [Architecture](#architecture)
+6. [Database Schema](#database-schema)
+7. [AI Search System](#ai-search-system)
+8. [Component Library](#component-library)
+9. [Styling & Design System](#styling--design-system)
+10. [Build & Deployment](#build--deployment)
+11. [Environment Configuration](#environment-configuration)
+12. [Development Workflow](#development-workflow)
+13. [Key Design Decisions](#key-design-decisions)
+
+---
+
+## 🎯 Platform Overview
+
+**N&G Ventures** is an AI-powered commercial real estate platform that connects brands seeking commercial spaces with property owners. The platform uses intelligent matching algorithms, location intelligence, and conversational AI to streamline the property discovery and listing process.
+
+### Core Value Proposition
+- **For Brands**: Find ideal commercial spaces with AI-powered matching in 48 hours
+- **For Property Owners**: List properties and connect with qualified tenants quickly
+
+### Key Differentiators
+- Button-based conversation flow (eliminates ambiguity)
+- Dual-entity support (Brands & Owners)
+- AI-powered matching with BFI/PFI scoring
+- Location intelligence integration
+- Minimal, elegant UI/UX
+
+---
+
+## 🛠 Technology Stack
+
+### Frontend Framework
+- **Next.js 15.0.1** - React framework with App Router
+- **React 18** - UI library
+- **TypeScript 5** - Type safety
+
+### Styling
+- **Tailwind CSS 3.4.1** - Utility-first CSS framework
+- **Custom Animations** - Keyframe animations for futuristic effects
+- **Glassmorphism** - Modern UI design patterns
+
+### AI & Machine Learning
+- **Anthropic Claude 3.5 Sonnet** (`@anthropic-ai/sdk: ^0.27.3`) - Primary AI engine
+- **LangChain** (`^1.1.2`) - AI orchestration
+- **OpenAI SDK** (`@langchain/openai: ^1.1.3`) - Alternative AI provider
+
+### Database & ORM
+- **Prisma 6.19.0** - Next-generation ORM
+- **PostgreSQL** - Primary database
+- **Prisma Client** - Type-safe database access
+
+### Authentication
+- **NextAuth.js 4.24.13** - Authentication framework
+- **Prisma Adapter** (`@auth/prisma-adapter: ^2.11.1`) - Database adapter
+
+### 3D Graphics (Optional)
+- **Three.js 0.181.2** - 3D graphics library
+- **React Three Fiber 9.4.2** - React renderer for Three.js
+- **React Three Drei 10.7.7** - Useful helpers for R3F
+
+### Animation
+- **Framer Motion 12.23.25** - Animation library
+
+### Utilities
+- **Zod 4.1.13** - Schema validation
+- **AI SDK 5.0.106** - Vercel AI SDK
+
+### Development Tools
+- **ESLint** - Code linting
+- **TypeScript** - Type checking
+- **TSX** - TypeScript execution
+- **PostCSS** - CSS processing
+- **Autoprefixer** - CSS vendor prefixing
+
+---
+
+## 📁 Project Structure
+
+```
+Loka/
+├── src/
+│   ├── app/                          # Next.js App Router
+│   │   ├── api/                      # API Routes
+│   │   │   ├── ai-search/            # AI search endpoint
+│   │   │   │   └── route.ts
+│   │   │   └── status/               # Status endpoint
+│   │   │       └── route.ts
+│   │   ├── about/                    # About page
+│   │   │   └── page.tsx
+│   │   ├── admin/                    # Admin dashboard
+│   │   │   └── page.tsx
+│   │   ├── auth/                     # Authentication
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   └── register/
+│   │   │       └── page.tsx
+│   │   ├── demo/                     # Demo page
+│   │   │   └── page.tsx
+│   │   ├── location-intelligence/    # Location intel page
+│   │   │   └── page.tsx
+│   │   ├── onboarding/               # Onboarding flows
+│   │   │   ├── brand/
+│   │   │   │   └── page.tsx
+│   │   │   └── owner/
+│   │   │       └── page.tsx
+│   │   ├── properties/               # Properties listing
+│   │   │   └── page.tsx
+│   │   ├── status/                   # Status page
+│   │   │   └── page.tsx
+│   │   ├── theme-selector/           # Theme selector
+│   │   │   └── page.tsx
+│   │   ├── globals.css               # Global styles
+│   │   ├── layout.tsx                # Root layout
+│   │   └── page.tsx                   # Homepage
+│   │
+│   ├── components/                   # React Components
+│   │   ├── onboarding/               # Onboarding forms
+│   │   │   ├── BrandOnboardingForm.tsx
+│   │   │   └── PropertyOwnerOnboardingForm.tsx
+│   │   ├── ui/                       # UI components
+│   │   │   ├── 3d-orbit-gallery.tsx
+│   │   │   └── Button.tsx
+│   │   ├── AiSearchModal.tsx         # AI search modal
+│   │   ├── ButtonFlowModal.tsx       # Button-based flow
+│   │   ├── CityMapBackground.tsx     # City map background
+│   │   ├── Dashboard.tsx             # User dashboard
+│   │   ├── DynamicBackground.tsx     # Dynamic backgrounds
+│   │   ├── Footer.tsx                # Site footer
+│   │   ├── FuturisticBackground.tsx  # Futuristic bg effects
+│   │   ├── Icons.tsx                 # Icon components
+│   │   ├── IndustriesGallery.tsx     # Industries showcase
+│   │   ├── Navbar.tsx                # Navigation bar
+│   │   ├── PropertyCard.tsx         # Property card component
+│   │   └── ScrollingMapBackground.tsx # Scrolling map
+│   │
+│   ├── contexts/                     # React Contexts
+│   │   └── AuthContext.tsx           # Auth context
+│   │
+│   ├── hooks/                        # Custom React Hooks
+│   │   └── useScrollAnimation.ts    # Scroll animation hook
+│   │
+│   ├── lib/                          # Library & Utilities
+│   │   ├── ai-search/                # AI Search System
+│   │   │   ├── button-flow.ts       # Button flow logic
+│   │   │   ├── normalization.ts     # Data normalization
+│   │   │   └── simple-search.ts     # Core AI search
+│   │   ├── auth.ts                  # Auth utilities
+│   │   ├── matching-engine.ts       # Matching algorithms
+│   │   ├── mockDatabase.ts          # Mock data
+│   │   ├── prisma.ts                # Prisma client
+│   │   └── theme.ts                 # Theme utilities
+│   │
+│   └── types/                        # TypeScript Types
+│       ├── index.ts                 # Common types
+│       └── workflow.ts              # Workflow types
+│
+├── prisma/                           # Prisma Configuration
+│   ├── schema.prisma                # Database schema
+│   └── seed.ts                      # Database seeding
+│
+├── public/                           # Static Assets
+│   └── logos/                       # Brand logos
+│
+├── database/                         # Database Scripts
+│   └── schema.sql                   # SQL schema
+│
+├── next.config.js                    # Next.js config
+├── tailwind.config.js                # Tailwind config
+├── tsconfig.json                     # TypeScript config
+├── postcss.config.js                 # PostCSS config
+├── package.json                      # Dependencies
+├── vercel.json                       # Vercel deployment config
+│
+└── Documentation/
+    ├── BUILD.md                      # This file
+    ├── README.md                     # Project README
+    ├── AI_SEARCH_CONFIG.md           # AI search docs
+    ├── BRAND_QUERY_TRAINING_DATASET.md
+    └── OWNER_QUERY_TRAINING_DATASET.md
+```
+
+---
+
+## 🎨 Core Features
+
+### 1. **Dual-Entity Support**
+- **Brand Flow**: For businesses seeking commercial spaces
+- **Owner Flow**: For property owners listing properties
+- Separate conversation flows with entity-specific questions
+
+### 2. **Button-Based Conversation Flow**
+- Eliminates ambiguity in user input
+- Pre-defined options for categorical choices
+- Multi-select support for locations
+- Auto-scrolling chat interface
+- SVG icons instead of emojis
+
+### 3. **AI-Powered Search**
+- Anthropic Claude 3.5 Sonnet integration
+- Context-aware conversation management
+- Entity type detection (Brand vs Owner)
+- Detail extraction from natural language
+- Fallback responses for reliability
+
+### 4. **Data Normalization**
+- Budget/rent normalization
+- Area/size normalization
+- Location normalization
+- Number disambiguation
+
+### 5. **Onboarding Forms**
+- Brand onboarding form
+- Property owner onboarding form
+- Pre-filling from AI conversation data
+- Local storage integration
+
+### 6. **Property Matching**
+- BFI (Brand Fit Index) scoring
+- PFI (Property Fit Index) scoring
+- Location intelligence
+- Demographics matching
+
+### 7. **User Dashboard**
+- Property listings
+- Saved properties
+- Search history
+- Inquiries management
+
+### 8. **Location Intelligence**
+- City-specific data
+- Zone-based filtering
+- Area recommendations
+- Footfall analysis
+
+---
+
+## 🏗 Architecture
+
+### Frontend Architecture
+
+**Pattern**: Component-based React with Next.js App Router
+
+```
+User Request
+    ↓
+Next.js App Router (page.tsx)
+    ↓
+Layout Component (layout.tsx)
+    ↓
+Page Component
+    ↓
+Feature Components
+    ├── Navbar
+    ├── Hero Section
+    ├── AI Search Modal
+    ├── Button Flow Modal
+    └── Footer
+```
+
+### AI Search Flow
+
+```
+User Input (Button/Text)
+    ↓
+ButtonFlowModal / AiSearchModal
+    ↓
+API Route (/api/ai-search)
+    ↓
+AI Search Logic (simple-search.ts)
+    ├── Entity Detection
+    ├── Detail Extraction
+    ├── Normalization
+    └── Response Generation
+    ↓
+Claude API Call
+    ↓
+Response Processing
+    ↓
+UI Update
+```
+
+### Data Flow
+
+```
+User Action
+    ↓
+Component State
+    ↓
+API Route
+    ↓
+Prisma Client
+    ↓
+PostgreSQL Database
+    ↓
+Response
+    ↓
+Component Update
+```
+
+---
+
+## 🗄 Database Schema
+
+### Models
+
+#### **User**
+- Supports Brands, Property Owners, and Admins
+- Fields: email, name, userType, brandName, industry, etc.
+- Relations: properties, savedProperties, inquiries, searchHistory
+
+#### **Property**
+- Commercial real estate listings
+- Location: address, city, state, coordinates
+- Details: size, propertyType, condition, amenities
+- Pricing: price, priceType, securityDeposit
+- Relations: owner, savedBy, inquiries
+
+#### **SavedProperty**
+- Brands saving properties of interest
+- Relations: user, property
+
+#### **Inquiry**
+- Communication between brands and owners
+- Status tracking: pending, responded, closed
+- Relations: brand, property
+
+#### **SearchHistory**
+- Track AI search queries
+- Analytics: resultsCount, clickedPropertyId
+- Relations: user
+
+### Indexes
+- User: email, userType
+- Property: city+propertyType, ownerId, availability, priceType+price
+- Inquiry: brandId, propertyId, status
+- SearchHistory: userId, queryType, createdAt
+
+---
+
+## 🤖 AI Search System
+
+### Architecture
+
+**Location**: `src/lib/ai-search/`
+
+#### Core Files
+
+1. **`simple-search.ts`**
+   - Main AI search logic
+   - Entity type detection
+   - Detail extraction
+   - Response generation
+   - Claude API integration
+
+2. **`button-flow.ts`**
+   - Button-based conversation flow
+   - Step definitions
+   - Navigation logic
+   - State management
+   - Brand and Owner flows
+
+3. **`normalization.ts`**
+   - Budget normalization
+   - Area normalization
+   - Location normalization
+   - Number disambiguation
+
+### Flow Steps
+
+#### Brand Flow
+1. Welcome
+2. Entity Type (Brand/Owner)
+3. Business Type
+4. Size Range
+5. All Locations (multi-select)
+6. Budget Range
+7. Timeline
+8. Confirmation
+
+#### Owner Flow
+1. Property Type
+2. Location
+3. Size
+4. Rent
+5. Features
+6. Availability
+7. Confirmation
+
+### API Endpoint
+
+**Route**: `/api/ai-search`  
+**Method**: POST  
+**Request Body**:
+```typescript
+{
+  query: string
+  conversationHistory: Message[]
+  entityType?: 'brand' | 'owner'
+}
+```
+
+**Response**:
+```typescript
+{
+  message: string
+  entityType?: 'brand' | 'owner'
+  extractedDetails?: {
+    businessType?: string
+    sizeRange?: { min: number, max: number }
+    locations?: string[]
+    budget?: { min: number, max: number }
+    // ... more fields
+  }
+}
+```
+
+---
+
+## 🧩 Component Library
+
+### Core Components
+
+#### **AiSearchModal**
+- AI chat interface
+- Text-based search
+- Message history
+- Streaming responses
+- Property results display
+
+#### **ButtonFlowModal**
+- Button-based conversation
+- Step-by-step flow
+- Multi-select support
+- Auto-scrolling
+- Summary section
+- SVG icons
+
+#### **Navbar**
+- Navigation links
+- User authentication
+- Responsive design
+
+#### **Dashboard**
+- User dashboard
+- Property listings
+- Saved properties
+- Search history
+
+#### **PropertyCard**
+- Property display
+- Image gallery
+- Key details
+- Action buttons
+
+#### **Onboarding Forms**
+- **BrandOnboardingForm**: Brand registration
+- **PropertyOwnerOnboardingForm**: Owner registration
+
+### UI Components
+
+#### **Icons**
+- Centralized SVG icon components
+- Dynamic icon retrieval
+- Consistent styling
+
+#### **Button**
+- Reusable button component
+- Variants and sizes
+
+#### **3D Orbit Gallery**
+- 3D property gallery
+- Three.js integration
+
+### Background Components
+
+#### **DynamicBackground**
+- Animated backgrounds
+- Gradient effects
+
+#### **FuturisticBackground**
+- Futuristic effects
+- Particle animations
+
+#### **CityMapBackground**
+- City map visualization
+
+#### **ScrollingMapBackground**
+- Scrolling map effect
+
+---
+
+## 🎨 Styling & Design System
+
+### Design Philosophy
+- **Minimal & Clean**: Elegant, uncluttered interface
+- **Futuristic**: Modern animations and effects
+- **Brand Colors**: Orange (#FF5200), Red (#E4002B), Orange-Red (#FF6B35)
+
+### Color Palette
+
+```css
+Primary Orange: #FF5200
+Primary Red: #E4002B
+Accent Orange: #FF6B35
+Background: #FFFFFF
+Text: #171717 (gray-900)
+Secondary Text: #6B7280 (gray-500)
+```
+
+### Typography
+
+**Font Stack**:
+```css
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+             'Helvetica', Arial, sans-serif
+```
+
+**Scale**:
+- Hero: `text-4xl sm:text-5xl md:text-6xl lg:text-7xl`
+- Headings: `text-2xl md:text-3xl lg:text-4xl`
+- Body: `text-base sm:text-lg`
+- Small: `text-sm`
+
+### Animations
+
+**Keyframe Animations** (in `globals.css`):
+- `fadeInUp`: Entry animations
+- `gradientShift`: Gradient movement
+- `scan`: Scanning line effects
+- `float`: Floating elements
+- `shimmer`: Shimmer effects
+- `borderPulse`: Pulsing borders
+- `radiate`: Radiating glow effects
+
+### Custom Utilities
+
+**Tailwind Extensions**:
+- Custom animations
+- Gradient utilities
+- Glassmorphism classes
+- Scrollbar hiding
+
+### Responsive Breakpoints
+
+- **sm**: 640px
+- **md**: 768px
+- **lg**: 1024px
+- **xl**: 1280px
+
+---
+
+## 🚀 Build & Deployment
+
+### Build Commands
+
+```bash
+# Development
+npm run dev              # Start dev server (port 3000)
+
+# Production Build
+npm run build           # Build for production
+npm run start           # Start production server
+
+# Database
+npm run db:generate      # Generate Prisma Client
+npm run db:push         # Push schema to database
+npm run db:migrate      # Run migrations
+npm run db:seed         # Seed database
+npm run db:studio       # Open Prisma Studio
+
+# Code Quality
+npm run lint            # Run ESLint
+```
+
+### Build Process
+
+1. **TypeScript Compilation**
+   - Type checking
+   - Path aliases resolution (`@/*`)
+
+2. **Next.js Build**
+   - Page optimization
+   - Static generation
+   - Image optimization (disabled: `unoptimized: true`)
+
+3. **CSS Processing**
+   - Tailwind compilation
+   - PostCSS processing
+   - Autoprefixing
+
+4. **Output**
+   - Static files in `out/`
+   - Optimized bundles
+   - Asset optimization
+
+### Deployment
+
+**Platform**: Vercel (configured via `vercel.json`)
+
+**Build Settings**:
+- Framework: Next.js
+- Build Command: `npm run build`
+- Output Directory: `out`
+- Install Command: `npm install --legacy-peer-deps`
+
+**Environment Variables Required**:
+- `ANTHROPIC_API_KEY`
+- `DATABASE_URL`
+- `NEXTAUTH_SECRET`
+- `NEXTAUTH_URL`
+
+---
+
+## ⚙️ Environment Configuration
+
+### Required Environment Variables
+
+```env
+# AI
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Database
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# Authentication
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
+
+# Optional: OpenAI (if using)
+OPENAI_API_KEY=your_openai_key
+
+# Optional: Supabase (if using)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+```
+
+### Development Setup
+
+1. **Clone Repository**
+   ```bash
+   git clone <repository-url>
+   cd Loka
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+3. **Setup Environment**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your values
+   ```
+
+4. **Setup Database**
+   ```bash
+   npm run db:generate
+   npm run db:push
+   npm run db:seed
+   ```
+
+5. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open Browser**
+   ```
+   http://localhost:3000
+   ```
+
+---
+
+## 🔄 Development Workflow
+
+### Feature Development
+
+1. **Create Feature Branch**
+   ```bash
+   git checkout -b feature/feature-name
+   ```
+
+2. **Develop Feature**
+   - Write components in `src/components/`
+   - Add pages in `src/app/`
+   - Update types in `src/types/`
+
+3. **Test Locally**
+   ```bash
+   npm run dev
+   ```
+
+4. **Type Check**
+   ```bash
+   npx tsc --noEmit
+   ```
+
+5. **Lint**
+   ```bash
+   npm run lint
+   ```
+
+6. **Commit & Push**
+   ```bash
+   git add .
+   git commit -m "feat: add feature"
+   git push origin feature/feature-name
+   ```
+
+### Database Changes
+
+1. **Update Schema**
+   - Edit `prisma/schema.prisma`
+
+2. **Generate Migration**
+   ```bash
+   npm run db:migrate
+   ```
+
+3. **Update Prisma Client**
+   ```bash
+   npm run db:generate
+   ```
+
+### Styling Changes
+
+1. **Update Tailwind Config**
+   - Edit `tailwind.config.js`
+
+2. **Add Custom Styles**
+   - Edit `src/app/globals.css`
+
+3. **Test Responsive**
+   - Check mobile, tablet, desktop views
+
+---
+
+## 🎯 Key Design Decisions
+
+### 1. **Button-Based Flow Over Free-Form Text**
+**Decision**: Use button-based conversation flow instead of free-form text input.
+
+**Rationale**:
+- Eliminates ambiguity (no "500" confusion)
+- Faster input (click vs type)
+- Better data quality
+- Mobile-friendly
+- Professional UX
+
+**Implementation**: `ButtonFlowModal.tsx` with step-by-step flow
+
+### 2. **Separate Brand and Owner Flows**
+**Decision**: Completely separate conversation flows for brands and owners.
+
+**Rationale**:
+- Different questions for different entities
+- Clearer user experience
+- Better data collection
+- Easier to maintain
+
+**Implementation**: Separate step definitions in `button-flow.ts`
+
+### 3. **Minimal, Clean Hero Design**
+**Decision**: Keep hero section minimal and elegant, not over-designed.
+
+**Rationale**:
+- Professional appearance
+- Focus on content
+- Better conversion
+- Modern aesthetic
+
+**Implementation**: Clean white cards with subtle borders
+
+### 4. **Normalization Module**
+**Decision**: Separate normalization logic from search logic.
+
+**Rationale**:
+- Reusability
+- Testability
+- Maintainability
+- Single responsibility
+
+**Implementation**: `src/lib/ai-search/normalization.ts`
+
+### 5. **SVG Icons Over Emojis**
+**Decision**: Use SVG icons instead of emojis.
+
+**Rationale**:
+- Professional appearance
+- Consistent styling
+- Better accessibility
+- Scalable
+
+**Implementation**: `src/components/Icons.tsx`
+
+### 6. **Local Storage for Pre-filling**
+**Decision**: Store collected data in localStorage for form pre-filling.
+
+**Rationale**:
+- Better UX (no re-entry)
+- Seamless transition
+- Data persistence
+
+**Implementation**: localStorage in `ButtonFlowModal.tsx`
+
+### 7. **Auto-Scrolling Chat**
+**Decision**: Auto-scroll chat to bottom on new messages.
+
+**Rationale**:
+- Better UX
+- Always see latest message
+- No manual scrolling needed
+
+**Implementation**: `useEffect` with scrollIntoView
+
+### 8. **Dual Value Proposition**
+**Decision**: Show value props for both brands and owners in hero.
+
+**Rationale**:
+- Clear messaging
+- Address both audiences
+- Better conversion
+
+**Implementation**: Two compact cards in hero section
+
+---
+
+## 📊 Performance Considerations
+
+### Optimizations
+
+1. **Image Optimization**
+   - Next.js Image component (currently disabled)
+   - Lazy loading
+   - Responsive images
+
+2. **Code Splitting**
+   - Next.js automatic code splitting
+   - Dynamic imports for heavy components
+
+3. **CSS Optimization**
+   - Tailwind purging unused styles
+   - Critical CSS extraction
+
+4. **API Optimization**
+   - Response caching
+   - Request debouncing
+   - Streaming responses
+
+### Bundle Size
+
+- **Framework**: Next.js handles optimization
+- **Dependencies**: Minimal external dependencies
+- **3D Graphics**: Optional, lazy-loaded
+
+---
+
+## 🔒 Security
+
+### Authentication
+- NextAuth.js with secure sessions
+- Password hashing
+- CSRF protection
+
+### API Security
+- Rate limiting (recommended)
+- Input validation (Zod)
+- SQL injection prevention (Prisma)
+
+### Data Privacy
+- User data encryption
+- Secure API keys
+- Environment variable protection
+
+---
+
+## 🧪 Testing Strategy
+
+### Manual Testing
+- User flows (Brand & Owner)
+- AI search functionality
+- Form submissions
+- Responsive design
+
+### Recommended Testing
+- Unit tests (Jest)
+- Integration tests
+- E2E tests (Playwright)
+- AI response validation
+
+---
+
+## 📈 Analytics & Monitoring
+
+### Recommended Integrations
+- Google Analytics
+- Vercel Analytics
+- Error tracking (Sentry)
+- Performance monitoring
+
+### Metrics to Track
+- User conversions
+- AI search success rate
+- Property match quality
+- User engagement
+
+---
+
+## 🐛 Known Issues & Limitations
+
+1. **Image Optimization Disabled**
+   - Currently `unoptimized: true` in Next.js config
+   - May impact performance on large images
+
+2. **No Rate Limiting**
+   - API endpoints lack rate limiting
+   - Recommended for production
+
+3. **Mock Data Usage**
+   - Some features use mock data
+   - Needs full database integration
+
+4. **3D Graphics Optional**
+   - Three.js components may not be used
+   - Can be removed if not needed
+
+---
+
+## 🚧 Future Enhancements
+
+### Planned Features
+- [ ] Advanced property filtering
+- [ ] Real-time chat between brands and owners
+- [ ] Property comparison tool
+- [ ] Advanced analytics dashboard
+- [ ] Mobile app (React Native)
+- [ ] Payment integration
+- [ ] Document management
+- [ ] Video property tours
+
+### Technical Improvements
+- [ ] Full test coverage
+- [ ] Performance optimization
+- [ ] SEO improvements
+- [ ] Accessibility enhancements
+- [ ] Internationalization (i18n)
+
+---
+
+## 📝 License
+
+**Private** - N&G Ventures Proprietary
+
+---
+
+## 👥 Contributors
+
+- Development Team
+- Design Team
+- Product Team
+
+---
+
+## 📞 Support
+
+For issues, questions, or contributions, contact the development team.
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: 2024  
+**Maintained By**: N&G Ventures Development Team
+
+---
+
+*This document represents the complete build truth of the N&G Ventures Commercial Real Estate Platform. Keep it updated as the platform evolves.*
+

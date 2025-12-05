@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import PropertyCard from './PropertyCard'
+import ButtonFlowModal from './ButtonFlowModal'
+import { ButtonFlowState } from '@/lib/ai-search/button-flow'
 
 interface Message {
   id: string
@@ -29,6 +31,9 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
   // CRITICAL: Store extracted requirements to maintain context
   const [extractedRequirements, setExtractedRequirements] = useState<any>(null)
   const [confirmedEntityType, setConfirmedEntityType] = useState<'brand' | 'owner' | null>(null)
+  // Button flow mode - DEFAULT TO TRUE (button flow eliminates ambiguity)
+  const [useButtonFlow, setUseButtonFlow] = useState(true)
+  const [showButtonFlow, setShowButtonFlow] = useState(true)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -44,7 +49,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
     if (isOpen && initialQuery && messages.length === 0 && initialQuery.trim()) {
       // Small delay to ensure modal is fully rendered
       const timer = setTimeout(() => {
-        handleSearch(initialQuery)
+      handleSearch(initialQuery)
       }, 100)
       return () => clearTimeout(timer)
     }
@@ -103,7 +108,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
     } else {
       setLoadingMessage('Processing...')
     }
-    
+
     // Add a "thinking" message
     const thinkingMessage: Message = {
       id: `thinking-${Date.now()}`,
@@ -140,7 +145,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
               .filter(m => m.role === 'user' || m.role === 'assistant')
               .map(m => ({ role: m.role, content: m.content }))
           } : undefined
-        })
+      })
       })
 
       // Check if response is ok
@@ -285,7 +290,87 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
     handleSearch(inputValue)
   }
 
+  const handleButtonFlowComplete = async (data: ButtonFlowState['data']) => {
+    // Store structured data
+    const structuredData: any = {
+      entityType: data.entityType,
+      industry: data.businessType,
+      minSize: typeof data.sizeRange === 'object' ? data.sizeRange.min : undefined,
+      maxSize: typeof data.sizeRange === 'object' ? data.sizeRange.max : undefined,
+      preferredLocations: data.selectedAreas || [],
+      budgetRange: typeof data.budgetRange === 'object' ? {
+        min: data.budgetRange.min,
+        max: data.budgetRange.max,
+        currency: 'INR'
+      } : undefined,
+      timeline: data.timeline,
+      companyName: data.brandName,
+      contactPerson: data.contactPerson,
+      phone: data.phone,
+      email: data.email
+    }
+
+    setExtractedRequirements(structuredData)
+    setConfirmedEntityType(data.entityType || null)
+
+    // Close button flow
+    setShowButtonFlow(false)
+    
+    // Handle based on entity type
+    if (data.entityType === 'owner') {
+      // Store for owner form
+      localStorage.setItem('propertyListingDetails', JSON.stringify({
+        location: data.selectedAreas?.[0] || '',
+        size: typeof data.sizeRange === 'object' ? data.sizeRange.min : undefined,
+        rent: typeof data.budgetRange === 'object' ? data.budgetRange.min : undefined
+      }))
+      // Redirect to owner form
+      window.location.href = '/onboarding/owner'
+    } else {
+      // For brands, store and redirect to brand form
+      localStorage.setItem('brandOnboardingDetails', JSON.stringify(structuredData))
+      // Show message then redirect
+      setMessages([{
+        id: 'complete',
+        role: 'assistant',
+        content: `✅ Perfect! I've collected all your requirements. Redirecting you to the brand onboarding form where everything will be pre-filled!`,
+        timestamp: new Date()
+      }])
+      setTimeout(() => {
+        window.location.href = '/onboarding/brand'
+      }, 2000)
+    }
+  }
+
   if (!isOpen) return null
+
+  // Show button flow if enabled
+  if (showButtonFlow || useButtonFlow) {
+    return (
+      <>
+        <ButtonFlowModal
+          isOpen={isOpen}
+          onClose={() => {
+            setShowButtonFlow(false)
+            onClose()
+          }}
+          onComplete={handleButtonFlowComplete}
+        />
+        {/* Toggle button to switch to text mode */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <button
+            onClick={() => {
+              setUseButtonFlow(false)
+              setShowButtonFlow(false)
+            }}
+            className="bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-gray-600"
+          >
+            Switch to Text Mode
+          </button>
+        </div>
+      </>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">

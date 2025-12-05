@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -9,6 +9,7 @@ import BrandOnboardingForm from '@/components/onboarding/BrandOnboardingForm'
 import PropertyOwnerOnboardingForm from '@/components/onboarding/PropertyOwnerOnboardingForm'
 import Dashboard from '@/components/Dashboard'
 import AiSearchModal from '@/components/AiSearchModal'
+import HeroSearch, { type Mode as HeroMode } from '@/components/HeroSearch'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
 import { getTheme, getPaletteColors } from '@/lib/theme'
@@ -43,6 +44,20 @@ const mockProperties: Property[] = [
 
 export default function Home() {
   const router = useRouter()
+  
+  // Generate random flickering logos on mount
+  const getRandomFlickeringIndices = (total: number, count: number) => {
+    const indices = new Set<number>()
+    while (indices.size < count) {
+      indices.add(Math.floor(Math.random() * total))
+    }
+    return indices
+  }
+  
+  // Generate random selections for each row (different each page load)
+  const row1Flickering = useMemo(() => getRandomFlickeringIndices(30, 8), [])
+  const row2Flickering = useMemo(() => getRandomFlickeringIndices(30, 7), [])
+  const row3Flickering = useMemo(() => getRandomFlickeringIndices(30, 6), [])
   const [currentStep, setCurrentStep] = useState<AppStep>('home')
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null)
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null)
@@ -53,6 +68,7 @@ export default function Home() {
   // AI Search states
   const [searchQuery, setSearchQuery] = useState('')
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const [heroMode, setHeroMode] = useState<HeroMode>('brand')
 
   // Handle AI Search - Open modal with query
   const handleSearch = () => {
@@ -268,125 +284,106 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <div className="relative pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 md:pb-20 mt-12 sm:mt-16 md:mt-20" style={{ zIndex: 10 }}>
-        {/* Subtle City Dots - No Lines */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
-          {[
-            {top: '20%', left: '15%', delay: '0s'},
-            {top: '35%', left: '75%', delay: '0.5s'},
-            {top: '60%', left: '25%', delay: '1s'},
-            {top: '75%', left: '80%', delay: '1.5s'},
-            {top: '45%', left: '50%', delay: '2s'}
-          ].map((dot, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse"
-              style={{top: dot.top, left: dot.left, animationDelay: dot.delay}}
-            />
-          ))}
-        </div>
-
-        <div className="text-center max-w-6xl mx-auto px-6 sm:px-6 lg:px-8">
-          {/* Trust Indicator Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 backdrop-blur-xl rounded-full mb-6 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards] transition-all duration-700 bg-white/90 border border-gray-200 shadow-sm">
-            <div className="flex -space-x-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] border-2 border-white"></div>
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#E4002B] to-[#FF6B35] border-2 border-white"></div>
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF5200] border-2 border-white"></div>
+      <div className={`relative min-h-screen flex items-center justify-center pt-20 sm:pt-24 pb-12 sm:pb-16 transition-all duration-700 ${heroMode === 'owner' ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : ''}`} style={{ zIndex: 10 }}>
+        {/* Platform Performance Style Background - Only when owner mode */}
+        {heroMode === 'owner' && (
+          <>
+            {/* Dark Background Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950"></div>
+            
+            {/* Grid Pattern Overlay */}
+            <div className="absolute inset-0 pointer-events-none opacity-50" style={{
+              backgroundImage: `
+                linear-gradient(rgba(228, 0, 43, 0.25) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(228, 0, 43, 0.25) 1px, transparent 1px)
+              `,
+              backgroundSize: '60px 60px',
+            }}></div>
+            
+            {/* Floating Gradient Orbs - More Subtle */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-[#E4002B]/20 to-[#FF5200]/20 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite]"></div>
+              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-[#FF5200]/20 to-[#FF6B35]/20 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite_5s]"></div>
             </div>
-            <span className="text-sm font-medium transition-colors duration-700 text-gray-700">Trusted by 500+ brands across 15 cities</span>
+          </>
+        )}
+
+        {/* Subtle City Dots - Only when brand mode */}
+        {heroMode === 'brand' && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+            {[
+              {top: '20%', left: '15%', delay: '0s'},
+              {top: '35%', left: '75%', delay: '0.5s'},
+              {top: '60%', left: '25%', delay: '1s'},
+              {top: '75%', left: '80%', delay: '1.5s'},
+              {top: '45%', left: '50%', delay: '2s'}
+            ].map((dot, i) => (
+              <div
+                key={i}
+                className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse"
+                style={{top: dot.top, left: dot.left, animationDelay: dot.delay}}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="text-center max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full py-8 sm:py-12">
+          {/* Trust Indicator Badge */}
+          <div className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-xl rounded-full mb-4 sm:mb-6 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards] transition-all duration-700 ${heroMode === 'owner' ? 'bg-white/10 border border-[#E4002B]/30' : 'bg-white/90 border border-gray-200 shadow-sm'}`}>
+            <div className="flex -space-x-2">
+              <div className="relative w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=100&h=100&fit=crop&q=80" 
+                  alt="Property"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="relative w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop&q=80" 
+                  alt="Property"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="relative w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=100&h=100&fit=crop&q=80" 
+                  alt="Property"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            <span className={`text-xs sm:text-sm font-medium transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-700'}`}>500+ Properties Across Locations</span>
           </div>
           
           {/* Focused Hero Heading */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-5 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards]">
-            <span className="transition-colors duration-700 text-gray-900">Find Your Perfect</span><br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Commercial Space</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-3 md:mb-4 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2">
+            <span className={`transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}>Connecting</span>{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Brands</span>
+            <span className={`transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}> &</span><br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Prime Properties</span>
           </h1>
           
-          {/* Clear Value Prop */}
-          <p className="text-base sm:text-lg md:text-xl mb-8 md:mb-10 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards] transition-colors duration-700 text-gray-600">
-            AI-powered matching in 48 hours. Just describe what you need.
+          {/* AI-powered matching subtitle */}
+          <p className={`text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] transition-colors duration-700 px-4 ${heroMode === 'owner' ? 'text-gray-300' : 'text-gray-600'}`}>
+            AI-powered matching in 48 hours.
           </p>
           
-          {/* Hero Search Bar - Original Design */}
-          <div className="opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards] mb-5 md:mb-8 px-2 sm:px-4 transition-all duration-700">
-            <div className="relative max-w-5xl mx-auto group">
-              {/* Animated gradient border */}
-              <div className="absolute -inset-[2px] bg-gradient-to-r rounded-[22px] blur-sm transition-all duration-700 bg-[length:200%_200%] from-[#FF5200] via-[#E4002B] to-[#FF6B35] opacity-60 group-hover:opacity-100 animate-gradientShift"></div>
-              
-              {/* Main Search Container */}
-              <div className="relative rounded-[20px] transition-all duration-700 bg-white shadow-lg hover:shadow-2xl">
-                <div className="flex flex-row items-center gap-1 sm:gap-3 p-2">
-                  {/* AI Icon */}
-                  <div className="pl-1 sm:pl-3 flex-shrink-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-lg transition-all duration-500 from-[#FF5200] to-[#E4002B]">
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Input Field */}
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-
-                    placeholder="Describe your ideal space or list what you have..."
-                    className="flex-1 min-w-0 bg-transparent placeholder-gray-400 text-sm sm:text-base md:text-lg py-3 sm:py-4 px-2 focus:outline-none transition-all duration-500 text-gray-900"
-                  />
-                  
-                  {/* Search Button */}
-                  <button 
-                    onClick={handleSearch}
-                    className="flex-shrink-0 px-3 sm:px-8 py-2.5 sm:py-3.5 bg-gradient-to-r text-white rounded-[16px] font-semibold text-sm sm:text-base transition-all duration-500 flex items-center gap-1.5 sm:gap-2 mr-1 sm:mr-2 from-[#FF5200] to-[#E4002B] hover:shadow-lg"
-                  >
-                    <span>Search</span>
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Quick Action Tags */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-5 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards] transition-all duration-700">
-              <button 
-                onClick={() => {
-                  setSearchQuery('Looking for retail space in Koramangala, Bangalore, around 1200 sqft')
-                  // Don't open modal - let user edit and click search
-                }}
-                className="px-4 py-2 border-2 rounded-full text-sm font-medium transition-all duration-500 bg-white border-gray-200 text-gray-700 hover:border-[#FF5200] hover:text-[#FF5200] hover:shadow-md"
-              >
-                For Brands
-              </button>
-              <button 
-                onClick={() => {
-                  setSearchQuery('I have a 1500 sqft retail space available on MG Road, Bangalore')
-                  // Don't open modal - let user edit and click search
-                }}
-                className="px-4 py-2 border-2 rounded-full text-sm font-medium transition-all duration-500 bg-white border-gray-200 text-gray-700 hover:border-[#E4002B] hover:text-[#E4002B] hover:shadow-md"
-              >
-                For Owners
-              </button>
-            </div>
-            
-            {/* Help Text */}
-            <p className="text-xs sm:text-sm text-gray-500 text-center mt-4 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.6s_forwards]">
-              Click a tag above or describe what you're looking for · Results powered by AI
-            </p>
+          <div className="mt-6 sm:mt-8 mb-4 sm:mb-6">
+            <HeroSearch onModeChange={setHeroMode} />
           </div>
         </div>
+        
+        {/* Section Break Line */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
       </div>
 
       {/* Clientele Slider - Full Width */}
-      <div className="relative z-10 mt-20 md:mt-24 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.8s_forwards]">
+      <div className="relative z-10 mt-8 sm:mt-12 md:mt-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.8s_forwards]">
         <div className="text-center mb-14 md:mb-16">
-          <div className="inline-flex items-center px-5 py-2 bg-white/90 backdrop-blur-xl border border-[#FF5200]/20 rounded-full shadow-[0_0_25px_rgba(255,82,0,0.15)]">
-            <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2.5 animate-pulse shadow-[0_0_8px_rgba(255,82,0,0.9)]"></span>
-            <span className="text-sm font-medium bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent">Trusted by Leading Brands</span>
+          <div className="relative inline-flex items-center px-5 py-2 bg-gradient-to-r from-[#FF5200]/15 via-[#E4002B]/15 to-[#FF6B35]/15 backdrop-blur-xl border-2 rounded-full animate-[radiate_2s_ease-in-out_infinite]">
+            <span className="relative w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2.5 animate-pulse shadow-[0_0_8px_rgba(255,82,0,0.9)]"></span>
+            <span className="relative text-sm font-medium bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent">Trusted by Leading Brands</span>
           </div>
         </div>
         
@@ -398,79 +395,127 @@ export default function Home() {
         
         {/* First Row - Scrolling Left (Slower, Seamless) */}
         <div className="relative overflow-hidden mb-5">
-          <div className="flex gap-5 md:gap-6 animate-[scroll_60s_linear_infinite]">
+          <div className="flex gap-5 md:gap-6 animate-[scroll_60s_linear_infinite] w-max">
             {[
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe',
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe',
+              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe',
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe'
-            ].map((brand, idx) => (
+            ].map((brand, idx) => {
+              // Random selection - different logos flicker each time
+              const shouldFlicker = row1Flickering.has(idx % 10)
+              const flickerDelay = idx * 0.2
+              
+              return (
               <div 
                 key={idx}
-                className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(255,82,0,0.15)] hover:-translate-y-0.5 hover:border-[#FF5200]/40"
-              >
-                {/* Subtle glow on hover */}
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF5200]/0 via-[#FF5200]/0 to-[#FF5200]/0 group-hover:from-[#FF5200]/5 group-hover:via-[#FF5200]/10 group-hover:to-[#FF5200]/5 transition-all duration-500"></div>
-                
-                {/* Border glow pulse */}
-                <div className="absolute inset-0 rounded-xl border border-[#FF5200]/0 group-hover:border-[#FF5200]/20 group-hover:animate-pulse transition-all duration-500"></div>
+                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#FF5200]/60 hover:shadow-[0_0_30px_rgba(255,82,0,0.4),0_0_60px_rgba(255,82,0,0.2),inset_0_0_20px_rgba(255,82,0,0.1)]"
+                >
+                  {/* Constant subtle radiance */}
+                  <div className="absolute inset-0 rounded-xl border border-[#FF5200]/10 shadow-[0_0_15px_rgba(255,82,0,0.15)]"></div>
+                  
+                  {/* Pulsing border for selected logos - only border, not whole capsule */}
+                  {shouldFlicker && (
+                    <div className="absolute inset-0 rounded-xl border-2 border-[#FF5200]/30 animate-[borderPulse_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
+                  )}
+                  
+                  {/* Enhanced glow on hover */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF5200]/0 via-[#FF5200]/0 to-[#FF5200]/0 group-hover:from-[#FF5200]/10 group-hover:via-[#FF5200]/15 group-hover:to-[#FF5200]/10 transition-all duration-500"></div>
+                  
+                  {/* Multi-layer border radiance on hover */}
+                  <div className="absolute inset-0 rounded-xl border-2 border-[#FF5200]/0 group-hover:border-[#FF5200]/40 group-hover:shadow-[0_0_20px_rgba(255,82,0,0.6),0_0_40px_rgba(255,82,0,0.3)] transition-all duration-500"></div>
+                  <div className="absolute inset-[-2px] rounded-xl border border-[#FF5200]/0 group-hover:border-[#FF5200]/20 group-hover:blur-sm transition-all duration-500"></div>
                 
                 <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF5200] group-hover:to-[#E4002B] transition-all duration-500">
                   {brand}
                 </span>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
         {/* Second Row - Scrolling Right (Slower, Seamless) */}
         <div className="relative overflow-hidden mb-5">
-          <div className="flex gap-5 md:gap-6 animate-[scrollReverse_60s_linear_infinite]">
+          <div className="flex gap-5 md:gap-6 animate-[scrollReverse_60s_linear_infinite] w-max">
             {[
               'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai',
               'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai',
+              'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai',
               'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai'
-            ].map((brand, idx) => (
+            ].map((brand, idx) => {
+              // Random selection - different logos flicker each time
+              const shouldFlicker = row2Flickering.has(idx % 10)
+              const flickerDelay = idx * 0.25
+              
+              return (
               <div 
                 key={idx}
-                className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(228,0,43,0.15)] hover:-translate-y-0.5 hover:border-[#E4002B]/40"
-              >
-                {/* Subtle glow on hover */}
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#E4002B]/0 via-[#E4002B]/0 to-[#E4002B]/0 group-hover:from-[#E4002B]/5 group-hover:via-[#E4002B]/10 group-hover:to-[#E4002B]/5 transition-all duration-500"></div>
-                
-                {/* Border glow pulse */}
-                <div className="absolute inset-0 rounded-xl border border-[#E4002B]/0 group-hover:border-[#E4002B]/20 group-hover:animate-pulse transition-all duration-500"></div>
+                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#E4002B]/60 hover:shadow-[0_0_30px_rgba(228,0,43,0.4),0_0_60px_rgba(228,0,43,0.2),inset_0_0_20px_rgba(228,0,43,0.1)]"
+                >
+                  {/* Constant subtle radiance */}
+                  <div className="absolute inset-0 rounded-xl border border-[#E4002B]/10 shadow-[0_0_15px_rgba(228,0,43,0.15)]"></div>
+                  
+                  {/* Pulsing border for selected logos - only border, not whole capsule */}
+                  {shouldFlicker && (
+                    <div className="absolute inset-0 rounded-xl border-2 border-[#E4002B]/30 animate-[borderPulseRed_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
+                  )}
+                  
+                  {/* Enhanced glow on hover */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#E4002B]/0 via-[#E4002B]/0 to-[#E4002B]/0 group-hover:from-[#E4002B]/10 group-hover:via-[#E4002B]/15 group-hover:to-[#E4002B]/10 transition-all duration-500"></div>
+                  
+                  {/* Multi-layer border radiance on hover */}
+                  <div className="absolute inset-0 rounded-xl border-2 border-[#E4002B]/0 group-hover:border-[#E4002B]/40 group-hover:shadow-[0_0_20px_rgba(228,0,43,0.6),0_0_40px_rgba(228,0,43,0.3)] transition-all duration-500"></div>
+                  <div className="absolute inset-[-2px] rounded-xl border border-[#E4002B]/0 group-hover:border-[#E4002B]/20 group-hover:blur-sm transition-all duration-500"></div>
                 
                 <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#E4002B] group-hover:to-[#FF5200] transition-all duration-500">
                   {brand}
                 </span>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
-        {/* Third Row - Scrolling Left (Slower, Seamless) */}
+        {/* Third Row - Scrolling Left (Same Speed) */}
         <div className="relative overflow-hidden">
-          <div className="flex gap-5 md:gap-6 animate-[scroll_60s_linear_infinite]">
+          <div className="flex gap-5 md:gap-6 animate-[scroll_60s_linear_infinite] w-max">
             {[
               'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
               'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
+              'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
               'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee'
-            ].map((brand, idx) => (
+            ].map((brand, idx) => {
+              // Random selection - different logos flicker each time
+              const shouldFlicker = row3Flickering.has(idx % 10)
+              const flickerDelay = idx * 0.2
+              
+              return (
               <div 
                 key={idx}
-                className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(255,107,53,0.15)] hover:-translate-y-0.5 hover:border-[#FF6B35]/40"
-              >
-                {/* Subtle glow on hover */}
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF6B35]/0 via-[#FF6B35]/0 to-[#FF6B35]/0 group-hover:from-[#FF6B35]/5 group-hover:via-[#FF6B35]/10 group-hover:to-[#FF6B35]/5 transition-all duration-500"></div>
-                
-                {/* Border glow pulse */}
-                <div className="absolute inset-0 rounded-xl border border-[#FF6B35]/0 group-hover:border-[#FF6B35]/20 group-hover:animate-pulse transition-all duration-500"></div>
+                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#FF6B35]/60 hover:shadow-[0_0_30px_rgba(255,107,53,0.4),0_0_60px_rgba(255,107,53,0.2),inset_0_0_20px_rgba(255,107,53,0.1)]"
+                >
+                  {/* Constant subtle radiance */}
+                  <div className="absolute inset-0 rounded-xl border border-[#FF6B35]/10 shadow-[0_0_15px_rgba(255,107,53,0.15)]"></div>
+                  
+                  {/* Pulsing border for selected logos - only border, not whole capsule */}
+                  {shouldFlicker && (
+                    <div className="absolute inset-0 rounded-xl border-2 border-[#FF6B35]/30 animate-[borderPulseOrange_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
+                  )}
+                  
+                  {/* Enhanced glow on hover */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF6B35]/0 via-[#FF6B35]/0 to-[#FF6B35]/0 group-hover:from-[#FF6B35]/10 group-hover:via-[#FF6B35]/15 group-hover:to-[#FF6B35]/10 transition-all duration-500"></div>
+                  
+                  {/* Multi-layer border radiance on hover */}
+                  <div className="absolute inset-0 rounded-xl border-2 border-[#FF6B35]/0 group-hover:border-[#FF6B35]/40 group-hover:shadow-[0_0_20px_rgba(255,107,53,0.6),0_0_40px_rgba(255,107,53,0.3)] transition-all duration-500"></div>
+                  <div className="absolute inset-[-2px] rounded-xl border border-[#FF6B35]/0 group-hover:border-[#FF6B35]/20 group-hover:blur-sm transition-all duration-500"></div>
                 
                 <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF6B35] group-hover:to-[#FF5200] transition-all duration-500">
                   {brand}
                 </span>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
@@ -812,18 +857,18 @@ export default function Home() {
             {/* Horizontal Timeline Container */}
             <div className="relative max-w-6xl mx-auto">
               {/* Progress Bar Background */}
-              <div className="hidden md:block absolute top-20 left-0 right-0 h-1 bg-gray-200 rounded-full">
+              <div className="hidden lg:block absolute top-20 sm:top-24 left-0 right-0 h-1 bg-gray-200 rounded-full">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-green-500 rounded-full opacity-30 animate-pulse"></div>
               </div>
 
               {/* Timeline Stages */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-4">
                 {/* Stage 1 - Onboarding */}
                 <div className="group relative">
-                  <div className="flex flex-col items-center text-center">
+                  <div className="flex flex-col items-center h-full">
                     {/* Icon with Progress Ring */}
-                    <div className="relative mb-4">
-                      <svg className="w-32 h-32 transform -rotate-90">
+                    <div className="relative mb-4 sm:mb-5">
+                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
                         <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
                         <circle cx="64" cy="64" r="58" stroke="url(#gradient1)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="0" className="transition-all duration-1000"/>
                         <defs>
@@ -834,8 +879,8 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-24 h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
@@ -843,34 +888,34 @@ export default function Home() {
                     </div>
                     
                     {/* Timeline Badge */}
-                    <div className="inline-flex items-center px-3 py-1 bg-[#FF5200] text-white rounded-full text-xs font-bold mb-3 shadow-lg">
-                      DAY 1
+                    <div className="inline-flex items-center justify-center px-4 py-2 bg-[#FF5200] text-white rounded-lg text-sm font-bold mb-4 shadow-md w-fit mx-auto">
+                      Day 1
                     </div>
                     
                     {/* Content Card */}
-                    <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 hover:border-[#FF5200] hover:shadow-xl transition-all duration-300 w-full group-hover:-translate-y-1">
-                      <h4 className="text-base font-bold text-gray-900 mb-2">Sign Up</h4>
-                      <p className="text-xs text-gray-600 mb-3">Quick 5-min onboarding with smart forms</p>
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#FF5200] hover:shadow-lg transition-all duration-300 flex-1 flex flex-col w-full">
+                      <h4 className="text-xl font-bold text-gray-900 mb-2">Sign Up</h4>
+                      <p className="text-base text-gray-600 mb-5 leading-relaxed">Quick 5-min onboarding with smart forms</p>
                       
                       {/* Action Items */}
-                      <div className="space-y-1 flex flex-col items-center">
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-green-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="space-y-3 flex flex-col">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span>Profile creation</span>
+                          <span className="text-base text-gray-700">Profile creation</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-green-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span>Requirements input</span>
+                          <span className="text-base text-gray-700">Requirements input</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-green-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span>Preferences set</span>
+                          <span className="text-base text-gray-700">Preferences set</span>
                         </div>
                       </div>
                     </div>
@@ -879,9 +924,10 @@ export default function Home() {
 
                 {/* Stage 2 - AI Analysis */}
                 <div className="group relative">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative mb-4">
-                      <svg className="w-32 h-32 transform -rotate-90">
+                  <div className="flex flex-col items-center h-full">
+                    {/* Icon with Progress Ring */}
+                    <div className="relative mb-4 sm:mb-5">
+                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
                         <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
                         <circle cx="64" cy="64" r="58" stroke="url(#gradient2)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="91" className="transition-all duration-1000"/>
                         <defs>
@@ -892,40 +938,42 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-24 h-24 bg-gradient-to-br from-[#E4002B] to-[#FF6B35] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-12 h-12 text-white animate-spin" style={{animationDuration: '3s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#E4002B] to-[#FF6B35] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white animate-spin" style={{animationDuration: '3s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                           </svg>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="inline-flex items-center px-3 py-1 bg-[#E4002B] text-white rounded-full text-xs font-bold mb-3 shadow-lg">
-                      DAY 2
+                    {/* Timeline Badge */}
+                    <div className="inline-flex items-center justify-center px-4 py-2 bg-[#E4002B] text-white rounded-lg text-sm font-bold mb-4 shadow-md w-fit mx-auto">
+                      Day 1-2
                     </div>
                     
-                    <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 hover:border-[#E4002B] hover:shadow-xl transition-all duration-300 w-full group-hover:-translate-y-1">
-                      <h4 className="text-base font-bold text-gray-900 mb-2">AI Analysis</h4>
-                      <p className="text-xs text-gray-600 mb-3">Intelligent data processing begins</p>
+                    {/* Content Card */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#E4002B] hover:shadow-lg transition-all duration-300 flex-1 flex flex-col w-full">
+                      <h4 className="text-xl font-bold text-gray-900 mb-2">AI Analysis</h4>
+                      <p className="text-base text-gray-600 mb-5 leading-relaxed">Intelligent data processing begins</p>
                       
-                      <div className="space-y-1 flex flex-col items-center">
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-yellow-500 mr-1 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="space-y-3 flex flex-col">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
-                          <span>Location scoring</span>
+                          <span className="text-base text-gray-700">Location scoring</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-yellow-500 mr-1 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
-                          <span>Demographics match</span>
+                          <span className="text-base text-gray-700">Demographics match</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-yellow-500 mr-1 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
-                          <span>BFI/PFI calculation</span>
+                          <span className="text-base text-gray-700">BFI/PFI calculation</span>
                         </div>
                       </div>
                     </div>
@@ -934,9 +982,10 @@ export default function Home() {
 
                 {/* Stage 3 - Matches */}
                 <div className="group relative">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative mb-4">
-                      <svg className="w-32 h-32 transform -rotate-90">
+                  <div className="flex flex-col items-center h-full">
+                    {/* Icon with Progress Ring */}
+                    <div className="relative mb-4 sm:mb-5">
+                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
                         <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
                         <circle cx="64" cy="64" r="58" stroke="url(#gradient3)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="182" className="transition-all duration-1000"/>
                         <defs>
@@ -947,43 +996,45 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-24 h-24 bg-gradient-to-br from-[#FF6B35] to-[#FF5200] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF6B35] to-[#FF5200] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                           </svg>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="inline-flex items-center px-3 py-1 bg-[#FF6B35] text-white rounded-full text-xs font-bold mb-3 shadow-lg">
-                      DAY 3-7
+                    {/* Timeline Badge */}
+                    <div className="inline-flex items-center justify-center px-4 py-2 bg-[#FF6B35] text-white rounded-lg text-sm font-bold mb-4 shadow-md w-fit mx-auto">
+                      Day 2-7
                     </div>
                     
-                    <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 hover:border-[#FF6B35] hover:shadow-xl transition-all duration-300 w-full group-hover:-translate-y-1">
-                      <h4 className="text-base font-bold text-gray-900 mb-2">Top Matches</h4>
-                      <p className="text-xs text-gray-600 mb-3">Your curated list delivered</p>
+                    {/* Content Card */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#FF6B35] hover:shadow-lg transition-all duration-300 flex-1 flex flex-col w-full">
+                      <h4 className="text-xl font-bold text-gray-900 mb-2">Top Matches</h4>
+                      <p className="text-base text-gray-600 mb-5 leading-relaxed">Your curated list delivered</p>
                       
-                      <div className="space-y-1 flex flex-col items-center">
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-blue-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="space-y-3 flex flex-col">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                             <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
                           </svg>
-                          <span>Top 5 properties</span>
+                          <span className="text-base text-gray-700">Top 5 properties</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-blue-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                             <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
                           </svg>
-                          <span>Detailed insights</span>
+                          <span className="text-base text-gray-700">Detailed insights</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-blue-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                             <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
                           </svg>
-                          <span>WhatsApp alerts</span>
+                          <span className="text-base text-gray-700">WhatsApp alerts</span>
                         </div>
                       </div>
                     </div>
@@ -992,9 +1043,10 @@ export default function Home() {
 
                 {/* Stage 4 - Decision */}
                 <div className="group relative">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative mb-4">
-                      <svg className="w-32 h-32 transform -rotate-90">
+                  <div className="flex flex-col items-center h-full">
+                    {/* Icon with Progress Ring */}
+                    <div className="relative mb-4 sm:mb-5">
+                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
                         <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
                         <circle cx="64" cy="64" r="58" stroke="url(#gradient4)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="273" className="transition-all duration-1000"/>
                         <defs>
@@ -1005,40 +1057,42 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-24 h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="inline-flex items-center px-3 py-1 bg-[#FF5200] text-white rounded-full text-xs font-bold mb-3 shadow-lg">
-                      DAY 8-14
+                    {/* Timeline Badge */}
+                    <div className="inline-flex items-center justify-center px-4 py-2 bg-[#FF5200] text-white rounded-lg text-sm font-bold mb-4 shadow-md w-fit mx-auto">
+                      Day 7-14
                     </div>
                     
-                    <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 hover:border-[#FF5200] hover:shadow-xl transition-all duration-300 w-full group-hover:-translate-y-1">
-                      <h4 className="text-base font-bold text-gray-900 mb-2">Review & Decide</h4>
-                      <p className="text-xs text-gray-600 mb-3">Connect and evaluate options</p>
+                    {/* Content Card */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#FF5200] hover:shadow-lg transition-all duration-300 flex-1 flex flex-col w-full">
+                      <h4 className="text-xl font-bold text-gray-900 mb-2">Review & Decide</h4>
+                      <p className="text-base text-gray-600 mb-5 leading-relaxed">Connect and evaluate options</p>
                       
-                      <div className="space-y-1 flex flex-col items-center">
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-purple-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="space-y-3 flex flex-col">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"/>
                           </svg>
-                          <span>Direct messaging</span>
+                          <span className="text-base text-gray-700">Direct messaging</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-purple-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"/>
                           </svg>
-                          <span>Site visits</span>
+                          <span className="text-base text-gray-700">Site visits</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-purple-500 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"/>
                           </svg>
-                          <span>Negotiations</span>
+                          <span className="text-base text-gray-700">Negotiations</span>
                         </div>
                       </div>
                     </div>
@@ -1047,47 +1101,50 @@ export default function Home() {
 
                 {/* Stage 5 - Success */}
                 <div className="group relative">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative mb-4">
-                      <svg className="w-32 h-32 transform -rotate-90">
+                  <div className="flex flex-col items-center h-full">
+                    {/* Icon with Progress Ring */}
+                    <div className="relative mb-4 sm:mb-5">
+                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
                         <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
                         <circle cx="64" cy="64" r="58" stroke="#10b981" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="0" className="transition-all duration-1000"/>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="inline-flex items-center px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold mb-3 shadow-lg">
-                      DAY 14-30
+                    {/* Timeline Badge */}
+                    <div className="inline-flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-bold mb-4 shadow-md w-fit mx-auto">
+                      Day 14-30
                     </div>
                     
-                    <div className="bg-gradient-to-br from-green-50 to-white border-2 border-green-200 rounded-2xl p-4 hover:border-green-500 hover:shadow-xl transition-all duration-300 w-full group-hover:-translate-y-1">
-                      <h4 className="text-base font-bold text-gray-900 mb-2">Deal Closed!</h4>
-                      <p className="text-xs text-gray-600 mb-3">Success & move-in ready</p>
+                    {/* Content Card */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-green-500 hover:shadow-lg transition-all duration-300 flex-1 flex flex-col w-full">
+                      <h4 className="text-xl font-bold text-gray-900 mb-2">Deal Closed!</h4>
+                      <p className="text-base text-gray-600 mb-5 leading-relaxed">Success & move-in ready</p>
                       
-                      <div className="space-y-1 flex flex-col items-center">
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-green-600 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                      <div className="space-y-3 flex flex-col">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span>Agreement signed</span>
+                          <span className="text-base text-gray-700">Agreement signed</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-green-600 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span>Keys handed over</span>
+                          <span className="text-base text-gray-700">Keys handed over</span>
                         </div>
-                        <div className="flex items-center text-xs text-gray-700">
-                          <svg className="w-3 h-3 text-green-600 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span>Business starts!</span>
+                          <span className="text-base text-gray-700">Store setup begins</span>
                         </div>
                       </div>
                     </div>
