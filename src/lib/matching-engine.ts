@@ -1,240 +1,356 @@
-import { BrandProfile, Property, MatchResult, MatchingPreferences } from '@/types/workflow'
+import { BrandProfile, Property, MatchResult } from '@/types/workflow'
 
-// Default matching weights
-const DEFAULT_WEIGHTS: MatchingPreferences['weights'] = {
-  location: 0.25,
-  budget: 0.25,
-  size: 0.20,
-  amenities: 0.15,
-  demographics: 0.10,
-  competitors: 0.05
+// Updated BFI scoring weights as per requirements
+const BFI_WEIGHTS = {
+  location: 0.30,  // 30%
+  size: 0.25,      // 25%
+  budget: 0.25,    // 25%
+  propertyType: 0.20 // 20%
 }
 
-export class MatchingEngine {
-  private weights: MatchingPreferences['weights']
-
-  constructor(customWeights?: Partial<MatchingPreferences['weights']>) {
-    this.weights = { ...DEFAULT_WEIGHTS, ...customWeights }
+export interface MatchResultWithProperty {
+  property: Property
+  bfiScore: number
+  matchReasons: string[]
+  breakdown: {
+    locationScore: number
+    sizeScore: number
+    budgetScore: number
+    propertyTypeScore: number
   }
+}
 
-  /**
-   * Calculate BFI (Brand Fit Index) - How well a property matches a brand's needs
-   */
-  calculateBrandFitIndex(brand: BrandProfile, property: Property): MatchResult {
-    const breakdown = {
-      locationMatch: this.calculateLocationMatch(brand, property),
-      budgetMatch: this.calculateBudgetMatch(brand, property),
-      sizeMatch: this.calculateSizeMatch(brand, property),
-      amenityMatch: this.calculateAmenityMatch(brand, property),
-      demographicMatch: this.calculateDemographicMatch(brand, property),
-      competitorMatch: this.calculateCompetitorMatch(brand, property)
-    }
-
-    // Calculate weighted score
-    const score = Math.round(
-      breakdown.locationMatch * this.weights.location +
-      breakdown.budgetMatch * this.weights.budget +
-      breakdown.sizeMatch * this.weights.size +
-      breakdown.amenityMatch * this.weights.amenities +
-      (breakdown.demographicMatch || 0) * this.weights.demographics +
-      (breakdown.competitorMatch || 0) * this.weights.competitors
-    )
-
-    const reasons = this.generateMatchReasons(breakdown, brand, property)
-
-    return {
-      id: `match_${brand.companyName}_${property.id}_${Date.now()}`,
-      brandId: brand.companyName || '', // In real app, use brand ID
-      propertyId: property.id,
-      score,
-      breakdown,
-      reasons,
-      createdAt: new Date(),
-      status: 'active'
-    }
+/**
+ * Calculate BFI (Brand Fit Index) score for a property
+ * Based on the new scoring algorithm
+ */
+export function calculateBFI(
+  property: Property,
+  filters: {
+    businessType?: string
+    sizeRange?: { min: number; max: number }
+    locations?: string[]
+    budgetRange?: { min: number; max: number }
+    propertyType?: string
   }
-
-  /**
-   * Find top 5 matches for a brand
-   */
-  findTopMatches(brand: BrandProfile, properties: Property[]): MatchResult[] {
-    const matches = properties
-      .map(property => this.calculateBrandFitIndex(brand, property))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-
-    return matches
-  }
-
-  /**
-   * Calculate PFI (Property Fit Index) - How well brands match a property
-   */
-  calculatePropertyFitIndex(property: Property, brands: BrandProfile[]): MatchResult[] {
-    return brands
-      .map(brand => this.calculateBrandFitIndex(brand, property))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-  }
-
-  private calculateLocationMatch(brand: BrandProfile, property: Property): number {
-    if (!brand.preferredLocations?.length) return 50
-
-    const isInPreferredLocation = brand.preferredLocations.some(location => 
-      property.city.toLowerCase().includes(location.toLowerCase()) ||
-      property.state.toLowerCase().includes(location.toLowerCase())
-    )
-
-    if (isInPreferredLocation) {
-      return 100
-    }
-
-    // Apply flexibility scoring
-    switch (brand.locationFlexibility) {
-      case 'strict': return 0
-      case 'flexible': return 40
-      case 'very_flexible': return 70
-      default: return 30
+): MatchResultWithProperty {
+  // Location Score (30%)
+  const locationScore = calculateLocationScore(property, filters.locations || [])
+  
+  // Size Score (25%)
+  const sizeScore = calculateSizeScore(property, filters.sizeRange)
+  
+  // Budget Score (25%)
+  const budgetScore = calculateBudgetScore(property, filters.budgetRange)
+  
+  // Property Type Score (20%)
+  const propertyTypeScore = calculatePropertyTypeScore(property, filters.businessType, filters.propertyType)
+  
+  // Calculate weighted BFI
+  const bfiScore = Math.round(
+    locationScore * BFI_WEIGHTS.location +
+    sizeScore * BFI_WEIGHTS.size +
+    budgetScore * BFI_WEIGHTS.budget +
+    propertyTypeScore * BFI_WEIGHTS.propertyType
+  )
+  
+  // Generate match reasons
+  const matchReasons = generateMatchReasons({
+    locationScore,
+    sizeScore,
+    budgetScore,
+    propertyTypeScore
+  }, property, filters)
+  
+  return {
+    property,
+    bfiScore,
+    matchReasons,
+    breakdown: {
+      locationScore,
+      sizeScore,
+      budgetScore,
+      propertyTypeScore
     }
   }
+}
 
-  private calculateBudgetMatch(brand: BrandProfile, property: Property): number {
-    if (!brand.budgetRange) return 50
-
-    const { min, max } = brand.budgetRange
-    const propertyPrice = property.priceType === 'monthly' ? property.price : property.price * 12
-
-    if (propertyPrice >= min && propertyPrice <= max) {
-      return 100
-    }
-
-    // Calculate how far off the budget is
-    if (propertyPrice < min) {
-      const underBudgetRatio = propertyPrice / min
-      return Math.max(20, underBudgetRatio * 100)
-    } else {
-      const overBudgetRatio = max / propertyPrice
-      return Math.max(0, overBudgetRatio * 100)
+/**
+ * Location Score (30%)
+ * - Property location in brand's preferred areas: 100 points
+ * - Nearby (same zone): 70 points
+ * - Different zone: 30 points
+ */
+function calculateLocationScore(property: Property, preferredLocations: string[]): number {
+  if (!preferredLocations || preferredLocations.length === 0) {
+    return 50 // Default score if no location preference
+  }
+  
+  const propertyLocation = property.city.toLowerCase()
+  const propertyAddress = property.address.toLowerCase()
+  
+  // Check if property is in preferred locations
+  const isInPreferred = preferredLocations.some(loc => {
+    const locLower = loc.toLowerCase()
+    return propertyLocation.includes(locLower) || 
+           propertyAddress.includes(locLower) ||
+           locLower.includes(propertyLocation)
+  })
+  
+  if (isInPreferred) {
+    return 100 // Perfect match
+  }
+  
+  // Check if in same zone (Bangalore zones)
+  const bangaloreZones: { [key: string]: string[] } = {
+    'central': ['mg road', 'brigade road', 'church street', 'commercial street'],
+    'south': ['koramangala', 'jayanagar', 'btm', 'hsr', 'indiranagar'],
+    'east': ['whitefield', 'marathahalli', 'hebbal', 'kundalahalli'],
+    'north': ['hebbal', 'yelahanka', 'sahakar nagar'],
+    'west': ['rajajinagar', 'malleswaram', 'yeshwanthpur']
+  }
+  
+  // Find zone for property
+  let propertyZone: string | null = null
+  for (const [zone, areas] of Object.entries(bangaloreZones)) {
+    if (areas.some(area => propertyLocation.includes(area) || propertyAddress.includes(area))) {
+      propertyZone = zone
+      break
     }
   }
-
-  private calculateSizeMatch(brand: BrandProfile, property: Property): number {
-    if (!brand.requirements) return 50
-
-    const { minSize, maxSize } = brand.requirements
-    
-    if (!minSize && !maxSize) return 50
-    if (property.size >= minSize && property.size <= maxSize) {
-      return 100
-    }
-
-    // Calculate size fit score
-    if (property.size < minSize) {
-      const sizeRatio = property.size / minSize
-      return Math.max(0, sizeRatio * 100)
-    } else {
-      const sizeRatio = maxSize / property.size
-      return Math.max(0, sizeRatio * 100)
+  
+  // Find zone for preferred locations
+  let preferredZone: string | null = null
+  for (const [zone, areas] of Object.entries(bangaloreZones)) {
+    if (preferredLocations.some(loc => areas.some(area => loc.toLowerCase().includes(area)))) {
+      preferredZone = zone
+      break
     }
   }
-
-  private calculateAmenityMatch(brand: BrandProfile, property: Property): number {
-    if (!brand.requirements?.mustHaveAmenities?.length) return 80
-
-    const requiredAmenities = brand.requirements.mustHaveAmenities
-    const availableAmenities = property.amenities
-
-    const matchedAmenities = requiredAmenities.filter(amenity => 
-      availableAmenities.some(available => 
-        available.toLowerCase().includes(amenity.toLowerCase())
-      )
-    )
-
-    const matchRatio = matchedAmenities.length / requiredAmenities.length
-    return Math.round(matchRatio * 100)
+  
+  if (propertyZone && preferredZone && propertyZone === preferredZone) {
+    return 70 // Same zone
   }
+  
+  return 30 // Different zone
+}
 
-  private calculateDemographicMatch(brand: BrandProfile, property: Property): number | undefined {
-    if (!property.locationIntelligence?.demographics) return undefined
-
-    // Simple demographic matching based on target demographics
-    if (!brand.targetDemographics?.length) return 70
-
-    // This would be more sophisticated in a real implementation
-    // For now, return a baseline score
-    return 75
+/**
+ * Size Score (25%)
+ * - Exact match (±10%): 100 points
+ * - Close match (±20%): 70 points
+ * - Acceptable (±40%): 40 points
+ */
+function calculateSizeScore(property: Property, sizeRange?: { min: number; max: number }): number {
+  if (!sizeRange || (!sizeRange.min && !sizeRange.max)) {
+    return 50 // Default if no size preference
   }
-
-  private calculateCompetitorMatch(brand: BrandProfile, property: Property): number | undefined {
-    if (!property.locationIntelligence?.competitors) return undefined
-
-    const competitors = property.locationIntelligence.competitors
-    const directCompetitors = competitors.filter(c => c.category === 'direct')
-
-    // Fewer direct competitors nearby = better score
-    if (directCompetitors.length === 0) return 100
-    if (directCompetitors.length <= 2) return 80
-    if (directCompetitors.length <= 5) return 60
+  
+  const propertySize = property.size
+  const { min, max } = sizeRange
+  
+  // Use average if only one bound provided
+  const targetSize = min && max ? (min + max) / 2 : (min || max || propertySize)
+  const tolerance = targetSize * 0.1 // 10% tolerance
+  
+  // Exact match (±10%)
+  if (propertySize >= targetSize - tolerance && propertySize <= targetSize + tolerance) {
+    return 100
+  }
+  
+  const tolerance20 = targetSize * 0.2 // 20% tolerance
+  // Close match (±20%)
+  if (propertySize >= targetSize - tolerance20 && propertySize <= targetSize + tolerance20) {
+    return 70
+  }
+  
+  const tolerance40 = targetSize * 0.4 // 40% tolerance
+  // Acceptable (±40%)
+  if (propertySize >= targetSize - tolerance40 && propertySize <= targetSize + tolerance40) {
     return 40
   }
-
-  private generateMatchReasons(breakdown: any, brand: BrandProfile, property: Property): string[] {
-    const reasons: string[] = []
-
-    if (breakdown.locationMatch >= 80) {
-      reasons.push(`Perfect location match in ${property.city}`)
-    } else if (breakdown.locationMatch >= 60) {
-      reasons.push(`Good location with some flexibility`)
-    }
-
-    if (breakdown.budgetMatch >= 90) {
-      reasons.push(`Fits perfectly within your budget`)
-    } else if (breakdown.budgetMatch >= 70) {
-      reasons.push(`Close to your budget range`)
-    }
-
-    if (breakdown.sizeMatch >= 90) {
-      reasons.push(`Ideal size for your space requirements`)
-    }
-
-    if (breakdown.amenityMatch >= 80) {
-      reasons.push(`Has most of your required amenities`)
-    }
-
-    if (breakdown.demographicMatch && breakdown.demographicMatch >= 80) {
-      reasons.push(`Great demographic match for your target audience`)
-    }
-
-    if (breakdown.competitorMatch && breakdown.competitorMatch >= 80) {
-      reasons.push(`Low competition in the immediate area`)
-    }
-
-    // Add property-specific highlights
-    if (property.amenities.includes('Parking')) {
-      reasons.push(`Includes parking facilities`)
-    }
-
-    if (property.condition === 'excellent') {
-      reasons.push(`Property in excellent condition`)
-    }
-
-    return reasons
+  
+  // Also check if within min-max range
+  if (min && max && propertySize >= min && propertySize <= max) {
+    return 100
   }
+  
+  return 20 // Poor match
 }
 
-// Utility functions for CRM integration
-export const updateBrandProfile = async (brandId: string, matches: MatchResult[]) => {
-  // In a real implementation, this would update the CRM
-  console.log(`Updating brand ${brandId} with ${matches.length} new matches`)
+/**
+ * Budget Score (25%)
+ * - Within budget: 100 points
+ * - Slightly over (10%): 70 points
+ * - Moderately over (20%): 40 points
+ */
+function calculateBudgetScore(property: Property, budgetRange?: { min: number; max: number }): number {
+  if (!budgetRange || (!budgetRange.min && !budgetRange.max)) {
+    return 50 // Default if no budget preference
+  }
+  
+  // Convert property price to monthly if needed
+  let monthlyPrice = property.price
+  if (property.priceType === 'yearly') {
+    monthlyPrice = property.price / 12
+  } else if (property.priceType === 'sqft') {
+    monthlyPrice = property.price * property.size // Approximate
+  }
+  
+  const { min, max } = budgetRange
+  
+  // Within budget
+  if (monthlyPrice >= (min || 0) && monthlyPrice <= (max || Infinity)) {
+    return 100
+  }
+  
+  // Slightly over (10%)
+  if (max && monthlyPrice > max) {
+    const overRatio = (monthlyPrice - max) / max
+    if (overRatio <= 0.1) {
+      return 70
+    }
+    if (overRatio <= 0.2) {
+      return 40
+    }
+  }
+  
+  // Under budget (good, but score slightly lower)
+  if (min && monthlyPrice < min) {
+    const underRatio = monthlyPrice / min
+    return Math.max(60, Math.round(underRatio * 100))
+  }
+  
+  return 30 // Poor match
 }
 
-export const updatePropertyProfile = async (propertyId: string, matches: MatchResult[]) => {
-  // In a real implementation, this would update the CRM
-  console.log(`Updating property ${propertyId} with ${matches.length} potential brand matches`)
+/**
+ * Property Type Score (20%)
+ * - Perfect match (QSR → retail ground floor): 100 points
+ * - Good match (restaurant → food court): 70 points
+ * - Acceptable: 40 points
+ */
+function calculatePropertyTypeScore(
+  property: Property,
+  businessType?: string,
+  preferredPropertyType?: string
+): number {
+  // If specific property type preferred, check match
+  if (preferredPropertyType) {
+    if (property.propertyType === preferredPropertyType) {
+      return 100
+    }
+    return 40
+  }
+  
+  // Business type to property type mapping
+  const businessTypeMapping: { [key: string]: string[] } = {
+    'café': ['retail', 'restaurant'],
+    'qsr': ['retail'],
+    'restaurant': ['restaurant', 'retail'],
+    'bar': ['restaurant', 'retail'],
+    'brewery': ['restaurant', 'retail'],
+    'retail': ['retail'],
+    'gym': ['office', 'retail'],
+    'fitness': ['office', 'retail'],
+    'entertainment': ['retail', 'office']
+  }
+  
+  if (!businessType) {
+    return 50 // Default
+  }
+  
+  const businessLower = businessType.toLowerCase()
+  const compatibleTypes = businessTypeMapping[businessLower] || ['retail']
+  
+  if (compatibleTypes.includes(property.propertyType)) {
+    // Check for ground floor preference (for QSR/Retail)
+    if ((businessLower.includes('qsr') || businessLower.includes('café') || businessLower.includes('retail')) &&
+        property.amenities.some(a => a.toLowerCase().includes('ground'))) {
+      return 100 // Perfect match
+    }
+    return 70 // Good match
+  }
+  
+  return 40 // Acceptable
 }
 
-export const triggerNotifications = async (matches: MatchResult[]) => {
-  // In a real implementation, this would send email/SMS/WhatsApp notifications
-  matches.forEach(match => {
-    console.log(`Sending notification for match ${match.id} with score ${match.score}`)
-  })
+/**
+ * Generate human-readable match reasons
+ */
+function generateMatchReasons(
+  scores: {
+    locationScore: number
+    sizeScore: number
+    budgetScore: number
+    propertyTypeScore: number
+  },
+  property: Property,
+  filters: any
+): string[] {
+  const reasons: string[] = []
+  
+  // Location reasons
+  if (scores.locationScore === 100) {
+    reasons.push(`Perfect location match - in ${property.city}`)
+  } else if (scores.locationScore >= 70) {
+    reasons.push(`Good location - nearby your preferred areas`)
+  }
+  
+  // Budget reasons
+  if (scores.budgetScore >= 80) {
+    const monthlyPrice = property.priceType === 'yearly' ? property.price / 12 : property.price
+    reasons.push(`Great value - ₹${Math.round(monthlyPrice).toLocaleString()}/month within your budget`)
+  } else if (scores.budgetScore >= 60) {
+    reasons.push(`Close to your budget range`)
+  }
+  
+  // Size reasons
+  if (scores.sizeScore >= 80) {
+    const businessType = filters.businessType || 'your business'
+    reasons.push(`Ideal size - ${property.size.toLocaleString()} sqft perfect for ${businessType}`)
+  } else if (scores.sizeScore >= 60) {
+    reasons.push(`Good size match - ${property.size.toLocaleString()} sqft`)
+  }
+  
+  // Property type reasons
+  if (scores.propertyTypeScore >= 80) {
+    reasons.push(`Perfect property type for your business`)
+  }
+  
+  // Additional property features
+  if (property.amenities.some(a => a.toLowerCase().includes('parking'))) {
+    reasons.push(`Parking available`)
+  }
+  
+  if (property.amenities.some(a => a.toLowerCase().includes('ground'))) {
+    reasons.push(`Ground floor - high visibility`)
+  }
+  
+  if (property.condition === 'excellent') {
+    reasons.push(`Property in excellent condition`)
+  }
+  
+  return reasons.slice(0, 5) // Limit to 5 reasons
+}
+
+/**
+ * Find and rank properties by BFI score
+ */
+export function findMatches(
+  properties: Property[],
+  filters: {
+    businessType?: string
+    sizeRange?: { min: number; max: number }
+    locations?: string[]
+    budgetRange?: { min: number; max: number }
+    propertyType?: string
+  }
+): MatchResultWithProperty[] {
+  const matches = properties
+    .map(property => calculateBFI(property, filters))
+    .filter(match => match.bfiScore >= 30) // Filter out poor matches
+    .sort((a, b) => b.bfiScore - a.bfiScore) // Sort by BFI descending
+  
+  return matches
 }

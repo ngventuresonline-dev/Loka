@@ -8,20 +8,69 @@ import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
-const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment']
-const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft']
-const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal']
-const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months']
+const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
+const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
+const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Others']
+const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
 
-function BudgetSlider({ index = 0 }: { index?: number }) {
-  const [minBudget, setMinBudget] = useState(50000)
-  const [maxBudget, setMaxBudget] = useState(1000000)
+function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?: number; required?: boolean; onBudgetChange?: (budget: number) => void }) {
+  const [budget, setBudget] = useState<number | null>(null)
+  const [budgetInput, setBudgetInput] = useState('')
   
   const formatCurrency = (value: number) => {
     if (value >= 100000) {
       return `₹${(value / 100000).toFixed(1)}L`
     }
     return `₹${(value / 1000).toFixed(0)}K`
+  }
+
+  const parseBudgetInput = (input: string): number | null => {
+    const cleaned = input.trim().replace(/[₹,\s]/g, '').toUpperCase()
+    
+    // Handle lakhs (L)
+    if (cleaned.endsWith('L')) {
+      const num = parseFloat(cleaned.slice(0, -1))
+      if (!isNaN(num)) return num * 100000
+    }
+    
+    // Handle thousands (K)
+    if (cleaned.endsWith('K')) {
+      const num = parseFloat(cleaned.slice(0, -1))
+      if (!isNaN(num)) return num * 1000
+    }
+    
+    // Handle plain number
+    const num = parseFloat(cleaned)
+    if (!isNaN(num)) {
+      // If number is < 1000, assume it's in thousands
+      if (num < 1000) return num * 1000
+      // If number is < 100, assume it's in lakhs
+      if (num < 100) return num * 100000
+      return num
+    }
+    
+    return null
+  }
+
+  const handleBudgetChange = (value: number) => {
+    setBudget(value)
+    setBudgetInput(formatCurrency(value))
+    if (onBudgetChange) {
+      onBudgetChange(value)
+    }
+  }
+
+  const handleInputChange = (input: string) => {
+    setBudgetInput(input)
+    const parsed = parseBudgetInput(input)
+    if (parsed !== null && parsed >= 50000 && parsed <= 2000000) {
+      handleBudgetChange(parsed)
+    } else if (input.trim() === '') {
+      setBudget(null)
+      if (onBudgetChange) {
+        onBudgetChange(0)
+      }
+    }
   }
 
   const borderColors = [
@@ -54,6 +103,7 @@ function BudgetSlider({ index = 0 }: { index?: number }) {
   ]
 
   const colorIndex = index % 5
+  const hasError = required && budget === null
 
   return (
     <motion.section
@@ -62,7 +112,7 @@ function BudgetSlider({ index = 0 }: { index?: number }) {
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
       className="relative group"
     >
-      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
+      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
         
@@ -76,83 +126,82 @@ function BudgetSlider({ index = 0 }: { index?: number }) {
         </div>
 
         <div className="relative z-10">
-          <h3
-            className="text-2xl font-bold text-white mb-6"
-            style={{ fontFamily: fraunces.style.fontFamily }}
-          >
-            Budget Range (Monthly Rent)
-          </h3>
+          <div className="flex items-center gap-2 mb-6">
+            <h3
+              className="text-2xl font-bold text-white"
+              style={{ fontFamily: fraunces.style.fontFamily }}
+            >
+              Budget (Monthly Rent)
+            </h3>
+            {required && (
+              <span className="text-red-500 text-lg font-bold">*</span>
+            )}
+          </div>
+          {hasError && (
+            <div className="mb-4 text-sm text-red-400 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              This field is required
+            </div>
+          )}
 
           <div className="space-y-6">
-            {/* Min Budget */}
+            {/* Budget - Slider and Text Input */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Minimum
+                  Budget (Monthly Rent)
                 </label>
                 <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  {formatCurrency(minBudget)}
+                  {formatCurrency(budget)}
                 </span>
               </div>
-              <div className="relative">
+              <div className="relative mb-4">
                 <input
                   type="range"
                   min="50000"
                   max="2000000"
                   step="50000"
-                  value={minBudget}
-                  onChange={(e) => {
-                    const newValue = parseInt(e.target.value)
-                    setMinBudget(newValue)
-                    if (newValue >= maxBudget) {
-                      setMaxBudget(Math.min(newValue + 50000, 2000000))
-                    }
-                  }}
+                  value={budget || 500000}
+                  onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
                   className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-min"
                 />
               </div>
-            </div>
-
-            {/* Max Budget */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Maximum
+              {/* Manual Input for Budget */}
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  Or enter manually (e.g., 50K, 2L, 50000)
                 </label>
-                <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] to-[#FF5200]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  {formatCurrency(maxBudget)}
-                </span>
-              </div>
-              <div className="relative">
                 <input
-                  type="range"
-                  min="50000"
-                  max="2000000"
-                  step="50000"
-                  value={maxBudget}
-                  onChange={(e) => {
-                    const newValue = parseInt(e.target.value)
-                    setMaxBudget(newValue)
-                    if (newValue <= minBudget) {
-                      setMinBudget(Math.max(newValue - 50000, 50000))
+                  type="text"
+                  value={budgetInput}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  onBlur={() => {
+                    if (budget !== null) {
+                      setBudgetInput(formatCurrency(budget))
                     }
                   }}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-max"
+                  placeholder="5L"
+                  className={`w-full px-4 py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-xl text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
+                  style={{ fontFamily: plusJakarta.style.fontFamily }}
                 />
               </div>
             </div>
 
-            {/* Budget Range Display */}
-            <div className="pt-4 border-t border-gray-700/50">
-              <div className="text-center">
-                <p className="text-xs text-gray-400 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Selected Range
-                </p>
-                <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
-                  {formatCurrency(minBudget)} - {formatCurrency(maxBudget)}
-                </p>
+            {/* Budget Display */}
+            {budget !== null && (
+              <div className="pt-4 border-t border-gray-700/50">
+                <div className="text-center">
+                  <p className="text-xs text-gray-400 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                    Selected Budget
+                  </p>
+                  <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
+                    {formatCurrency(budget)}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -193,34 +242,6 @@ function BudgetSlider({ index = 0 }: { index?: number }) {
           transform: scale(1.2);
           box-shadow: 0 0 15px rgba(255, 82, 0, 0.8), 0 0 30px rgba(255, 82, 0, 0.5);
         }
-        .slider-max::-webkit-slider-thumb {
-          appearance: none;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #E4002B, #FF5200);
-          cursor: pointer;
-          box-shadow: 0 0 10px rgba(228, 0, 43, 0.5), 0 0 20px rgba(228, 0, 43, 0.3);
-          transition: all 0.2s;
-        }
-        .slider-max::-webkit-slider-thumb:hover {
-          transform: scale(1.2);
-          box-shadow: 0 0 15px rgba(228, 0, 43, 0.8), 0 0 30px rgba(228, 0, 43, 0.5);
-        }
-        .slider-max::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #E4002B, #FF5200);
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 0 10px rgba(228, 0, 43, 0.5), 0 0 20px rgba(228, 0, 43, 0.3);
-          transition: all 0.2s;
-        }
-        .slider-max::-moz-range-thumb:hover {
-          transform: scale(1.2);
-          box-shadow: 0 0 15px rgba(228, 0, 43, 0.8), 0 0 30px rgba(228, 0, 43, 0.5);
-        }
       `}</style>
     </motion.section>
   )
@@ -230,14 +251,32 @@ function FilterCard({
   title, 
   items, 
   multi = false,
-  index = 0
+  index = 0,
+  required = false,
+  onSelectionChange
 }: { 
   title: string
   items: string[]
   multi?: boolean
   index?: number
+  required?: boolean
+  onSelectionChange?: (selected: Set<string>) => void
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  
+  const toggle = (item: string) => {
+    const next = new Set(selected)
+    if (multi) {
+      next.has(item) ? next.delete(item) : next.add(item)
+    } else {
+      next.clear()
+      next.add(item)
+    }
+    setSelected(next)
+    if (onSelectionChange) {
+      onSelectionChange(next)
+    }
+  }
   const borderColors = [
     'border-[#FF5200]/30 hover:border-[#FF5200]',
     'border-[#E4002B]/30 hover:border-[#E4002B]',
@@ -267,19 +306,9 @@ function FilterCard({
     'from-[#E4002B]/40',
   ]
 
-  const toggle = (item: string) => {
-    const next = new Set(selected)
-    if (multi) {
-      next.has(item) ? next.delete(item) : next.add(item)
-    } else {
-      next.clear()
-      next.add(item)
-    }
-    setSelected(next)
-  }
-
   const count = selected.size
   const colorIndex = index % 5
+  const hasError = required && selected.size === 0
 
   return (
     <motion.section
@@ -288,7 +317,7 @@ function FilterCard({
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
       className="relative group"
     >
-      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
+      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
         
@@ -303,12 +332,17 @@ function FilterCard({
 
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
-            <h3
-              className="text-2xl font-bold text-white"
-              style={{ fontFamily: fraunces.style.fontFamily }}
-            >
-              {title}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3
+                className="text-2xl font-bold text-white"
+                style={{ fontFamily: fraunces.style.fontFamily }}
+              >
+                {title}
+              </h3>
+              {required && (
+                <span className="text-red-500 text-lg font-bold">*</span>
+              )}
+            </div>
             {multi && count > 0 && (
               <motion.div
                 initial={{ scale: 0 }}
@@ -319,6 +353,14 @@ function FilterCard({
               </motion.div>
             )}
           </div>
+          {hasError && (
+            <div className="mb-4 text-sm text-red-400 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              This field is required
+            </div>
+          )}
           
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {items.map((item, itemIndex) => {
@@ -371,6 +413,21 @@ function FilterCard({
 
 export default function BrandFilterPage() {
   const [showApplyButton, setShowApplyButton] = useState(false)
+  
+  // Track selections for validation
+  const [businessTypeSelected, setBusinessTypeSelected] = useState<Set<string>>(new Set())
+  const [sizeRangeSelected, setSizeRangeSelected] = useState<Set<string>>(new Set())
+  const [locationSelected, setLocationSelected] = useState<Set<string>>(new Set())
+  const [timelineSelected, setTimelineSelected] = useState<Set<string>>(new Set())
+  const [budgetValue, setBudgetValue] = useState<number>(0)
+  
+  // Check if all required fields are filled
+  const isFormValid = 
+    businessTypeSelected.size > 0 &&
+    sizeRangeSelected.size > 0 &&
+    locationSelected.size > 0 &&
+    timelineSelected.size > 0 &&
+    budgetValue > 0
 
   useEffect(() => {
     const handleScroll = () => {
@@ -470,11 +527,40 @@ export default function BrandFilterPage() {
 
         {/* Filter Cards - Platform Performance Style */}
         <div className="grid gap-6 sm:gap-8">
-          <FilterCard title="Business Type" items={businessTypes} index={0} />
-          <FilterCard title="Size Range" items={sizeRanges} index={1} />
-          <FilterCard title="Location (Popular Areas)" items={locations} multi index={2} />
-          <BudgetSlider index={3} />
-          <FilterCard title="Timeline" items={timelines} index={4} />
+          <FilterCard 
+            title="Business Type" 
+            items={businessTypes} 
+            index={0} 
+            required 
+            onSelectionChange={setBusinessTypeSelected}
+          />
+          <FilterCard 
+            title="Size Range" 
+            items={sizeRanges} 
+            index={1} 
+            required
+            onSelectionChange={setSizeRangeSelected}
+          />
+          <FilterCard 
+            title="Location (Popular Areas)" 
+            items={locations} 
+            multi 
+            index={2} 
+            required
+            onSelectionChange={setLocationSelected}
+          />
+          <BudgetSlider 
+            index={3} 
+            required
+            onBudgetChange={setBudgetValue}
+          />
+          <FilterCard 
+            title="Timeline" 
+            items={timelines} 
+            index={4} 
+            required
+            onSelectionChange={setTimelineSelected}
+          />
         </div>
       </div>
 
@@ -488,19 +574,43 @@ export default function BrandFilterPage() {
             className="fixed bottom-8 right-8 z-50"
           >
             <motion.button
-              className="group relative px-8 py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl text-base font-semibold shadow-[0_8px_24px_rgba(255,82,0,0.4)] overflow-hidden"
+              disabled={!isFormValid}
+              className={`group relative px-8 py-4 rounded-xl text-base font-semibold overflow-hidden ${
+                isFormValid
+                  ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white shadow-[0_8px_24px_rgba(255,82,0,0.4)] cursor-pointer'
+                  : 'bg-gray-700/50 text-gray-400 cursor-not-allowed'
+              }`}
               style={{ fontFamily: plusJakarta.style.fontFamily }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isFormValid ? { scale: 1.05, y: -2 } : {}}
+              whileTap={isFormValid ? { scale: 0.95 } : {}}
+              onClick={() => {
+                if (isFormValid) {
+                  // Handle apply filters
+                  console.log('Applying filters:', {
+                    businessType: Array.from(businessTypeSelected),
+                    sizeRange: Array.from(sizeRangeSelected),
+                    locations: Array.from(locationSelected),
+                    timeline: Array.from(timelineSelected),
+                    budget: budgetValue
+                  })
+                  // TODO: Navigate to results or trigger search
+                }
+              }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#E4002B] to-[#FF5200] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {isFormValid && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#E4002B] to-[#FF5200] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 rounded-xl border-2 border-white/30 opacity-0 group-hover:opacity-100 animate-ping"></div>
+                </>
+              )}
               <span className="relative z-10 flex items-center gap-2">
-                Apply Filters
-                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
+                {isFormValid ? 'Apply Filters' : 'Complete All Fields'}
+                {isFormValid && (
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                )}
               </span>
-              <div className="absolute inset-0 rounded-xl border-2 border-white/30 opacity-0 group-hover:opacity-100 animate-ping"></div>
             </motion.button>
           </motion.div>
         )}

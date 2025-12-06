@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User, getCurrentUser, logout as authLogout, isAuthenticated } from '@/lib/auth'
+import { User, getCurrentUser, logout as authLogout } from '@/lib/auth'
 
 interface AuthContextType {
   user: User | null
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{ 
         user, 
         loading, 
-        isLoggedIn: isAuthenticated(),
+        isLoggedIn: !loading && user !== null,
         logout,
         refreshUser 
       }}

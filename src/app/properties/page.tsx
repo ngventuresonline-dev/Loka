@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import PropertyCard from '@/components/PropertyCard'
@@ -152,6 +155,20 @@ const sampleProperties: Property[] = [
 ];
 
 export default function PropertiesPage() {
+  const [particles, setParticles] = useState<Array<{left: string, top: string, animation: string, animationDelay: string}>>([])
+
+  // Generate particles only on client to avoid hydration mismatch
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 30 }, () => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite`,
+        animationDelay: `${Math.random() * 2}s`
+      }))
+    )
+  }, [])
+
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       {/* Advanced Animated Background Effects - Same as Homepage */}
@@ -172,15 +189,15 @@ export default function PropertiesPage() {
         
         {/* Animated Particles */}
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(30)].map((_, i) => (
+          {particles.map((particle, i) => (
             <div
               key={i}
               className="absolute w-1 h-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full opacity-40"
               style={{
-                left: Math.random() * 100 + '%',
-                top: Math.random() * 100 + '%',
-                animation: 'twinkle ' + (2 + Math.random() * 3) + 's ease-in-out infinite',
-                animationDelay: Math.random() * 2 + 's'
+                left: particle.left,
+                top: particle.top,
+                animation: particle.animation,
+                animationDelay: particle.animationDelay
               }}
             ></div>
           ))}

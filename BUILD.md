@@ -60,11 +60,13 @@
 
 ### Database & ORM
 - **Prisma 6.19.0** - Next-generation ORM
-- **PostgreSQL** - Primary database
+- **PostgreSQL** - Primary database (via Supabase or standalone)
 - **Prisma Client** - Type-safe database access
+- **Supabase** (`@supabase/supabase-js: ^2.86.0`) - Backend-as-a-Service
 
 ### Authentication
-- **NextAuth.js 4.24.13** - Authentication framework
+- **Supabase Auth** - Primary authentication system
+- **NextAuth.js 4.24.13** - Alternative authentication framework
 - **Prisma Adapter** (`@auth/prisma-adapter: ^2.11.1`) - Database adapter
 
 ### 3D Graphics (Optional)
@@ -643,9 +645,10 @@ NEXTAUTH_URL=http://localhost:3000
 # Optional: OpenAI (if using)
 OPENAI_API_KEY=your_openai_key
 
-# Optional: Supabase (if using)
+# Supabase (Required for auth and storage)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
 ### Development Setup

@@ -1,11 +1,24 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
 export default function AboutPage() {
   const router = useRouter()
+  const [particles, setParticles] = useState<Array<{left: string, top: string, animation: string}>>([])
+
+  // Generate particles only on client to avoid hydration mismatch
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 25 }, () => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite ${Math.random() * 2}s`
+      }))
+    )
+  }, [])
 
   return (
     <main className="min-h-screen bg-white">
@@ -27,14 +40,14 @@ export default function AboutPage() {
         <div className="absolute top-1/2 left-1/3 w-80 h-80 bg-gradient-to-br from-[#FF6B35] to-[#FF5200] rounded-full blur-[100px] opacity-10 animate-[float_18s_ease-in-out_infinite_5s]"></div>
 
         {/* Twinkling Particles */}
-        {[...Array(25)].map((_, i) => (
+        {particles.map((particle, i) => (
           <div
             key={i}
             className="absolute w-1 h-1 bg-[#FF5200] rounded-full opacity-40"
             style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite ${Math.random() * 2}s`
+              top: particle.top,
+              left: particle.left,
+              animation: particle.animation
             }}
           ></div>
         ))}

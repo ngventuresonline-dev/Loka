@@ -1,15 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from './ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 
 export default function Navbar() {
-  const { user, isLoggedIn, logout } = useAuth()
+  const { user, isLoggedIn, logout, loading } = useAuth()
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -51,7 +56,7 @@ export default function Navbar() {
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {isLoggedIn && user ? (
+            {mounted && !loading && isLoggedIn && user ? (
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}

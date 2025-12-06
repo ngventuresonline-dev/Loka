@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
+import NetworkMapBackground from '@/components/NetworkMapBackground'
 import BrandOnboardingForm from '@/components/onboarding/BrandOnboardingForm'
 import PropertyOwnerOnboardingForm from '@/components/onboarding/PropertyOwnerOnboardingForm'
 import Dashboard from '@/components/Dashboard'
@@ -69,6 +70,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [heroMode, setHeroMode] = useState<HeroMode>('brand')
+  const [barHeights, setBarHeights] = useState<number[]>([])
 
   // Handle AI Search - Open modal with query
   const handleSearch = () => {
@@ -93,6 +95,11 @@ export default function Home() {
     }
     setIsMounted(true)
   }, [isInitialized, router])
+
+  // Generate bar heights for data visualization
+  useEffect(() => {
+    setBarHeights([1, 2, 3, 4, 5].map(() => Math.random() * 60 + 40))
+  }, [])
 
   // Predefined particle positions to avoid hydration mismatch
   const particlePositions = [
@@ -240,6 +247,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Network Map Background */}
+      <NetworkMapBackground />
+      
       {/* Advanced Animated Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         {/* Subtle Grid */}
@@ -255,22 +265,6 @@ export default function Home() {
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#FF5200]/10 via-[#E4002B]/5 to-transparent rounded-full blur-[120px] animate-[float_20s_ease-in-out_infinite]"></div>
         <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-[#E4002B]/8 via-[#FF6B35]/4 to-transparent rounded-full blur-[100px] animate-[float_25s_ease-in-out_infinite_5s]"></div>
         <div className="absolute bottom-1/4 left-1/3 w-[450px] h-[450px] bg-gradient-to-br from-[#FF6B35]/6 via-[#FF5200]/3 to-transparent rounded-full blur-[90px] animate-[float_18s_ease-in-out_infinite_10s]"></div>
-        
-        {/* Animated Particles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full opacity-40"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 2}s`
-              }}
-            ></div>
-          ))}
-        </div>
 
         {/* Scanning Beams */}
         <div className="absolute inset-0 opacity-[0.03]">
@@ -867,10 +861,10 @@ export default function Home() {
                 <div className="group relative">
                   <div className="flex flex-col items-center h-full">
                     {/* Icon with Progress Ring */}
-                    <div className="relative mb-4 sm:mb-5">
-                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
-                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
-                        <circle cx="64" cy="64" r="58" stroke="url(#gradient1)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="0" className="transition-all duration-1000"/>
+                    <div className="relative mb-4 sm:mb-5 flex items-center justify-center">
+                      <svg className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 transform -rotate-90" viewBox="0 0 128 128" preserveAspectRatio="xMidYMid meet">
+                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="6" fill="none"/>
+                        <circle cx="64" cy="64" r="58" stroke="url(#gradient1)" strokeWidth="6" fill="none" strokeDasharray="364" strokeDashoffset="0" className="transition-all duration-1000"/>
                         <defs>
                           <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#FF5200"/>
@@ -879,8 +873,8 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
@@ -926,10 +920,10 @@ export default function Home() {
                 <div className="group relative">
                   <div className="flex flex-col items-center h-full">
                     {/* Icon with Progress Ring */}
-                    <div className="relative mb-4 sm:mb-5">
-                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
-                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
-                        <circle cx="64" cy="64" r="58" stroke="url(#gradient2)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="91" className="transition-all duration-1000"/>
+                    <div className="relative mb-4 sm:mb-5 flex items-center justify-center">
+                      <svg className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 transform -rotate-90" viewBox="0 0 128 128" preserveAspectRatio="xMidYMid meet">
+                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="6" fill="none" className="sm:stroke-[8]"/>
+                        <circle cx="64" cy="64" r="58" stroke="url(#gradient2)" strokeWidth="6" fill="none" strokeDasharray="364" strokeDashoffset="91" className="transition-all duration-1000 sm:stroke-[8]"/>
                         <defs>
                           <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#E4002B"/>
@@ -938,8 +932,8 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#E4002B] to-[#FF6B35] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white animate-spin" style={{animationDuration: '3s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#E4002B] to-[#FF6B35] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 text-white animate-spin" style={{animationDuration: '3s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                           </svg>
                         </div>
@@ -984,10 +978,10 @@ export default function Home() {
                 <div className="group relative">
                   <div className="flex flex-col items-center h-full">
                     {/* Icon with Progress Ring */}
-                    <div className="relative mb-4 sm:mb-5">
-                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
-                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
-                        <circle cx="64" cy="64" r="58" stroke="url(#gradient3)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="182" className="transition-all duration-1000"/>
+                    <div className="relative mb-4 sm:mb-5 flex items-center justify-center">
+                      <svg className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 transform -rotate-90" viewBox="0 0 128 128" preserveAspectRatio="xMidYMid meet">
+                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="6" fill="none" className="sm:stroke-[8]"/>
+                        <circle cx="64" cy="64" r="58" stroke="url(#gradient3)" strokeWidth="6" fill="none" strokeDasharray="364" strokeDashoffset="182" className="transition-all duration-1000 sm:stroke-[8]"/>
                         <defs>
                           <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#FF6B35"/>
@@ -996,8 +990,8 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF6B35] to-[#FF5200] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF6B35] to-[#FF5200] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                           </svg>
                         </div>
@@ -1045,10 +1039,10 @@ export default function Home() {
                 <div className="group relative">
                   <div className="flex flex-col items-center h-full">
                     {/* Icon with Progress Ring */}
-                    <div className="relative mb-4 sm:mb-5">
-                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
-                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
-                        <circle cx="64" cy="64" r="58" stroke="url(#gradient4)" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="273" className="transition-all duration-1000"/>
+                    <div className="relative mb-4 sm:mb-5 flex items-center justify-center">
+                      <svg className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 transform -rotate-90" viewBox="0 0 128 128" preserveAspectRatio="xMidYMid meet">
+                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="6" fill="none" className="sm:stroke-[8]"/>
+                        <circle cx="64" cy="64" r="58" stroke="url(#gradient4)" strokeWidth="6" fill="none" strokeDasharray="364" strokeDashoffset="273" className="transition-all duration-1000 sm:stroke-[8]"/>
                         <defs>
                           <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#FF5200"/>
@@ -1057,8 +1051,8 @@ export default function Home() {
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
                         </div>
@@ -1103,14 +1097,15 @@ export default function Home() {
                 <div className="group relative">
                   <div className="flex flex-col items-center h-full">
                     {/* Icon with Progress Ring */}
-                    <div className="relative mb-4 sm:mb-5">
-                      <svg className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 transform -rotate-90">
-                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="8" fill="none"/>
-                        <circle cx="64" cy="64" r="58" stroke="#10b981" strokeWidth="8" fill="none" strokeDasharray="364" strokeDashoffset="0" className="transition-all duration-1000"/>
+                    <div className="relative mb-4 sm:mb-5 flex items-center justify-center">
+                      <svg className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 transform -rotate-90" viewBox="0 0 128 128" preserveAspectRatio="xMidYMid meet">
+                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="6" fill="none" className="sm:stroke-[8]"/>
+                        <circle cx="64" cy="64" r="58" stroke="#f0f0f0" strokeWidth="6" fill="none"/>
+                        <circle cx="64" cy="64" r="58" stroke="#10b981" strokeWidth="6" fill="none" strokeDasharray="364" strokeDashoffset="0" className="transition-all duration-1000"/>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                          <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
@@ -1197,7 +1192,7 @@ export default function Home() {
                   <div className="absolute bottom-8 left-8 right-8">
                     <div className="flex items-center justify-between">
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="w-12 h-32 bg-gradient-to-t from-[#FF5200] to-transparent rounded-t-lg opacity-50 animate-pulse" style={{animationDelay: (i * 0.2) + 's', height: (Math.random() * 60 + 40) + 'px'}}></div>
+                        <div key={i} className="w-12 h-32 bg-gradient-to-t from-[#FF5200] to-transparent rounded-t-lg opacity-50 animate-pulse" style={{animationDelay: (i * 0.2) + 's', height: barHeights[i - 1] ? `${barHeights[i - 1]}px` : '40px'}}></div>
                       ))}
                     </div>
                   </div>
