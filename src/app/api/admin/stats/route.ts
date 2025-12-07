@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
+import { Prisma } from '@prisma/client'
 
 // Dynamic import for prisma
 async function getPrisma() {
@@ -65,10 +66,10 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where: dateFilter ? { createdAt: dateFilter } : undefined }).catch(() => 0),
       prisma.property.count({ where: dateFilter ? { createdAt: dateFilter } : undefined }).catch(() => 0),
       prisma.inquiry.count({ where: dateFilter ? { createdAt: dateFilter } : undefined }).catch(() => 0),
-      prisma.searchHistory.count({ 
-        where: dateFilter 
-          ? { createdAt: dateFilter, matchedProperties: { not: null } }
-          : { matchedProperties: { not: null } }
+      prisma.searchHistory.count({
+        where: dateFilter
+          ? { createdAt: dateFilter, matchedProperties: { not: Prisma.JsonNull } }
+          : { matchedProperties: { not: Prisma.JsonNull } }
       }).catch(() => 0),
 
       // Users by type

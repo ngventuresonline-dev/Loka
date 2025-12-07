@@ -72,6 +72,8 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
       }
     }
   }
+  
+  const hasError = required && budget === null
 
   const borderColors = [
     'border-[#FF5200]/30 hover:border-[#FF5200]',
@@ -103,7 +105,6 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
   ]
 
   const colorIndex = index % 5
-  const hasError = required && budget === null
 
   return (
     <motion.section
@@ -154,7 +155,7 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
                   Budget (Monthly Rent)
                 </label>
                 <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  {formatCurrency(budget)}
+                  {budget ? formatCurrency(budget) : 'Not set'}
                 </span>
               </div>
               <div className="relative mb-4">
@@ -413,6 +414,8 @@ function FilterCard({
 
 export default function BrandFilterPage() {
   const [showApplyButton, setShowApplyButton] = useState(false)
+  const [aiInsight, setAiInsight] = useState<string>('')
+  const [showAiInsight, setShowAiInsight] = useState(false)
   
   // Track selections for validation
   const [businessTypeSelected, setBusinessTypeSelected] = useState<Set<string>>(new Set())
@@ -428,6 +431,31 @@ export default function BrandFilterPage() {
     locationSelected.size > 0 &&
     timelineSelected.size > 0 &&
     budgetValue > 0
+
+  // Generate AI insights based on selections
+  useEffect(() => {
+    const totalSelections = businessTypeSelected.size + sizeRangeSelected.size + locationSelected.size + timelineSelected.size + (budgetValue > 0 ? 1 : 0)
+    
+    if (totalSelections >= 2) {
+      const insights = [
+        'AI analyzing location patterns...',
+        'Learning your space requirements...',
+        'Calculating optimal budget matches...',
+        'Identifying high-traffic areas for your business type...',
+        'Cross-referencing with successful brand placements...',
+        'Optimizing for your timeline...'
+      ]
+      const randomInsight = insights[Math.floor(Math.random() * insights.length)]
+      setAiInsight(randomInsight)
+      setShowAiInsight(true)
+      
+      // Hide after 3 seconds
+      const timer = setTimeout(() => setShowAiInsight(false), 3000)
+      return () => clearTimeout(timer)
+    } else {
+      setShowAiInsight(false)
+    }
+  }, [businessTypeSelected, sizeRangeSelected, locationSelected, timelineSelected, budgetValue])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -525,6 +553,39 @@ export default function BrandFilterPage() {
           </div>
         </motion.div>
 
+        {/* AI Insight Banner */}
+        <AnimatePresence>
+          {showAiInsight && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-6 max-w-2xl mx-auto"
+            >
+              <div className="bg-gradient-to-r from-[#FF5200]/20 via-[#E4002B]/20 to-[#FF5200]/20 backdrop-blur-xl border border-[#FF5200]/40 rounded-xl px-6 py-4 flex items-center gap-4 shadow-lg shadow-[#FF5200]/20">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white">{aiInsight}</p>
+                  <div className="mt-1 h-1 bg-gray-700/50 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-[#FF5200] to-[#E4002B]"
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 3, ease: 'linear' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Filter Cards - Platform Performance Style */}
         <div className="grid gap-6 sm:gap-8">
           <FilterCard 
@@ -585,15 +646,33 @@ export default function BrandFilterPage() {
               whileTap={isFormValid ? { scale: 0.95 } : {}}
               onClick={() => {
                 if (isFormValid) {
-                  // Handle apply filters
-                  console.log('Applying filters:', {
-                    businessType: Array.from(businessTypeSelected),
-                    sizeRange: Array.from(sizeRangeSelected),
-                    locations: Array.from(locationSelected),
-                    timeline: Array.from(timelineSelected),
-                    budget: budgetValue
-                  })
-                  // TODO: Navigate to results or trigger search
+                  // Parse size range
+                  const sizeRangeStr = Array.from(sizeRangeSelected)[0] || ''
+                  let sizeMin = 0
+                  let sizeMax = 100000
+                  if (sizeRangeStr.includes('-')) {
+                    const [min, max] = sizeRangeStr.split('-').map(v => parseInt(v.replace(/[^0-9]/g, '')))
+                    sizeMin = min || 0
+                    sizeMax = max || 100000
+                  } else if (sizeRangeStr.includes('+')) {
+                    sizeMin = parseInt(sizeRangeStr.replace(/[^0-9]/g, '')) || 0
+                    sizeMax = 100000
+                  }
+
+                  // Build query params
+                  const params = new URLSearchParams()
+                  params.set('businessType', Array.from(businessTypeSelected)[0] || '')
+                  params.set('sizeMin', sizeMin.toString())
+                  params.set('sizeMax', sizeMax.toString())
+                  params.set('locations', Array.from(locationSelected).join(','))
+                  params.set('budgetMin', '0')
+                  params.set('budgetMax', budgetValue.toString())
+                  if (Array.from(timelineSelected).length > 0) {
+                    params.set('timeline', Array.from(timelineSelected)[0] || '')
+                  }
+
+                  // Navigate to results page
+                  window.location.href = `/properties/results?${params.toString()}`
                 }
               }}
             >
@@ -604,7 +683,16 @@ export default function BrandFilterPage() {
                 </>
               )}
               <span className="relative z-10 flex items-center gap-2">
-                {isFormValid ? 'Apply Filters' : 'Complete All Fields'}
+                {isFormValid ? (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Find with AI
+                  </>
+                ) : (
+                  'Complete All Fields'
+                )}
                 {isFormValid && (
                   <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { BrandProfile, OwnerProfile, Property, MatchResult } from '@/types/workflow'
-import { MatchingEngine } from '@/lib/matching-engine'
+import { findMatches } from '@/lib/matching-engine'
 
 interface DashboardProps {
   userType: 'brand' | 'owner'
@@ -19,10 +19,30 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
     const generateMatches = async () => {
       setLoading(true)
       try {
-        const matchingEngine = new MatchingEngine()
-        
         if (userType === 'brand' && properties.length > 0) {
-          const brandMatches = matchingEngine.findTopMatches(userProfile as BrandProfile, properties)
+          const brandProfile = userProfile as BrandProfile
+          const matchResults = findMatches(properties, {
+            businessType: brandProfile.industry,
+            sizeRange: { min: brandProfile.requirements.minSize, max: brandProfile.requirements.maxSize },
+            locations: brandProfile.preferredLocations,
+            budgetRange: brandProfile.budgetRange,
+            propertyType: brandProfile.requirements.propertyTypes[0] as any
+          })
+          const brandMatches: MatchResult[] = matchResults.map((m, index) => ({
+            id: `match-${index}-${Date.now()}`,
+            brandId: (userProfile as BrandProfile).crmRecord?.userId || 'unknown',
+            propertyId: m.property.id,
+            score: m.bfiScore,
+            reasons: m.matchReasons,
+            breakdown: {
+              locationMatch: m.breakdown.locationScore || 0,
+              budgetMatch: m.breakdown.budgetScore || 0,
+              sizeMatch: m.breakdown.sizeScore || 0,
+              amenityMatch: m.breakdown.propertyTypeScore || 0,
+            },
+            createdAt: new Date(),
+            status: 'active' as const
+          }))
           setMatches(brandMatches)
         } else if (userType === 'owner') {
           // For demo purposes, we'll create some mock brand profiles
@@ -65,8 +85,9 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
           
           const ownerProperties = (userProfile as OwnerProfile).properties || []
           if (ownerProperties.length > 0) {
-            const propertyMatches = matchingEngine.calculatePropertyFitIndex(ownerProperties[0], mockBrands)
-            setMatches(propertyMatches)
+            // For owner profiles, matches would be calculated differently
+            // This would require a reverse matching function (brands matching to properties)
+            setMatches([])
           }
         }
       } catch (error) {

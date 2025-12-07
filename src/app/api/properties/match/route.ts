@@ -106,47 +106,66 @@ export async function POST(request: NextRequest) {
       images: p.images || []
     }))
 
-    // Calculate BFI scores and rank
-    const matches = findMatches(typedProperties, {
-      businessType,
-      sizeRange,
-      locations,
-      budgetRange,
-      propertyType
+    // Prepare brand requirements for BFI calculation
+    const brandRequirements = {
+      locations: locations || [],
+      sizeMin: sizeRange?.min || 0,
+      sizeMax: sizeRange?.max || 100000,
+      budgetMin: budgetRange?.min || 0,
+      budgetMax: budgetRange?.max || 10000000,
+      businessType: businessType || ''
+    }
+
+    // Calculate BFI scores and rank using findMatches
+    const matchResults = findMatches(typedProperties, brandRequirements)
+
+    // Generate match reasons for each match
+    const matchesWithReasons = matchResults.map(match => {
+      const reasons: string[] = []
+      const breakdown = match.bfiScore.breakdown
+      
+      // Location reasons
+      if (breakdown.locationScore === 100) {
+        reasons.push(`Perfect location match - in ${match.property.city}`)
+      } else if (breakdown.locationScore >= 70) {
+        reasons.push(`Good location - nearby your preferred areas`)
+      }
+
+      // Budget reasons
+      const monthlyPrice = match.property.priceType === 'yearly' 
+        ? match.property.price / 12 
+        : match.property.price
+      if (breakdown.budgetScore >= 80) {
+        reasons.push(`Great value - ₹${Math.round(monthlyPrice).toLocaleString()}/month within your budget`)
+      }
+
+      // Size reasons
+      if (breakdown.sizeScore >= 80) {
+        reasons.push(`Ideal size - ${match.property.size.toLocaleString()} sqft perfect for ${businessType || 'your business'}`)
+      }
+
+      // Property features
+      if (match.property.amenities.some(a => a.toLowerCase().includes('parking'))) {
+        reasons.push(`Parking available`)
+      }
+      if (match.property.amenities.some(a => a.toLowerCase().includes('ground'))) {
+        reasons.push(`Ground floor - high visibility`)
+      }
+
+      return {
+        property: match.property,
+        bfiScore: match.bfiScore.score,
+        matchReasons: reasons.slice(0, 5),
+        breakdown: breakdown
+      }
     })
 
     // Return top 50 matches
-    const topMatches = matches.slice(0, 50)
+    const topMatches = matchesWithReasons.slice(0, 50)
 
     return NextResponse.json({
-      matches: topMatches.map(match => ({
-        property: {
-          id: match.property.id,
-          title: match.property.title,
-          description: match.property.description,
-          address: match.property.address,
-          city: match.property.city,
-          state: match.property.state,
-          zipCode: match.property.zipCode,
-          price: match.property.price,
-          priceType: match.property.priceType,
-          size: match.property.size,
-          propertyType: match.property.propertyType,
-          condition: match.property.condition,
-          amenities: match.property.amenities,
-          accessibility: match.property.accessibility,
-          parking: match.property.parking,
-          publicTransport: match.property.publicTransport,
-          images: match.property.images,
-          isAvailable: match.property.isAvailable,
-          createdAt: match.property.createdAt,
-          updatedAt: match.property.updatedAt
-        },
-        bfiScore: match.bfiScore,
-        matchReasons: match.matchReasons,
-        breakdown: match.breakdown
-      })),
-      totalMatches: matches.length
+      matches: topMatches,
+      totalMatches: matchesWithReasons.length
     })
   } catch (error: any) {
     console.error('Property matching error:', error)

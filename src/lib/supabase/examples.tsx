@@ -202,16 +202,16 @@ export function ExampleFileUpload({ propertyId }: { propertyId: string }) {
     }
   }
 
-  return React.createElement(
-    'div',
-    null,
-    React.createElement('input', {
-      type: 'file',
-      accept: 'image/*',
-      onChange: handleFileUpload,
-      disabled: uploading,
-    }),
-    uploading && React.createElement('p', null, 'Uploading...')
+  return (
+    <div>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        disabled={uploading}
+      />
+      {uploading && <p>Uploading...</p>}
+    </div>
   )
 }
 

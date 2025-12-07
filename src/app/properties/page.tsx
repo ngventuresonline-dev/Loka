@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import PropertyCard from '@/components/PropertyCard'
@@ -155,7 +156,14 @@ const sampleProperties: Property[] = [
 ];
 
 export default function PropertiesPage() {
+  const router = useRouter()
   const [particles, setParticles] = useState<Array<{left: string, top: string, animation: string, animationDelay: string}>>([])
+  const [filters, setFilters] = useState({
+    propertyType: '',
+    location: '',
+    budget: '',
+    size: ''
+  })
 
   // Generate particles only on client to avoid hydration mismatch
   useEffect(() => {
@@ -168,6 +176,36 @@ export default function PropertiesPage() {
       }))
     )
   }, [])
+
+  const handleApplyFilters = () => {
+    // Parse filters and build query params
+    const params = new URLSearchParams()
+    
+    if (filters.propertyType) {
+      params.set('propertyType', filters.propertyType)
+    }
+    
+    if (filters.location) {
+      params.set('locations', filters.location)
+    }
+    
+    // Parse budget range
+    if (filters.budget) {
+      const [min, max] = filters.budget.split('-').map(v => v.replace(/[^0-9]/g, ''))
+      if (min) params.set('budgetMin', min)
+      if (max) params.set('budgetMax', max)
+    }
+    
+    // Parse size range
+    if (filters.size) {
+      const [min, max] = filters.size.split('-').map(v => v.replace(/[^0-9]/g, ''))
+      if (min) params.set('sizeMin', min)
+      if (max) params.set('sizeMax', max)
+    }
+
+    // Navigate to results page
+    router.push(`/properties/results?${params.toString()}`)
+  }
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
@@ -231,7 +269,11 @@ export default function PropertiesPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-3">Property Type</label>
-              <select className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300">
+              <select 
+                value={filters.propertyType}
+                onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300"
+              >
                 <option value="">All Types</option>
                 <option value="retail">Retail Space</option>
                 <option value="restaurant">Restaurant/Cafe</option>
@@ -242,7 +284,11 @@ export default function PropertiesPage() {
             
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-3">Location</label>
-              <select className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300">
+              <select 
+                value={filters.location}
+                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300"
+              >
                 <option value="">All Bangalore</option>
                 <option value="indiranagar">Indiranagar</option>
                 <option value="koramangala">Koramangala</option>
@@ -257,23 +303,31 @@ export default function PropertiesPage() {
             
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-3">Budget (Monthly)</label>
-              <select className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300">
+              <select 
+                value={filters.budget}
+                onChange={(e) => setFilters({ ...filters, budget: e.target.value })}
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300"
+              >
                 <option value="">Any Budget</option>
                 <option value="0-50000">Under ₹50K</option>
                 <option value="50000-100000">₹50K - ₹1L</option>
                 <option value="100000-150000">₹1L - ₹1.5L</option>
-                <option value="150000+">Above ₹1.5L</option>
+                <option value="150000-999999999">Above ₹1.5L</option>
               </select>
             </div>
             
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-3">Size (sq ft)</label>
-              <select className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300">
+              <select 
+                value={filters.size}
+                onChange={(e) => setFilters({ ...filters, size: e.target.value })}
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF5200] focus:border-[#FF5200] transition-all duration-300"
+              >
                 <option value="">Any Size</option>
                 <option value="0-1000">0 - 1,000 sq ft</option>
                 <option value="1000-2000">1,000 - 2,000 sq ft</option>
                 <option value="2000-3000">2,000 - 3,000 sq ft</option>
-                <option value="3000+">3,000+ sq ft</option>
+                <option value="3000-999999">3,000+ sq ft</option>
               </select>
             </div>
           </div>
@@ -283,7 +337,10 @@ export default function PropertiesPage() {
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               <span className="text-gray-900 font-medium">{sampleProperties.length} properties available</span>
             </div>
-            <button className="group relative bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:from-[#FF6B35] hover:to-[#FF5200] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+            <button 
+              onClick={handleApplyFilters}
+              className="group relative bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:from-[#FF6B35] hover:to-[#FF5200] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+            >
               <span className="relative z-10">Apply Filters</span>
               <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
             </button>

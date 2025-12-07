@@ -163,7 +163,7 @@ export default function AdminDashboard() {
           >
             Logout
           </button>
-        </div>
+      </div>
       </aside>
 
       {/* Overlay for mobile */}
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
         {/* Top Navbar */}
         <header className="sticky top-0 z-30 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800">
           <div className="px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setSidebarOpen(true)}
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
                   <h1 className="text-2xl font-bold">Admin Dashboard</h1>
                   <p className="text-sm text-gray-400">Welcome back, {user?.name}</p>
                 </div>
-              </div>
+                </div>
               <div className="flex items-center gap-4">
                 <select
                   value={dateRange}
@@ -209,9 +209,9 @@ export default function AdminDashboard() {
                 >
                   Refresh
                 </button>
+                </div>
               </div>
             </div>
-          </div>
         </header>
 
         {/* Dashboard Content */}
@@ -232,7 +232,7 @@ export default function AdminDashboard() {
                       value={stats.overview.totalUsers}
                       color="blue"
                       icon={
-                        <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                       }
@@ -243,8 +243,8 @@ export default function AdminDashboard() {
                       color="green"
                       icon={
                         <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
                       }
                     />
                     <StatCard
@@ -289,10 +289,10 @@ export default function AdminDashboard() {
                             }`}>
                               {user.userType}
                             </span>
-                          </div>
+                </div>
                         ))}
-                      </div>
-                    </div>
+              </div>
+            </div>
 
                     <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
                       <h3 className="text-lg font-semibold mb-4">Recent Properties</h3>
@@ -301,10 +301,10 @@ export default function AdminDashboard() {
                           <div key={property.id} className="text-sm">
                             <p className="text-white font-medium">{property.title}</p>
                             <p className="text-gray-400 text-xs">{property.city}</p>
-                          </div>
+                </div>
                         ))}
-                      </div>
-                    </div>
+              </div>
+            </div>
 
                     <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
                       <h3 className="text-lg font-semibold mb-4">Recent Inquiries</h3>
@@ -320,12 +320,12 @@ export default function AdminDashboard() {
                             }`}>
                               {inquiry.status}
                             </span>
-                          </div>
+                </div>
                         ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+              </div>
+            </div>
+          </div>
+        )}
 
                 {/* Platform Health */}
                 {platformStatus && (
@@ -433,7 +433,7 @@ export default function AdminDashboard() {
                 <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
                   <h2 className="text-2xl font-bold mb-6">Inquiry Management</h2>
                   <p className="text-gray-400">Inquiry management table will be implemented here with search, filter, and actions.</p>
-                </div>
+        </div>
               </motion.div>
             )}
 
@@ -483,8 +483,8 @@ export default function AdminDashboard() {
                           )}
                         </>
                       )}
-                    </div>
-                  </div>
+          </div>
+        </div>
                 </div>
               </motion.div>
             )}

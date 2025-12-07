@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 
@@ -13,7 +14,7 @@ const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar
 const features = ['Ground Floor', 'Corner Unit', 'Main Road', 'Parking', 'Kitchen Setup', 'AC', 'Security', 'Storage', 'Other']
 const availabilities = ['Immediate', '1 month', '1-2 months', '3+ months']
 
-function SizeSlider({ index = 0 }: { index?: number }) {
+function SizeSlider({ index = 0, required = false, onSizeChange, error }: { index?: number; required?: boolean; onSizeChange?: (size: number) => void; error?: boolean }) {
   const [size, setSize] = useState(1000)
   const [exactSize, setExactSize] = useState('1000')
   
@@ -31,12 +32,21 @@ function SizeSlider({ index = 0 }: { index?: number }) {
       const numValue = parseInt(value)
       if (numValue >= 100 && numValue <= 50000) {
         setSize(numValue)
+        if (onSizeChange) {
+          onSizeChange(numValue)
+        }
       } else if (numValue > 50000) {
         setSize(50000)
         setExactSize('50000')
+        if (onSizeChange) {
+          onSizeChange(50000)
+        }
       } else if (numValue < 100 && numValue > 0) {
         setSize(100)
         setExactSize('100')
+        if (onSizeChange) {
+          onSizeChange(100)
+        }
       }
     }
   }
@@ -45,7 +55,17 @@ function SizeSlider({ index = 0 }: { index?: number }) {
     const value = parseInt(e.target.value)
     setSize(value)
     setExactSize(value.toString())
+    if (onSizeChange) {
+      onSizeChange(value)
+    }
   }
+  
+  useEffect(() => {
+    if (onSizeChange) {
+      onSizeChange(size)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const borderColors = [
     'border-[#E4002B]/30 hover:border-[#E4002B]',
@@ -103,8 +123,13 @@ function SizeSlider({ index = 0 }: { index?: number }) {
             className="text-2xl font-bold text-gray-900 mb-6"
             style={{ fontFamily: fraunces.style.fontFamily }}
           >
-            Size Range
+            Size Range {required && <span className="text-red-500">*</span>}
           </h3>
+          {error && required && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">Please select a size range</p>
+            </div>
+          )}
 
           <div className="space-y-6">
             {/* Size Slider */}
@@ -201,7 +226,7 @@ function SizeSlider({ index = 0 }: { index?: number }) {
   )
 }
 
-function RentSlider({ index = 0 }: { index?: number }) {
+function RentSlider({ index = 0, required = false, onRentChange, error }: { index?: number; required?: boolean; onRentChange?: (rent: number) => void; error?: boolean }) {
   const [rent, setRent] = useState(100000)
   
   const formatCurrency = (value: number) => {
@@ -267,8 +292,13 @@ function RentSlider({ index = 0 }: { index?: number }) {
             className="text-2xl font-bold text-gray-900 mb-6"
             style={{ fontFamily: fraunces.style.fontFamily }}
           >
-            Rent Range (Monthly)
+            Rent Range (Monthly) {required && <span className="text-red-500">*</span>}
           </h3>
+          {error && required && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">Please set your expected rent</p>
+            </div>
+          )}
 
           <div className="space-y-6">
             {/* Rent Slider */}
@@ -288,7 +318,13 @@ function RentSlider({ index = 0 }: { index?: number }) {
                   max="2000000"
                   step="50000"
                   value={rent}
-                  onChange={(e) => setRent(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value)
+                    setRent(value)
+                    if (onRentChange) {
+                      onRentChange(value)
+                    }
+                  }}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider slider-rent"
                 />
               </div>
@@ -354,12 +390,18 @@ function FilterCard({
   title, 
   items, 
   multi = false,
-  index = 0
+  index = 0,
+  required = false,
+  onSelectionChange,
+  error
 }: { 
   title: string
   items: string[]
   multi?: boolean
   index?: number
+  required?: boolean
+  onSelectionChange?: (selected: Set<string>) => void
+  error?: boolean
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const borderColors = [
@@ -400,6 +442,9 @@ function FilterCard({
       next.add(item)
     }
     setSelected(next)
+    if (onSelectionChange) {
+      onSelectionChange(next)
+    }
   }
 
   const count = selected.size
@@ -431,7 +476,7 @@ function FilterCard({
               className="text-2xl font-bold text-gray-900"
               style={{ fontFamily: fraunces.style.fontFamily }}
             >
-              {title}
+              {title} {required && <span className="text-red-500">*</span>}
             </h3>
             {multi && count > 0 && (
               <motion.div
@@ -483,6 +528,11 @@ function FilterCard({
               )
             })}
           </div>
+          {error && required && selected.size === 0 && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">Please select at least one option</p>
+            </div>
+          )}
         </div>
 
         {/* Enhanced Pulse Ring */}
@@ -494,7 +544,26 @@ function FilterCard({
 }
 
 export default function OwnerFilterPage() {
+  const router = useRouter()
   const [showApplyButton, setShowApplyButton] = useState(false)
+  
+  // Track all selections
+  const [propertyTypeSelected, setPropertyTypeSelected] = useState<Set<string>>(new Set())
+  const [sizeValue, setSizeValue] = useState<number>(1000)
+  const [locationSelected, setLocationSelected] = useState<Set<string>>(new Set())
+  const [rentValue, setRentValue] = useState<number>(100000)
+  const [featuresSelected, setFeaturesSelected] = useState<Set<string>>(new Set())
+  const [availabilitySelected, setAvailabilitySelected] = useState<Set<string>>(new Set())
+  
+  // Error states
+  const [errors, setErrors] = useState({
+    propertyType: false,
+    size: false,
+    location: false,
+    rent: false,
+    features: false,
+    availability: false
+  })
 
   useEffect(() => {
     const handleScroll = () => {
@@ -503,6 +572,53 @@ export default function OwnerFilterPage() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+  
+  // Check if form is valid
+  const isFormValid = 
+    propertyTypeSelected.size > 0 &&
+    sizeValue > 0 &&
+    locationSelected.size > 0 &&
+    rentValue > 0 &&
+    featuresSelected.size > 0 &&
+    availabilitySelected.size > 0
+  
+  const handleSubmit = () => {
+    // Validate all fields
+    const newErrors = {
+      propertyType: propertyTypeSelected.size === 0,
+      size: sizeValue === 0,
+      location: locationSelected.size === 0,
+      rent: rentValue === 0,
+      features: featuresSelected.size === 0,
+      availability: availabilitySelected.size === 0
+    }
+    
+    setErrors(newErrors)
+    
+    if (!isFormValid) {
+      // Scroll to first error
+      const firstError = Object.entries(newErrors).find(([_, hasError]) => hasError)
+      if (firstError) {
+        document.querySelector(`[data-field="${firstError[0]}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+    
+    // Save to localStorage
+    const filterData = {
+      propertyType: Array.from(propertyTypeSelected)[0],
+      locations: Array.from(locationSelected),
+      size: sizeValue,
+      rent: rentValue,
+      features: Array.from(featuresSelected),
+      availability: Array.from(availabilitySelected)[0]
+    }
+    
+    localStorage.setItem('ownerFilterData', JSON.stringify(filterData))
+    
+    // Redirect to onboarding
+    router.push('/onboarding/owner?prefilled=true')
+  }
 
   return (
     <div className={`${fraunces.variable} ${plusJakarta.variable} min-h-screen relative overflow-hidden`}>
@@ -594,12 +710,64 @@ export default function OwnerFilterPage() {
 
         {/* Filter Cards - Platform Performance Style */}
         <div className="grid gap-6 sm:gap-8">
-          <FilterCard title="Property Type" items={propertyTypes} index={0} />
-          <SizeSlider index={1} />
-          <FilterCard title="Location (Popular Areas)" items={locations} multi index={2} />
-          <RentSlider index={3} />
-          <FilterCard title="Features" items={features} multi index={4} />
-          <FilterCard title="Availability" items={availabilities} index={5} />
+          <div data-field="propertyType">
+            <FilterCard 
+              title="Property Type" 
+              items={propertyTypes} 
+              index={0} 
+              required 
+              onSelectionChange={setPropertyTypeSelected}
+              error={errors.propertyType}
+            />
+          </div>
+          <div data-field="size">
+            <SizeSlider 
+              index={1} 
+              required 
+              onSizeChange={setSizeValue}
+              error={errors.size}
+            />
+          </div>
+          <div data-field="location">
+            <FilterCard 
+              title="Location (Popular Areas)" 
+              items={locations} 
+              multi 
+              index={2} 
+              required
+              onSelectionChange={setLocationSelected}
+              error={errors.location}
+            />
+          </div>
+          <div data-field="rent">
+            <RentSlider 
+              index={3} 
+              required 
+              onRentChange={setRentValue}
+              error={errors.rent}
+            />
+          </div>
+          <div data-field="features">
+            <FilterCard 
+              title="Features" 
+              items={features} 
+              multi 
+              index={4} 
+              required
+              onSelectionChange={setFeaturesSelected}
+              error={errors.features}
+            />
+          </div>
+          <div data-field="availability">
+            <FilterCard 
+              title="Availability" 
+              items={availabilities} 
+              index={5} 
+              required
+              onSelectionChange={setAvailabilitySelected}
+              error={errors.availability}
+            />
+          </div>
         </div>
       </div>
 
@@ -613,10 +781,16 @@ export default function OwnerFilterPage() {
             className="fixed bottom-8 right-8 z-50"
           >
             <motion.button
-              className="group relative px-8 py-4 bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white rounded-xl text-base font-semibold shadow-[0_8px_24px_rgba(228,0,43,0.4)] overflow-hidden"
+              disabled={!isFormValid}
+              onClick={handleSubmit}
+              className={`group relative px-8 py-4 rounded-xl text-base font-semibold overflow-hidden ${
+                isFormValid
+                  ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white shadow-[0_8px_24px_rgba(228,0,43,0.4)] cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
               style={{ fontFamily: plusJakarta.style.fontFamily }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isFormValid ? { scale: 1.05, y: -2 } : {}}
+              whileTap={isFormValid ? { scale: 0.95 } : {}}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200] to-[#E4002B] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center gap-2">

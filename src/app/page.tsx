@@ -304,21 +304,21 @@ export default function Home() {
 
         {/* Subtle City Dots - Only when brand mode */}
         {heroMode === 'brand' && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
-            {[
-              {top: '20%', left: '15%', delay: '0s'},
-              {top: '35%', left: '75%', delay: '0.5s'},
-              {top: '60%', left: '25%', delay: '1s'},
-              {top: '75%', left: '80%', delay: '1.5s'},
-              {top: '45%', left: '50%', delay: '2s'}
-            ].map((dot, i) => (
-              <div
-                key={i}
-                className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse"
-                style={{top: dot.top, left: dot.left, animationDelay: dot.delay}}
-              />
-            ))}
-          </div>
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+          {[
+            {top: '20%', left: '15%', delay: '0s'},
+            {top: '35%', left: '75%', delay: '0.5s'},
+            {top: '60%', left: '25%', delay: '1s'},
+            {top: '75%', left: '80%', delay: '1.5s'},
+            {top: '45%', left: '50%', delay: '2s'}
+          ].map((dot, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse"
+              style={{top: dot.top, left: dot.left, animationDelay: dot.delay}}
+            />
+          ))}
+        </div>
         )}
 
         <div className="text-center max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full py-8 sm:py-12">
@@ -331,7 +331,7 @@ export default function Home() {
                   alt="Property"
                   className="w-full h-full object-cover"
                 />
-              </div>
+            </div>
               <div className="relative w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
                 <img 
                   src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop&q=80" 
@@ -365,9 +365,9 @@ export default function Home() {
           
           <div className="mt-6 sm:mt-8 mb-4 sm:mb-6">
             <HeroSearch onModeChange={setHeroMode} />
-          </div>
-        </div>
-        
+                    </div>
+                  </div>
+                  
         {/* Section Break Line */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
       </div>
@@ -415,7 +415,7 @@ export default function Home() {
                   
                   {/* Enhanced glow on hover */}
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF5200]/0 via-[#FF5200]/0 to-[#FF5200]/0 group-hover:from-[#FF5200]/10 group-hover:via-[#FF5200]/15 group-hover:to-[#FF5200]/10 transition-all duration-500"></div>
-                  
+                
                   {/* Multi-layer border radiance on hover */}
                   <div className="absolute inset-0 rounded-xl border-2 border-[#FF5200]/0 group-hover:border-[#FF5200]/40 group-hover:shadow-[0_0_20px_rgba(255,82,0,0.6),0_0_40px_rgba(255,82,0,0.3)] transition-all duration-500"></div>
                   <div className="absolute inset-[-2px] rounded-xl border border-[#FF5200]/0 group-hover:border-[#FF5200]/20 group-hover:blur-sm transition-all duration-500"></div>
@@ -457,7 +457,7 @@ export default function Home() {
                   
                   {/* Enhanced glow on hover */}
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#E4002B]/0 via-[#E4002B]/0 to-[#E4002B]/0 group-hover:from-[#E4002B]/10 group-hover:via-[#E4002B]/15 group-hover:to-[#E4002B]/10 transition-all duration-500"></div>
-                  
+                
                   {/* Multi-layer border radiance on hover */}
                   <div className="absolute inset-0 rounded-xl border-2 border-[#E4002B]/0 group-hover:border-[#E4002B]/40 group-hover:shadow-[0_0_20px_rgba(228,0,43,0.6),0_0_40px_rgba(228,0,43,0.3)] transition-all duration-500"></div>
                   <div className="absolute inset-[-2px] rounded-xl border border-[#E4002B]/0 group-hover:border-[#E4002B]/20 group-hover:blur-sm transition-all duration-500"></div>
@@ -499,7 +499,7 @@ export default function Home() {
                   
                   {/* Enhanced glow on hover */}
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF6B35]/0 via-[#FF6B35]/0 to-[#FF6B35]/0 group-hover:from-[#FF6B35]/10 group-hover:via-[#FF6B35]/15 group-hover:to-[#FF6B35]/10 transition-all duration-500"></div>
-                  
+                
                   {/* Multi-layer border radiance on hover */}
                   <div className="absolute inset-0 rounded-xl border-2 border-[#FF6B35]/0 group-hover:border-[#FF6B35]/40 group-hover:shadow-[0_0_20px_rgba(255,107,53,0.6),0_0_40px_rgba(255,107,53,0.3)] transition-all duration-500"></div>
                   <div className="absolute inset-[-2px] rounded-xl border border-[#FF6B35]/0 group-hover:border-[#FF6B35]/20 group-hover:blur-sm transition-all duration-500"></div>

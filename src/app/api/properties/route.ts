@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'Validation failed',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       )
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: 'Invalid query parameters',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       )
@@ -301,6 +301,18 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Properties API] Error listing properties:', error)
+
+    // Handle database connection errors
+    if (error.code === 'P1001' || error.message?.includes('connect') || error.message?.includes('ECONNREFUSED')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database connection failed. Please check your database configuration.',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        },
+        { status: 503 }
+      )
+    }
 
     return NextResponse.json(
       {

@@ -1,5 +1,3 @@
-// Prisma Schema for N&G Ventures Real Estate Platform
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,162 +7,210 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Model - For Brands, Property Owners, and Admins
-model User {
-  id              String      @id @default(cuid())
-  email           String      @unique
-  name            String
-  password        String?     // Hashed password
-  userType        String      // 'brand', 'owner', 'admin'
-  phone           String?
-  company         String?
-  
-  // Brand-specific fields
-  brandName       String?
-  industry        String?
-  businessType    String?
-  
-  // Property Owner specific fields
-  ownerType       String?     // 'individual', 'company'
-  
-  // Relations
-  properties      Property[]  @relation("OwnerProperties")
-  savedProperties SavedProperty[]
-  inquiries       Inquiry[]
-  searchHistory   SearchHistory[]
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  @@index([email])
-  @@index([userType])
+model brand_profiles {
+  id                       String    @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  user_id                  String    @unique @db.VarChar(36)
+  company_name             String    @db.VarChar(255)
+  industry                 String?   @db.VarChar(100)
+  preferred_locations      Json?
+  budget_min               Decimal?  @db.Decimal(15, 2)
+  budget_max               Decimal?  @db.Decimal(15, 2)
+  min_size                 Int?
+  max_size                 Int?
+  preferred_property_types Json?
+  must_have_amenities      Json?
+  created_at               DateTime? @default(now()) @db.Timestamp(6)
+  updated_at               DateTime? @default(now()) @db.Timestamp(6)
+  user                     User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_brand_profiles_user_id")
 }
 
-// Property Model - Commercial Real Estate Listings
-model Property {
-  id              String      @id @default(cuid())
-  title           String
-  description     String      @db.Text
-  
-  // Location Details
-  address         String
-  city            String
-  state           String
-  country         String      @default("India")
-  zipCode         String
-  latitude        Float?
-  longitude       Float?
-  
-  // Property Details
-  size            Int         // in square feet
-  propertyType    String      // 'retail', 'restaurant', 'qsr', 'office', 'kiosk', 'commercial'
-  condition       String      // 'excellent', 'good', 'fair', 'needs-renovation'
-  
-  // Pricing
-  price           Float
-  priceType       String      // 'monthly', 'yearly', 'one-time'
-  securityDeposit Float?
-  negotiable      Boolean     @default(true)
-  
-  // Amenities & Features
-  amenities       String[]    // ['parking', 'wifi', 'ac', 'security', 'storage']
-  images          String[]    // Array of image URLs
-  
-  // Availability & Status
-  availability    Boolean     @default(true)
-  availableFrom   DateTime?
-  isVerified      Boolean     @default(false)
-  isFeatured      Boolean     @default(false)
-  
-  // Accessibility
-  parking         Boolean     @default(false)
-  publicTransport Boolean     @default(false)
-  accessibility   Boolean     @default(false)
-  
-  // Owner Information
-  ownerId         String
-  owner           User        @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
-  
-  // Relations
-  savedBy         SavedProperty[]
-  inquiries       Inquiry[]
-  
-  // Metadata
-  views           Int         @default(0)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  @@index([city, propertyType])
-  @@index([ownerId])
-  @@index([availability])
-  @@index([priceType, price])
-}
-
-// Saved Properties - Brands save properties they're interested in
-model SavedProperty {
-  id          String      @id @default(cuid())
-  userId      String
-  propertyId  String
-  notes       String?     @db.Text
-  
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime    @default(now())
-  
-  @@unique([userId, propertyId])
-  @@index([userId])
-}
-
-// Inquiries - Communication between Brands and Property Owners
 model Inquiry {
-  id          String      @id @default(cuid())
-  
-  // Parties involved
-  brandId     String
-  brand       User        @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  
-  propertyId  String
-  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
-  // Inquiry Details
-  message     String      @db.Text
-  status      String      @default("pending") // 'pending', 'responded', 'closed'
-  response    String?     @db.Text
-  
-  // Contact Details
-  contactEmail String?
-  contactPhone String?
-  
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  @@index([brandId])
-  @@index([propertyId])
-  @@index([status])
+  id                              String               @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  propertyId                      String               @map("property_id") @db.VarChar(36)
+  brandId                         String               @map("brand_id") @db.VarChar(36)
+  ownerId                         String?               @map("owner_id") @db.VarChar(36)
+  message                         String
+  status                          inquiry_status_enum? @default(pending)
+  createdAt                       DateTime?            @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt                       DateTime?            @map("updated_at") @default(now()) @db.Timestamp(6)
+  brand                           User                 @relation("inquiries_brand_idTousers", fields: [brandId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  owner                           User?                @relation("inquiries_owner_idTousers", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  property                        Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  responses                       inquiry_responses[]
+
+  @@map("inquiries")
+  @@index([brandId], map: "idx_inquiries_brand_id")
+  @@index([ownerId], map: "idx_inquiries_owner_id")
+  @@index([propertyId], map: "idx_inquiries_property_id")
+  @@index([status], map: "idx_inquiries_status")
 }
 
-// Search History - Track AI search queries for learning
-model SearchHistory {
-  id          String      @id @default(cuid())
-  
-  userId      String?
-  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  query       String      @db.Text
-  queryType   String      // 'brand-search', 'owner-listing'
-  
-  // AI Response
-  aiResponse  String?     @db.Text
-  matchedProperties Json?   // Store array of matched property IDs and scores
-  
-  // Analytics
-  resultsCount Int        @default(0)
-  clickedPropertyId String?
-  
-  createdAt   DateTime    @default(now())
-  
-  @@index([userId])
-  @@index([queryType])
-  @@index([createdAt])
+model inquiry_responses {
+  id         String    @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  inquiry_id String    @db.VarChar(36)
+  sender_id  String    @db.VarChar(36)
+  message    String
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  inquiry    Inquiry   @relation(fields: [inquiry_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sender     User      @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([inquiry_id], map: "idx_inquiry_responses_inquiry_id")
+}
+
+model location_reports {
+  id          String              @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  user_id     String              @db.VarChar(36)
+  location    String              @db.VarChar(500)
+  category    String?             @db.VarChar(100)
+  report_data Json?
+  is_free     Boolean?            @default(false)
+  payment_id  String?             @db.VarChar(100)
+  amount      Decimal?            @db.Decimal(10, 2)
+  status      report_status_enum? @default(pending)
+  created_at  DateTime?           @default(now()) @db.Timestamp(6)
+  expires_at  DateTime?           @db.Timestamp(6)
+  users       users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status], map: "idx_location_reports_status")
+  @@index([user_id], map: "idx_location_reports_user_id")
+}
+
+model owner_profiles {
+  id               String    @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  user_id          String    @unique @db.VarChar(36)
+  company_name     String?   @db.VarChar(255)
+  license_number   String?   @db.VarChar(100)
+  total_properties Int?      @default(0)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  updated_at       DateTime? @default(now()) @db.Timestamp(6)
+  user             User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_owner_profiles_user_id")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model Property {
+  id                   String             @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  title                String             @db.VarChar(255)
+  description          String?
+  address              String             @db.VarChar(500)
+  city                 String             @db.VarChar(100)
+  state                String             @db.VarChar(100)
+  zipCode              String             @map("zip_code") @db.VarChar(20)
+  price                Decimal            @db.Decimal(15, 2)
+  priceType            price_type_enum    @map("price_type") @default(monthly)
+  securityDeposit      Decimal?           @map("security_deposit") @db.Decimal(15, 2)
+  rentEscalation       Decimal?           @map("rent_escalation") @db.Decimal(5, 2)
+  size                 Int
+  propertyType         property_type_enum @map("property_type")
+  storePowerCapacity   String?            @map("store_power_capacity") @db.VarChar(50)
+  powerBackup          Boolean?           @map("power_backup") @default(false)
+  waterFacility        Boolean?           @map("water_facility") @default(false)
+  amenities            Json?
+  images               Json?
+  ownerId              String             @map("owner_id") @db.VarChar(36)
+  availability         Boolean?           @map("is_available") @default(true)
+  isFeatured           Boolean?           @map("is_featured") @default(false)
+  views                Int?               @map("views_count") @default(0)
+  createdAt            DateTime?          @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime?          @map("updated_at") @default(now()) @db.Timestamp(6)
+  inquiries            Inquiry[]
+  owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  propertyViews        property_views[]
+  savedBy              SavedProperty[]
+
+  @@map("properties")
+  @@index([city], map: "idx_properties_city")
+  @@index([availability], map: "idx_properties_is_available")
+  @@index([ownerId], map: "idx_properties_owner_id")
+  @@index([price], map: "idx_properties_price")
+  @@index([propertyType], map: "idx_properties_property_type")
+  @@index([size], map: "idx_properties_size")
+}
+
+model property_views {
+  id          String     @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  property_id String     @db.VarChar(36)
+  user_id     String?    @db.VarChar(36)
+  ip_address  String?    @db.VarChar(45)
+  user_agent  String?
+  viewed_at   DateTime?  @default(now()) @db.Timestamp(6)
+  property    Property   @relation(fields: [property_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user        User?      @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+
+  @@index([property_id], map: "idx_property_views_property_id")
+  @@index([viewed_at], map: "idx_property_views_viewed_at")
+}
+
+model SavedProperty {
+  id          String     @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  userId      String     @map("user_id") @db.VarChar(36)
+  propertyId  String     @map("property_id") @db.VarChar(36)
+  notes       String?     @db.Text
+  createdAt   DateTime?   @map("created_at") @default(now()) @db.Timestamp(6)
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("saved_properties")
+  @@unique([userId, propertyId])
+  @@index([userId], map: "idx_saved_properties_user_id")
+}
+
+model User {
+  id                                  String              @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  email                               String              @unique @db.VarChar(255)
+  password                            String              @map("password_hash") @db.VarChar(255)
+  name                                String              @db.VarChar(255)
+  phone                               String?             @db.VarChar(20)
+  userType                            user_type_enum      @map("user_type")
+  createdAt                           DateTime?           @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt                           DateTime?           @map("updated_at") @default(now()) @db.Timestamp(6)
+  isActive                            Boolean?            @map("is_active") @default(true)
+  brandProfiles                       brand_profiles?
+  inquiriesAsBrand                    Inquiry[]           @relation("inquiries_brand_idTousers")
+  inquiriesAsOwner                    Inquiry[]           @relation("inquiries_owner_idTousers")
+  inquiryResponses                    inquiry_responses[]
+  locationReports                     location_reports[]
+  ownerProfiles                       owner_profiles?
+  properties                          Property[]
+  propertyViews                       property_views[]
+  savedProperties                     SavedProperty[]
+
+  @@map("users")
+  @@index([email], map: "idx_users_email")
+  @@index([userType], map: "idx_users_user_type")
+}
+
+enum inquiry_status_enum {
+  pending
+  responded
+  closed
+}
+
+enum price_type_enum {
+  monthly
+  yearly
+  sqft
+}
+
+enum property_type_enum {
+  office
+  retail
+  warehouse
+  restaurant
+  other
+}
+
+enum report_status_enum {
+  pending
+  completed
+  failed
+}
+
+enum user_type_enum {
+  brand
+  owner
+  admin
 }

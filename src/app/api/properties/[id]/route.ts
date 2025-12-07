@@ -14,10 +14,11 @@ import { UpdatePropertySchema } from '@/lib/validations/property'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const propertyId = params.id
+    const { id } = await params
+    const propertyId = id
     console.log('[Properties API] GET /api/properties/[id] - Fetching property:', propertyId)
 
     const property = await prisma.property.findUnique({
@@ -66,6 +67,18 @@ export async function GET(
   } catch (error: any) {
     console.error('[Properties API] Error fetching property:', error)
 
+    // Handle database connection errors
+    if (error.code === 'P1001' || error.message?.includes('connect') || error.message?.includes('ECONNREFUSED')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database connection failed. Please check your database configuration.',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       {
         success: false,
@@ -84,10 +97,11 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const propertyId = params.id
+    const { id } = await params
+    const propertyId = id
     console.log('[Properties API] PUT /api/properties/[id] - Updating property:', propertyId)
 
     // Authenticate user
@@ -145,7 +159,7 @@ export async function PUT(
         {
           success: false,
           error: 'Validation failed',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       )
@@ -227,10 +241,11 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const propertyId = params.id
+    const { id } = await params
+    const propertyId = id
     console.log('[Properties API] DELETE /api/properties/[id] - Deleting property:', propertyId)
 
     // Authenticate user

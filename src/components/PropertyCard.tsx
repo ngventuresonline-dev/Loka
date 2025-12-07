@@ -178,7 +178,7 @@ export default function PropertyCard({
 
         {/* Key Features */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {property.parking && (
+          {(property as any).parking && (
             <span className="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded text-xs font-medium flex items-center">
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
