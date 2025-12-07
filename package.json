@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "vercel-install": "npm install --legacy-peer-deps",
+    "postinstall": "prisma generate",
     "dev": "SET NODE_TLS_REJECT_UNAUTHORIZED=0 && next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
