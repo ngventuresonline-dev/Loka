@@ -12,10 +12,9 @@ async function main() {
     create: {
       email: 'owner1@ngventures.com',
       name: 'Rajesh Kumar',
+      password: '$2b$10$hashedpassword', // In production, use proper hashing
       userType: 'owner',
       phone: '+91 98765 43210',
-      company: 'Prime Properties Bangalore',
-      ownerType: 'company',
     },
   })
 
@@ -25,10 +24,9 @@ async function main() {
     create: {
       email: 'owner2@ngventures.com',
       name: 'Priya Sharma',
+      password: '$2b$10$hashedpassword', // In production, use proper hashing
       userType: 'owner',
       phone: '+91 98765 43211',
-      company: 'Urban Spaces India',
-      ownerType: 'company',
     },
   })
 
@@ -38,11 +36,9 @@ async function main() {
     create: {
       email: 'brand1@ngventures.com',
       name: 'Amit Patel',
+      password: '$2b$10$hashedpassword', // In production, use proper hashing
       userType: 'brand',
       phone: '+91 98765 43212',
-      brandName: 'Cafe Delight',
-      industry: 'Food & Beverage',
-      businessType: 'QSR',
     },
   })
 
@@ -59,8 +55,7 @@ async function main() {
       country: 'India',
       zipCode: '560038',
       size: 500,
-      propertyType: 'qsr',
-      condition: 'excellent',
+      propertyType: 'other', // qsr not in enum, using 'other'
       price: 75000,
       priceType: 'monthly',
       securityDeposit: 150000,
@@ -105,7 +100,7 @@ async function main() {
       country: 'India',
       zipCode: '560001',
       size: 150,
-      propertyType: 'kiosk',
+      propertyType: 'other', // kiosk not in enum
       condition: 'excellent',
       price: 40000,
       priceType: 'monthly',
@@ -191,8 +186,13 @@ async function main() {
   ]
 
   for (const propertyData of properties) {
+    const { country, condition, negotiable, parking, publicTransport, accessibility, ...rest } = propertyData
     await prisma.property.create({
-      data: propertyData,
+      data: {
+        ...rest,
+        propertyType: rest.propertyType as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other',
+        priceType: rest.priceType as 'monthly' | 'yearly' | 'sqft',
+      },
     })
   }
 

@@ -249,7 +249,8 @@ async function getDatabaseStats(): Promise<DatabaseStats> {
       prisma.user.count().catch(() => 0),
       prisma.property.count().catch(() => 0),
       prisma.inquiry.count().catch(() => 0),
-      prisma.searchHistory.count().catch(() => 0)
+      // Search history model not in current schema
+      Promise.resolve(0)
     ])
     
     return {

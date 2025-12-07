@@ -50,6 +50,20 @@ export async function POST(request: NextRequest) {
       ? new Date(data.availableFrom)
       : null
 
+    // Map property type to database enum
+    const propertyTypeMap: Record<string, 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other'> = {
+      'office': 'office',
+      'retail': 'retail',
+      'warehouse': 'warehouse',
+      'restaurant': 'restaurant',
+      'qsr': 'restaurant',
+      'kiosk': 'other',
+      'commercial': 'other',
+      'mixed_use': 'other',
+      'other': 'other',
+    }
+    const mappedPropertyType = propertyTypeMap[data.propertyType] || 'other'
+
     // Create property
     const property = await prisma.property.create({
       data: {
@@ -58,26 +72,16 @@ export async function POST(request: NextRequest) {
         address: data.address,
         city: data.city,
         state: data.state,
-        country: data.country || 'India',
         zipCode: data.zipCode,
-        latitude: data.latitude,
-        longitude: data.longitude,
         size: data.size,
-        propertyType: data.propertyType,
-        condition: data.condition,
+        propertyType: mappedPropertyType,
         price: data.price,
-        priceType: data.priceType,
+        priceType: data.priceType as 'monthly' | 'yearly' | 'sqft',
         securityDeposit: data.securityDeposit,
-        negotiable: data.negotiable ?? true,
         amenities: data.amenities || [],
         images: data.images || [],
         availability: data.availability ?? true,
-        availableFrom: availableFromDate,
-        isVerified: data.isVerified ?? false,
         isFeatured: data.isFeatured ?? false,
-        parking: data.parking ?? false,
-        publicTransport: data.publicTransport ?? false,
-        accessibility: data.accessibility ?? false,
         ownerId: user.id,
         views: 0,
       },

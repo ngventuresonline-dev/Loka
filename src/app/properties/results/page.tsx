@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -22,7 +22,7 @@ interface MatchResult {
 
 type SortOption = 'best-match' | 'price-low' | 'price-high' | 'newest'
 
-export default function PropertiesResultsPage() {
+function PropertiesResultsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -485,6 +485,21 @@ export default function PropertiesResultsPage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function PropertiesResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading results...</p>
+        </div>
+      </div>
+    }>
+      <PropertiesResultsContent />
+    </Suspense>
   )
 }
 

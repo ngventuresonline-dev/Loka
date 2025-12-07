@@ -8,16 +8,16 @@ export interface Property {
   zipCode: string;
   price: number;
   priceType: 'monthly' | 'yearly' | 'sqft';
-  securityDeposit: number; // Security deposit amount
-  rentEscalation: number; // Annual rent escalation percentage
+  securityDeposit?: number; // Security deposit amount
+  rentEscalation?: number; // Annual rent escalation percentage
   size: number; // in sq ft
   propertyType: 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other';
   amenities: string[];
   // Power & Utilities
-  storePowerCapacity: string; // e.g., "10 KW", "25 KW"
-  powerBackup: boolean;
-  waterFacility: boolean;
-  images: string[];
+  storePowerCapacity?: string; // e.g., "10 KW", "25 KW"
+  powerBackup?: boolean;
+  waterFacility?: boolean;
+  images?: string[];
   ownerId: string;
   createdAt: Date;
   updatedAt: Date;

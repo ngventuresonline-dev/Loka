@@ -66,11 +66,8 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where: dateFilter ? { createdAt: dateFilter } : undefined }).catch(() => 0),
       prisma.property.count({ where: dateFilter ? { createdAt: dateFilter } : undefined }).catch(() => 0),
       prisma.inquiry.count({ where: dateFilter ? { createdAt: dateFilter } : undefined }).catch(() => 0),
-      prisma.searchHistory.count({
-        where: dateFilter
-          ? { createdAt: dateFilter, matchedProperties: { not: Prisma.JsonNull } }
-          : { matchedProperties: { not: Prisma.JsonNull } }
-      }).catch(() => 0),
+      // Search history model not in current schema
+      Promise.resolve(0),
 
       // Users by type
       prisma.user.groupBy({

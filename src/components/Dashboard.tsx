@@ -22,23 +22,24 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
         if (userType === 'brand' && properties.length > 0) {
           const brandProfile = userProfile as BrandProfile
           const matchResults = findMatches(properties, {
-            businessType: brandProfile.industry,
-            sizeRange: { min: brandProfile.requirements.minSize, max: brandProfile.requirements.maxSize },
-            locations: brandProfile.preferredLocations,
-            budgetRange: brandProfile.budgetRange,
-            propertyType: brandProfile.requirements.propertyTypes[0] as any
+            businessType: brandProfile.industry || '',
+            sizeMin: brandProfile.requirements.minSize || 0,
+            sizeMax: brandProfile.requirements.maxSize || 100000,
+            budgetMin: brandProfile.budgetRange?.min || 0,
+            budgetMax: brandProfile.budgetRange?.max || 1000000,
+            locations: brandProfile.preferredLocations || []
           })
           const brandMatches: MatchResult[] = matchResults.map((m, index) => ({
             id: `match-${index}-${Date.now()}`,
             brandId: (userProfile as BrandProfile).crmRecord?.userId || 'unknown',
             propertyId: m.property.id,
-            score: m.bfiScore,
-            reasons: m.matchReasons,
+            score: m.bfiScore.score,
+            reasons: [], // Match reasons not available from findMatches
             breakdown: {
-              locationMatch: m.breakdown.locationScore || 0,
-              budgetMatch: m.breakdown.budgetScore || 0,
-              sizeMatch: m.breakdown.sizeScore || 0,
-              amenityMatch: m.breakdown.propertyTypeScore || 0,
+              locationMatch: m.bfiScore.breakdown.locationScore || 0,
+              budgetMatch: m.bfiScore.breakdown.budgetScore || 0,
+              sizeMatch: m.bfiScore.breakdown.sizeScore || 0,
+              amenityMatch: m.bfiScore.breakdown.typeScore || 0,
             },
             createdAt: new Date(),
             status: 'active' as const

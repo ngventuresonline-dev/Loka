@@ -62,14 +62,13 @@ export async function GET(request: NextRequest) {
           email: true,
           userType: true,
           phone: true,
-          brandName: true,
-          industry: true,
           createdAt: true,
           updatedAt: true,
           _count: {
             select: {
               properties: true,
-              inquiries: true,
+              inquiriesAsBrand: true,
+              inquiriesAsOwner: true,
               savedProperties: true
             }
           }

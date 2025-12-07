@@ -109,14 +109,20 @@ export interface Property {
   price: number;
   priceType: 'monthly' | 'yearly' | 'sqft';
   size: number;
-  propertyType: 'office' | 'retail' | 'warehouse' | 'restaurant' | 'mixed_use' | 'other';
-  condition: 'excellent' | 'good' | 'fair' | 'needs_renovation';
+  propertyType: 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other';
+  condition?: 'excellent' | 'good' | 'fair' | 'needs_renovation';
+  securityDeposit?: number;
+  rentEscalation?: number;
   
   // Features & Amenities
   amenities: string[];
-  accessibility: boolean;
-  parking: boolean;
-  publicTransport: boolean;
+  images?: string[];
+  accessibility?: boolean;
+  parking?: boolean;
+  publicTransport?: boolean;
+  storePowerCapacity?: string;
+  powerBackup?: boolean;
+  waterFacility?: boolean;
   
   // Business Information
   ownerId: string;

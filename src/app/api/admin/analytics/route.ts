@@ -79,16 +79,8 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'asc' }
       }).catch(() => []),
 
-      // Search history analytics
-      prisma.searchHistory.findMany({
-        where: dateFilter ? { createdAt: dateFilter } : undefined,
-        select: {
-          queryType: true,
-          resultsCount: true,
-          clickedPropertyId: true,
-          createdAt: true
-        }
-      }).catch(() => []),
+      // Search history analytics (model not in current schema)
+      Promise.resolve([] as any[]),
 
       // Top locations
       prisma.property.groupBy({
