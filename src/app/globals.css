@@ -324,6 +324,15 @@ body {
   }
 }
 
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
 @keyframes fadeLine {
   0%, 100% {
     opacity: 0.2;
@@ -358,4 +367,142 @@ body {
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Property Owner CTA Card Animations */
+@keyframes cursorMove {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  25% { transform: translate(20px, -10px) rotate(15deg); opacity: 0.9; }
+  50% { transform: translate(10px, 15px) rotate(-10deg); opacity: 1; }
+  75% { transform: translate(-15px, 5px) rotate(5deg); opacity: 0.9; }
+  100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+}
+
+@keyframes photoPulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  0%, 49% { opacity: 0; transform: scale(0.95); }
+  50%, 100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeOut {
+  0%, 49% { opacity: 1; transform: scale(1); }
+  50%, 100% { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes buttonPulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 4px 14px rgba(255, 82, 0, 0.4);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 82, 0, 0.6);
+  }
+}
+
+@keyframes cursorClick {
+  0%, 100% { 
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  25% { 
+    transform: translate(2px, 2px) scale(0.9);
+    opacity: 0.8;
+  }
+  50% { 
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  75% { 
+    transform: translate(-2px, -2px) scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+/* Property Owner CTA - 3 Step Animation */
+@keyframes step1Show {
+  0%, 32% { opacity: 1; transform: scale(1); }
+  33%, 100% { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes step2Show {
+  0%, 32% { opacity: 0; transform: scale(0.95); }
+  33%, 65% { opacity: 1; transform: scale(1); }
+  66%, 100% { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes step3Show {
+  0%, 65% { opacity: 0; transform: scale(0.95); }
+  66%, 100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes formFieldFill {
+  0% { width: 0%; }
+  80% { width: 100%; }
+  100% { width: 100%; }
+}
+
+@keyframes imageUpload {
+  0% { transform: translateY(20px) scale(0.8); opacity: 0; }
+  50% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-10px) scale(1.1); opacity: 0.8; }
+}
+
+@keyframes successCheck {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes cursorMoveToField {
+  0% { transform: translate(-40px, -40px); opacity: 0; }
+  8% { opacity: 1; }
+  15% { transform: translate(20px, 30px); opacity: 1; }
+  18% { transform: translate(20px, 30px) scale(0.85); opacity: 1; }
+  20% { transform: translate(20px, 30px) scale(1); opacity: 1; }
+  30% { transform: translate(20px, 70px); opacity: 1; }
+  33% { transform: translate(20px, 70px) scale(0.85); opacity: 1; }
+  35% { transform: translate(20px, 70px) scale(1); opacity: 1; }
+  45% { transform: translate(20px, 110px); opacity: 1; }
+  48% { transform: translate(20px, 110px) scale(0.85); opacity: 1; }
+  50% { transform: translate(20px, 110px) scale(1); opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cursorClick {
+  0%, 88% { transform: scale(1); }
+  92% { transform: scale(0.75); }
+  96% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cursorMoveToUpload {
+  0% { transform: translate(20px, 110px); opacity: 0; }
+  8% { opacity: 1; }
+  25% { transform: translate(120px, 60px); opacity: 1; }
+  35% { transform: translate(120px, 60px) scale(0.85); opacity: 1; }
+  38% { transform: translate(120px, 60px) scale(1); opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cursorMoveToButton {
+  0% { transform: translate(120px, 60px); opacity: 0; }
+  8% { opacity: 1; }
+  35% { transform: translate(0px, 0px); opacity: 1; }
+  60% { transform: translate(0px, 0px); opacity: 1; }
+  75% { transform: translate(0px, 0px) scale(0.75); opacity: 1; }
+  80% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+  100% { opacity: 1; }
 }

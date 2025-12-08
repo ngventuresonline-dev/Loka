@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
 import { Prisma } from '@prisma/client'
-
-// Dynamic import for prisma
-async function getPrisma() {
-  try {
-    const prismaModule = await import('@/lib/prisma')
-    return prismaModule.prisma
-  } catch (e) {
-    console.error('Failed to import Prisma:', e)
-    return null
-  }
-}
+import { getPrisma } from '@/lib/get-prisma'
 
 export async function GET(request: NextRequest) {
   try {

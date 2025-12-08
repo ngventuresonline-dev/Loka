@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Dynamic import for prisma
-async function getPrisma() {
-  try {
-    const prismaModule = await import('@/lib/prisma')
-    return prismaModule.prisma
-  } catch (e) {
-    console.error('Failed to import Prisma:', e)
-    return null
-  }
-}
+import { getPrisma } from '@/lib/get-prisma'
 
 /**
  * Calculate Property Fit Index (PFI) - reverse of BFI

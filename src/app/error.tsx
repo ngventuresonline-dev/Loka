@@ -27,7 +27,7 @@ export default function Error({
         )}
         <button
           onClick={reset}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+          className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2 px-4 rounded hover:from-[#E4002B] hover:to-[#FF5200] transition-all"
         >
           Try again
         </button>

@@ -113,7 +113,7 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
       className="relative group"
     >
-      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
+      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
         
@@ -127,15 +127,15 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-4 sm:mb-6">
             <h3
-              className="text-2xl font-bold text-white"
+              className="text-xl sm:text-2xl font-bold text-white"
               style={{ fontFamily: fraunces.style.fontFamily }}
             >
               Budget (Monthly Rent)
             </h3>
             {required && (
-              <span className="text-red-500 text-lg font-bold">*</span>
+              <span className="text-red-500 text-base sm:text-lg font-bold">*</span>
             )}
           </div>
           {hasError && (
@@ -147,18 +147,18 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
             </div>
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Budget - Slider and Text Input */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <label className="text-xs sm:text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   Budget (Monthly Rent)
                 </label>
-                <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   {budget ? formatCurrency(budget) : 'Not set'}
                 </span>
               </div>
-              <div className="relative mb-4">
+              <div className="relative mb-3 sm:mb-4">
                 <input
                   type="range"
                   min="50000"
@@ -171,7 +171,7 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
               </div>
               {/* Manual Input for Budget */}
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                <label className="block text-[10px] sm:text-xs font-medium text-gray-400 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   Or enter manually (e.g., 50K, 2L, 50000)
                 </label>
                 <input
@@ -184,7 +184,7 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
                     }
                   }}
                   placeholder="5L"
-                  className={`w-full px-4 py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-xl text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg sm:rounded-xl text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
                   style={{ fontFamily: plusJakarta.style.fontFamily }}
                 />
               </div>
@@ -192,12 +192,12 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
 
             {/* Budget Display */}
             {budget !== null && (
-              <div className="pt-4 border-t border-gray-700/50">
+              <div className="pt-3 sm:pt-4 border-t border-gray-700/50">
                 <div className="text-center">
-                  <p className="text-xs text-gray-400 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  <p className="text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                     Selected Budget
                   </p>
-                  <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
+                  <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
                     {formatCurrency(budget)}
                   </p>
                 </div>
@@ -318,7 +318,7 @@ function FilterCard({
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
       className="relative group"
     >
-      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
+      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
         
@@ -332,23 +332,23 @@ function FilterCard({
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <h3
-                className="text-2xl font-bold text-white"
+                className="text-lg sm:text-xl md:text-2xl font-bold text-white"
                 style={{ fontFamily: fraunces.style.fontFamily }}
               >
                 {title}
               </h3>
               {required && (
-                <span className="text-red-500 text-lg font-bold">*</span>
+                <span className="text-red-500 text-base sm:text-lg font-bold">*</span>
               )}
             </div>
             {multi && count > 0 && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-8 h-8 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-xs font-bold flex items-center justify-center shadow-lg shadow-[#FF5200]/50"
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-lg shadow-[#FF5200]/50"
               >
                 {count}
               </motion.div>
@@ -363,14 +363,14 @@ function FilterCard({
             </div>
           )}
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {items.map((item, itemIndex) => {
               const active = selected.has(item)
               return (
                 <motion.button
                   key={item}
                   onClick={() => toggle(item)}
-                  className={`relative px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 border-2 ${
+                  className={`relative px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium transition-all duration-300 border-2 ${
                     active
                       ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-lg shadow-[#FF5200]/50'
                       : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
@@ -385,9 +385,9 @@ function FilterCard({
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-md"
+                      className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md"
                     >
-                      <svg className="w-3 h-3 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </motion.div>
@@ -482,17 +482,17 @@ export default function BrandFilterPage() {
         <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_4s_ease-in-out_infinite_2s]"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
         {/* Section Header - Platform Performance Style */}
-        <div className="text-center mb-10 sm:mb-12 md:mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
-          <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-white/10 backdrop-blur-sm rounded-full mb-4 sm:mb-5 md:mb-6 border border-[#FF5200]/30">
-            <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5 animate-pulse"></span>
-            <span className="text-xs sm:text-sm font-medium text-white">AI-Powered Filters</span>
+        <div className="text-center mb-6 sm:mb-8 md:mb-12 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
+          <div className="inline-flex items-center px-2.5 sm:px-4 md:px-5 py-1 sm:py-1.5 sm:py-2 bg-white/10 backdrop-blur-sm rounded-full mb-3 sm:mb-4 md:mb-5 border border-[#FF5200]/30">
+            <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-1.5 sm:mr-2.5 animate-pulse"></span>
+            <span className="text-[10px] sm:text-xs md:text-sm font-medium text-white">AI-Powered Filters</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 px-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-3 px-2 sm:px-4">
             Find Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Perfect Space</span>
           </h1>
-          <p className="text-base sm:text-lg text-gray-300 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-2xl mx-auto px-2">
             Refine your search with intelligent filters powered by AI
           </p>
         </div>
@@ -502,14 +502,14 @@ export default function BrandFilterPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex items-center justify-between mb-8 sm:mb-12"
+          className="flex items-center justify-between mb-6 sm:mb-8 md:mb-12"
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white/80 border border-white/20 rounded-xl hover:border-[#FF5200]/50 hover:text-[#FF5200] transition-all duration-200 hover:shadow-md hover:shadow-[#FF5200]/20 backdrop-blur-sm bg-white/5"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white/80 border border-white/20 rounded-lg sm:rounded-xl hover:border-[#FF5200]/50 hover:text-[#FF5200] transition-all duration-200 hover:shadow-md hover:shadow-[#FF5200]/20 backdrop-blur-sm bg-white/5"
             style={{ fontFamily: plusJakarta.style.fontFamily }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back
@@ -521,30 +521,30 @@ export default function BrandFilterPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="mb-8 sm:mb-12"
+          className="mb-6 sm:mb-8 md:mb-12"
         >
-          <div className="group relative w-full max-w-2xl mx-auto bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl px-5 py-4 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50">
+          <div className="group relative w-full max-w-2xl mx-auto bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50">
             <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500"></div>
             
-            <div className="relative z-10 flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#FF5200]/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="relative z-10 flex items-center gap-2 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#FF5200]/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
               
               <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#FF5200] flex-shrink-0 animate-pulse"></div>
-                  <span className="text-[10px] font-medium text-[#FF5200] uppercase tracking-wider">For Brands</span>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-[#FF5200] uppercase tracking-wider">For Brands</span>
                 </div>
-                <h3 className="text-base font-semibold text-white mb-0.5">Find Your Ideal Space</h3>
-                <p className="text-xs text-gray-300 leading-snug line-clamp-1">AI-powered matching for commercial properties</p>
+                <h3 className="text-sm sm:text-base font-semibold text-white mb-0.5">Find Your Ideal Space</h3>
+                <p className="text-[10px] sm:text-xs text-gray-300 leading-snug line-clamp-1">AI-powered matching for commercial properties</p>
               </div>
               
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF5200]/20 border border-[#FF5200]/40 rounded-lg flex-shrink-0">
-                <svg className="w-3.5 h-3.5 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#FF5200]/20 border border-[#FF5200]/40 rounded-md sm:rounded-lg flex-shrink-0">
+                <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
                 <span className="text-[11px] font-medium text-[#FF5200]">48hr</span>
@@ -560,19 +560,19 @@ export default function BrandFilterPage() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mb-6 max-w-2xl mx-auto"
+              className="mb-4 sm:mb-6 max-w-2xl mx-auto"
             >
-              <div className="bg-gradient-to-r from-[#FF5200]/20 via-[#E4002B]/20 to-[#FF5200]/20 backdrop-blur-xl border border-[#FF5200]/40 rounded-xl px-6 py-4 flex items-center gap-4 shadow-lg shadow-[#FF5200]/20">
+              <div className="bg-gradient-to-r from-[#FF5200]/20 via-[#E4002B]/20 to-[#FF5200]/20 backdrop-blur-xl border border-[#FF5200]/40 rounded-lg sm:rounded-xl px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-4 shadow-lg shadow-[#FF5200]/20">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">{aiInsight}</p>
-                  <div className="mt-1 h-1 bg-gray-700/50 rounded-full overflow-hidden">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-white">{aiInsight}</p>
+                  <div className="mt-1 h-0.5 sm:h-1 bg-gray-700/50 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-gradient-to-r from-[#FF5200] to-[#E4002B]"
                       initial={{ width: '0%' }}
@@ -587,7 +587,7 @@ export default function BrandFilterPage() {
         </AnimatePresence>
 
         {/* Filter Cards - Platform Performance Style */}
-        <div className="grid gap-6 sm:gap-8">
+        <div className="grid gap-4 sm:gap-6 md:gap-8">
           <FilterCard 
             title="Business Type" 
             items={businessTypes} 
@@ -632,11 +632,11 @@ export default function BrandFilterPage() {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="fixed bottom-8 right-8 z-50"
+            className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50"
           >
             <motion.button
               disabled={!isFormValid}
-              className={`group relative px-8 py-4 rounded-xl text-base font-semibold overflow-hidden ${
+              className={`group relative px-5 py-3 sm:px-8 sm:py-4 rounded-lg sm:rounded-xl text-sm sm:text-base font-semibold overflow-hidden ${
                 isFormValid
                   ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white shadow-[0_8px_24px_rgba(255,82,0,0.4)] cursor-pointer'
                   : 'bg-gray-700/50 text-gray-400 cursor-not-allowed'

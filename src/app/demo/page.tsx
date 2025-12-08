@@ -114,10 +114,10 @@ export default function DemoPage() {
   }
 
   const renderRoleSelection = () => (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-blue-950 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-6">
       <div className="max-w-4xl mx-auto text-center py-20">
         <div className="mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent mb-6">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent mb-6">
             N&G VENTURES
           </h1>
           <p className="text-xl text-gray-200 mb-2">AI-Powered Commercial Real Estate Matching</p>
@@ -127,8 +127,8 @@ export default function DemoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Brand Card */}
           <div className="group cursor-pointer" onClick={() => setCurrentStep('brand-onboarding')}>
-            <div className="bg-white/5 backdrop-blur-lg border border-indigo-500/30 rounded-2xl p-8 hover:bg-indigo-500/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/20">
-              <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-indigo-500/50">
+            <div className="bg-white/5 backdrop-blur-lg border border-[#FF5200]/30 rounded-2xl p-8 hover:bg-[#FF5200]/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#FF5200]/20">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-[#FF5200]/50">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -141,19 +141,19 @@ export default function DemoPage() {
               
               <div className="space-y-3 text-left">
                 <div className="flex items-center text-sm text-gray-400">
-                  <svg className="w-4 h-4 text-indigo-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[#FF5200] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   AI-powered property matching
                 </div>
                 <div className="flex items-center text-sm text-gray-400">
-                  <svg className="w-4 h-4 text-indigo-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[#FF5200] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Location intelligence & demographics
                 </div>
                 <div className="flex items-center text-sm text-gray-400">
-                  <svg className="w-4 h-4 text-indigo-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[#FF5200] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Direct owner communication
@@ -161,7 +161,7 @@ export default function DemoPage() {
               </div>
               
               <div className="mt-8">
-                <div className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg font-medium group-hover:from-indigo-600 group-hover:to-purple-600 transition-all shadow-lg">
+                <div className="px-6 py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg font-medium group-hover:from-[#E4002B] group-hover:to-[#FF5200] transition-all shadow-lg">
                   Start as Brand →
                 </div>
               </div>
@@ -170,8 +170,8 @@ export default function DemoPage() {
 
           {/* Property Owner Card */}
           <div className="group cursor-pointer" onClick={() => setCurrentStep('owner-onboarding')}>
-            <div className="bg-white/5 backdrop-blur-lg border border-blue-500/30 rounded-2xl p-8 hover:bg-blue-500/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20">
-              <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/50">
+            <div className="bg-white/5 backdrop-blur-lg border border-[#E4002B]/30 rounded-2xl p-8 hover:bg-[#E4002B]/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#E4002B]/20">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#E4002B] to-[#FF5200] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-[#E4002B]/50">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
@@ -184,19 +184,19 @@ export default function DemoPage() {
               
               <div className="space-y-3 text-left">
                 <div className="flex items-center text-sm text-gray-400">
-                  <svg className="w-4 h-4 text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[#E4002B] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Qualified brand matching
                 </div>
                 <div className="flex items-center text-sm text-gray-400">
-                  <svg className="w-4 h-4 text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[#E4002B] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Portfolio analytics
                 </div>
                 <div className="flex items-center text-sm text-gray-400">
-                  <svg className="w-4 h-4 text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[#E4002B] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Automated lead generation
@@ -204,7 +204,7 @@ export default function DemoPage() {
               </div>
               
               <div className="mt-8">
-                <div className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-medium group-hover:from-purple-600 group-hover:to-blue-600 transition-all shadow-lg">
+                <div className="px-6 py-3 bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white rounded-lg font-medium group-hover:from-[#FF5200] group-hover:to-[#E4002B] transition-all shadow-lg">
                   Start as Owner →
                 </div>
               </div>
@@ -215,19 +215,19 @@ export default function DemoPage() {
         {/* Stats Section */}
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent mb-2">
+            <div className="text-3xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent mb-2">
               95%
             </div>
             <div className="text-gray-400">Match Accuracy</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent mb-2">
+            <div className="text-3xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent mb-2">
               48hrs
             </div>
             <div className="text-gray-400">Average Match Time</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent mb-2">
+            <div className="text-3xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent mb-2">
               10,000+
             </div>
             <div className="text-gray-400">Successful Matches</div>
@@ -290,7 +290,7 @@ export default function DemoPage() {
       {/* Current Step Indicator */}
       {currentStep !== 'select-role' && (
         <div className="fixed top-6 right-6 z-50">
-          <div className="px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/20 rounded-lg text-white text-sm">
+          <div className="px-4 py-2 bg-gradient-to-r from-[#FF5200]/20 to-[#E4002B]/20 backdrop-blur-sm border border-white/20 rounded-lg text-white text-sm">
             {currentStep === 'brand-onboarding' && '👤 Brand Onboarding'}
             {currentStep === 'owner-onboarding' && '🏢 Owner Onboarding'}
             {currentStep === 'brand-dashboard' && '📊 Brand Dashboard'}

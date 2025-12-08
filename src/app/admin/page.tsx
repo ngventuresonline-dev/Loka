@@ -252,7 +252,7 @@ export default function AdminDashboard() {
                       value={stats.overview.totalInquiries}
                       color="purple"
                       icon={
-                        <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-6 h-6 text-[#FF5200]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                         </svg>
                       }
@@ -283,9 +283,9 @@ export default function AdminDashboard() {
                               <p className="text-gray-400 text-xs">{user.email}</p>
                             </div>
                             <span className={`px-2 py-1 rounded text-xs ${
-                              user.userType === 'brand' ? 'bg-blue-500/20 text-blue-400' :
+                              user.userType === 'brand' ? 'bg-[#FF5200]/20 text-[#FF5200]' :
                               user.userType === 'owner' ? 'bg-green-500/20 text-green-400' :
-                              'bg-purple-500/20 text-purple-400'
+                              'bg-[#E4002B]/20 text-[#E4002B]'
                             }`}>
                               {user.userType}
                             </span>
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
                             <p className="text-gray-400 text-xs">{inquiry.property?.title || 'Unknown Property'}</p>
                             <span className={`inline-block mt-1 px-2 py-1 rounded text-xs ${
                               inquiry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                              inquiry.status === 'responded' ? 'bg-blue-500/20 text-blue-400' :
+                              inquiry.status === 'responded' ? 'bg-[#FF5200]/20 text-[#FF5200]' :
                               'bg-green-500/20 text-green-400'
                             }`}>
                               {inquiry.status}

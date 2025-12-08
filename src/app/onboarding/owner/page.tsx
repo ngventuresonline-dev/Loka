@@ -35,7 +35,6 @@ function OwnerOnboardingContent() {
         const storedData = localStorage.getItem('ownerFilterData')
         if (storedData) {
           const filterData = JSON.parse(storedData)
-          console.log('Loading pre-filled filter data:', filterData)
           
           setFormData(prev => ({
             ...prev,
@@ -219,7 +218,6 @@ function OwnerOnboardingContent() {
     
     // Generate Property ID (will be done in backend)
     const propertyId = `PROP-${Date.now()}`
-    console.log('Owner Onboarding Data:', { propertyId, ...formData })
     // TODO: Submit to API with auto-generated Property ID
     router.push('/properties')
   }

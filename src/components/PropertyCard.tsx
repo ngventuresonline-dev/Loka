@@ -188,7 +188,7 @@ export default function PropertyCard({
             </span>
           )}
           {property.amenities.some(a => a.toLowerCase().includes('ground')) && (
-            <span className="bg-purple-50 border border-purple-200 text-purple-700 px-2 py-1 rounded text-xs font-medium">
+            <span className="bg-[#FF5200]/10 border border-[#FF5200]/30 text-[#FF5200] px-2 py-1 rounded text-xs font-medium">
               Ground Floor
             </span>
           )}

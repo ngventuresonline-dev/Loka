@@ -35,7 +35,6 @@ export default function BrandOnboarding() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Brand Onboarding Data:', formData)
     // TODO: Submit to API
     router.push('/properties')
   }

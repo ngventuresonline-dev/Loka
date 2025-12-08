@@ -113,10 +113,10 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-blue-950 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#FF5200] mx-auto mb-4"></div>
             <p className="text-gray-400">Finding your perfect matches...</p>
           </div>
         </div>
@@ -125,13 +125,13 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-blue-950 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent">
                 {userType === 'brand' ? 'Property Matches' : 'Brand Matches'}
               </h1>
               <p className="text-gray-400 mt-2">
@@ -150,7 +150,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
 
         {matches.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -162,7 +162,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
                 : 'No brands are currently looking for properties like yours.'
               }
             </p>
-            <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all">
+            <button className="px-6 py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg hover:from-[#E4002B] hover:to-[#FF5200] transition-all">
               Update Preferences
             </button>
           </div>
@@ -186,13 +186,13 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
                   
                   {/* Rank Badge */}
                   <div className="absolute top-4 left-4 z-10">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-8 h-8 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center text-white font-bold text-sm">
                       #{index + 1}
                     </div>
                   </div>
 
                   {/* Property/Brand Image Placeholder */}
-                  <div className="h-48 bg-gradient-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                  <div className="h-48 bg-gradient-to-r from-[#FF5200]/20 to-[#E4002B]/20 flex items-center justify-center">
                     <svg className="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {userType === 'brand' ? (
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -227,7 +227,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
                       <div className="flex items-center">
                         <div className="w-16 bg-white/10 rounded-full h-2 mr-2">
                           <div 
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+                            className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] h-2 rounded-full"
                             style={{ width: `${match.breakdown.locationMatch}%` }}
                           />
                         </div>
@@ -239,7 +239,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
                       <div className="flex items-center">
                         <div className="w-16 bg-white/10 rounded-full h-2 mr-2">
                           <div 
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+                            className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] h-2 rounded-full"
                             style={{ width: `${match.breakdown.budgetMatch}%` }}
                           />
                         </div>
@@ -251,7 +251,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
                       <div className="flex items-center">
                         <div className="w-16 bg-white/10 rounded-full h-2 mr-2">
                           <div 
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+                            className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] h-2 rounded-full"
                             style={{ width: `${match.breakdown.sizeMatch}%` }}
                           />
                         </div>
@@ -279,7 +279,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
                   <div className="flex gap-3">
                     <button
                       onClick={() => userType === 'brand' ? handleSaveProperty(match) : handleContactBrand(match)}
-                      className="flex-1 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all text-sm font-medium"
+                      className="flex-1 py-2 px-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg hover:from-[#E4002B] hover:to-[#FF5200] transition-all text-sm font-medium"
                     >
                       {userType === 'brand' ? 'Save Property' : 'Contact Brand'}
                     </button>
@@ -297,7 +297,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
         )}
 
         {/* Premium Upgrade CTA */}
-        <div className="mt-12 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-8 text-center">
+        <div className="mt-12 bg-gradient-to-r from-[#FF5200]/10 to-[#E4002B]/10 border border-[#FF5200]/20 rounded-xl p-8 text-center">
           <div className="max-w-2xl mx-auto">
             <h3 className="text-2xl font-bold text-white mb-4">
               Unlock Unlimited Matches
@@ -307,7 +307,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
               advanced filtering, and direct messaging.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium">
+              <button className="px-8 py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg hover:from-[#E4002B] hover:to-[#FF5200] transition-all font-medium">
                 Upgrade to Premium
               </button>
               <button className="px-8 py-3 border border-white/20 text-white rounded-lg hover:bg-white/5 transition-all font-medium">
@@ -338,7 +338,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
               <div className="space-y-6">
                 <div>
                   <h4 className="font-medium text-white mb-2">Overall Match Score</h4>
-                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">
                     {selectedMatch.score}%
                   </div>
                 </div>
@@ -352,7 +352,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
                         <div className="flex items-center">
                           <div className="w-24 bg-white/10 rounded-full h-2 mr-3">
                             <div 
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+                              className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] h-2 rounded-full"
                               style={{ width: `${value}%` }}
                             />
                           </div>
@@ -381,7 +381,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
               <div className="flex gap-3 mt-8 pt-6 border-t border-white/10">
                 <button
                   onClick={() => userType === 'brand' ? handleSaveProperty(selectedMatch) : handleContactBrand(selectedMatch)}
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium"
+                  className="flex-1 py-3 px-6 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg hover:from-[#E4002B] hover:to-[#FF5200] transition-all font-medium"
                 >
                   {userType === 'brand' ? 'Save Property' : 'Contact Brand'}
                 </button>

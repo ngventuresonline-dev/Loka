@@ -15,11 +15,11 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, icon, trend, color = 'orange' }: StatCardProps) {
   const colorClasses = {
-    orange: 'from-orange-500/20 to-red-500/20 border-orange-500/30',
-    blue: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30',
+    orange: 'from-[#FF5200]/20 to-[#E4002B]/20 border-[#FF5200]/30',
+    blue: 'from-[#FF5200]/20 to-[#E4002B]/20 border-[#FF5200]/30',
     green: 'from-green-500/20 to-emerald-500/20 border-green-500/30',
-    purple: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
-    red: 'from-red-500/20 to-rose-500/20 border-red-500/30'
+    purple: 'from-[#FF5200]/20 to-[#E4002B]/20 border-[#FF5200]/30',
+    red: 'from-[#E4002B]/20 to-[#FF5200]/20 border-[#E4002B]/30'
   }
 
   return (

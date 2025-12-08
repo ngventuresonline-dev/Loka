@@ -321,25 +321,25 @@ export default function Home() {
         </div>
         )}
 
-        <div className="text-center max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full py-8 sm:py-12">
+        <div className="text-center max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10 w-full py-6 sm:py-8 md:py-12">
           {/* Trust Indicator Badge */}
-          <div className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-xl rounded-full mb-4 sm:mb-6 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards] transition-all duration-700 ${heroMode === 'owner' ? 'bg-white/10 border border-[#E4002B]/30' : 'bg-white/90 border border-gray-200 shadow-sm'}`}>
-            <div className="flex -space-x-2">
-              <div className="relative w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
+          <div className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-1.5 sm:py-2 backdrop-blur-xl rounded-full mb-2 sm:mb-3 md:mb-4 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards] transition-all duration-700 ${heroMode === 'owner' ? 'bg-white/10 border border-[#E4002B]/30' : 'bg-white/90 border border-gray-200 shadow-sm'}`}>
+            <div className="flex -space-x-1.5 sm:-space-x-2">
+              <div className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
                 <img 
                   src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=100&h=100&fit=crop&q=80" 
                   alt="Property"
                   className="w-full h-full object-cover"
                 />
             </div>
-              <div className="relative w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
+              <div className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
                 <img 
                   src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop&q=80" 
                   alt="Property"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="relative w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
+              <div className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full border-2 border-white overflow-hidden flex-shrink-0">
                 <img 
                   src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=100&h=100&fit=crop&q=80" 
                   alt="Property"
@@ -347,11 +347,11 @@ export default function Home() {
                 />
               </div>
             </div>
-            <span className={`text-xs sm:text-sm font-medium transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-700'}`}>500+ Properties Across Locations</span>
+            <span className={`text-xs sm:text-sm md:text-base font-medium transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-700'}`}>500+ Properties Across Locations</span>
           </div>
           
           {/* Focused Hero Heading */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-3 md:mb-4 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-7xl font-bold mb-2 sm:mb-2.5 md:mb-3 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2 sm:px-4">
             <span className={`transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}>Connecting</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Brands</span>
             <span className={`transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}> &</span><br />
@@ -359,11 +359,11 @@ export default function Home() {
           </h1>
           
           {/* AI-powered matching subtitle */}
-          <p className={`text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] transition-colors duration-700 px-4 ${heroMode === 'owner' ? 'text-gray-300' : 'text-gray-600'}`}>
+          <p className={`text-sm sm:text-base md:text-lg lg:text-xl xl:text-xl mb-3 sm:mb-4 md:mb-5 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] transition-colors duration-700 px-3 sm:px-4 ${heroMode === 'owner' ? 'text-gray-300' : 'text-gray-600'}`}>
             AI-powered matching in 48 hours.
           </p>
           
-          <div className="mt-6 sm:mt-8 mb-4 sm:mb-6">
+          <div className="mt-3 sm:mt-4 md:mt-5 mb-2 sm:mb-3 md:mb-4 w-full px-2 sm:px-0">
             <HeroSearch onModeChange={setHeroMode} />
                     </div>
                   </div>
@@ -513,6 +513,552 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Smooth Transition from Logos to Featured Requirements */}
+      <div className="relative z-10 h-20 md:h-28 overflow-hidden">
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, #ffffff 0%, #f9fafb 20%, #f3f4f6 40%, #e5e7eb 60%, #d1d5db 70%, #9ca3af 80%, #4b5563 90%, #1f2937 95%, #111827 100%)'
+        }}></div>
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_3s_ease-in-out_infinite]"></div>
+          <div className="absolute top-0 left-1/2 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_3s_ease-in-out_infinite_1s]"></div>
+          <div className="absolute top-0 left-3/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF6B35] to-transparent animate-[scan_3s_ease-in-out_infinite_2s]"></div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
+      </div>
+
+      {/* Featured Brand Requirements Section - Futuristic */}
+      <section className="relative z-10 bg-gradient-to-b from-gray-900 via-black to-gray-900 py-24 md:py-32 overflow-hidden">
+        {/* Animated Background Grid */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'linear-gradient(#FF5200 1px, transparent 1px), linear-gradient(90deg, #FF5200 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+            animation: 'grid 20s linear infinite'
+          }}></div>
+        </div>
+
+        {/* Floating Orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-[#FF5200]/30 to-[#E4002B]/30 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite]"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-[#E4002B]/30 to-[#FF6B35]/30 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite_5s]"></div>
+        </div>
+
+        {/* Scanning Lines */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_4s_ease-in-out_infinite]"></div>
+          <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_4s_ease-in-out_infinite_2s]"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 relative z-10">
+          {/* Section Header */}
+          <div className="text-center mb-10 sm:mb-12 md:mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
+            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-white/10 backdrop-blur-sm rounded-full mb-4 sm:mb-5 md:mb-6 border border-[#FF5200]/30">
+              <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5 animate-pulse"></span>
+              <span className="text-xs sm:text-sm font-medium text-white">Active Brand Searches</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 px-4">
+              Featured Brand <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Requirements</span>
+            </h2>
+            <p className="text-base sm:text-lg text-gray-300">
+              F&B brands actively searching for commercial spaces
+            </p>
+          </div>
+
+          {/* Brand Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            {/* Brand Card 1 - Truffles with Brand Colors */}
+            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-teal-500/30 hover:border-teal-400 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-teal-500/50 group-hover:-translate-y-2">
+                {/* Animated Glow Effect - Teal */}
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-teal-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                
+                {/* Animated Corner Accent - Teal */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-500/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                
+                {/* Particle Effect - Teal */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-teal-400 rounded-full animate-ping"></div>
+                  <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-teal-500 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      {/* Truffles Logo */}
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-teal-500/50 overflow-hidden bg-white p-1.5">
+                        <img 
+                          src="/logos/truffles logo.jpg" 
+                          alt="Truffles Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-lg mb-1">Truffles</h3>
+                        <p className="text-sm text-gray-400">Fine Dining</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Size:</span> 1,200-1,800 sqft</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Location:</span> Indiranagar, Koramangala</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Budget:</span> ₹1.2L-2L/month</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Timeline:</span> Within 1 month</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Pulse Ring - Teal */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-teal-500 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-teal-500/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+              </div>
+            </div>
+
+            {/* Brand Card 2 - Original Burger Co. with Brand Colors */}
+            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards]">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-blue-500/30 hover:border-blue-400 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-blue-500/50 group-hover:-translate-y-2">
+                {/* Animated Glow Effect - Blue */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-blue-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                
+                {/* Animated Corner Accent - Blue */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                
+                {/* Particle Effect - Blue */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute top-1/3 left-1/3 w-2 h-2 bg-blue-400 rounded-full animate-ping"></div>
+                  <div className="absolute bottom-1/3 right-1/3 w-2 h-2 bg-blue-500 rounded-full animate-ping" style={{animationDelay: '0.3s'}}></div>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-blue-500/50 overflow-hidden bg-white p-1.5">
+                        <img 
+                          src="/logos/Original_Burger_Co_Logo.png" 
+                          alt="Original Burger Co. Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-lg mb-1">Original Burger Co.</h3>
+                        <p className="text-sm text-gray-400">QSR</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/40 text-blue-400 text-xs font-semibold rounded-full">New</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Size:</span> 800-1,200 sqft</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Location:</span> Whitefield, Marathahalli</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Budget:</span> ₹80K-1.2L/month</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Timeline:</span> Immediate</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Pulse Ring - Blue */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-blue-500 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-blue-500/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+              </div>
+            </div>
+
+            {/* Brand Card 3 - Blr Brewing Co. with Brand Colors */}
+            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards]">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-amber-600/30 hover:border-amber-500 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-amber-600/50 group-hover:-translate-y-2">
+                {/* Animated Glow Effect - Amber/Brown (Brewery colors) */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-600/20 via-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                
+                {/* Animated Corner Accent - Amber */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-600/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                
+                {/* Particle Effect - Amber/Brown */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute top-1/4 right-1/4 w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
+                  <div className="absolute bottom-1/4 left-1/4 w-2 h-2 bg-amber-600 rounded-full animate-ping" style={{animationDelay: '0.4s'}}></div>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-amber-600/50 overflow-hidden bg-white p-1.5">
+                        <img 
+                          src="/logos/blr brewing co logo.png" 
+                          alt="Blr Brewing Co. Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-lg mb-1">Blr Brewing Co.</h3>
+                        <p className="text-sm text-gray-400">Brewery & Restaurant</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Size:</span> 2,000-3,000 sqft</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Location:</span> MG Road, Brigade Road</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Budget:</span> ₹2L-3.5L/month</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Timeline:</span> Within 2 months</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Pulse Ring - Amber */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-amber-600 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-amber-600/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+              </div>
+            </div>
+
+            {/* Brand Card 4 - Mumbai Pav Co. with Brand Colors */}
+            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards]">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-blue-700/30 hover:border-blue-600 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-blue-700/50 group-hover:-translate-y-2">
+                {/* Animated Glow Effect - Navy Blue with Orange/Green accents */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-700/20 via-orange-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                
+                {/* Animated Corner Accent - Navy Blue */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-700/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                
+                {/* Particle Effect - Navy Blue, Orange, Green */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-600 rounded-full animate-ping"></div>
+                  <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-orange-500 rounded-full animate-ping" style={{animationDelay: '0.3s'}}></div>
+                  <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-green-500 rounded-full animate-ping" style={{animationDelay: '0.6s'}}></div>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-blue-700/50 overflow-hidden bg-white p-1.5">
+                        <img 
+                          src="/logos/MPC.jpg" 
+                          alt="Mumbai Pav Co. Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-lg mb-1">Mumbai Pav Co.</h3>
+                        <p className="text-sm text-gray-400">Cloud Kitchen</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Size:</span> 600-1,000 sqft</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Location:</span> HSR Layout, Bellandur</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Budget:</span> ₹60K-90K/month</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Timeline:</span> Immediate</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Pulse Ring - Navy Blue */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-blue-700 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-blue-700/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+              </div>
+            </div>
+
+            {/* Brand Card 5 - Blue Tokai with Brand Colors */}
+            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-sky-500/30 hover:border-sky-400 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-sky-500/50 group-hover:-translate-y-2">
+                {/* Animated Glow Effect - Sky Blue */}
+                <div className="absolute inset-0 bg-gradient-to-br from-sky-500/20 via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                
+                {/* Animated Corner Accent - Sky Blue */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-sky-500/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                
+                {/* Particle Effect - Sky Blue */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute top-1/3 left-1/3 w-2 h-2 bg-sky-400 rounded-full animate-ping"></div>
+                  <div className="absolute bottom-1/3 right-1/3 w-2 h-2 bg-blue-500 rounded-full animate-ping" style={{animationDelay: '0.3s'}}></div>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-sky-500/50 overflow-hidden bg-white p-1.5">
+                        <img 
+                          src="/logos/Blue Tokai.jpg" 
+                          alt="Blue Tokai Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-lg mb-1">Blue Tokai</h3>
+                        <p className="text-sm text-gray-400">Café</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-sky-500/20 border border-sky-500/40 text-sky-400 text-xs font-semibold rounded-full">New</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Size:</span> 1,000-1,500 sqft</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Location:</span> Indiranagar, Koramangala</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Budget:</span> ₹1L-1.5L/month</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Timeline:</span> Within 1 month</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Pulse Ring - Sky Blue */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-sky-500 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-sky-500/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+              </div>
+            </div>
+
+            {/* Brand Card 6 - Namaste- South Indian Restaurant with Brand Colors */}
+            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.6s_forwards]">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-orange-600/30 hover:border-orange-500 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-orange-600/50 group-hover:-translate-y-2">
+                {/* Animated Glow Effect - Saffron/Orange (Indian restaurant colors) */}
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                
+                {/* Animated Corner Accent - Orange */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-600/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                
+                {/* Particle Effect - Orange/Saffron */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
+                  <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-orange-600 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-orange-600/50 overflow-hidden bg-white p-1.5">
+                        <img 
+                          src="/logos/Namaste logo.jpg" 
+                          alt="Namaste- South Indian Restaurant Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-lg mb-1">Namaste</h3>
+                        <p className="text-sm text-gray-400">South Indian Restaurant</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Size:</span> 2,000-3,000 sqft</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Location:</span> Across Bangalore</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Budget:</span> ₹1.5L-2.5L/month</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-white">Timeline:</span> Within 2 months</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Pulse Ring - Orange */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-orange-600 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-600/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-12 md:mt-16">
+            <button
+              onClick={() => router.push('/filter/brand')}
+              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#FF5200]/50 min-w-[180px] sm:min-w-[200px]"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                Feature Brand
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#E4002B] to-[#FF5200] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+            
+            <button
+              onClick={() => router.push('/filter/owner')}
+              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:bg-white/20 hover:border-white/30 hover:shadow-lg hover:shadow-white/20 min-w-[180px] sm:min-w-[200px]"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                List Property
+              </span>
+            </button>
+          </div>
+
+          {/* Bottom Glow Line */}
+          <div className="mt-16 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
+        </div>
+      </section>
+
 
       {/* Futuristic Transition with Scanning Beams */}
       <div className="relative z-10 h-32 overflow-hidden">
@@ -1693,7 +2239,6 @@ export default function Home() {
           <div className="mt-16 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
         </div>
       </section>
-
 
 
       {/* CTA Section with Energy Waves */}

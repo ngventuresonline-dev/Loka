@@ -23,20 +23,14 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    console.log('Attempting login with:', email)
-
     // Authenticate user
     const result = await loginUser(email, password)
-
-    console.log('Login result:', result)
 
     setLoading(false)
 
     if (result.success && result.user) {
-      console.log('Login successful! User type:', result.user.userType)
       // Redirect all users to homepage after login
       // Admins can use navbar to navigate to /admin dashboard
-      console.log('Redirecting to homepage...')
       router.push('/')
     } else {
       console.error('Login failed:', result.error)

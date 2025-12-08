@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
-// Helper to safely get Prisma client
-async function getPrisma() {
-  try {
-    const { prisma } = await import('@/lib/prisma')
-    return prisma
-  } catch (error) {
-    return null
-  }
-}
+import { getPrisma } from '@/lib/get-prisma'
 
 interface StatusCheck {
   name: string

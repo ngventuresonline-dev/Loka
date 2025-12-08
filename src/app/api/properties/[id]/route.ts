@@ -19,7 +19,6 @@ export async function GET(
   try {
     const { id } = await params
     const propertyId = id
-    console.log('[Properties API] GET /api/properties/[id] - Fetching property:', propertyId)
 
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
@@ -102,7 +101,6 @@ export async function PUT(
   try {
     const { id } = await params
     const propertyId = id
-    console.log('[Properties API] PUT /api/properties/[id] - Updating property:', propertyId)
 
     // Authenticate user
     const user = await requireOwnerOrAdmin(request)
@@ -191,7 +189,6 @@ export async function PUT(
       },
     })
 
-    console.log('[Properties API] Property updated:', propertyId)
 
     return NextResponse.json({
       success: true,
@@ -246,7 +243,6 @@ export async function DELETE(
   try {
     const { id } = await params
     const propertyId = id
-    console.log('[Properties API] DELETE /api/properties/[id] - Deleting property:', propertyId)
 
     // Authenticate user
     const user = await requireOwnerOrAdmin(request)
@@ -283,7 +279,6 @@ export async function DELETE(
       where: { id: propertyId },
     })
 
-    console.log('[Properties API] Property deleted:', propertyId)
 
     return NextResponse.json({
       success: true,

@@ -10,11 +10,8 @@ import { CreatePropertySchema, PropertyQuerySchema } from '@/lib/validations/pro
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[Properties API] POST /api/properties - Creating property')
-
     // Authenticate user (must be owner or admin)
     const user = await requireOwnerOrAdmin(request)
-    console.log('[Properties API] Authenticated user:', user.email, user.userType)
 
     // Parse and validate request body
     let body
@@ -97,8 +94,6 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log('[Properties API] Property created:', property.id)
-
     return NextResponse.json(
       {
         success: true,
@@ -150,8 +145,6 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('[Properties API] GET /api/properties - Listing properties')
-
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams
     const queryParams: Record<string, string | undefined> = {}
@@ -288,8 +281,6 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(total / limit)
     const hasNextPage = page < totalPages
     const hasPreviousPage = page > 1
-
-    console.log('[Properties API] Found', properties.length, 'properties (page', page, 'of', totalPages, ')')
 
     return NextResponse.json({
       success: true,
