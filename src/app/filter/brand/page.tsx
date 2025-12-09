@@ -483,20 +483,6 @@ export default function BrandFilterPage() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
-        {/* Section Header - Platform Performance Style */}
-        <div className="text-center mb-6 sm:mb-8 md:mb-12 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
-          <div className="inline-flex items-center px-2.5 sm:px-4 md:px-5 py-1 sm:py-1.5 sm:py-2 bg-white/10 backdrop-blur-sm rounded-full mb-3 sm:mb-4 md:mb-5 border border-[#FF5200]/30">
-            <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-1.5 sm:mr-2.5 animate-pulse"></span>
-            <span className="text-[10px] sm:text-xs md:text-sm font-medium text-white">AI-Powered Filters</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-3 px-2 sm:px-4">
-            Find Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Perfect Space</span>
-          </h1>
-          <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-2xl mx-auto px-2">
-            Refine your search with intelligent filters powered by AI
-          </p>
-        </div>
-
         {/* Header with Back Button */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, MotionValue } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 // Prime locations for each city
@@ -184,169 +184,13 @@ export default function CityMapBackground() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
           {cities.map((city, cityIndex) => {
-            // Each city appears at different scroll positions
-            const cityScrollProgress = useTransform(
-              scrollYProgress,
-              [cityIndex * 0.1, cityIndex * 0.1 + 0.3],
-              [0, 1]
-            );
-
             return (
-              <motion.div
+              <CityCard
                 key={city.name}
-                style={{ opacity: cityScrollProgress }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ 
-                  duration: 0.8, 
-                  delay: cityIndex * 0.15,
-                  type: "spring",
-                  stiffness: 100
-                }}
-                className="relative group"
-              >
-                {/* Card container */}
-                <div className="relative bg-gradient-to-br from-white/70 to-white/50 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-white/40 hover:border-purple-300/50 transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(139,92,246,0.3)] overflow-hidden">
-                  {/* Ambient glow */}
-                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-                  
-                  <div className="relative z-10">
-                    {/* City name */}
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8">
-                      {city.displayName}
-                    </h3>
-
-                    {/* Map SVG container */}
-                    <div className="relative w-full aspect-square mb-6">
-                      <svg
-                        viewBox="0 0 100 100"
-                        className="w-full h-full"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        {/* City outline */}
-                        <motion.path
-                          d={city.path}
-                          fill="none"
-                          stroke="url(#gradient-stroke)"
-                          strokeWidth="0.5"
-                          className="opacity-30"
-                          initial={{ pathLength: 0 }}
-                          whileInView={{ pathLength: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 2, delay: cityIndex * 0.2 }}
-                        />
-
-                        {/* Gradient definition */}
-                        <defs>
-                          <linearGradient id="gradient-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#a855f7" />
-                            <stop offset="50%" stopColor="#ec4899" />
-                            <stop offset="100%" stopColor="#3b82f6" />
-                          </linearGradient>
-                        </defs>
-
-                        {/* Prime locations */}
-                        {city.primeLocations.map((location, locIndex) => (
-                          <g key={location.name}>
-                            {/* Pulsing circle */}
-                            <motion.circle
-                              cx={location.x}
-                              cy={location.y}
-                              r="2"
-                              className={`fill-purple-500 opacity-20`}
-                              initial={{ scale: 0 }}
-                              whileInView={{ scale: [0, 2, 2.5] }}
-                              viewport={{ once: true }}
-                              transition={{
-                                duration: 1.5,
-                                delay: cityIndex * 0.2 + locIndex * 0.1,
-                                repeat: Infinity,
-                                repeatDelay: 2
-                              }}
-                            />
-
-                            {/* Location dot */}
-                            <motion.circle
-                              cx={location.x}
-                              cy={location.y}
-                              r="1"
-                              className={location.tier === 'premium' ? 'fill-purple-500' : location.tier === 'high' ? 'fill-blue-500' : 'fill-emerald-500'}
-                              initial={{ scale: 0, opacity: 0 }}
-                              whileInView={{ scale: 1, opacity: 1 }}
-                              viewport={{ once: true }}
-                              transition={{
-                                duration: 0.5,
-                                delay: cityIndex * 0.2 + locIndex * 0.1,
-                                type: "spring",
-                                stiffness: 200
-                              }}
-                            />
-
-                            {/* Connecting lines to center */}
-                            <motion.line
-                              x1={city.coordinates.x}
-                              y1={city.coordinates.y}
-                              x2={location.x}
-                              y2={location.y}
-                              stroke={location.tier === 'premium' ? '#a855f7' : location.tier === 'high' ? '#3b82f6' : '#10b981'}
-                              strokeWidth="0.2"
-                              className="opacity-20"
-                              initial={{ pathLength: 0 }}
-                              whileInView={{ pathLength: 1 }}
-                              viewport={{ once: true }}
-                              transition={{
-                                duration: 0.8,
-                                delay: cityIndex * 0.2 + locIndex * 0.1
-                              }}
-                            />
-                          </g>
-                        ))}
-
-                        {/* Center hub */}
-                        <motion.circle
-                          cx={city.coordinates.x}
-                          cy={city.coordinates.y}
-                          r="1.5"
-                          className="fill-pink-500"
-                          initial={{ scale: 0 }}
-                          whileInView={{ scale: 1 }}
-                          viewport={{ once: true }}
-                          transition={{
-                            duration: 0.5,
-                            delay: cityIndex * 0.2,
-                            type: "spring",
-                            stiffness: 300
-                          }}
-                        />
-                      </svg>
-                    </div>
-
-                    {/* Location list */}
-                    <div className="space-y-2">
-                      {city.primeLocations.slice(0, 4).map((location, idx) => (
-                        <motion.div
-                          key={location.name}
-                          initial={{ opacity: 0, x: -20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.5, delay: cityIndex * 0.2 + idx * 0.1 }}
-                          className="flex items-center gap-2 text-xs sm:text-sm text-gray-600"
-                        >
-                          <div className={`${getTierSize(location.tier)} rounded-full bg-gradient-to-br ${getTierColor(location.tier)} flex-shrink-0`}></div>
-                          <span>{location.name}</span>
-                          {idx === 0 && <span className="ml-auto text-[10px] px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full">Premium</span>}
-                        </motion.div>
-                      ))}
-                      {city.primeLocations.length > 4 && (
-                        <p className="text-xs text-gray-500 pl-5">
-                          +{city.primeLocations.length - 4} more locations
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+                city={city}
+                cityIndex={cityIndex}
+                scrollYProgress={scrollYProgress}
+              />
             );
           })}
         </div>

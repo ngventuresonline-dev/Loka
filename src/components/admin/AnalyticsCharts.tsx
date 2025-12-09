@@ -16,6 +16,7 @@ interface AnalyticsChartsProps {
     averageResults: number
     conversionRate: number
   }
+  inquiriesByStatus?: Record<string, number>
 }
 
 const COLORS = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#F44336']
@@ -27,12 +28,19 @@ export default function AnalyticsCharts({
   topLocations,
   propertyTypes,
   brandOwnerRatio,
-  searchAnalytics
+  searchAnalytics,
+  inquiriesByStatus = {}
 }: AnalyticsChartsProps) {
   const pieData = [
     { name: 'Brands', value: brandOwnerRatio.brands },
     { name: 'Owners', value: brandOwnerRatio.owners },
     { name: 'Admins', value: brandOwnerRatio.admins }
+  ]
+
+  const inquiryStatusData = [
+    { name: 'Pending', value: inquiriesByStatus.pending || 0 },
+    { name: 'Responded', value: inquiriesByStatus.responded || 0 },
+    { name: 'Closed', value: inquiriesByStatus.closed || 0 }
   ]
 
   return (
@@ -120,6 +128,30 @@ export default function AnalyticsCharts({
             </PieChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Inquiries by Status */}
+      <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Inquiries by Status</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={inquiryStatusData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {inquiryStatusData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }} />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Search Analytics */}

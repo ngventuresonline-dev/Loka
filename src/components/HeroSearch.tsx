@@ -23,7 +23,7 @@ export type Mode = 'brand' | 'owner'
 
 const modes: { key: Mode; label: string }[] = [
   { key: 'brand', label: 'Brand - Looking For Space' },
-  { key: 'owner', label: 'Property Owner - List Property' },
+  { key: 'owner', label: 'List Property' },
 ]
 
 const brandPlaceholders = [
@@ -275,7 +275,7 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
                 <span className="relative z-10 flex items-center gap-1.5 sm:gap-2 justify-center flex-wrap sm:flex-nowrap">
                   {m.key === 'owner' ? (
                     <>
-                      <span className="whitespace-nowrap">Property Owner - List Property</span>
+                      <span className="whitespace-nowrap">List Property</span>
                       <span 
                         className="px-2 sm:px-2.5 py-0.5 sm:py-1 relative overflow-hidden text-white text-[10px] sm:text-xs font-bold rounded-full border border-red-500/70 flex items-center gap-0.5 sm:gap-1 flex-shrink-0"
                         style={{

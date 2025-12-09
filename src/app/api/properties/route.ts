@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOwnerOrAdmin, getAuthenticatedUser } from '@/lib/api-auth'
 import { CreatePropertySchema, PropertyQuerySchema } from '@/lib/validations/property'
+import { generatePropertyId } from '@/lib/property-id-generator'
 
 /**
  * POST /api/properties
@@ -61,9 +62,13 @@ export async function POST(request: NextRequest) {
     }
     const mappedPropertyType = propertyTypeMap[data.propertyType] || 'other'
 
+    // Generate property ID in prop-XXX format
+    const propertyId = await generatePropertyId()
+
     // Create property
     const property = await prisma.property.create({
       data: {
+        id: propertyId,
         title: data.title,
         description: data.description,
         address: data.address,

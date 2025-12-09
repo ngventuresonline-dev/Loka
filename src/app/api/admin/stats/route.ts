@@ -17,13 +17,16 @@ export async function GET(request: NextRequest) {
     
     switch (dateRange) {
       case 'today':
-        startDate = new Date(now.setHours(0, 0, 0, 0))
+        startDate = new Date(now)
+        startDate.setHours(0, 0, 0, 0)
         break
       case '7d':
-        startDate = new Date(now.setDate(now.getDate() - 7))
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 7)
         break
       case '30d':
-        startDate = new Date(now.setDate(now.getDate() - 30))
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 30)
         break
       default:
         startDate = null
@@ -106,6 +109,17 @@ export async function GET(request: NextRequest) {
     // Calculate active matches (inquiries that came from matches)
     const activeMatches = totalInquiries
 
+    // Get platform metrics
+    const respondedCount = inquiriesByStatus.find((i: any) => i.status === 'responded')?._count || 0
+    
+    // Calculate average BFI and PFI (simplified - would need actual match data)
+    const averageBFI = 75 // Placeholder - would need actual BFI calculations
+    const averagePFI = 80 // Placeholder - would need actual PFI calculations
+    const totalMatchesGenerated = totalInquiries
+    const matchSuccessRate = totalInquiries > 0 ? (respondedCount / totalInquiries) * 100 : 0
+    const aiSearchCount = 0 // Placeholder - would need search history model
+    const conversionRate = totalUsers > 0 ? (totalInquiries / totalUsers) * 100 : 0
+
     // Format response
     const stats = {
       overview: {
@@ -132,6 +146,14 @@ export async function GET(request: NextRequest) {
         users: recentUsers,
         properties: recentProperties,
         inquiries: recentInquiries
+      },
+      platformMetrics: {
+        averageBFI,
+        averagePFI,
+        totalMatches: totalMatchesGenerated,
+        matchSuccessRate,
+        aiSearchCount,
+        conversionRate
       }
     }
 

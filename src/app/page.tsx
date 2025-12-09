@@ -11,6 +11,8 @@ import PropertyOwnerOnboardingForm from '@/components/onboarding/PropertyOwnerOn
 import Dashboard from '@/components/Dashboard'
 import AiSearchModal from '@/components/AiSearchModal'
 import HeroSearch, { type Mode as HeroMode } from '@/components/HeroSearch'
+import BrandRequirementsModal from '@/components/BrandRequirementsModal'
+import { featuredProperties, type FeaturedProperty } from '@/data/featured-properties'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
 import { getTheme, getPaletteColors } from '@/lib/theme'
@@ -43,6 +45,232 @@ const mockProperties: Property[] = [
   }
 ]
 
+// Property Carousel Component
+function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+  
+  // Responsive properties per page: 3 for desktop, 1 for mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+  
+  const propertiesPerPage = isMobile ? 1 : 3
+  const scrollIncrement = 1 // Scroll one property at a time
+  
+  // Get current properties with wrapping - always show full number of cards
+  const getCurrentProperties = () => {
+    const result: FeaturedProperty[] = []
+    for (let i = 0; i < propertiesPerPage; i++) {
+      const index = (currentIndex + i) % properties.length
+      result.push(properties[index])
+    }
+    return result
+  }
+  
+  const currentProperties = getCurrentProperties()
+
+  // Hero section colors
+  const heroColors = {
+    border: 'hover:border-[#FF5200]',
+    iconBg: 'bg-gradient-to-br from-[#FF5200]/10 to-[#E4002B]/10',
+    iconColor: 'text-[#FF5200]',
+    shadow: 'hover:shadow-[#FF5200]/30',
+    pulse: 'border-[#FF5200]',
+    ring: 'ring-[#FF5200]/50',
+    glowFrom: 'rgba(255, 82, 0, 0.2)',
+    glowVia: 'rgba(228, 0, 43, 0.1)',
+    accent: 'rgba(255, 82, 0, 0.4)',
+    particle: 'bg-[#FF5200]'
+  }
+
+  // Auto-scroll functionality with pause on hover
+  const [isPaused, setIsPaused] = useState(false)
+  
+  useEffect(() => {
+    if (isPaused) return
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => {
+        // Move forward by one property at a time, wrapping will be handled by getCurrentProperties
+        return (prev + scrollIncrement) % properties.length
+      })
+    }, 5000) // Auto-scroll every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [properties.length, propertiesPerPage, isPaused])
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => {
+      // Move back by one property, wrapping to the end if needed
+      const newIndex = prev - scrollIncrement
+      if (newIndex < 0) {
+        return properties.length + newIndex
+      }
+      return newIndex
+    })
+  }
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => {
+      // Move forward by one property, wrapping will be handled by getCurrentProperties
+      return (prev + scrollIncrement) % properties.length
+    })
+  }
+
+  return (
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      {/* Navigation Buttons */}
+      <button
+        onClick={goToPrevious}
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white border-2 border-[#FF5200]/30 hover:border-[#FF5200] shadow-lg hover:shadow-[#FF5200]/30 flex items-center justify-center transition-all duration-300 hover:scale-110"
+        aria-label="Previous properties"
+      >
+        <svg className="w-5 h-5 md:w-6 md:h-6 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <button
+        onClick={goToNext}
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white border-2 border-[#FF5200]/30 hover:border-[#FF5200] shadow-lg hover:shadow-[#FF5200]/30 flex items-center justify-center transition-all duration-300 hover:scale-110"
+        aria-label="Next properties"
+      >
+        <svg className="w-5 h-5 md:w-6 md:h-6 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      {/* Properties Grid - Show 3 for desktop, 1 for mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-8 md:px-12">
+        {currentProperties.map((property, idx) => {
+          return (
+            <div
+              key={property.id}
+              className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] h-full"
+              style={{ animationDelay: `${idx * 0.1}s` }}
+            >
+              <div className={`relative bg-white backdrop-blur-xl rounded-2xl border-2 border-gray-200 ${heroColors.border} transition-all duration-500 overflow-hidden shadow-lg ${heroColors.shadow} group-hover:-translate-y-2 h-full flex flex-col`}>
+                {/* Top Accent Bar - Hero Color */}
+                <div 
+                  className="absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl z-20"
+                  style={{
+                    background: 'linear-gradient(to right, #FF5200, #E4002B, #FF6B35)'
+                  }}
+                ></div>
+                
+                {/* Image Placeholder */}
+                <div className="relative w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-md">
+                    <span className="text-xs font-semibold text-gray-600">Property Image</span>
+                  </div>
+                </div>
+                
+                {/* Animated Glow Effect */}
+                <div 
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500"
+                  style={{
+                    background: `linear-gradient(to bottom right, ${heroColors.glowFrom}, ${heroColors.glowVia}, transparent)`
+                  }}
+                ></div>
+                
+                {/* Animated Corner Accent */}
+                <div 
+                  className="absolute top-0 right-0 w-20 h-20 rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"
+                  style={{
+                    background: `linear-gradient(to bottom right, ${heroColors.accent}, transparent)`
+                  }}
+                ></div>
+                
+                {/* Particle Effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className={`absolute top-1/4 left-1/4 w-2 h-2 ${heroColors.particle} rounded-full animate-ping`}></div>
+                  <div className={`absolute top-3/4 right-1/4 w-2 h-2 ${heroColors.particle} rounded-full animate-ping`} style={{animationDelay: '0.5s'}}></div>
+                </div>
+                
+                <div className="relative z-10 p-6 flex flex-col flex-1">
+                  {/* Title and Badge */}
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="font-bold text-gray-900 text-base md:text-lg mb-1 pr-2 flex-1 line-clamp-2">
+                      {property.title}
+                    </h3>
+                    {property.badge && (
+                      <span className="px-2.5 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0">
+                        {property.badge}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Property Details */}
+                  <div className="space-y-3 flex-1">
+                    {/* Size */}
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className={`w-8 h-8 ${heroColors.iconBg} rounded-lg flex items-center justify-center border border-[#FF5200]/20`}>
+                        <svg className={`w-4 h-4 ${heroColors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-gray-900">Size:</span> {property.size}</span>
+                    </div>
+
+                    {/* Floor */}
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className={`w-8 h-8 ${heroColors.iconBg} rounded-lg flex items-center justify-center border border-[#FF5200]/20`}>
+                        <svg className={`w-4 h-4 ${heroColors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-gray-900">Floor:</span> {property.floor}</span>
+                    </div>
+
+                    {/* Rent */}
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className={`w-8 h-8 ${heroColors.iconBg} rounded-lg flex items-center justify-center border border-[#FF5200]/20`}>
+                        <svg className={`w-4 h-4 ${heroColors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-gray-900">Rent:</span> {property.rent}</span>
+                    </div>
+
+                    {/* Deposit */}
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className={`w-8 h-8 ${heroColors.iconBg} rounded-lg flex items-center justify-center border border-[#FF5200]/20`}>
+                        <svg className={`w-4 h-4 ${heroColors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                      </div>
+                      <span><span className="font-semibold text-gray-900">Deposit:</span> {property.deposit}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Pulse Ring */}
+                <div className={`absolute inset-0 rounded-2xl border-2 ${heroColors.pulse} opacity-0 group-hover:opacity-100 group-hover:animate-ping`}></div>
+                <div className={`absolute inset-0 rounded-2xl ring-2 ${heroColors.ring} opacity-0 group-hover:opacity-100 blur-sm`}></div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const router = useRouter()
   
@@ -71,6 +299,7 @@ export default function Home() {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [heroMode, setHeroMode] = useState<HeroMode>('brand')
   const [barHeights, setBarHeights] = useState<number[]>([])
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false)
 
   // Handle AI Search - Open modal with query
   const handleSearch = () => {
@@ -514,53 +743,19 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Smooth Transition from Logos to Featured Requirements */}
-      <div className="relative z-10 h-20 md:h-28 overflow-hidden">
-        <div className="absolute inset-0" style={{
-          background: 'linear-gradient(to bottom, #ffffff 0%, #f9fafb 20%, #f3f4f6 40%, #e5e7eb 60%, #d1d5db 70%, #9ca3af 80%, #4b5563 90%, #1f2937 95%, #111827 100%)'
-        }}></div>
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_3s_ease-in-out_infinite]"></div>
-          <div className="absolute top-0 left-1/2 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_3s_ease-in-out_infinite_1s]"></div>
-          <div className="absolute top-0 left-3/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF6B35] to-transparent animate-[scan_3s_ease-in-out_infinite_2s]"></div>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
-      </div>
-
-      {/* Featured Brand Requirements Section - Futuristic */}
-      <section className="relative z-10 bg-gradient-to-b from-gray-900 via-black to-gray-900 py-24 md:py-32 overflow-hidden">
-        {/* Animated Background Grid */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'linear-gradient(#FF5200 1px, transparent 1px), linear-gradient(90deg, #FF5200 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
-            animation: 'grid 20s linear infinite'
-          }}></div>
-        </div>
-
-        {/* Floating Orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-[#FF5200]/30 to-[#E4002B]/30 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite]"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-[#E4002B]/30 to-[#FF6B35]/30 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite_5s]"></div>
-        </div>
-
-        {/* Scanning Lines */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_4s_ease-in-out_infinite]"></div>
-          <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_4s_ease-in-out_infinite_2s]"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 relative z-10">
+      {/* Featured Brand Requirements Section */}
+      <section className="relative z-10 bg-white py-24 md:py-32">
+        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="text-center mb-10 sm:mb-12 md:mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
-            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-white/10 backdrop-blur-sm rounded-full mb-4 sm:mb-5 md:mb-6 border border-[#FF5200]/30">
-              <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5 animate-pulse"></span>
-              <span className="text-xs sm:text-sm font-medium text-white">Active Brand Searches</span>
+          <div className="text-center mb-10 sm:mb-12 md:mb-16">
+            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-gray-50 rounded-full mb-4 sm:mb-5 md:mb-6 border border-gray-200">
+              <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5"></span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700">Active Brand Searches</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 px-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 px-4">
               Featured Brand <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Requirements</span>
             </h2>
-            <p className="text-base sm:text-lg text-gray-300">
+            <p className="text-base sm:text-lg text-gray-600">
               F&B brands actively searching for commercial spaces
             </p>
           </div>
@@ -569,7 +764,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {/* Brand Card 1 - Truffles with Brand Colors */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-teal-500/30 hover:border-teal-400 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-teal-500/50 group-hover:-translate-y-2">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-teal-400 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-teal-500/30 group-hover:-translate-y-2">
                 {/* Animated Glow Effect - Teal */}
                 <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-teal-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
@@ -594,46 +789,46 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-lg mb-1">Truffles</h3>
-                        <p className="text-sm text-gray-400">Fine Dining</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">Truffles</h3>
+                        <p className="text-sm text-gray-600">Fine Dining</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                    <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">Active</span>
                   </div>
                   
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Size:</span> 1,200-1,800 sqft</span>
+                      <span><span className="font-semibold text-gray-900">Size:</span> 1,200-1,800 sqft</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Location:</span> Indiranagar, Koramangala</span>
+                      <span><span className="font-semibold text-gray-900">Location:</span> Indiranagar, Koramangala</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Budget:</span> ₹1.2L-2L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹1.2L-2L/month</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Timeline:</span> Within 1 month</span>
+                      <span><span className="font-semibold text-gray-900">Timeline:</span> Within 1 month</span>
                     </div>
                   </div>
                 </div>
@@ -646,7 +841,7 @@ export default function Home() {
 
             {/* Brand Card 2 - Original Burger Co. with Brand Colors */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-blue-500/30 hover:border-blue-400 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-blue-500/50 group-hover:-translate-y-2">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-blue-400 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-blue-500/30 group-hover:-translate-y-2">
                 {/* Animated Glow Effect - Blue */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-blue-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
@@ -670,46 +865,46 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-lg mb-1">Original Burger Co.</h3>
-                        <p className="text-sm text-gray-400">QSR</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">Original Burger Co.</h3>
+                        <p className="text-sm text-gray-600">QSR</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/40 text-blue-400 text-xs font-semibold rounded-full">New</span>
+                    <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-full">New</span>
                   </div>
                   
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Size:</span> 800-1,200 sqft</span>
+                      <span><span className="font-semibold text-gray-900">Size:</span> 800-1,200 sqft</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Location:</span> Whitefield, Marathahalli</span>
+                      <span><span className="font-semibold text-gray-900">Location:</span> Whitefield, Marathahalli</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Budget:</span> ₹80K-1.2L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹80K-1.2L/month</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Timeline:</span> Immediate</span>
+                      <span><span className="font-semibold text-gray-900">Timeline:</span> Immediate</span>
                     </div>
                   </div>
                 </div>
@@ -722,7 +917,7 @@ export default function Home() {
 
             {/* Brand Card 3 - Blr Brewing Co. with Brand Colors */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-amber-600/30 hover:border-amber-500 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-amber-600/50 group-hover:-translate-y-2">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-amber-500 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-amber-600/30 group-hover:-translate-y-2">
                 {/* Animated Glow Effect - Amber/Brown (Brewery colors) */}
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-600/20 via-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
@@ -746,46 +941,46 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-lg mb-1">Blr Brewing Co.</h3>
-                        <p className="text-sm text-gray-400">Brewery & Restaurant</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">Blr Brewing Co.</h3>
+                        <p className="text-sm text-gray-600">Brewery & Restaurant</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                    <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">Active</span>
                   </div>
                   
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Size:</span> 2,000-3,000 sqft</span>
+                      <span><span className="font-semibold text-gray-900">Size:</span> 2,000-3,000 sqft</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Location:</span> MG Road, Brigade Road</span>
+                      <span><span className="font-semibold text-gray-900">Location:</span> MG Road, Brigade Road</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Budget:</span> ₹2L-3.5L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹2L-3.5L/month</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Timeline:</span> Within 2 months</span>
+                      <span><span className="font-semibold text-gray-900">Timeline:</span> Within 2 months</span>
                     </div>
                   </div>
                 </div>
@@ -798,7 +993,7 @@ export default function Home() {
 
             {/* Brand Card 4 - Mumbai Pav Co. with Brand Colors */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-blue-700/30 hover:border-blue-600 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-blue-700/50 group-hover:-translate-y-2">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-blue-600 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-blue-700/30 group-hover:-translate-y-2">
                 {/* Animated Glow Effect - Navy Blue with Orange/Green accents */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-700/20 via-orange-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
@@ -823,46 +1018,46 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-lg mb-1">Mumbai Pav Co.</h3>
-                        <p className="text-sm text-gray-400">Cloud Kitchen</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">Mumbai Pav Co.</h3>
+                        <p className="text-sm text-gray-600">Cloud Kitchen</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                    <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">Active</span>
                   </div>
-                  
+              
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Size:</span> 600-1,000 sqft</span>
+                      <span><span className="font-semibold text-gray-900">Size:</span> 600-1,000 sqft</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Location:</span> HSR Layout, Bellandur</span>
+                      <span><span className="font-semibold text-gray-900">Location:</span> HSR Layout, Bellandur</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Budget:</span> ₹60K-90K/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹60K-90K/month</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-blue-700/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Timeline:</span> Immediate</span>
+                      <span><span className="font-semibold text-gray-900">Timeline:</span> Immediate</span>
                     </div>
                   </div>
                 </div>
@@ -875,7 +1070,7 @@ export default function Home() {
 
             {/* Brand Card 5 - Blue Tokai with Brand Colors */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-sky-500/30 hover:border-sky-400 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-sky-500/50 group-hover:-translate-y-2">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-sky-400 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-sky-500/30 group-hover:-translate-y-2">
                 {/* Animated Glow Effect - Sky Blue */}
                 <div className="absolute inset-0 bg-gradient-to-br from-sky-500/20 via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
@@ -899,46 +1094,46 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-lg mb-1">Blue Tokai</h3>
-                        <p className="text-sm text-gray-400">Café</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">Blue Tokai</h3>
+                        <p className="text-sm text-gray-600">Café</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-sky-500/20 border border-sky-500/40 text-sky-400 text-xs font-semibold rounded-full">New</span>
+                    <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-full">New</span>
                   </div>
-                  
+              
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Size:</span> 1,000-1,500 sqft</span>
+                      <span><span className="font-semibold text-gray-900">Size:</span> 1,000-1,500 sqft</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Location:</span> Indiranagar, Koramangala</span>
+                      <span><span className="font-semibold text-gray-900">Location:</span> Indiranagar, Koramangala</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Budget:</span> ₹1L-1.5L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹1L-1.5L/month</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Timeline:</span> Within 1 month</span>
+                      <span><span className="font-semibold text-gray-900">Timeline:</span> Within 1 month</span>
                     </div>
                   </div>
                 </div>
@@ -951,7 +1146,7 @@ export default function Home() {
 
             {/* Brand Card 6 - Namaste- South Indian Restaurant with Brand Colors */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.6s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border-2 border-orange-600/30 hover:border-orange-500 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-orange-600/50 group-hover:-translate-y-2">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-orange-500 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-orange-600/30 group-hover:-translate-y-2">
                 {/* Animated Glow Effect - Saffron/Orange (Indian restaurant colors) */}
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
@@ -975,46 +1170,46 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-lg mb-1">Namaste</h3>
-                        <p className="text-sm text-gray-400">South Indian Restaurant</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">Namaste</h3>
+                        <p className="text-sm text-gray-600">South Indian Restaurant</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                    <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">Active</span>
                   </div>
-                  
+              
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Size:</span> 2,000-3,000 sqft</span>
+                      <span><span className="font-semibold text-gray-900">Size:</span> 2,000-3,000 sqft</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Location:</span> Across Bangalore</span>
+                      <span><span className="font-semibold text-gray-900">Location:</span> Across Bangalore</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Budget:</span> ₹1.5L-2.5L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹1.5L-2.5L/month</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <div className="w-8 h-8 bg-orange-600/20 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-white">Timeline:</span> Within 2 months</span>
+                      <span><span className="font-semibold text-gray-900">Timeline:</span> Within 2 months</span>
                     </div>
                   </div>
                 </div>
@@ -1027,52 +1222,84 @@ export default function Home() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-12 md:mt-16">
-            <button
-              onClick={() => router.push('/filter/brand')}
-              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#FF5200]/50 min-w-[180px] sm:min-w-[200px]"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-                Feature Brand
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-[#E4002B] to-[#FF5200] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </button>
-            
-            <button
-              onClick={() => router.push('/filter/owner')}
-              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:bg-white/20 hover:border-white/30 hover:shadow-lg hover:shadow-white/20 min-w-[180px] sm:min-w-[200px]"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
+          <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 mt-12 md:mt-16">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+              <button
+                onClick={() => router.push('/filter/brand')}
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white font-semibold rounded-xl min-w-[180px] sm:min-w-[200px]"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                  Feature Brand
+                </span>
+              </button>
+              
+              <button
+                onClick={() => router.push('/filter/owner')}
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-xl min-w-[180px] sm:min-w-[200px] flex items-center justify-center gap-2"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                List Property
-              </span>
+                <span>List Property</span>
+                <span 
+                  className="px-2 py-0.5 relative overflow-hidden text-white text-[10px] font-bold rounded-full border border-red-500/70 flex items-center gap-1 flex-shrink-0"
+                  style={{
+                    background: 'linear-gradient(90deg, rgba(244, 114, 182, 1), rgba(236, 72, 153, 1), rgba(244, 114, 182, 1), rgba(251, 113, 133, 1), rgba(244, 114, 182, 1))',
+                    backgroundSize: '300% 100%',
+                    animation: 'gradientShift 2s ease-in-out infinite',
+                    boxShadow: '0 0 8px rgba(236, 72, 153, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2)'
+                  }}
+                >
+                  <span className="w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                    <svg className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                  <span className="whitespace-nowrap z-10">Instant</span>
+                  <span 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full pointer-events-none"
+                    style={{
+                      animation: 'shine 2.5s ease-in-out infinite',
+                    }}
+                  />
+                </span>
+              </button>
+            </div>
+            
+            {/* Discover More Link */}
+            <button
+              onClick={() => setIsBrandModalOpen(true)}
+              className="text-[#FF5200] hover:text-[#E4002B] font-medium text-sm md:text-base transition-colors duration-200 flex items-center gap-2 group"
+            >
+              <span>Discover More Brand Requirements</span>
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
-
-          {/* Bottom Glow Line */}
-          <div className="mt-16 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
         </div>
       </section>
 
+      {/* Featured Properties Section */}
+      <section className="relative z-10 bg-white py-16 sm:py-20 md:py-24">
+        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center mb-10 sm:mb-12 md:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Featured Properties
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+              Prime commercial spaces in Bangalore's top locations
+            </p>
+          </div>
 
-      {/* Futuristic Transition with Scanning Beams */}
-      <div className="relative z-10 h-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-white via-gray-50/50 to-white"></div>
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-1/6 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_3s_ease-in-out_infinite] shadow-[0_0_10px_rgba(255,82,0,0.5)]"></div>
-          <div className="absolute top-0 left-1/3 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_3s_ease-in-out_infinite_1s] shadow-[0_0_10px_rgba(228,0,43,0.5)]"></div>
-          <div className="absolute top-0 left-1/2 w-px h-full bg-gradient-to-b from-transparent via-[#FF6B35] to-transparent animate-[scan_3s_ease-in-out_infinite_2s] shadow-[0_0_10px_rgba(255,107,53,0.5)]"></div>
-          <div className="absolute top-0 right-1/3 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_3s_ease-in-out_infinite_0.5s] shadow-[0_0_10px_rgba(255,82,0,0.5)]"></div>
-          <div className="absolute top-0 right-1/6 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_3s_ease-in-out_infinite_1.5s] shadow-[0_0_10px_rgba(228,0,43,0.5)]"></div>
+          {/* Properties Carousel */}
+          <PropertyCarousel properties={featuredProperties} />
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50 shadow-[0_0_15px_rgba(255,82,0,0.5)] animate-pulse"></div>
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E4002B] to-transparent opacity-50 shadow-[0_0_15px_rgba(228,0,43,0.5)] animate-pulse"></div>
-      </div>
+      </section>
 
       {/* How It Works - Card-Based Layout */}
       <section className="relative z-10 bg-gradient-to-b from-white via-gray-50/30 to-white py-24 md:py-32 overflow-hidden">
@@ -2523,6 +2750,12 @@ export default function Home() {
         isOpen={isAiModalOpen} 
         onClose={() => setIsAiModalOpen(false)} 
         initialQuery={isAiModalOpen ? searchQuery : ''}
+      />
+
+      {/* Brand Requirements Modal */}
+      <BrandRequirementsModal 
+        isOpen={isBrandModalOpen} 
+        onClose={() => setIsBrandModalOpen(false)} 
       />
     </div>
   )

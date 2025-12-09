@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { format } from 'date-fns'
+import AdminLayout from '@/components/admin/AdminLayout'
 import StatCard from '@/components/admin/StatCard'
 import AnalyticsCharts from '@/components/admin/AnalyticsCharts'
+import PlatformMetrics from '@/components/admin/PlatformMetrics'
+import RecentActivity from '@/components/admin/RecentActivity'
 import { useAuth } from '@/contexts/AuthContext'
 
-interface DashboardStats {
+interface Stats {
   overview: {
     totalUsers: number
     totalProperties: number
@@ -16,24 +17,39 @@ interface DashboardStats {
     activeMatches: number
   }
   breakdown: {
-    usersByType: { [key: string]: number }
-    propertiesByStatus: { available: number; occupied: number }
-    inquiriesByStatus: { [key: string]: number }
+    usersByType: Record<string, number>
+    propertiesByStatus: {
+      available: number
+      occupied: number
+    }
+    inquiriesByStatus: Record<string, number>
   }
   recentActivity: {
     users: any[]
     properties: any[]
     inquiries: any[]
   }
+  platformMetrics?: {
+    averageBFI: number
+    averagePFI: number
+    totalMatches: number
+    matchSuccessRate: number
+    aiSearchCount: number
+    conversionRate: number
+  }
 }
 
-interface AnalyticsData {
+interface Analytics {
   userRegistrations: { date: string; count: number }[]
   propertyListings: { date: string; count: number }[]
   inquiryCreation: { date: string; count: number }[]
   topLocations: { location: string; count: number }[]
   propertyTypes: { type: string; count: number }[]
-  brandOwnerRatio: { brands: number; owners: number; admins: number }
+  brandOwnerRatio: {
+    brands: number
+    owners: number
+    admins: number
+  }
   searchAnalytics: {
     totalSearches: number
     buttonFlow: number
@@ -41,470 +57,404 @@ interface AnalyticsData {
     averageResults: number
     conversionRate: number
   }
+  inquiriesByStatus?: Record<string, number>
 }
 
-type ActiveSection = 'dashboard' | 'users' | 'properties' | 'inquiries' | 'analytics' | 'health' | 'settings'
-
-export default function AdminDashboard() {
+export default function AdminPage() {
   const router = useRouter()
-  const { user, isLoggedIn } = useAuth()
+  const { user, isLoggedIn, loading: authLoading } = useAuth()
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [analytics, setAnalytics] = useState<Analytics | null>(null)
+  const [properties, setProperties] = useState<any[]>([])
+  const [propertiesLoading, setPropertiesLoading] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard')
+  const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('30d')
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
-  const [platformStatus, setPlatformStatus] = useState<any>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    // Check authentication
-    if (!isLoggedIn || !user || user.userType !== 'admin') {
-      router.push('/auth/login')
+    if (!authLoading) {
+      if (!isLoggedIn || user?.userType !== 'admin') {
+        router.push('/')
+        return
+      }
+      fetchData()
+    }
+  }, [isLoggedIn, user, authLoading, router, dateRange])
+
+  const fetchData = async () => {
+    if (!user?.id || !user?.email) {
+      setError('User not authenticated')
       return
     }
 
-    loadDashboardData()
-  }, [user, isLoggedIn, router, dateRange])
-
-  const loadDashboardData = async () => {
     try {
       setLoading(true)
-      const [statsRes, analyticsRes, statusRes] = await Promise.all([
-        fetch(`/api/admin/stats?range=${dateRange}`),
-        fetch(`/api/admin/analytics?range=${dateRange}`),
-        fetch('/api/platform-status')
+      setError(null)
+
+      const [statsResponse, analyticsResponse] = await Promise.all([
+        fetch(`/api/admin/stats?range=${dateRange}&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`),
+        fetch(`/api/admin/analytics?range=${dateRange}&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`)
       ])
 
-      if (statsRes.ok) {
-        const statsData = await statsRes.json()
-        setStats(statsData)
+      if (!statsResponse.ok) {
+        const errorData = await statsResponse.json().catch(() => ({ error: `HTTP ${statsResponse.status}: ${statsResponse.statusText}` }))
+        console.error('[Admin] Stats API error:', statsResponse.status, errorData)
+        throw new Error(errorData.error || `Failed to fetch stats (${statsResponse.status})`)
       }
 
-      if (analyticsRes.ok) {
-        const analyticsData = await analyticsRes.json()
-        setAnalytics(analyticsData)
+      if (!analyticsResponse.ok) {
+        const errorData = await analyticsResponse.json().catch(() => ({ error: `HTTP ${analyticsResponse.status}: ${analyticsResponse.statusText}` }))
+        console.error('[Admin] Analytics API error:', analyticsResponse.status, errorData)
+        throw new Error(errorData.error || `Failed to fetch analytics (${analyticsResponse.status})`)
       }
 
-      if (statusRes.ok) {
-        const statusData = await statusRes.json()
-        setPlatformStatus(statusData)
-      }
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error)
+      const [statsData, analyticsData] = await Promise.all([
+        statsResponse.json(),
+        analyticsResponse.json()
+      ])
+
+      setStats(statsData)
+      setAnalytics(analyticsData)
+      
+      // Fetch all properties
+      fetchAllProperties()
+    } catch (err: any) {
+      console.error('[Admin] Error fetching admin data:', err)
+      setError(err.message || 'Failed to load admin data')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleLogout = () => {
-    router.push('/auth/login')
+  const fetchAllProperties = async () => {
+    if (!user?.id || !user?.email) return
+    
+    try {
+      setPropertiesLoading(true)
+      let allProperties: any[] = []
+      
+      // Fetch all properties from admin API with pagination
+      let page = 1
+      let hasMore = true
+      const limit = 100
+      
+      while (hasMore) {
+        try {
+          const response = await fetch(`/api/admin/properties?limit=${limit}&page=${page}`)
+          if (response.ok) {
+            const data = await response.json()
+            const pageProperties = data.properties || []
+            allProperties = [...allProperties, ...pageProperties]
+            
+            // Check if there are more pages
+            const total = data.total || 0
+            hasMore = allProperties.length < total && pageProperties.length === limit
+            page++
+          } else {
+            hasMore = false
+          }
+        } catch (e) {
+          console.error('Error fetching page:', page, e)
+          hasMore = false
+        }
+      }
+      
+      // If no properties from admin API, try public API
+      if (allProperties.length === 0) {
+        try {
+          const publicResponse = await fetch(`/api/properties?limit=100`)
+          if (publicResponse.ok) {
+            const publicData = await publicResponse.json()
+            allProperties = publicData.properties || publicData.data?.properties || []
+          }
+        } catch (e) {
+          console.error('Public API also failed:', e)
+        }
+      }
+      
+      // Format properties to match expected structure
+      const formattedProperties = allProperties.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        address: p.address || '',
+        city: p.city || p.location || '',
+        owner: p.owner || { name: 'N/A', email: '' },
+        price: typeof p.price === 'number' ? Number(p.price) : (typeof p.price === 'string' && p.price.includes('₹') ? parseFloat(p.price.replace(/[^0-9]/g, '')) : 0),
+        priceType: p.priceType || 'monthly',
+        size: typeof p.size === 'number' ? p.size : (typeof p.size === 'string' ? parseFloat(p.size.replace(/[^0-9]/g, '')) : 0),
+        propertyType: p.propertyType || 'other',
+        availability: p.availability !== undefined ? p.availability : (p.badge !== 'Leased Out'),
+        isFeatured: p.isFeatured !== undefined ? p.isFeatured : false,
+        createdAt: p.createdAt
+      }))
+      
+      setProperties(formattedProperties)
+    } catch (error) {
+      console.error('Error fetching properties:', error)
+    } finally {
+      setPropertiesLoading(false)
+    }
+  }
+
+  const formatActivity = () => {
+    if (!stats?.recentActivity) return []
+    
+    const activities: any[] = []
+    
+    // User registrations
+    stats.recentActivity.users.slice(0, 5).forEach((u: any) => {
+      activities.push({
+        id: `user-${u.id}`,
+        type: 'user_registration',
+        description: `${u.name} (${u.email}) registered as ${u.userType}`,
+        timestamp: u.createdAt,
+        user: { name: u.name, email: u.email }
+      })
+    })
+    
+    // Property listings
+    stats.recentActivity.properties.slice(0, 5).forEach((p: any) => {
+      activities.push({
+        id: `property-${p.id}`,
+        type: 'property_listing',
+        description: `Property "${p.title}" listed in ${p.city}`,
+        timestamp: p.createdAt,
+        property: { title: p.title }
+      })
+    })
+    
+    // Inquiries
+    stats.recentActivity.inquiries.slice(0, 5).forEach((i: any) => {
+      activities.push({
+        id: `inquiry-${i.id}`,
+        type: 'inquiry_created',
+        description: `${i.brand?.name || 'Brand'} inquired about "${i.property?.title || 'Property'}"`,
+        timestamp: i.createdAt
+      })
+    })
+    
+    return activities
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 10)
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading Admin Dashboard...</div>
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200] mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading dashboard...</p>
+          </div>
+        </div>
+      </AdminLayout>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black text-white">
-      {/* Sidebar */}
-      <aside
-        className={`fixed left-0 top-0 h-full w-64 bg-gray-900/95 backdrop-blur-sm border-r border-gray-800 z-40 transform transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
-      >
-        <div className="p-6 border-b border-gray-800">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold bg-gradient-to-r from-[#FF5722] to-[#FF6B35] bg-clip-text text-transparent">
-              Admin Panel
-            </h2>
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-2xl">
+            <p className="text-red-400 text-lg mb-2">Error: {error}</p>
             <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-gray-400 hover:text-white"
+              onClick={fetchData}
+              className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors mt-4"
             >
-              ✕
+              Retry
             </button>
           </div>
         </div>
-        <nav className="p-4 space-y-2">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-            { id: 'users', label: 'Users', icon: '👥' },
-            { id: 'properties', label: 'Properties', icon: '🏢' },
-            { id: 'inquiries', label: 'Inquiries', icon: '💬' },
-            { id: 'analytics', label: 'Analytics', icon: '📈' },
-            { id: 'health', label: 'Platform Health', icon: '💚' },
-            { id: 'settings', label: 'Settings', icon: '⚙️' }
-          ].map((item) => (
+      </AdminLayout>
+    )
+  }
+
+  if (!stats || !analytics) {
+    return null
+  }
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header Section */}
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+          <p className="text-gray-400">
+            Welcome back, <span className="text-[#FF5200] font-semibold">{user?.name || 'Admin'}</span>
+          </p>
+        </div>
+
+        {/* Date Range Selector */}
+        <div className="flex flex-wrap gap-2">
+          {(['today', '7d', '30d', 'all'] as const).map((range) => (
             <button
-              key={item.id}
-              onClick={() => {
-                setActiveSection(item.id as ActiveSection)
-                setSidebarOpen(false)
-              }}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                activeSection === item.id
-                  ? 'bg-gradient-to-r from-[#FF5722]/20 to-[#FF6B35]/20 border border-[#FF5722]/30 text-white'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+              key={range}
+              onClick={() => setDateRange(range)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                dateRange === range
+                  ? 'bg-[#FF5200] text-white'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
             >
-              <span className="mr-3">{item.icon}</span>
-              {item.label}
+              {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : range === 'today' ? 'Today' : 'All Time'}
             </button>
           ))}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800">
-          <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 rounded-lg text-red-400 transition-colors"
-          >
-            Logout
-          </button>
-      </div>
-      </aside>
+        </div>
 
-      {/* Overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Total Users"
+            value={stats.overview.totalUsers}
+            color="blue"
+          />
+          <StatCard
+            title="Total Properties"
+            value={stats.overview.totalProperties}
+            color="green"
+          />
+          <StatCard
+            title="Total Inquiries"
+            value={stats.overview.totalInquiries}
+            color="purple"
+          />
+          <StatCard
+            title="Active Matches"
+            value={stats.overview.activeMatches}
+            color="orange"
+          />
+        </div>
 
-      {/* Main Content */}
-      <div className="lg:pl-64">
-        {/* Top Navbar */}
-        <header className="sticky top-0 z-30 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800">
-          <div className="px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden text-gray-400 hover:text-white"
-                >
-                  ☰
-                </button>
-                <div>
-                  <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-                  <p className="text-sm text-gray-400">Welcome back, {user?.name}</p>
-                </div>
-                </div>
-              <div className="flex items-center gap-4">
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value as any)}
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm"
-                >
-                  <option value="today">Today</option>
-                  <option value="7d">Last 7 days</option>
-                  <option value="30d">Last 30 days</option>
-                  <option value="all">All time</option>
-                </select>
-                <button
-                  onClick={loadDashboardData}
-                  className="px-4 py-2 bg-gradient-to-r from-[#FF5722] to-[#FF6B35] rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Refresh
-                </button>
-                </div>
-              </div>
-            </div>
-        </header>
-
-        {/* Dashboard Content */}
-        <main className="p-4 sm:p-6 lg:p-8">
-          <AnimatePresence mode="wait">
-            {activeSection === 'dashboard' && (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                {/* Quick Stats */}
-                {stats && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <StatCard
-                      title="Total Users"
-                      value={stats.overview.totalUsers}
-                      color="blue"
-                      icon={
-                  <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      }
-                    />
-                    <StatCard
-                      title="Total Properties"
-                      value={stats.overview.totalProperties}
-                      color="green"
-                      icon={
-                        <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                      }
-                    />
-                    <StatCard
-                      title="Total Inquiries"
-                      value={stats.overview.totalInquiries}
-                      color="purple"
-                      icon={
-                        <svg className="w-6 h-6 text-[#FF5200]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                        </svg>
-                      }
-                    />
-                    <StatCard
-                      title="Active Matches"
-                      value={stats.overview.activeMatches}
-                      color="orange"
-                      icon={
-                        <svg className="w-6 h-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      }
-                    />
-                  </div>
-                )}
-
-                {/* Recent Activity */}
-                {stats && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold mb-4">Recent Users</h3>
-                      <div className="space-y-3">
-                        {stats.recentActivity.users.slice(0, 5).map((user: any) => (
-                          <div key={user.id} className="flex items-center justify-between text-sm">
-                            <div>
-                              <p className="text-white font-medium">{user.name}</p>
-                              <p className="text-gray-400 text-xs">{user.email}</p>
-                            </div>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              user.userType === 'brand' ? 'bg-[#FF5200]/20 text-[#FF5200]' :
-                              user.userType === 'owner' ? 'bg-green-500/20 text-green-400' :
-                              'bg-[#E4002B]/20 text-[#E4002B]'
-                            }`}>
-                              {user.userType}
-                            </span>
-                </div>
-                        ))}
-              </div>
-            </div>
-
-                    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold mb-4">Recent Properties</h3>
-                      <div className="space-y-3">
-                        {stats.recentActivity.properties.slice(0, 5).map((property: any) => (
-                          <div key={property.id} className="text-sm">
-                            <p className="text-white font-medium">{property.title}</p>
-                            <p className="text-gray-400 text-xs">{property.city}</p>
-                </div>
-                        ))}
-              </div>
-            </div>
-
-                    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold mb-4">Recent Inquiries</h3>
-                      <div className="space-y-3">
-                        {stats.recentActivity.inquiries.slice(0, 5).map((inquiry: any) => (
-                          <div key={inquiry.id} className="text-sm">
-                            <p className="text-white font-medium">{inquiry.brand?.name || 'Unknown'}</p>
-                            <p className="text-gray-400 text-xs">{inquiry.property?.title || 'Unknown Property'}</p>
-                            <span className={`inline-block mt-1 px-2 py-1 rounded text-xs ${
-                              inquiry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                              inquiry.status === 'responded' ? 'bg-[#FF5200]/20 text-[#FF5200]' :
-                              'bg-green-500/20 text-green-400'
-                            }`}>
-                              {inquiry.status}
-                            </span>
-                </div>
-                        ))}
-              </div>
-            </div>
-          </div>
+        {/* Analytics Charts */}
+        {analytics && (
+          <AnalyticsCharts
+            userRegistrations={analytics.userRegistrations}
+            propertyListings={analytics.propertyListings}
+            inquiryCreation={analytics.inquiryCreation}
+            topLocations={analytics.topLocations}
+            propertyTypes={analytics.propertyTypes}
+            brandOwnerRatio={analytics.brandOwnerRatio}
+            searchAnalytics={analytics.searchAnalytics}
+            inquiriesByStatus={analytics.inquiriesByStatus}
+          />
         )}
 
-                {/* Platform Health */}
-                {platformStatus && (
-                  <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 mb-8">
-                    <h3 className="text-lg font-semibold mb-4">Platform Health</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {platformStatus.coreSystems && typeof platformStatus.coreSystems === 'object' && (
-                        <>
-                          {platformStatus.coreSystems.database && (
-                            <div className="bg-gray-800/50 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-medium">{platformStatus.coreSystems.database.name}</h4>
-                                <span className={`w-3 h-3 rounded-full ${
-                                  platformStatus.coreSystems.database.status === 'operational' ? 'bg-green-500' :
-                                  platformStatus.coreSystems.database.status === 'degraded' ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`} />
-                              </div>
-                              <p className="text-sm text-gray-400">{platformStatus.coreSystems.database.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">Response: {platformStatus.coreSystems.database.responseTime}ms</p>
-                            </div>
-                          )}
-                          {platformStatus.coreSystems.aiEngine && (
-                            <div className="bg-gray-800/50 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-medium">{platformStatus.coreSystems.aiEngine.name}</h4>
-                                <span className={`w-3 h-3 rounded-full ${
-                                  platformStatus.coreSystems.aiEngine.status === 'operational' ? 'bg-green-500' :
-                                  platformStatus.coreSystems.aiEngine.status === 'degraded' ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`} />
-                              </div>
-                              <p className="text-sm text-gray-400">{platformStatus.coreSystems.aiEngine.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">Response: {platformStatus.coreSystems.aiEngine.responseTime}ms</p>
-                            </div>
-                          )}
-                          {platformStatus.coreSystems.authentication && (
-                            <div className="bg-gray-800/50 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-medium">{platformStatus.coreSystems.authentication.name}</h4>
-                                <span className={`w-3 h-3 rounded-full ${
-                                  platformStatus.coreSystems.authentication.status === 'operational' ? 'bg-green-500' :
-                                  platformStatus.coreSystems.authentication.status === 'degraded' ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`} />
-                              </div>
-                              <p className="text-sm text-gray-400">{platformStatus.coreSystems.authentication.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">Response: {platformStatus.coreSystems.authentication.responseTime}ms</p>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
+        {/* Platform Metrics */}
+        {stats.platformMetrics && (
+          <PlatformMetrics metrics={stats.platformMetrics} />
+        )}
 
-            {activeSection === 'analytics' && analytics && (
-              <motion.div
-                key="analytics"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <AnalyticsCharts {...analytics} />
-              </motion.div>
-            )}
-
-            {activeSection === 'users' && (
-              <motion.div
-                key="users"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold mb-6">User Management</h2>
-                  <p className="text-gray-400">User management table will be implemented here with search, filter, and actions.</p>
-                </div>
-              </motion.div>
-            )}
-
-            {activeSection === 'properties' && (
-              <motion.div
-                key="properties"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold mb-6">Property Management</h2>
-                  <p className="text-gray-400">Property management table will be implemented here with search, filter, and actions.</p>
-                </div>
-              </motion.div>
-            )}
-
-            {activeSection === 'inquiries' && (
-              <motion.div
-                key="inquiries"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold mb-6">Inquiry Management</h2>
-                  <p className="text-gray-400">Inquiry management table will be implemented here with search, filter, and actions.</p>
-        </div>
-              </motion.div>
-            )}
-
-            {activeSection === 'health' && platformStatus && (
-              <motion.div
-                key="health"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold mb-6">Platform Health</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Overall Status</h3>
-                      <p className={`text-2xl font-bold ${
-                        (platformStatus.status || platformStatus.overallStatus) === 'operational' ? 'text-green-400' :
-                        (platformStatus.status || platformStatus.overallStatus) === 'degraded' ? 'text-yellow-400' :
-                        'text-red-400'
-                      }`}>
-                        {(platformStatus.status || platformStatus.overallStatus || 'UNKNOWN')?.toUpperCase()}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {platformStatus.coreSystems && typeof platformStatus.coreSystems === 'object' && (
-                        <>
-                          {platformStatus.coreSystems.database && (
-                            <div className="bg-gray-800/50 rounded-lg p-4">
-                              <h4 className="font-medium mb-2">{platformStatus.coreSystems.database.name}</h4>
-                              <p className="text-sm text-gray-400">{platformStatus.coreSystems.database.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">Response: {platformStatus.coreSystems.database.responseTime}ms</p>
-                            </div>
-                          )}
-                          {platformStatus.coreSystems.aiEngine && (
-                            <div className="bg-gray-800/50 rounded-lg p-4">
-                              <h4 className="font-medium mb-2">{platformStatus.coreSystems.aiEngine.name}</h4>
-                              <p className="text-sm text-gray-400">{platformStatus.coreSystems.aiEngine.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">Response: {platformStatus.coreSystems.aiEngine.responseTime}ms</p>
-                            </div>
-                          )}
-                          {platformStatus.coreSystems.authentication && (
-                            <div className="bg-gray-800/50 rounded-lg p-4">
-                              <h4 className="font-medium mb-2">{platformStatus.coreSystems.authentication.name}</h4>
-                              <p className="text-sm text-gray-400">{platformStatus.coreSystems.authentication.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">Response: {platformStatus.coreSystems.authentication.responseTime}ms</p>
-                            </div>
-                          )}
-                        </>
-                      )}
+        {/* All Properties Section */}
+        <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">All Properties</h2>
+              <p className="text-gray-400">Complete list of all properties on the platform</p>
+            </div>
+            <button
+              onClick={() => router.push('/admin/properties')}
+              className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors text-sm font-medium"
+            >
+              Manage Properties
+            </button>
           </div>
-        </div>
-                </div>
-              </motion.div>
-            )}
 
-            {activeSection === 'settings' && (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+          {propertiesLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>
+            </div>
+          ) : properties.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p>No properties found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Title</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Location</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Owner</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Price</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Size</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Type</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Status</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Featured</th>
+                    <th className="text-right py-3 px-4 text-gray-300 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {properties.map((property) => (
+                    <tr
+                      key={property.id}
+                      className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
+                    >
+                      <td className="py-3 px-4">
+                        <div className="text-white font-medium">{property.title}</div>
+                        <div className="text-gray-400 text-sm">{property.address}</div>
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">{property.city}</td>
+                      <td className="py-3 px-4 text-gray-300">{property.owner?.name || 'N/A'}</td>
+                      <td className="py-3 px-4 text-white font-semibold">
+                        ₹{property.price?.toLocaleString() || '0'}/{property.priceType === 'monthly' ? 'mo' : property.priceType === 'yearly' ? 'yr' : 'sqft'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">{property.size?.toLocaleString() || '0'} sq ft</td>
+                      <td className="py-3 px-4 text-gray-300 capitalize">{property.propertyType || 'N/A'}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          property.availability ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                        }`}>
+                          {property.availability ? 'Available' : 'Occupied'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          property.isFeatured ? 'bg-purple-500/20 text-purple-300' : 'bg-gray-500/20 text-gray-300'
+                        }`}>
+                          {property.isFeatured ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => router.push(`/admin/properties/${property.id}`)}
+                            className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => router.push(`/admin/properties/${property.id}`)}
+                            className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded hover:bg-yellow-500/30 text-sm"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {properties.length > 0 && (
+            <div className="mt-4 flex justify-between items-center">
+              <p className="text-gray-400 text-sm">
+                Showing {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+              </p>
+              <button
+                onClick={() => router.push('/admin/properties')}
+                className="text-[#FF5200] hover:text-[#E4002B] text-sm font-medium transition-colors"
               >
-                <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold mb-6">Settings</h2>
-                  <p className="text-gray-400">Admin settings will be implemented here.</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </main>
+                View All Properties →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Recent Activity */}
+        <RecentActivity activities={formatActivity()} />
       </div>
-    </div>
+    </AdminLayout>
   )
 }

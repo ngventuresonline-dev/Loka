@@ -5,7 +5,7 @@
 
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { prisma } from './prisma'
+import { getPrisma } from './get-prisma'
 
 export interface ApiUser {
   id: string
@@ -26,7 +26,129 @@ export async function getAuthenticatedUser(
   request: NextRequest
 ): Promise<ApiUser | null> {
   try {
+    // Get query params early - these are critical for localStorage-based auth
+    const userEmailParam = request.nextUrl.searchParams.get('userEmail')
+    const userIdParam = request.nextUrl.searchParams.get('userId')
+    
+    // PRIORITY: Check by email FIRST (before any other methods)
+    // This is critical for localStorage-based auth where userIds don't match
+    if (userEmailParam) {
+      const decodedEmail = decodeURIComponent(userEmailParam).toLowerCase()
+      console.log('[API Auth] 🔍 PRIORITY: Looking up user by email:', decodedEmail)
+      
+      try {
+        const prisma = await getPrisma()
+        if (!prisma) {
+          console.error('[API Auth] ❌ Prisma client not available for email lookup')
+        } else {
+          console.log('[API Auth] ✅ Prisma client available')
+          
+          let user: any = null
+          try {
+            console.log('[API Auth] Executing database query...')
+            user = await prisma.user.findUnique({
+              where: { email: decodedEmail },
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                userType: true,
+                phone: true,
+              },
+            })
+            console.log('[API Auth] Query result:', user ? `✅ Found - ${user.email} (${user.userType})` : '❌ Not found')
+          } catch (dbError: any) {
+            console.error('[API Auth] ❌ Database query error:', dbError?.message || dbError)
+            console.error('[API Auth] Error code:', dbError?.code)
+            console.error('[API Auth] Error name:', dbError?.name)
+            // Continue to try creating user if admin
+          }
+          
+          // If user doesn't exist but it's the admin email, create them
+          if (!user && decodedEmail === 'admin@ngventures.com') {
+            try {
+              console.log('[API Auth] Creating admin user in database...')
+              user = await prisma.user.upsert({
+                where: { email: 'admin@ngventures.com' },
+                update: {
+                  name: 'System Administrator',
+                  userType: 'admin',
+                },
+                create: {
+                  email: 'admin@ngventures.com',
+                  name: 'System Administrator',
+                  password: '$2b$10$placeholder_hash_change_in_production',
+                  userType: 'admin',
+                },
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                  userType: true,
+                  phone: true,
+                },
+              })
+              console.log('[API Auth] ✅ Admin user created/updated:', user?.id)
+            } catch (error: any) {
+              console.error('[API Auth] ❌ Error creating admin user:', error?.message || error)
+              console.error('[API Auth] Error details:', {
+                code: error?.code,
+                name: error?.name,
+                meta: error?.meta,
+              })
+              // Try to fetch again
+              try {
+                user = await prisma.user.findUnique({
+                  where: { email: 'admin@ngventures.com' },
+                  select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    userType: true,
+                    phone: true,
+                  },
+                })
+                if (user) {
+                  console.log('[API Auth] ✅ Admin user found after creation attempt')
+                }
+              } catch (fetchError: any) {
+                console.error('[API Auth] ❌ Error fetching admin user:', fetchError?.message || fetchError)
+              }
+            }
+          }
+          
+          if (user) {
+            console.log('[API Auth] ✅✅✅ SUCCESS: User authenticated by email:', user.email, 'Type:', user.userType)
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              userType: user.userType as 'brand' | 'owner' | 'admin',
+              phone: user.phone,
+            }
+          } else {
+            console.log('[API Auth] ❌ User not found by email after all attempts:', decodedEmail)
+          }
+        }
+      } catch (error: any) {
+        console.error('[API Auth] ❌❌❌ FATAL ERROR in email-based authentication:', error?.message || error)
+        console.error('[API Auth] Error stack:', error?.stack)
+      }
+    }
+    
+    // Continue with other authentication methods
     const supabase = createServerClient()
+    const prisma = await getPrisma()
+    
+    // Check if Prisma is available
+    if (!prisma) {
+      console.error('[API Auth] Prisma client not available')
+      return null
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[API Auth] Trying other auth methods - Email:', userEmailParam, 'UserId:', userIdParam)
+    }
 
     // Method 1: Check Authorization header for Supabase token
     const authHeader = request.headers.get('authorization')
@@ -135,33 +257,43 @@ export async function getAuthenticatedUser(
       // Body parsing failed, continue
     }
 
-    // Method 4: Fallback - Check query params (legacy support)
-    const userId = request.nextUrl.searchParams.get('userId')
-    if (userId) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          userType: true,
-          phone: true,
-        },
-      })
-      if (user) {
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          userType: user.userType as 'brand' | 'owner' | 'admin',
-          phone: user.phone,
+    // Method 4: Fallback - Check by userId if email lookup didn't work
+    if (userIdParam) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userIdParam },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            userType: true,
+            phone: true,
+          },
+        })
+        if (user) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[API Auth] User authenticated by userId:', user.email, 'Type:', user.userType)
+          }
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            userType: user.userType as 'brand' | 'owner' | 'admin',
+            phone: user.phone,
+          }
         }
+      } catch (error: any) {
+        console.error('[API Auth] Error looking up user by userId:', error?.message || error)
       }
     }
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[API Auth] No authentication method succeeded')
+    }
     return null
-  } catch (error) {
-    console.error('[API Auth] Error getting authenticated user:', error)
+  } catch (error: any) {
+    console.error('[API Auth] Error getting authenticated user:', error?.message || error)
+    console.error('[API Auth] Error stack:', error?.stack)
     return null
   }
 }

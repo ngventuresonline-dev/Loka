@@ -16,13 +16,16 @@ export async function GET(request: NextRequest) {
     
     switch (dateRange) {
       case 'today':
-        startDate = new Date(now.setHours(0, 0, 0, 0))
+        startDate = new Date(now)
+        startDate.setHours(0, 0, 0, 0)
         break
       case '7d':
-        startDate = new Date(now.setDate(now.getDate() - 7))
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 7)
         break
       case '30d':
-        startDate = new Date(now.setDate(now.getDate() - 30))
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 30)
         break
       default:
         startDate = null
@@ -133,7 +136,15 @@ export async function GET(request: NextRequest) {
         brands: brandOwnerRatio.find((r: any) => r.userType === 'brand')?._count || 0,
         owners: brandOwnerRatio.find((r: any) => r.userType === 'owner')?._count || 0,
         admins: brandOwnerRatio.find((r: any) => r.userType === 'admin')?._count || 0
-      }
+      },
+      inquiriesByStatus: (() => {
+        const statusCounts: Record<string, number> = {}
+        inquiryCreation.forEach((item: any) => {
+          const status = item.status || 'pending'
+          statusCounts[status] = (statusCounts[status] || 0) + 1
+        })
+        return statusCounts
+      })()
     }
 
     return NextResponse.json(analytics)
