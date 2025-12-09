@@ -344,6 +344,10 @@ export async function checkPropertyOwnership(
   userId: string
 ): Promise<boolean> {
   try {
+    const prisma = await getPrisma()
+    if (!prisma) {
+      return false
+    }
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
       select: { ownerId: true },
