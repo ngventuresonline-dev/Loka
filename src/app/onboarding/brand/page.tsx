@@ -76,7 +76,7 @@ export default function BrandOnboarding() {
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
                 Brand Onboarding
               </h1>
-              <p className="text-gray-600">Tell us about your requirements and we'll find the perfect spaces for you</p>
+              <p className="text-gray-600">Tell us about your requirements and we&apos;ll find the perfect spaces for you</p>
             </div>
 
             <form onSubmit={handleSubmit}>

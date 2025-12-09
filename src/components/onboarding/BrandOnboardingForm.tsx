@@ -58,7 +58,7 @@ export default function BrandOnboardingForm({ onComplete }: BrandOnboardingFormP
               <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] mb-2">
                 Brand Onboarding
               </h1>
-              <p className="text-gray-600">Let's find your perfect commercial space</p>
+              <p className="text-gray-600">Let&apos;s find your perfect commercial space</p>
             </div>
           </div>
           

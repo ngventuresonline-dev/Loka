@@ -408,7 +408,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">Start Your Search</h3>
               <p className="text-gray-400 max-w-md">
-                Tell me what you're looking for. I can help you find retail spaces, restaurants, offices, and more!
+                Tell me what you&apos;re looking for. I can help you find retail spaces, restaurants, offices, and more!
               </p>
               <div className="mt-6 space-y-2">
                 <button

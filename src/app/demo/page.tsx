@@ -134,7 +134,7 @@ export default function DemoPage() {
                 </svg>
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-4">I'm a Brand</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">I&apos;m a Brand</h3>
               <p className="text-gray-300 mb-6">
                 Looking for the perfect commercial space for my business
               </p>
@@ -177,7 +177,7 @@ export default function DemoPage() {
                 </svg>
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-4">I'm a Property Owner</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">I&apos;m a Property Owner</h3>
               <p className="text-gray-300 mb-6">
                 Ready to connect with the right brands for my properties
               </p>

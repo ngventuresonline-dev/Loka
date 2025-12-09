@@ -405,7 +405,7 @@ export default function ThemeSelector() {
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 max-w-2xl mx-auto">
             <h3 className="text-2xl font-bold mb-4">Ready to Apply?</h3>
             <p className="text-white/70 mb-6">
-              You've selected <span className="text-violet-400 font-semibold">{currentPalette.name}</span> with{' '}
+              You&apos;ve selected <span className="text-violet-400 font-semibold">{currentPalette.name}</span> with{' '}
               <span className="text-cyan-400 font-semibold">
                 {backgroundDesigns.find(d => d.id === selectedBackground)?.name}
               </span> background

@@ -262,7 +262,7 @@ export default function Dashboard({ userType, userProfile, properties = [] }: Da
 
                   {/* Match Reasons */}
                   <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-300 mb-2">Why it's a great match:</h4>
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Why it&apos;s a great match:</h4>
                     <ul className="space-y-1">
                       {match.reasons.slice(0, 3).map((reason, idx) => (
                         <li key={idx} className="text-xs text-gray-400 flex items-start">

@@ -73,7 +73,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards]">
-              We're building the future of property-brand matching using AI, location intelligence, and data-driven insights
+              We&apos;re building the future of property-brand matching using AI, location intelligence, and data-driven insights
             </p>
           </div>
 
@@ -360,7 +360,7 @@ export default function AboutPage() {
           {/* Partner CTA */}
           <div className="mt-16 text-center">
             <p className="text-gray-600 mb-6 text-lg">
-              Interested in partnering with us? We'll be opening our partner program soon.
+              Interested in partnering with us? We&apos;ll be opening our partner program soon.
             </p>
             <button className="px-8 py-4 bg-gradient-to-r from-[#FF6B35] to-[#FF5200] text-white rounded-full font-bold shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 opacity-50 cursor-not-allowed">
               Partner Applications Opening Soon
@@ -404,7 +404,7 @@ export default function AboutPage() {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#E4002B] to-[#FF5200] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative flex items-center gap-2">
-                I'm a Brand
+                I&apos;m a Brand
                 <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -417,7 +417,7 @@ export default function AboutPage() {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200]/10 to-[#E4002B]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative flex items-center gap-2">
-                I'm a Property Owner
+                I&apos;m a Property Owner
                 <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>

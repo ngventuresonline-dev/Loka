@@ -1292,7 +1292,7 @@ export default function Home() {
               Featured Properties
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-              Prime commercial spaces in Bangalore's top locations
+              Prime commercial spaces in Bangalore&apos;s top locations
             </p>
           </div>
 
@@ -2497,7 +2497,7 @@ export default function Home() {
                 className="group relative px-10 py-5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden"
               >
                 <span className="relative z-10 flex items-center justify-center">
-                  I'm a Brand
+                  I&apos;m a Brand
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
@@ -2510,7 +2510,7 @@ export default function Home() {
                 className="group relative px-10 py-5 bg-white border-2 border-gray-300 text-gray-900 rounded-full text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-[#FF5200] overflow-hidden"
               >
                 <span className="relative z-10 flex items-center justify-center group-hover:text-[#FF5200] transition-colors">
-                  I'm a Property Owner
+                  I&apos;m a Property Owner
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
@@ -2565,7 +2565,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 mb-1.5 group-hover:text-[#E4002B] transition-colors">What's the fee structure?</h3>
+                  <h3 className="text-base font-bold text-gray-900 mb-1.5 group-hover:text-[#E4002B] transition-colors">What&apos;s the fee structure?</h3>
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500">
                     <p className="text-sm text-gray-600 leading-relaxed pt-1">Brands pay an onboarding fee. Property owners list 100% free. Success fee applies on deal closure.</p>
                   </div>

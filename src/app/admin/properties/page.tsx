@@ -231,7 +231,7 @@ export default function PropertiesPage() {
             <div className="text-center py-12 text-gray-400">
               {searchTerm ? (
                 <>
-                  <p>No properties found matching "{searchTerm}"</p>
+                  <p>No properties found matching &quot;{searchTerm}&quot;</p>
                   {properties.length > 0 && (
                     <p className="text-sm mt-2">(Filtered from {properties.length} total properties)</p>
                   )}
@@ -247,7 +247,7 @@ export default function PropertiesPage() {
                   <p>No properties found</p>
                   {properties.length === 0 && (
                     <div className="mt-4 space-y-2">
-                      <p className="text-sm">Make sure you're logged in as admin</p>
+                      <p className="text-sm">Make sure you&apos;re logged in as admin</p>
                       <button
                         onClick={fetchProperties}
                         className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors text-sm"

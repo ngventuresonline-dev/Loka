@@ -337,9 +337,9 @@ function PropertiesResultsContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">We're on it!</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">We&apos;re on it!</h2>
               <p className="text-gray-600 mb-8">
-                We couldn't find properties matching your exact criteria right now, but don't worry!
+                We couldn&apos;t find properties matching your exact criteria right now, but don&apos;t worry!
               </p>
 
               {!showContactForm ? (
@@ -351,7 +351,7 @@ function PropertiesResultsContent() {
                   >
                     Connect Me with Team
                   </button>
-                  <p className="text-sm text-gray-500">We'll reach out within 24 hours</p>
+                  <p className="text-sm text-gray-500">We&apos;ll reach out within 24 hours</p>
                 </div>
               ) : (
                 <form onSubmit={handleContactSubmit} className="text-left space-y-4">

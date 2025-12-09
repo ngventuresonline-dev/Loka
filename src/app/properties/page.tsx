@@ -260,7 +260,7 @@ export default function PropertiesPage() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35]">Commercial Spaces</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-            Explore curated properties across Bangalore's most sought-after locations.
+            Explore curated properties across Bangalore&apos;s most sought-after locations.
           </p>
         </div>
         
