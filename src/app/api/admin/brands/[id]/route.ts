@@ -5,11 +5,12 @@ import bcrypt from 'bcryptjs'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireUserType(request, ['admin'])
 
+    const { id } = await params
     const prisma = await getPrisma()
     if (!prisma) {
       return NextResponse.json(
@@ -19,7 +20,7 @@ export async function GET(
     }
 
     const brand = await prisma.user.findUnique({
-      where: { id: params.id, userType: 'brand' },
+      where: { id, userType: 'brand' },
       include: {
         brandProfiles: true
       }
@@ -61,11 +62,12 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireUserType(request, ['admin'])
 
+    const { id } = await params
     const body = await request.json()
     const { name, email, password, phone, companyName, industry, budgetMin, budgetMax, minSize, maxSize, preferredLocations, isActive } = body
 
@@ -85,7 +87,7 @@ export async function PATCH(
     if (isActive !== undefined) updateData.isActive = isActive
 
     const brand = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...updateData,
         brandProfiles: {
@@ -138,11 +140,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireUserType(request, ['admin'])
 
+    const { id } = await params
     const prisma = await getPrisma()
     if (!prisma) {
       return NextResponse.json(
@@ -152,7 +155,7 @@ export async function DELETE(
     }
 
     await prisma.user.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ success: true })
