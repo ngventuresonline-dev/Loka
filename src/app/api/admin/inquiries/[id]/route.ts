@@ -4,11 +4,12 @@ import { getPrisma } from '@/lib/get-prisma'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireUserType(request, ['admin'])
 
+    const { id } = await params
     const body = await request.json()
     const { status } = body
 
@@ -28,7 +29,7 @@ export async function PATCH(
     }
 
     const inquiry = await prisma.inquiry.update({
-      where: { id: params.id },
+      where: { id },
       data: { status },
       include: {
         brand: {
