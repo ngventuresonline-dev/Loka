@@ -25,7 +25,7 @@ interface DatabaseBrand {
     storeType: string | null
     targetAudience: string | null
     additionalRequirements: string | null
-  }
+  } | null
 }
 
 export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequirementsModalProps) {
@@ -71,11 +71,11 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
   useEffect(() => {
     const convertDbBrands = (brands: DatabaseBrand[]): BrandRequirement[] => {
       return brands.map(brand => {
-        const profile = brand.brandProfile || {}
-        const minSize = profile.minSize || 0
-        const maxSize = profile.maxSize || 0
-        const budgetMin = profile.budgetMin || 0
-        const budgetMax = profile.budgetMax || 0
+        const profile = brand.brandProfile
+        const minSize = profile?.minSize ?? 0
+        const maxSize = profile?.maxSize ?? 0
+        const budgetMin = profile?.budgetMin ?? 0
+        const budgetMax = profile?.budgetMax ?? 0
         
         // Format size range
         const sizeRange = minSize && maxSize 
@@ -111,11 +111,11 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
             monthly: { min: budgetMin, max: budgetMax }
           },
           preferredLocations: {
-            primary: profile.preferredLocations || [],
+            primary: profile?.preferredLocations || [],
             secondary: []
           },
-          mustHaveFeatures: profile.additionalRequirements ? [profile.additionalRequirements] : [],
-          timeline: (profile.timeline || 'Flexible') as any,
+          mustHaveFeatures: profile?.additionalRequirements ? [profile.additionalRequirements] : [],
+          timeline: (profile?.timeline || 'Flexible') as any,
           bfiWeights: {
             location: 30,
             budget: 25,
