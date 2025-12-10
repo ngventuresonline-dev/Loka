@@ -37,6 +37,7 @@ export default function EditPropertyPage() {
     ownerId: '',
     availability: true,
     isFeatured: false,
+    displayOrder: 0,
   })
 
   const propertyTypes = [
@@ -88,6 +89,7 @@ export default function EditPropertyPage() {
           ownerId: prop.ownerId || prop.owner?.id || '',
           availability: prop.availability !== undefined ? prop.availability : true,
           isFeatured: prop.isFeatured || false,
+          displayOrder: prop.displayOrder || 0,
         })
         setImages((prop.images as string[]) || [])
       } else {
@@ -127,7 +129,7 @@ export default function EditPropertyPage() {
       const response = await fetch(`/api/admin/properties?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+          body: JSON.stringify({
           propertyId,
           ...formData,
           price: parseFloat(formData.price || '0'),
@@ -136,6 +138,7 @@ export default function EditPropertyPage() {
           size: parseInt(formData.size || '0'),
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+          displayOrder: parseInt(String(formData.displayOrder)) || null,
           images,
         }),
       })
@@ -456,6 +459,43 @@ export default function EditPropertyPage() {
             </div>
           </div>
 
+          {/* Display Order */}
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Display Order</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Display Order</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={formData.displayOrder}
+                    onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                    min="0"
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                    placeholder="0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, displayOrder: Math.max(0, formData.displayOrder - 1) })}
+                    className="px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    title="Decrease order"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, displayOrder: formData.displayOrder + 1 })}
+                    className="px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    title="Increase order"
+                  >
+                    ↓
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Lower numbers appear first. Use arrows to adjust.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex justify-end gap-4 pt-4 border-t border-gray-700">
             <button
@@ -470,7 +510,7 @@ export default function EditPropertyPage() {
               disabled={saving}
               className="px-6 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Update Property Requirements'}
             </button>
           </div>
         </form>

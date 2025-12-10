@@ -67,6 +67,8 @@ export default function AdminPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [properties, setProperties] = useState<any[]>([])
   const [propertiesLoading, setPropertiesLoading] = useState(false)
+  const [brands, setBrands] = useState<any[]>([])
+  const [brandsLoading, setBrandsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('30d')
@@ -80,6 +82,37 @@ export default function AdminPage() {
       fetchData()
     }
   }, [isLoggedIn, user, authLoading, router, dateRange])
+
+  const fetchAllBrands = async () => {
+    if (!user?.id || !user?.email) return
+    
+    try {
+      setBrandsLoading(true)
+      const response = await fetch(`/api/admin/brands?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBrands((data.brands || []).map((b: any) => ({
+          id: b.id,
+          name: b.name || 'N/A',
+          email: b.email || '',
+          companyName: b.companyName || b.brandProfile?.companyName || 'N/A',
+          industry: b.industry || b.brandProfile?.industry || 'N/A',
+          phone: b.phone || 'N/A',
+          userType: b.userType || 'brand',
+          isActive: b.isActive !== undefined ? b.isActive : true,
+          createdAt: b.createdAt,
+          budgetMin: b.brandProfile?.budgetMin || null,
+          budgetMax: b.brandProfile?.budgetMax || null,
+          preferredLocations: b.brandProfile?.preferredLocations || [],
+          isFeatured: b.isFeatured || false
+        })))
+      }
+    } catch (error) {
+      console.error('Error fetching brands:', error)
+    } finally {
+      setBrandsLoading(false)
+    }
+  }
 
   const fetchData = async () => {
     if (!user?.id || !user?.email) {
@@ -116,8 +149,9 @@ export default function AdminPage() {
       setStats(statsData)
       setAnalytics(analyticsData)
       
-      // Fetch all properties
+      // Fetch all properties and brands
       fetchAllProperties()
+      fetchAllBrands()
     } catch (err: any) {
       console.error('[Admin] Error fetching admin data:', err)
       setError(err.message || 'Failed to load admin data')
@@ -344,18 +378,18 @@ export default function AdminPage() {
           <PlatformMetrics metrics={stats.platformMetrics} />
         )}
 
-        {/* All Properties Section */}
+        {/* Properties Summary */}
         <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">All Properties</h2>
-              <p className="text-gray-400">Complete list of all properties on the platform</p>
+              <h2 className="text-2xl font-bold text-white mb-2">Properties</h2>
+              <p className="text-gray-400">Key metrics and quick access to property management</p>
             </div>
             <button
               onClick={() => router.push('/admin/properties')}
               className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors text-sm font-medium"
             >
-              Manage Properties
+              Manage All Properties
             </button>
           </div>
 
@@ -363,91 +397,87 @@ export default function AdminPage() {
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>
             </div>
-          ) : properties.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <p>No properties found</p>
-            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Title</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Location</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Owner</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Price</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Size</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Type</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Status</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Featured</th>
-                    <th className="text-right py-3 px-4 text-gray-300 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {properties.map((property) => (
-                    <tr
-                      key={property.id}
-                      className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
-                    >
-                      <td className="py-3 px-4">
-                        <div className="text-white font-medium">{property.title}</div>
-                        <div className="text-gray-400 text-sm">{property.address}</div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-300">{property.city}</td>
-                      <td className="py-3 px-4 text-gray-300">{property.owner?.name || 'N/A'}</td>
-                      <td className="py-3 px-4 text-white font-semibold">
-                        ₹{property.price?.toLocaleString() || '0'}/{property.priceType === 'monthly' ? 'mo' : property.priceType === 'yearly' ? 'yr' : 'sqft'}
-                      </td>
-                      <td className="py-3 px-4 text-gray-300">{property.size?.toLocaleString() || '0'} sq ft</td>
-                      <td className="py-3 px-4 text-gray-300 capitalize">{property.propertyType || 'N/A'}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          property.availability ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-                        }`}>
-                          {property.availability ? 'Available' : 'Occupied'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          property.isFeatured ? 'bg-purple-500/20 text-purple-300' : 'bg-gray-500/20 text-gray-300'
-                        }`}>
-                          {property.isFeatured ? 'Yes' : 'No'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => router.push(`/admin/properties/${property.id}`)}
-                            className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => router.push(`/admin/properties/${property.id}`)}
-                            className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded hover:bg-yellow-500/30 text-sm"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <div className="text-gray-400 text-sm mb-1">Total Properties</div>
+                <div className="text-3xl font-bold text-white mb-2">{properties.length}</div>
+                <div className="text-gray-400 text-xs">
+                  {properties.filter(p => p.isFeatured).length} featured
+                </div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <div className="text-gray-400 text-sm mb-1">Available</div>
+                <div className="text-3xl font-bold text-green-400 mb-2">
+                  {properties.filter(p => p.availability).length}
+                </div>
+                <div className="text-gray-400 text-xs">
+                  {properties.filter(p => !p.availability).length} occupied
+                </div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <div className="text-gray-400 text-sm mb-1">Average Price</div>
+                <div className="text-3xl font-bold text-white mb-2">
+                  ₹{properties.length > 0 
+                    ? Math.round(properties.reduce((sum, p) => sum + (p.price || 0), 0) / properties.length).toLocaleString()
+                    : '0'}
+                </div>
+                <div className="text-gray-400 text-xs">per month</div>
+              </div>
             </div>
           )}
+        </div>
 
-          {properties.length > 0 && (
-            <div className="mt-4 flex justify-between items-center">
-              <p className="text-gray-400 text-sm">
-                Showing {properties.length} {properties.length === 1 ? 'property' : 'properties'}
-              </p>
-              <button
-                onClick={() => router.push('/admin/properties')}
-                className="text-[#FF5200] hover:text-[#E4002B] text-sm font-medium transition-colors"
-              >
-                View All Properties →
-              </button>
+        {/* Brands Summary */}
+        <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Brands</h2>
+              <p className="text-gray-400">Key metrics and quick access to brand management</p>
+            </div>
+            <button
+              onClick={() => router.push('/admin/brands')}
+              className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors text-sm font-medium"
+            >
+              Manage All Brands
+            </button>
+          </div>
+
+          {brandsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <div className="text-gray-400 text-sm mb-1">Total Brands</div>
+                <div className="text-3xl font-bold text-white mb-2">{brands.length}</div>
+                <div className="text-gray-400 text-xs">
+                  {brands.filter(b => b.isFeatured).length} featured
+                </div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <div className="text-gray-400 text-sm mb-1">Active Brands</div>
+                <div className="text-3xl font-bold text-green-400 mb-2">
+                  {brands.filter(b => b.isActive).length}
+                </div>
+                <div className="text-gray-400 text-xs">
+                  {brands.filter(b => !b.isActive).length} inactive
+                </div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <div className="text-gray-400 text-sm mb-1">Top Industries</div>
+                <div className="text-lg font-bold text-white mb-2">
+                  {brands.length > 0 
+                    ? [...new Set(brands.map(b => b.industry).filter(Boolean))].slice(0, 2).join(', ')
+                    : 'N/A'}
+                </div>
+                <div className="text-gray-400 text-xs">
+                  {brands.length > 0 
+                    ? [...new Set(brands.map(b => b.industry).filter(Boolean))].length 
+                    : 0} industries
+                </div>
+              </div>
             </div>
           )}
         </div>

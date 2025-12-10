@@ -64,7 +64,11 @@ export default function UserManagementTable({ userEmail, userId }: UserManagemen
     
     try {
       const user = users.find(u => u.id === targetUserId)
-      const response = await fetch('/api/admin/users', {
+      const params = new URLSearchParams({
+        userId,
+        userEmail: encodeURIComponent(userEmail),
+      })
+      const response = await fetch(`/api/admin/users?${params}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,6 +78,9 @@ export default function UserManagementTable({ userEmail, userId }: UserManagemen
       })
       if (response.ok) {
         await fetchUsers()
+      } else {
+        const error = await response.json().catch(() => ({ error: 'Failed to suspend user' }))
+        alert(error.error || 'Failed to suspend user')
       }
     } catch (error: any) {
       console.error('Error suspending user:', error)
@@ -85,11 +92,19 @@ export default function UserManagementTable({ userEmail, userId }: UserManagemen
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return
     
     try {
-      const response = await fetch(`/api/admin/users?userId=${targetUserId}`, {
+      const params = new URLSearchParams({
+        userId: targetUserId,
+        adminUserId: userId,
+        adminUserEmail: encodeURIComponent(userEmail),
+      })
+      const response = await fetch(`/api/admin/users?${params}`, {
         method: 'DELETE',
       })
       if (response.ok) {
         await fetchUsers()
+      } else {
+        const error = await response.json().catch(() => ({ error: 'Failed to delete user' }))
+        alert(error.error || 'Failed to delete user')
       }
     } catch (error: any) {
       console.error('Error deleting user:', error)
@@ -204,17 +219,39 @@ export default function UserManagementTable({ userEmail, userId }: UserManagemen
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
-                        <button className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm">
+                        <button 
+                          onClick={() => {
+                            const userInfo = `User Details:\n\nName: ${user.name}\nEmail: ${user.email}\nType: ${user.userType}\nStatus: ${user.isActive ? 'Active' : 'Suspended'}\nRegistered: ${new Date(user.createdAt).toLocaleDateString()}`
+                            alert(userInfo)
+                          }}
+                          className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"
+                        >
                           View
                         </button>
-                        <button className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded hover:bg-yellow-500/30 text-sm">
+                        <button 
+                          onClick={() => {
+                            const newName = prompt('Enter new name:', user.name)
+                            if (newName && newName !== user.name) {
+                              // Update user name via API
+                              fetch('/api/admin/users', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  userId: user.id,
+                                  name: newName,
+                                }),
+                              }).then(() => fetchUsers())
+                            }
+                          }}
+                          className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded hover:bg-yellow-500/30 text-sm"
+                        >
                           Edit
                         </button>
                         <button
                           onClick={() => handleSuspend(user.id)}
                           className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded hover:bg-orange-500/30 text-sm"
                         >
-                          Suspend
+                          {user.isActive ? 'Suspend' : 'Activate'}
                         </button>
                         <button
                           onClick={() => handleDelete(user.id)}

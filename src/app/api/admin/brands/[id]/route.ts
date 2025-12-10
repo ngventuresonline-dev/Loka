@@ -33,23 +33,39 @@ export async function GET(
       )
     }
 
+    const requirements = brand.brandProfiles?.must_have_amenities as any
+    const preferredLocations = brand.brandProfiles?.preferred_locations
+      ? (Array.isArray(brand.brandProfiles.preferred_locations) 
+          ? brand.brandProfiles.preferred_locations 
+          : typeof brand.brandProfiles.preferred_locations === 'string'
+          ? JSON.parse(brand.brandProfiles.preferred_locations)
+          : [])
+      : []
+    
     return NextResponse.json({
-      id: brand.id,
-      name: brand.name,
-      email: brand.email,
-      phone: brand.phone,
-      userType: brand.userType,
-      createdAt: brand.createdAt,
-      isActive: brand.isActive,
-      companyName: brand.brandProfiles?.company_name || null,
-      industry: brand.brandProfiles?.industry || null,
-      brandProfile: brand.brandProfiles ? {
-        budgetMin: brand.brandProfiles.budget_min ? Number(brand.brandProfiles.budget_min) : null,
-        budgetMax: brand.brandProfiles.budget_max ? Number(brand.brandProfiles.budget_max) : null,
-        minSize: brand.brandProfiles.min_size || null,
-        maxSize: brand.brandProfiles.max_size || null,
-        preferredLocations: (brand.brandProfiles.preferred_locations as string[]) || []
-      } : null
+      brand: {
+        id: brand.id,
+        name: brand.name,
+        email: brand.email,
+        phone: brand.phone,
+        userType: brand.userType,
+        createdAt: brand.createdAt,
+        isActive: brand.isActive,
+        displayOrder: brand.displayOrder || null,
+        companyName: brand.brandProfiles?.company_name || null,
+        industry: brand.brandProfiles?.industry || null,
+        brandProfile: brand.brandProfiles ? {
+          budgetMin: brand.brandProfiles.budget_min != null ? Number(brand.brandProfiles.budget_min) : null,
+          budgetMax: brand.brandProfiles.budget_max != null ? Number(brand.brandProfiles.budget_max) : null,
+          minSize: brand.brandProfiles.min_size != null ? Number(brand.brandProfiles.min_size) : null,
+          maxSize: brand.brandProfiles.max_size != null ? Number(brand.brandProfiles.max_size) : null,
+          preferredLocations: preferredLocations,
+          timeline: requirements?.timeline || null,
+          storeType: requirements?.storeType || null,
+          targetAudience: requirements?.targetAudience || null,
+          additionalRequirements: requirements?.additionalRequirements || null
+        } : null
+      }
     })
   } catch (error: any) {
     console.error('Admin brand GET error:', error)
@@ -69,7 +85,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { name, email, password, phone, companyName, industry, budgetMin, budgetMax, minSize, maxSize, preferredLocations, isActive } = body
+    const { name, email, password, phone, companyName, industry, budgetMin, budgetMax, minSize, maxSize, preferredLocations, isActive, timeline, storeType, targetAudience, additionalRequirements, displayOrder } = body
 
     const prisma = await getPrisma()
     if (!prisma) {
@@ -85,6 +101,26 @@ export async function PATCH(
     if (password) updateData.password = await bcrypt.hash(password, 10)
     if (phone !== undefined) updateData.phone = phone
     if (isActive !== undefined) updateData.isActive = isActive
+    if (displayOrder !== undefined) updateData.displayOrder = displayOrder !== null ? parseInt(String(displayOrder)) : null
+
+    // Get existing brand profile to merge requirements
+    const existingProfile = await prisma.brand_profiles.findUnique({
+      where: { user_id: id },
+      select: { must_have_amenities: true }
+    })
+    const existingReq = (existingProfile?.must_have_amenities as any) || {}
+
+    // Merge requirements if any are provided
+    let mergedRequirements = existingReq
+    if (timeline !== undefined || storeType !== undefined || targetAudience !== undefined || additionalRequirements !== undefined) {
+      mergedRequirements = {
+        ...existingReq,
+        ...(timeline !== undefined && { timeline }),
+        ...(storeType !== undefined && { storeType }),
+        ...(targetAudience !== undefined && { targetAudience }),
+        ...(additionalRequirements !== undefined && { additionalRequirements })
+      }
+    }
 
     const brand = await prisma.user.update({
       where: { id },
@@ -99,7 +135,13 @@ export async function PATCH(
               budget_max: budgetMax ? parseFloat(budgetMax) : null,
               min_size: minSize ? parseInt(minSize) : null,
               max_size: maxSize ? parseInt(maxSize) : null,
-              preferred_locations: preferredLocations || []
+              preferred_locations: preferredLocations || [],
+              must_have_amenities: (timeline || storeType || targetAudience || additionalRequirements) ? {
+                timeline: timeline || null,
+                storeType: storeType || null,
+                targetAudience: targetAudience || null,
+                additionalRequirements: additionalRequirements || null
+              } : null
             },
             update: {
               company_name: companyName !== undefined ? companyName : undefined,
@@ -108,7 +150,8 @@ export async function PATCH(
               budget_max: budgetMax !== undefined ? (budgetMax ? parseFloat(budgetMax) : null) : undefined,
               min_size: minSize !== undefined ? (minSize ? parseInt(minSize) : null) : undefined,
               max_size: maxSize !== undefined ? (maxSize ? parseInt(maxSize) : null) : undefined,
-              preferred_locations: preferredLocations !== undefined ? preferredLocations : undefined
+              preferred_locations: preferredLocations !== undefined ? preferredLocations : undefined,
+              must_have_amenities: (timeline !== undefined || storeType !== undefined || targetAudience !== undefined || additionalRequirements !== undefined) ? mergedRequirements : undefined
             }
           }
         }
@@ -118,6 +161,7 @@ export async function PATCH(
       }
     })
 
+    const requirements = brand.brandProfiles?.must_have_amenities as any
     return NextResponse.json({
       id: brand.id,
       name: brand.name,
@@ -127,7 +171,13 @@ export async function PATCH(
       createdAt: brand.createdAt,
       isActive: brand.isActive,
       companyName: brand.brandProfiles?.company_name || null,
-      industry: brand.brandProfiles?.industry || null
+      industry: brand.brandProfiles?.industry || null,
+      brandProfile: brand.brandProfiles ? {
+        timeline: requirements?.timeline || null,
+        storeType: requirements?.storeType || null,
+        targetAudience: requirements?.targetAudience || null,
+        additionalRequirements: requirements?.additionalRequirements || null
+      } : null
     })
   } catch (error: any) {
     console.error('Admin brand PATCH error:', error)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
 interface Inquiry {
@@ -28,6 +29,7 @@ interface InquiryManagementTableProps {
 }
 
 export default function InquiryManagementTable({ userEmail, userId }: InquiryManagementTableProps) {
+  const router = useRouter()
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -201,7 +203,13 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
-                        <button className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm">
+                        <button 
+                          onClick={() => {
+                            const inquiryInfo = `Inquiry Details:\n\nBrand: ${inquiry.brand.name} (${inquiry.brand.email})\nProperty: ${inquiry.property.title}\nAddress: ${inquiry.property.address}\nOwner: ${inquiry.owner ? `${inquiry.owner.name} (${inquiry.owner.email})` : 'N/A'}\nStatus: ${inquiry.status}\nDate: ${new Date(inquiry.createdAt).toLocaleDateString()}\n\nMessage:\n${inquiry.message || 'No message provided'}`
+                            alert(inquiryInfo)
+                          }}
+                          className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"
+                        >
                           View Details
                         </button>
                       </div>

@@ -4,10 +4,10 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 
-// Font styles with fallbacks
-const frauncesFont = { style: { fontFamily: 'Georgia, serif' } }
-const plusJakartaFont = { style: { fontFamily: 'system-ui, -apple-system, sans-serif' } }
+const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
+const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
 const propertyTypes = ['Standalone', 'Retail Space', 'Office', 'Food Court', 'Mall Space', 'Warehouse', 'Land', 'Other']
 const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road', 'Electronic City', 'Bellandur', 'Other']
@@ -121,7 +121,7 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
         <div className="relative z-10">
           <h3
             className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-4 sm:mb-6"
-            style={frauncesFont.style}
+            style={{ fontFamily: fraunces.style.fontFamily }}
           >
             Size Range {required && <span className="text-red-500 text-base sm:text-lg">*</span>}
           </h3>
@@ -135,10 +135,10 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
             {/* Size Slider */}
             <div>
               <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <label className="text-xs sm:text-sm font-medium text-gray-700" style={plusJakartaFont.style}>
+                <label className="text-xs sm:text-sm font-medium text-gray-700" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   Property Size
                 </label>
-                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] to-[#FF5200]" style={plusJakartaFont.style}>
+                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] to-[#FF5200]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   {formatSize(size)}
                 </span>
               </div>
@@ -157,7 +157,7 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
 
             {/* Exact Size Input */}
             <div>
-              <label className="block text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2" style={plusJakartaFont.style}>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                 Or Enter Exact Size (sqft)
               </label>
               <input
@@ -166,17 +166,17 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
                 onChange={handleExactSizeChange}
                 placeholder="e.g., 1500"
                 className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
-                style={plusJakartaFont.style}
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
               />
             </div>
 
             {/* Size Display */}
             <div className="pt-3 sm:pt-4 border-t border-gray-200">
               <div className="text-center">
-                <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2" style={plusJakartaFont.style}>
+                <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   Selected Size
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] via-[#FF6B35] to-[#FF5200]" style={frauncesFont.style}>
+                <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] via-[#FF6B35] to-[#FF5200]" style={{ fontFamily: fraunces.style.fontFamily }}>
                   {size.toLocaleString()} sqft
                 </p>
               </div>
@@ -290,7 +290,7 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
         <div className="relative z-10">
           <h3
             className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-4 sm:mb-6"
-            style={frauncesFont.style}
+            style={{ fontFamily: fraunces.style.fontFamily }}
           >
             Rent Range (Monthly) {required && <span className="text-red-500 text-base sm:text-lg">*</span>}
           </h3>
@@ -304,10 +304,10 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
             {/* Rent Slider */}
             <div>
               <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <label className="text-xs sm:text-sm font-medium text-gray-700" style={plusJakartaFont.style}>
+                <label className="text-xs sm:text-sm font-medium text-gray-700" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   Expected Monthly Rent
                 </label>
-                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] to-[#FF5200]" style={plusJakartaFont.style}>
+                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] to-[#FF5200]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   {formatCurrency(rent)}
                 </span>
               </div>
@@ -333,10 +333,10 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
             {/* Rent Display */}
             <div className="pt-3 sm:pt-4 border-t border-gray-200">
               <div className="text-center">
-                <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2" style={plusJakartaFont.style}>
+                <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
                   Expected Rent
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] via-[#FF6B35] to-[#FF5200]" style={frauncesFont.style}>
+                <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] via-[#FF6B35] to-[#FF5200]" style={{ fontFamily: fraunces.style.fontFamily }}>
                   {formatCurrency(rent)} / month
                 </p>
               </div>
@@ -404,6 +404,7 @@ function FilterCard({
   error?: boolean
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [otherValue, setOtherValue] = useState('')
   const borderColors = [
     'border-[#E4002B]/30 hover:border-[#E4002B]',
     'border-[#FF5200]/30 hover:border-[#FF5200]',
@@ -442,8 +443,32 @@ function FilterCard({
       next.add(item)
     }
     setSelected(next)
+    
+    // If "Other" is selected, include the custom value
+    const finalSelected = new Set(next)
+    if ((item === 'Other' || item === 'Others') && otherValue.trim()) {
+      finalSelected.delete(item)
+      finalSelected.add(otherValue.trim())
+    }
+    
     if (onSelectionChange) {
-      onSelectionChange(next)
+      onSelectionChange(finalSelected)
+    }
+  }
+  
+  const handleOtherValueChange = (value: string) => {
+    setOtherValue(value)
+    // Update selection with custom value
+    if (selected.has('Other') || selected.has('Others')) {
+      const next = new Set(selected)
+      if (value.trim()) {
+        next.delete('Other')
+        next.delete('Others')
+        next.add(value.trim())
+      }
+      if (onSelectionChange) {
+        onSelectionChange(next)
+      }
     }
   }
 
@@ -474,7 +499,7 @@ function FilterCard({
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h3
               className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900"
-              style={frauncesFont.style}
+              style={{ fontFamily: fraunces.style.fontFamily }}
             >
               {title} {required && <span className="text-red-500 text-base sm:text-lg">*</span>}
             </h3>
@@ -501,7 +526,7 @@ function FilterCard({
                       ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
                       : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
                   }`}
-                  style={plusJakartaFont.style}
+                  style={{ fontFamily: plusJakarta.style.fontFamily }}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   initial={false}
@@ -528,6 +553,19 @@ function FilterCard({
               )
             })}
           </div>
+          {/* Show text input when "Other" or "Others" is selected */}
+          {(selected.has('Other') || selected.has('Others')) && (
+            <div className="mt-4">
+              <input
+                type="text"
+                value={otherValue}
+                onChange={(e) => handleOtherValueChange(e.target.value)}
+                placeholder="Please specify..."
+                className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+              />
+            </div>
+          )}
           {error && required && selected.size === 0 && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">Please select at least one option</p>
@@ -621,7 +659,7 @@ export default function OwnerFilterPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className={`${fraunces.variable} ${plusJakarta.variable} min-h-screen relative overflow-hidden`}>
       {/* Light Background with Accent Gradient */}
       <div className="fixed inset-0 bg-gradient-to-br from-[#E4002B]/5 via-[#FF5200]/3 to-[#FF6B35]/5"></div>
       
@@ -648,7 +686,7 @@ export default function OwnerFilterPage() {
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-700 border border-gray-300 rounded-lg sm:rounded-xl hover:border-[#E4002B]/50 hover:text-[#E4002B] transition-all duration-200 hover:shadow-md hover:shadow-[#E4002B]/20 backdrop-blur-sm bg-white/80"
-            style={plusJakartaFont.style}
+            style={{ fontFamily: plusJakarta.style.fontFamily }}
           >
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -774,7 +812,7 @@ export default function OwnerFilterPage() {
                   ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white shadow-[0_8px_24px_rgba(228,0,43,0.4)] cursor-pointer'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
-              style={plusJakartaFont.style}
+              style={{ fontFamily: plusJakarta.style.fontFamily }}
               whileHover={isFormValid ? { scale: 1.05, y: -2 } : {}}
               whileTap={isFormValid ? { scale: 0.95 } : {}}
             >

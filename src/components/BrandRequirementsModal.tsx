@@ -9,12 +9,55 @@ interface BrandRequirementsModalProps {
   onClose: () => void
 }
 
+interface DatabaseBrand {
+  id: string
+  name: string
+  email: string
+  companyName: string
+  industry: string
+  brandProfile?: {
+    budgetMin: number | null
+    budgetMax: number | null
+    minSize: number | null
+    maxSize: number | null
+    preferredLocations: string[]
+    timeline: string | null
+    storeType: string | null
+    targetAudience: string | null
+    additionalRequirements: string | null
+  }
+}
+
 export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequirementsModalProps) {
   const [selectedType, setSelectedType] = useState<string>('All')
-  const [filteredBrands, setFilteredBrands] = useState<BrandRequirement[]>(brandRequirements)
+  const [filteredBrands, setFilteredBrands] = useState<BrandRequirement[]>([])
+  const [dbBrands, setDbBrands] = useState<DatabaseBrand[]>([])
+  const [loading, setLoading] = useState(true)
 
+  // Fetch brands from database
   useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setLoading(true)
+        // Fetch from public API endpoint
+        const response = await fetch('/api/brands')
+        if (response.ok) {
+          const data = await response.json()
+          setDbBrands(data.brands || [])
+        } else {
+          // Fallback to static data if API fails
+          setDbBrands([])
+        }
+      } catch (error) {
+        console.error('Error fetching brands:', error)
+        setDbBrands([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (isOpen) {
+      fetchBrands()
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
@@ -24,17 +67,77 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
     }
   }, [isOpen])
 
+  // Convert database brands to BrandRequirement format
   useEffect(() => {
-    if (selectedType === 'All') {
-      setFilteredBrands(brandRequirements)
-    } else {
-      setFilteredBrands(brandRequirements.filter(brand => brand.businessType === selectedType))
+    const convertDbBrands = (brands: DatabaseBrand[]): BrandRequirement[] => {
+      return brands.map(brand => {
+        const profile = brand.brandProfile || {}
+        const minSize = profile.minSize || 0
+        const maxSize = profile.maxSize || 0
+        const budgetMin = profile.budgetMin || 0
+        const budgetMax = profile.budgetMax || 0
+        
+        // Format size range
+        const sizeRange = minSize && maxSize 
+          ? `${minSize.toLocaleString()}-${maxSize.toLocaleString()} sqft`
+          : minSize 
+          ? `${minSize.toLocaleString()}+ sqft`
+          : 'Not specified'
+        
+        // Format budget range
+        const formatBudget = (amount: number) => {
+          if (amount >= 100000) {
+            return `₹${(amount / 100000).toFixed(1)}L`
+          }
+          return `₹${(amount / 1000).toFixed(0)}K`
+        }
+        const budgetRange = budgetMin && budgetMax
+          ? `${formatBudget(budgetMin)}-${formatBudget(budgetMax)}/month`
+          : budgetMin
+          ? `${formatBudget(budgetMin)}+/month`
+          : 'Not specified'
+        
+        return {
+          brandName: brand.name,
+          businessType: brand.industry || 'Other' as any,
+          sizeRequirement: {
+            category: 'Medium' as any,
+            range: sizeRange,
+            sqft: { min: minSize, max: maxSize }
+          },
+          budgetRange: {
+            category: 'Mid' as any,
+            range: budgetRange,
+            monthly: { min: budgetMin, max: budgetMax }
+          },
+          preferredLocations: {
+            primary: profile.preferredLocations || [],
+            secondary: []
+          },
+          mustHaveFeatures: profile.additionalRequirements ? [profile.additionalRequirements] : [],
+          timeline: (profile.timeline || 'Flexible') as any,
+          bfiWeights: {
+            location: 30,
+            budget: 25,
+            size: 25,
+            features: 20
+          }
+        }
+      })
     }
-  }, [selectedType])
+
+    const allBrands = convertDbBrands(dbBrands)
+    
+    if (selectedType === 'All') {
+      setFilteredBrands(allBrands)
+    } else {
+      setFilteredBrands(allBrands.filter(brand => brand.businessType === selectedType))
+    }
+  }, [selectedType, dbBrands])
 
   if (!isOpen) return null
 
-  const businessTypes = ['All', ...Array.from(new Set(brandRequirements.map(b => b.businessType)))]
+  const businessTypes = ['All', ...Array.from(new Set([...filteredBrands.map(b => b.businessType), ...brandRequirements.map(b => b.businessType)]))]
 
   // Color mapping for Tailwind classes
   const getColorClasses = (colorName: string) => {
@@ -227,8 +330,17 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {filteredBrands.map((brand, idx) => {
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+          ) : filteredBrands.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No brands found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+              {filteredBrands.map((brand, idx) => {
               const brandLogo = getBrandLogo(brand.brandName)
               const colors = getBrandColor(brand.brandName, brand.businessType)
               const colorBase = colors.borderColor.split('-')[0] // Extract base color name
@@ -350,7 +462,8 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
                 </div>
               )
             })}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

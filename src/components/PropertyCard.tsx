@@ -202,10 +202,10 @@ export default function PropertyCard({
         {/* Action Buttons */}
         <div className="flex gap-2">
           <Link 
-            href={`/properties/${property.id}`}
+            href={bfiScore !== undefined ? `/properties/${property.id}/match` : `/properties/${property.id}`}
             className="flex-1 bg-gradient-to-r from-[#FF5722] to-[#E4002B] hover:from-[#FF6B35] hover:to-[#FF5722] text-white text-center py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 text-sm"
           >
-            View Details
+            {bfiScore !== undefined ? 'View Match' : 'View Details'}
           </Link>
           {showContact && (
             <button

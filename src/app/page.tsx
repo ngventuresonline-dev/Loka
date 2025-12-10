@@ -744,15 +744,15 @@ export default function Home() {
       </div>
 
       {/* Featured Brand Requirements Section */}
-      <section className="relative z-10 bg-white py-24 md:py-32">
+      <section className="relative z-10 bg-white py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="text-center mb-10 sm:mb-12 md:mb-16">
-            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-gray-50 rounded-full mb-4 sm:mb-5 md:mb-6 border border-gray-200">
+          <div className="text-center mb-6 sm:mb-8 md:mb-10">
+            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-gray-50 rounded-full mb-3 sm:mb-4 md:mb-5 border border-gray-200">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5"></span>
               <span className="text-xs sm:text-sm font-medium text-gray-700">Active Brand Searches</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 px-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 px-4">
               Featured Brand <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Requirements</span>
             </h2>
             <p className="text-base sm:text-lg text-gray-600">
@@ -1222,7 +1222,7 @@ export default function Home() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 mt-12 md:mt-16">
+          <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 mt-6 md:mt-8">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
               <button
                 onClick={() => router.push('/filter/brand')}
@@ -1284,10 +1284,10 @@ export default function Home() {
       </section>
 
       {/* Featured Properties Section */}
-      <section className="relative z-10 bg-white py-16 sm:py-20 md:py-24">
+      <section className="relative z-10 bg-white py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="text-center mb-10 sm:mb-12 md:mb-16">
+          <div className="text-center mb-6 sm:mb-8 md:mb-10">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Featured Properties
             </h2>
@@ -1302,7 +1302,7 @@ export default function Home() {
       </section>
 
       {/* How It Works - Card-Based Layout */}
-      <section className="relative z-10 bg-gradient-to-b from-white via-gray-50/30 to-white py-24 md:py-32 overflow-hidden">
+      <section className="relative z-10 bg-gradient-to-b from-white via-gray-50/30 to-white py-12 md:py-16 overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-10 right-20 w-96 h-96 bg-gradient-to-br from-[#FF5200]/5 to-transparent rounded-full blur-3xl animate-[float_25s_ease-in-out_infinite]"></div>
@@ -1311,8 +1311,8 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 relative z-10">
           {/* Section Header */}
-          <div className="text-center mb-10 sm:mb-12 md:mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
-            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-white/80 backdrop-blur-xl border border-[#FF5200]/20 rounded-full mb-4 sm:mb-5 md:mb-6 shadow-[0_0_20px_rgba(255,82,0,0.1)]">
+          <div className="text-center mb-6 sm:mb-8 md:mb-10 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
+            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-white/80 backdrop-blur-xl border border-[#FF5200]/20 rounded-full mb-3 sm:mb-4 md:mb-5 shadow-[0_0_20px_rgba(255,82,0,0.1)]">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5 animate-pulse shadow-[0_0_5px_rgba(255,82,0,0.8)]"></span>
               <span className="text-xs sm:text-sm font-medium text-gray-700">Simple & Fast Process</span>
             </div>
@@ -1924,7 +1924,7 @@ export default function Home() {
 
           {/* Explainer Video Section */}
           <div className="relative opacity-0 animate-[fadeInUp_0.8s_ease-out_1.2s_forwards]" style={{animationDelay: '1.2s'}}>
-            <div className="text-center mb-12">
+            <div className="text-center mb-6">
               <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
                 See It In <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Action</span>
               </h3>
@@ -2096,7 +2096,7 @@ export default function Home() {
       </div>
 
       {/* Location Intelligence Section with Network Visualization */}
-      <section className="relative z-10 bg-gradient-to-b from-white via-gray-50/50 to-white py-24 md:py-32 overflow-hidden">
+      <section className="relative z-10 bg-gradient-to-b from-white via-gray-50/50 to-white py-12 md:py-16 overflow-hidden">
         {/* Network Visualization - Connecting Dots and Beams */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Connection Lines/Beams */}
@@ -2152,13 +2152,13 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 relative z-10">
           {/* Section Header */}
-          <div className="text-center mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
-            <div className="inline-flex items-center px-5 py-2 bg-white/80 backdrop-blur-xl border border-[#FF5200]/20 rounded-full mb-6 shadow-[0_0_20px_rgba(255,82,0,0.1)]">
+          <div className="text-center mb-8 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
+            <div className="inline-flex items-center px-5 py-2 bg-white/80 backdrop-blur-xl border border-[#FF5200]/20 rounded-full mb-4 shadow-[0_0_20px_rgba(255,82,0,0.1)]">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2.5 animate-pulse shadow-[0_0_5px_rgba(255,82,0,0.8)]"></span>
               <span className="text-sm font-medium text-gray-700">Futuristic Technology</span>
             </div>
             
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight tracking-tight">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 leading-tight tracking-tight">
               Powered by <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Location Intelligence</span>
             </h2>
             
@@ -2168,7 +2168,7 @@ export default function Home() {
           </div>
 
           {/* Intelligence Features Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Feature 1 */}
             <div className="group relative opacity-0 animate-[fadeInUp_0.6s_ease-out_0.2s_forwards]" style={{animationDelay: '0.2s'}}>
               <div className="bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 rounded-2xl p-6 hover:border-[#FF5200] hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full">

@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       title, description, address, city, state, zipCode,
       price, priceType, securityDeposit, rentEscalation,
       size, propertyType, storePowerCapacity, powerBackup,
-      waterFacility, amenities, images, ownerId, availability, isFeatured
+      waterFacility, amenities, images, ownerId, availability, isFeatured, displayOrder
     } = body
 
     if (!title || !address || !city || !price || !size || !propertyType || !ownerId) {
@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
         ownerId,
         availability: availability !== undefined ? availability : true,
         isFeatured: isFeatured || false,
+        displayOrder: displayOrder !== undefined && displayOrder !== null ? parseInt(String(displayOrder)) : null,
       },
       include: {
         owner: {
@@ -254,6 +255,7 @@ export async function PATCH(request: NextRequest) {
     // Status
     if (updateData.availability !== undefined) data.availability = updateData.availability
     if (updateData.isFeatured !== undefined) data.isFeatured = updateData.isFeatured
+    if (updateData.displayOrder !== undefined) data.displayOrder = updateData.displayOrder !== null ? parseInt(String(updateData.displayOrder)) : null
     
     // Owner (only if provided and different)
     if (updateData.ownerId !== undefined && updateData.ownerId) {

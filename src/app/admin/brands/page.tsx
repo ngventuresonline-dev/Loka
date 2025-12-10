@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Brand {
   id: string
@@ -25,6 +26,7 @@ interface Brand {
 
 export default function BrandsPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -32,18 +34,69 @@ export default function BrandsPage() {
 
   useEffect(() => {
     fetchBrands()
-  }, [])
+  }, [user])
 
   const fetchBrands = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/brands')
-      if (response.ok) {
-        const data = await response.json()
-        setBrands(data.brands || [])
+      
+      if (!user?.id || !user?.email) {
+        console.error('User not authenticated')
+        setBrands([])
+        setLoading(false)
+        return
       }
+      
+      const response = await fetch(`/api/admin/brands?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Failed to fetch brands:', response.status, errorText)
+        try {
+          const errorData = JSON.parse(errorText)
+          console.error('API Error:', errorData.error || 'Failed to fetch brands')
+        } catch {
+          console.error('API Error:', response.statusText || 'Failed to fetch brands')
+        }
+        setBrands([])
+        setLoading(false)
+        return
+      }
+      
+      const data = await response.json()
+      console.log('Fetched brands data:', data)
+      
+      if (!data.brands || !Array.isArray(data.brands)) {
+        console.error('Invalid response format:', data)
+        setBrands([])
+        setLoading(false)
+        return
+      }
+      
+      const dbBrands: Brand[] = data.brands.map((b: any) => ({
+        id: b.id,
+        name: b.name || 'N/A',
+        email: b.email || '',
+        companyName: b.companyName || b.brandProfile?.companyName || 'N/A',
+        industry: b.industry || b.brandProfile?.industry || 'N/A',
+        phone: b.phone || 'N/A',
+        userType: b.userType || 'brand',
+        createdAt: b.createdAt,
+        isActive: b.isActive !== undefined ? b.isActive : true,
+        brandProfile: b.brandProfile || {
+          budgetMin: b.budgetMin || null,
+          budgetMax: b.budgetMax || null,
+          minSize: b.minSize || null,
+          maxSize: b.maxSize || null,
+          preferredLocations: b.preferredLocations || []
+        }
+      }))
+      
+      console.log('Mapped brands:', dbBrands.length)
+      setBrands(dbBrands)
     } catch (error) {
       console.error('Error fetching brands:', error)
+      setBrands([])
     } finally {
       setLoading(false)
     }
@@ -53,11 +106,19 @@ export default function BrandsPage() {
     if (!confirm('Are you sure you want to delete this brand?')) return
     
     try {
-      const response = await fetch(`/api/admin/brands/${id}`, {
+      if (!user?.id || !user?.email) {
+        alert('Authentication required')
+        return
+      }
+      
+      const response = await fetch(`/api/admin/brands/${id}?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, {
         method: 'DELETE'
       })
       if (response.ok) {
         await fetchBrands()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to delete brand')
       }
     } catch (error) {
       console.error('Error deleting brand:', error)
@@ -68,10 +129,15 @@ export default function BrandsPage() {
   const handleBulkDelete = async () => {
     if (!confirm(`Are you sure you want to delete ${selectedBrands.length} brands?`)) return
     
+    if (!user?.id || !user?.email) {
+      alert('Authentication required')
+      return
+    }
+    
     try {
       await Promise.all(
         selectedBrands.map(id =>
-          fetch(`/api/admin/brands/${id}`, { method: 'DELETE' })
+          fetch(`/api/admin/brands/${id}?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, { method: 'DELETE' })
         )
       )
       setSelectedBrands([])
@@ -143,7 +209,7 @@ export default function BrandsPage() {
                   <th className="px-6 py-4 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedBrands.length === filteredBrands.length}
+                      checked={selectedBrands.length > 0 && selectedBrands.length === filteredBrands.length}
                       onChange={(e) => {
                         if (e.target.checked) {
                           setSelectedBrands(filteredBrands.map(b => b.id))
@@ -183,10 +249,17 @@ export default function BrandsPage() {
                         className="rounded"
                       />
                     </td>
-                    <td className="px-6 py-4 text-white font-medium">{brand.name}</td>
-                    <td className="px-6 py-4 text-gray-300">{brand.email}</td>
+                    <td className="px-6 py-4">
+                      <div className="text-white font-medium">{brand.name}</div>
+                      {brand.id.startsWith('BP-') && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-semibold">
+                          {brand.id}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-gray-300 text-sm">{brand.email}</td>
                     <td className="px-6 py-4 text-gray-300">{brand.companyName || 'N/A'}</td>
-                    <td className="px-6 py-4 text-gray-300">{brand.industry || 'N/A'}</td>
+                    <td className="px-6 py-4 text-gray-300 capitalize">{brand.industry || 'N/A'}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         brand.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
@@ -195,7 +268,7 @@ export default function BrandsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-400 text-sm">
-                      {new Date(brand.createdAt).toLocaleDateString()}
+                      {brand.createdAt ? new Date(brand.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">

@@ -408,7 +408,7 @@ export default function NewPropertyPage() {
               disabled={loading}
               className="px-6 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Property'}
+              {loading ? 'Creating...' : 'Create Property Entry'}
             </button>
           </div>
         </form>

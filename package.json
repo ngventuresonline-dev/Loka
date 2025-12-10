@@ -14,7 +14,9 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:import-featured": "tsx scripts/import-featured-properties.ts",
+    "db:import-featured-brands": "tsx scripts/import-featured-brands.ts",
     "db:update-property-ids": "tsx scripts/update-property-ids.ts",
+    "db:update-brand-ids": "tsx scripts/update-brand-ids.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

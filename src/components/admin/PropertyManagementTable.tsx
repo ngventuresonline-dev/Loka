@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
 interface Property {
@@ -26,6 +27,7 @@ interface PropertyManagementTableProps {
 }
 
 export default function PropertyManagementTable({ userEmail, userId }: PropertyManagementTableProps) {
+  const router = useRouter()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -71,7 +73,11 @@ export default function PropertyManagementTable({ userEmail, userId }: PropertyM
 
   const handleFeature = async (propertyId: string, currentFeatured: boolean) => {
     try {
-      const response = await fetch('/api/admin/properties', {
+      const params = new URLSearchParams({
+        userId,
+        userEmail: encodeURIComponent(userEmail),
+      })
+      const response = await fetch(`/api/admin/properties?${params}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,6 +87,9 @@ export default function PropertyManagementTable({ userEmail, userId }: PropertyM
       })
       if (response.ok) {
         await fetchProperties()
+      } else {
+        const error = await response.json().catch(() => ({ error: 'Failed to update property' }))
+        alert(error.error || 'Failed to update property')
       }
     } catch (error: any) {
       console.error('Error featuring property:', error)
@@ -92,11 +101,19 @@ export default function PropertyManagementTable({ userEmail, userId }: PropertyM
     if (!confirm('Are you sure you want to delete this property? This action cannot be undone.')) return
     
     try {
-      const response = await fetch(`/api/admin/properties?propertyId=${propertyId}`, {
+      const params = new URLSearchParams({
+        propertyId,
+        userId,
+        userEmail: encodeURIComponent(userEmail),
+      })
+      const response = await fetch(`/api/admin/properties?${params}`, {
         method: 'DELETE',
       })
       if (response.ok) {
         await fetchProperties()
+      } else {
+        const error = await response.json().catch(() => ({ error: 'Failed to delete property' }))
+        alert(error.error || 'Failed to delete property')
       }
     } catch (error: any) {
       console.error('Error deleting property:', error)
@@ -223,14 +240,23 @@ export default function PropertyManagementTable({ userEmail, userId }: PropertyM
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
-                        <button className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm">
+                        <button 
+                          onClick={() => {
+                            const propertyInfo = `Property Details:\n\nTitle: ${property.title}\nAddress: ${property.address}\nCity: ${property.city}\nOwner: ${property.owner.name} (${property.owner.email})\nSize: ${property.size.toLocaleString()} sq ft\nRent: ${formatPrice(property.price, property.priceType)}\nStatus: ${property.availability ? 'Available' : 'Occupied'}\nFeatured: ${property.isFeatured ? 'Yes' : 'No'}\nListed: ${new Date(property.createdAt).toLocaleDateString()}`
+                            alert(propertyInfo)
+                          }}
+                          className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"
+                        >
                           View
                         </button>
-                        <button className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded hover:bg-yellow-500/30 text-sm">
+                        <button 
+                          onClick={() => router.push(`/admin/properties/${property.id}`)}
+                          className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded hover:bg-yellow-500/30 text-sm"
+                        >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleFeature(property.id, !property.isFeatured)}
+                          onClick={() => handleFeature(property.id, property.isFeatured)}
                           className={`px-3 py-1 rounded hover:opacity-80 text-sm ${
                             property.isFeatured 
                               ? 'bg-purple-500/20 text-purple-300' 

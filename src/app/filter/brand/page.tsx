@@ -264,6 +264,7 @@ function FilterCard({
   onSelectionChange?: (selected: Set<string>) => void
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [otherValue, setOtherValue] = useState('')
   
   const toggle = (item: string) => {
     const next = new Set(selected)
@@ -274,8 +275,34 @@ function FilterCard({
       next.add(item)
     }
     setSelected(next)
+    
+    // If "Other" is selected, include the custom value
+    const finalSelected = new Set(next)
+    if ((item === 'Other' || item === 'Others') && otherValue.trim()) {
+      finalSelected.delete(item)
+      finalSelected.delete('Other')
+      finalSelected.delete('Others')
+      finalSelected.add(otherValue.trim())
+    }
+    
     if (onSelectionChange) {
-      onSelectionChange(next)
+      onSelectionChange(finalSelected)
+    }
+  }
+  
+  const handleOtherValueChange = (value: string) => {
+    setOtherValue(value)
+    // Update selection with custom value
+    if (selected.has('Other') || selected.has('Others')) {
+      const next = new Set(selected)
+      if (value.trim()) {
+        next.delete('Other')
+        next.delete('Others')
+        next.add(value.trim())
+      }
+      if (onSelectionChange) {
+        onSelectionChange(next)
+      }
     }
   }
   const borderColors = [
@@ -402,6 +429,19 @@ function FilterCard({
               )
             })}
           </div>
+          {/* Show text input when "Other" or "Others" is selected */}
+          {(selected.has('Other') || selected.has('Others')) && (
+            <div className="mt-4">
+              <input
+                type="text"
+                value={otherValue}
+                onChange={(e) => handleOtherValueChange(e.target.value)}
+                placeholder="Please specify..."
+                className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-[#FF5200] focus:ring-2 focus:ring-[#FF5200]/20 outline-none transition-all duration-200"
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Enhanced Pulse Ring */}

@@ -12,7 +12,17 @@ const createPrismaClient = () => {
   // During build time on Vercel, DATABASE_URL might not be available
   // We provide a dummy URL for Prisma validation during build
   // At runtime, the real DATABASE_URL from Vercel env vars will be used
-  let databaseUrl = process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/database'
+  let databaseUrl = (process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/database').trim()
+  
+  // Remove any trailing backslashes, newlines, or line breaks that might cause issues
+  // Also handle cases where the URL might be split across multiple lines in .env files
+  databaseUrl = databaseUrl.replace(/\\+$/, '').replace(/\n+/g, '').replace(/\r+/g, '').trim()
+  
+  // Validate URL format
+  if (!databaseUrl.startsWith('postgresql://') && !databaseUrl.startsWith('postgres://')) {
+    console.error('[Prisma] Invalid DATABASE_URL format. Must start with postgresql:// or postgres://')
+    throw new Error('Invalid DATABASE_URL format')
+  }
   
   // For Supabase connections, ensure proper SSL and connection settings
   if (databaseUrl.includes('supabase.com') || databaseUrl.includes('supabase.co')) {
@@ -26,6 +36,7 @@ const createPrismaClient = () => {
     }
     
     // For pooler connections, ensure pgbouncer is set
+    // Pooler is recommended for Prisma to avoid prepared statement errors
     if (databaseUrl.includes('pooler.supabase.com') || databaseUrl.includes(':6543')) {
       if (!existingParams.has('pgbouncer')) {
         existingParams.set('pgbouncer', 'true')
@@ -35,11 +46,20 @@ const createPrismaClient = () => {
       }
     }
     
+    // If using direct connection (port 5432), suggest switching to pooler
+    if (databaseUrl.includes(':5432') && !databaseUrl.includes('pooler')) {
+      console.warn('[Prisma] Using direct connection. Consider switching to pooler (port 6543) for better Prisma compatibility.')
+    }
+    
     databaseUrl = `${baseUrl}?${existingParams.toString()}`
   }
   
+  // Final cleanup - ensure no trailing characters
+  databaseUrl = databaseUrl.trim()
+  
   if (process.env.NODE_ENV === 'development') {
     console.log('[Prisma] Using database URL:', databaseUrl.replace(/:[^:@]+@/, ':****@')) // Log without password
+    console.log('[Prisma] URL validation - starts with postgresql://:', databaseUrl.startsWith('postgresql://'))
   }
   
   const client = new PrismaClient({

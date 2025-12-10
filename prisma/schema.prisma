@@ -114,6 +114,7 @@ model Property {
   availability         Boolean?           @map("is_available") @default(true)
   isFeatured           Boolean?           @map("is_featured") @default(false)
   views                Int?               @map("views_count") @default(0)
+  displayOrder         Int?               @map("display_order")
   createdAt            DateTime?          @map("created_at") @default(now()) @db.Timestamp(6)
   updatedAt            DateTime?          @map("updated_at") @default(now()) @db.Timestamp(6)
   inquiries            Inquiry[]
@@ -165,6 +166,7 @@ model User {
   name                                String              @db.VarChar(255)
   phone                               String?             @db.VarChar(20)
   userType                            user_type_enum      @map("user_type")
+  displayOrder                        Int?                @map("display_order")
   createdAt                           DateTime?           @map("created_at") @default(now()) @db.Timestamp(6)
   updatedAt                           DateTime?           @map("updated_at") @default(now()) @db.Timestamp(6)
   isActive                            Boolean?            @map("is_active") @default(true)

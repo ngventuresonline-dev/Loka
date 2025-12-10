@@ -446,6 +446,8 @@ function PropertiesResultsContent() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ delay: index * 0.05 }}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/properties/${match.property.id}/match?${searchParams.toString()}`)}
                   >
                     <PropertyCard
                       property={match.property}

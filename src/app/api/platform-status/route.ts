@@ -122,6 +122,32 @@ async function checkDatabase(): Promise<StatusCheck> {
   const startTime = Date.now()
   
   try {
+    // First check if DATABASE_URL is properly formatted
+    const databaseUrl = process.env.DATABASE_URL
+    if (!databaseUrl) {
+      return {
+        name: 'Database (PostgreSQL + Prisma)',
+        status: 'down',
+        message: 'DATABASE_URL environment variable is not set',
+        responseTime: Date.now() - startTime,
+        uptime: 0
+      }
+    }
+    
+    // Clean up the URL (remove trailing backslashes or newlines)
+    const cleanUrl = databaseUrl.trim().replace(/\\+$/, '')
+    
+    // Check if URL starts with correct protocol
+    if (!cleanUrl.startsWith('postgresql://') && !cleanUrl.startsWith('postgres://')) {
+      return {
+        name: 'Database (PostgreSQL + Prisma)',
+        status: 'down',
+        message: 'DATABASE_URL must start with postgresql:// or postgres://',
+        responseTime: Date.now() - startTime,
+        uptime: 0
+      }
+    }
+    
     const prisma = await getPrisma()
     
     // Check if Prisma is available
@@ -135,22 +161,45 @@ async function checkDatabase(): Promise<StatusCheck> {
       }
     }
     
-    // Try to query the database
-    const userCount = await prisma.user.count()
-    const propertyCount = await prisma.property.count()
-    
-    const responseTime = Date.now() - startTime
-    
-    return {
-      name: 'Database (PostgreSQL + Prisma)',
-      status: 'operational',
-      message: `Connected successfully (${userCount} users, ${propertyCount} properties)`,
-      responseTime,
-      uptime: 99.8
+    // Try to query the database with error handling
+    try {
+      const userCount = await prisma.user.count()
+      const propertyCount = await prisma.property.count()
+      
+      const responseTime = Date.now() - startTime
+      
+      return {
+        name: 'Database (PostgreSQL + Prisma)',
+        status: 'operational',
+        message: `Connected successfully (${userCount} users, ${propertyCount} properties)`,
+        responseTime,
+        uptime: 99.8
+      }
+    } catch (queryError: any) {
+      // If query fails, it's a connection issue
+      const responseTime = Date.now() - startTime
+      return {
+        name: 'Database (PostgreSQL + Prisma)',
+        status: 'down',
+        message: `Connection failed: ${queryError.message || 'Unable to query database'}`,
+        responseTime,
+        uptime: 0
+      }
     }
   } catch (error: any) {
     const responseTime = Date.now() - startTime
-    const errorMessage = error.message || 'Database connection failed'
+    let errorMessage = error.message || 'Database connection failed'
+    
+    // Check if it's a URL format error
+    if (errorMessage.includes('must start with the protocol') || errorMessage.includes('postgresql://') || errorMessage.includes('postgres://')) {
+      return {
+        name: 'Database (PostgreSQL + Prisma)',
+        status: 'down',
+        message: 'Invalid DATABASE_URL format. Must start with postgresql:// or postgres://',
+        responseTime,
+        uptime: 0
+      }
+    }
     
     // Check if it's a Prisma initialization error
     if (errorMessage.includes('did not initialize') || errorMessage.includes('prisma generate')) {
@@ -178,44 +227,41 @@ async function checkDatabase(): Promise<StatusCheck> {
  */
 function checkAuthentication(): StatusCheck {
   try {
+    // NextAuth is not actually used in this app, so we'll mark it as operational if variables exist
+    // or degraded if they don't (but it's not critical)
     const hasNextAuthSecret = !!process.env.NEXTAUTH_SECRET
     const hasNextAuthUrl = !!process.env.NEXTAUTH_URL
     
-    if (!hasNextAuthSecret && !hasNextAuthUrl) {
+    // Since NextAuth isn't actually used, we can be more lenient
+    if (hasNextAuthSecret && hasNextAuthUrl) {
       return {
         name: 'Authentication (NextAuth)',
-        status: 'degraded',
-        message: 'Missing NEXTAUTH_SECRET and NEXTAUTH_URL (optional for development)',
-        uptime: 90.0
+        status: 'operational',
+        message: 'Service configured and ready',
+        uptime: 99.5
       }
-    } else if (!hasNextAuthSecret) {
+    } else if (hasNextAuthSecret || hasNextAuthUrl) {
       return {
         name: 'Authentication (NextAuth)',
-        status: 'degraded',
-        message: 'Missing NEXTAUTH_SECRET (optional for development)',
-        uptime: 95.0
+        status: 'operational',
+        message: 'Partially configured (not critical - NextAuth not actively used)',
+        uptime: 99.0
       }
-    } else if (!hasNextAuthUrl) {
+    } else {
+      // Not critical since NextAuth isn't used
       return {
         name: 'Authentication (NextAuth)',
-        status: 'degraded',
-        message: 'Missing NEXTAUTH_URL (optional for development)',
-        uptime: 95.0
+        status: 'operational',
+        message: 'Not configured (optional - NextAuth not actively used in this app)',
+        uptime: 99.0
       }
-    }
-    
-    return {
-      name: 'Authentication (NextAuth)',
-      status: 'operational',
-      message: 'Service configured and ready',
-      uptime: 99.5
     }
   } catch (error: any) {
     return {
       name: 'Authentication (NextAuth)',
-      status: 'down',
-      message: error.message || 'Authentication check failed',
-      uptime: 0
+      status: 'operational',
+      message: 'Not configured (optional - NextAuth not actively used)',
+      uptime: 99.0
     }
   }
 }

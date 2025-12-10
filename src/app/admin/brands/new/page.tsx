@@ -17,13 +17,16 @@ export default function NewBrandPage() {
     industry: '',
     // From Brand Filter
     businessType: '',
+    businessTypeOther: '',
     sizeRange: '',
     preferredLocations: [] as string[],
+    preferredLocationsOther: '',
     budgetMin: '',
     budgetMax: '',
     timeline: '',
     // From Brand Onboarding
     storeType: '',
+    storeTypeOther: '',
     targetAudience: '',
     additionalRequirements: '',
   })
@@ -53,6 +56,14 @@ export default function NewBrandPage() {
         }
       }
 
+      // Use custom "Other" values if provided
+      const businessType = formData.businessType === 'Others' && formData.businessTypeOther 
+        ? formData.businessTypeOther 
+        : formData.businessType
+      const preferredLocations = formData.preferredLocations.includes('Others') && formData.preferredLocationsOther
+        ? [...formData.preferredLocations.filter(l => l !== 'Others'), formData.preferredLocationsOther]
+        : formData.preferredLocations
+
       const response = await fetch('/api/admin/brands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,12 +73,12 @@ export default function NewBrandPage() {
           password: formData.password,
           phone: formData.phone,
           companyName: formData.companyName,
-          industry: formData.industry || formData.businessType,
+          industry: formData.industry || businessType,
           budgetMin: formData.budgetMin ? parseFloat(formData.budgetMin) : null,
           budgetMax: formData.budgetMax ? parseFloat(formData.budgetMax) : null,
           minSize,
           maxSize,
-          preferredLocations: formData.preferredLocations,
+          preferredLocations: preferredLocations,
         }),
       })
 
@@ -174,7 +185,7 @@ export default function NewBrandPage() {
                 <select
                   required
                   value={formData.businessType}
-                  onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, businessType: e.target.value, businessTypeOther: e.target.value !== 'Others' ? '' : formData.businessTypeOther })}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 >
                   <option value="">Select business type</option>
@@ -182,13 +193,22 @@ export default function NewBrandPage() {
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
+                {formData.businessType === 'Others' && (
+                  <input
+                    type="text"
+                    value={formData.businessTypeOther}
+                    onChange={(e) => setFormData({ ...formData, businessTypeOther: e.target.value })}
+                    placeholder="Please specify..."
+                    className="w-full mt-2 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF5200]"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Store Type *</label>
                 <select
                   required
                   value={formData.storeType}
-                  onChange={(e) => setFormData({ ...formData, storeType: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, storeType: e.target.value, storeTypeOther: e.target.value !== 'other' ? '' : formData.storeTypeOther })}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 >
                   <option value="">Select store type</option>
@@ -196,6 +216,15 @@ export default function NewBrandPage() {
                     <option key={type} value={type.toLowerCase().replace(/\s+/g, '-')}>{type}</option>
                   ))}
                 </select>
+                {formData.storeType === 'other' && (
+                  <input
+                    type="text"
+                    value={formData.storeTypeOther}
+                    onChange={(e) => setFormData({ ...formData, storeTypeOther: e.target.value })}
+                    placeholder="Please specify..."
+                    className="w-full mt-2 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF5200]"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -243,6 +272,15 @@ export default function NewBrandPage() {
                 </label>
               ))}
             </div>
+            {formData.preferredLocations.includes('Others') && (
+              <input
+                type="text"
+                value={formData.preferredLocationsOther}
+                onChange={(e) => setFormData({ ...formData, preferredLocationsOther: e.target.value })}
+                placeholder="Please specify other locations..."
+                className="w-full mt-2 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF5200]"
+              />
+            )}
           </div>
 
           {/* Budget (from Filter) */}
@@ -333,7 +371,7 @@ export default function NewBrandPage() {
               disabled={loading}
               className="px-6 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Brand'}
+              {loading ? 'Creating...' : 'Create Brand Entry'}
             </button>
           </div>
         </form>
