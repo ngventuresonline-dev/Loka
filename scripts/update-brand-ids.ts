@@ -1,6 +1,6 @@
 import { config } from 'dotenv'
 import { resolve } from 'path'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 // Load .env.local file
 config({ path: resolve(__dirname, '../.env.local') })
@@ -73,9 +73,22 @@ async function updateBrandIds() {
         if (brandProfile) {
           await prisma.brand_profiles.create({
             data: {
-              ...brandProfile,
-              id: undefined, // Let it generate new ID
-              user_id: newId
+              user_id: newId,
+              company_name: brandProfile.company_name,
+              industry: brandProfile.industry,
+              preferred_locations: brandProfile.preferred_locations === null 
+                ? Prisma.JsonNull 
+                : (brandProfile.preferred_locations as Prisma.InputJsonValue),
+              budget_min: brandProfile.budget_min,
+              budget_max: brandProfile.budget_max,
+              min_size: brandProfile.min_size,
+              max_size: brandProfile.max_size,
+              preferred_property_types: brandProfile.preferred_property_types === null 
+                ? Prisma.JsonNull 
+                : (brandProfile.preferred_property_types as Prisma.InputJsonValue),
+              must_have_amenities: brandProfile.must_have_amenities === null 
+                ? Prisma.JsonNull 
+                : (brandProfile.must_have_amenities as Prisma.InputJsonValue),
             }
           })
         }
