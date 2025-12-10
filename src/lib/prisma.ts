@@ -70,13 +70,6 @@ const createPrismaClient = () => {
         url: databaseUrl,
       },
     },
-    // Connection pool configuration for better reliability
-    // This helps prevent connection issues with poolers
-    __internal: {
-      engine: {
-        connectTimeout: 10000, // 10 seconds
-      },
-    },
   })
   
   // Handle connection errors gracefully
