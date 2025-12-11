@@ -126,7 +126,10 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
       })
     }
 
-    const allBrands = convertDbBrands(dbBrands)
+    // Prefer database brands; fall back to static requirements if none returned
+    const allBrands = dbBrands.length > 0
+      ? convertDbBrands(dbBrands)
+      : brandRequirements
     
     if (selectedType === 'All') {
       setFilteredBrands(allBrands)
