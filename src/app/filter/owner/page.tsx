@@ -9,7 +9,7 @@ import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
-const propertyTypes = ['Standalone', 'Retail Space', 'Office', 'Food Court', 'Mall Space', 'Warehouse', 'Land', 'Other']
+const propertyTypes = ['Standalone', 'Retail Space', 'Office', 'Food Court', 'Mall Space', 'Warehouse', 'Land', 'Restaurant Space', 'Stall Space', 'Other']
 const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road', 'Electronic City', 'Bellandur', 'Other']
 const features = ['Ground Floor', 'Corner Unit', 'Main Road', 'Parking', 'Kitchen Setup', 'AC', 'Security', 'Storage', 'Other']
 const availabilities = ['Immediate', '1 month', '1-2 months', '3+ months']
@@ -386,6 +386,113 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
   )
 }
 
+function SecurityDepositInput({ index = 0, required = false, onDepositChange, error }: { index?: number; required?: boolean; onDepositChange?: (deposit: string) => void; error?: boolean }) {
+  const [deposit, setDeposit] = useState('')
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove all non-numeric characters including currency symbols
+    const rawValue = e.target.value.replace(/[^0-9]/g, '')
+    setDeposit(rawValue)
+    if (onDepositChange) {
+      onDepositChange(rawValue)
+    }
+  }
+  
+  // Format display value with currency symbol and commas
+  const displayValue = deposit ? `₹${parseInt(deposit || '0').toLocaleString('en-IN')}` : ''
+
+  const borderColors = [
+    'border-[#E4002B]/30 hover:border-[#E4002B]',
+    'border-[#FF5200]/30 hover:border-[#FF5200]',
+    'border-[#FF6B35]/30 hover:border-[#FF6B35]',
+    'border-[#E4002B]/30 hover:border-[#E4002B]',
+    'border-[#FF5200]/30 hover:border-[#FF5200]',
+  ]
+  const shadowColors = [
+    'hover:shadow-[#E4002B]/50',
+    'hover:shadow-[#FF5200]/50',
+    'hover:shadow-[#FF6B35]/50',
+    'hover:shadow-[#E4002B]/50',
+    'hover:shadow-[#FF5200]/50',
+  ]
+  const gradientColors = [
+    'from-[#E4002B]/20 via-[#FF5200]/10',
+    'from-[#FF5200]/20 via-[#E4002B]/10',
+    'from-[#FF6B35]/20 via-[#E4002B]/10',
+    'from-[#E4002B]/20 via-[#FF5200]/10',
+    'from-[#FF5200]/20 via-[#E4002B]/10',
+  ]
+  const accentColors = [
+    'from-[#E4002B]/40',
+    'from-[#FF5200]/40',
+    'from-[#FF6B35]/40',
+    'from-[#E4002B]/40',
+    'from-[#FF5200]/40',
+  ]
+
+  const colorIndex = index % 5
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
+      className="relative group"
+    >
+      <div className={`relative bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 ${borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
+        {/* Animated Glow Effect */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
+        
+        {/* Animated Corner Accent */}
+        <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${accentColors[colorIndex]} to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500`}></div>
+        
+        {/* Particle Effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+        </div>
+
+        <div className="relative z-10">
+          <h3
+            className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-4 sm:mb-6"
+            style={{ fontFamily: fraunces.style.fontFamily }}
+          >
+            Security Deposit {required && <span className="text-red-500 text-base sm:text-lg">*</span>}
+          </h3>
+          {error && required && (
+            <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs sm:text-sm text-red-600">Please enter security deposit amount</p>
+            </div>
+          )}
+
+          <div className="space-y-4 sm:space-y-6">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                Security Deposit Amount (₹)
+              </label>
+              <input
+                type="text"
+                value={displayValue}
+                onChange={handleChange}
+                placeholder="e.g., 2,25,000 (3 months)"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+              />
+              <p className="mt-2 text-[10px] sm:text-xs text-gray-500" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                Typically 2-3 months of rent
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Pulse Ring */}
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+      </div>
+    </motion.section>
+  )
+}
+
 function FilterCard({ 
   title, 
   items, 
@@ -590,6 +697,7 @@ export default function OwnerFilterPage() {
   const [sizeValue, setSizeValue] = useState<number>(1000)
   const [locationSelected, setLocationSelected] = useState<Set<string>>(new Set())
   const [rentValue, setRentValue] = useState<number>(100000)
+  const [depositValue, setDepositValue] = useState<string>('')
   const [featuresSelected, setFeaturesSelected] = useState<Set<string>>(new Set())
   const [availabilitySelected, setAvailabilitySelected] = useState<Set<string>>(new Set())
   
@@ -599,6 +707,7 @@ export default function OwnerFilterPage() {
     size: false,
     location: false,
     rent: false,
+    deposit: false,
     features: false,
     availability: false
   })
@@ -627,6 +736,7 @@ export default function OwnerFilterPage() {
       size: sizeValue === 0,
       location: locationSelected.size === 0,
       rent: rentValue === 0,
+      deposit: false, // Optional field
       features: featuresSelected.size === 0,
       availability: availabilitySelected.size === 0
     }
@@ -648,6 +758,7 @@ export default function OwnerFilterPage() {
       locations: Array.from(locationSelected),
       size: sizeValue,
       rent: rentValue,
+      deposit: depositValue,
       features: Array.from(featuresSelected),
       availability: Array.from(availabilitySelected)[0]
     }
@@ -771,12 +882,20 @@ export default function OwnerFilterPage() {
               error={errors.rent}
             />
           </div>
+          <div data-field="deposit">
+            <SecurityDepositInput 
+              index={4} 
+              required={false}
+              onDepositChange={setDepositValue}
+              error={errors.deposit}
+            />
+          </div>
           <div data-field="features">
             <FilterCard 
               title="Features" 
               items={features} 
               multi 
-              index={4} 
+              index={5} 
               required
               onSelectionChange={setFeaturesSelected}
               error={errors.features}
@@ -786,7 +905,7 @@ export default function OwnerFilterPage() {
             <FilterCard 
               title="Availability" 
               items={availabilities} 
-              index={5} 
+              index={6} 
               required
               onSelectionChange={setAvailabilitySelected}
               error={errors.availability}

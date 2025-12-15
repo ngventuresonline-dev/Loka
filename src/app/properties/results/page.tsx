@@ -47,12 +47,15 @@ function PropertiesResultsContent() {
     businessType: searchParams.get('businessType') || '',
     sizeMin: parseInt(searchParams.get('sizeMin') || '0'),
     sizeMax: parseInt(searchParams.get('sizeMax') || '100000'),
-    locations: searchParams.get('locations')?.split(',') || [],
+    locations: searchParams.get('locations')?.split(',').filter(l => l.trim()) || [],
     budgetMin: parseInt(searchParams.get('budgetMin') || '0'),
     budgetMax: parseInt(searchParams.get('budgetMax') || '10000000'),
     timeline: searchParams.get('timeline') || '',
     propertyType: searchParams.get('propertyType') || ''
   }
+  
+  // Log filters for debugging
+  console.log('[Results Page] Filters applied:', filters)
 
   useEffect(() => {
     fetchMatches()
@@ -79,6 +82,50 @@ function PropertiesResultsContent() {
         await new Promise(resolve => setTimeout(resolve, 600))
       }
       
+      // Check if user is logged in as a brand - if yes, use brand profile automatically
+      let response
+      try {
+        const sessionJson = localStorage.getItem('ngventures_session')
+        if (sessionJson) {
+          const session = JSON.parse(sessionJson)
+          if (session.userType === 'brand' && session.userId && session.email) {
+            // Use brand's profile from database - pass auth params
+            const authParams = new URLSearchParams({
+              minScore: '60',
+              userId: session.userId,
+              userEmail: session.email
+            })
+            response = await fetch(`/api/brands/matches?${authParams.toString()}`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include'
+            })
+            
+            if (response.ok) {
+              const data = await response.json()
+              if (data.success && data.matches) {
+                // Convert to expected format
+                const formattedMatches = data.matches.map((match: any) => ({
+                  property: match.property,
+                  bfiScore: match.bfiScore,
+                  matchReasons: match.matchReasons || [],
+                  breakdown: match.breakdown
+                }))
+                setMatches(formattedMatches)
+                setTotalMatches(formattedMatches.length)
+                setAiMatching(false)
+                setLoading(false)
+                return
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // If brand profile fetch fails, fall through to manual search
+        console.log('Not logged in as brand or profile not found, using manual search:', e)
+      }
+      
+      // Fallback: Use manual search with query params (for non-logged-in users or if brand profile fails)
       // Parse size range from URL or use defaults
       const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
         ? { min: filters.sizeMin, max: filters.sizeMax }
@@ -88,7 +135,7 @@ function PropertiesResultsContent() {
         ? { min: filters.budgetMin, max: filters.budgetMax }
         : undefined
 
-      const response = await fetch('/api/properties/match', {
+      response = await fetch('/api/properties/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,8 +153,19 @@ function PropertiesResultsContent() {
       }
 
       const data = await response.json()
+      console.log('[Results] API Response:', {
+        matchesCount: data.matches?.length || 0,
+        totalMatches: data.totalMatches || 0,
+        minScore: data.minMatchScore || 60
+      })
+      
       setMatches(data.matches || [])
       setTotalMatches(data.totalMatches || 0)
+      
+      // If no matches, log for debugging
+      if (!data.matches || data.matches.length === 0) {
+        console.warn('[Results] No matches found. Filters:', filters)
+      }
       
       // Small delay before showing results
       await new Promise(resolve => setTimeout(resolve, 500))

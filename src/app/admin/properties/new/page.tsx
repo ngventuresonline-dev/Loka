@@ -54,10 +54,22 @@ export default function NewPropertyPage() {
       const response = await fetch('/api/admin/owners')
       if (response.ok) {
         const data = await response.json()
-        setOwners(data.owners || [])
+        const list = data.owners || []
+        if (list.length === 0) {
+          // Fallback placeholder so the dropdown is usable when no owners exist
+          setOwners([{ id: 'placeholder', name: 'Default Owner (create owners to replace this)' }])
+          setFormData(prev => ({ ...prev, ownerId: 'placeholder' }))
+        } else {
+          setOwners(list)
+          // Auto-select first owner
+          setFormData(prev => ({ ...prev, ownerId: list[0].id }))
+        }
       }
     } catch (error) {
       console.error('Error fetching owners:', error)
+      // Fallback to a placeholder option on error
+      setOwners([{ id: 'placeholder', name: 'Default Owner (fetch failed)' }])
+      setFormData(prev => ({ ...prev, ownerId: 'placeholder' }))
     }
   }
 

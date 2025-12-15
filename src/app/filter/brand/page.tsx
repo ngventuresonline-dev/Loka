@@ -13,9 +13,11 @@ const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000
 const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Others']
 const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
 
-function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?: number; required?: boolean; onBudgetChange?: (budget: number) => void }) {
-  const [budget, setBudget] = useState<number | null>(null)
-  const [budgetInput, setBudgetInput] = useState('')
+function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?: number; required?: boolean; onBudgetChange?: (budget: { min: number; max: number }) => void }) {
+  const [budgetMin, setBudgetMin] = useState<number>(50000)
+  const [budgetMax, setBudgetMax] = useState<number>(200000)
+  const [minInput, setMinInput] = useState('₹50K')
+  const [maxInput, setMaxInput] = useState('₹200K')
   
   const formatCurrency = (value: number) => {
     if (value >= 100000) {
@@ -52,28 +54,46 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
     return null
   }
 
-  const handleBudgetChange = (value: number) => {
-    setBudget(value)
-    setBudgetInput(formatCurrency(value))
+  const handleMinChange = (value: number) => {
+    const newMin = Math.max(50000, Math.min(value, budgetMax - 5000))
+    setBudgetMin(newMin)
+    setMinInput(formatCurrency(newMin))
     if (onBudgetChange) {
-      onBudgetChange(value)
+      onBudgetChange({ min: newMin, max: budgetMax })
     }
   }
 
-  const handleInputChange = (input: string) => {
-    setBudgetInput(input)
-    const parsed = parseBudgetInput(input)
-    if (parsed !== null && parsed >= 50000 && parsed <= 2000000) {
-      handleBudgetChange(parsed)
-    } else if (input.trim() === '') {
-      setBudget(null)
-      if (onBudgetChange) {
-        onBudgetChange(0)
-      }
+  const handleMaxChange = (value: number) => {
+    const newMax = Math.max(budgetMin + 5000, Math.min(value, 2000000))
+    setBudgetMax(newMax)
+    setMaxInput(formatCurrency(newMax))
+    if (onBudgetChange) {
+      onBudgetChange({ min: budgetMin, max: newMax })
     }
   }
+
+  const handleMinInputChange = (input: string) => {
+    setMinInput(input)
+    const parsed = parseBudgetInput(input)
+    if (parsed !== null && parsed >= 50000 && parsed < budgetMax) {
+      handleMinChange(parsed)
+    }
+  }
+
+  const handleMaxInputChange = (input: string) => {
+    setMaxInput(input)
+    const parsed = parseBudgetInput(input)
+    if (parsed !== null && parsed > budgetMin && parsed <= 2000000) {
+      handleMaxChange(parsed)
+    }
+  }
+
+  // Calculate step based on value (5000 steps after 50k)
+  const getStep = (value: number) => {
+    return value >= 50000 ? 5000 : 1000
+  }
   
-  const hasError = required && budget === null
+  const hasError = required && (budgetMin < 50000 || budgetMax <= budgetMin)
 
   const borderColors = [
     'border-[#FF5200]/30 hover:border-[#FF5200]',
@@ -148,61 +168,81 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
           )}
 
           <div className="space-y-4 sm:space-y-6">
-            {/* Budget - Slider and Text Input */}
+            {/* Min Budget */}
             <div>
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <label className="text-xs sm:text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Budget (Monthly Rent)
+                  Minimum Budget (Monthly Rent)
                 </label>
                 <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  {budget ? formatCurrency(budget) : 'Not set'}
+                  {formatCurrency(budgetMin)}
                 </span>
               </div>
               <div className="relative mb-3 sm:mb-4">
                 <input
                   type="range"
                   min="50000"
-                  max="2000000"
-                  step="50000"
-                  value={budget || 500000}
-                  onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
+                  max={Math.min(budgetMax - 5000, 2000000)}
+                  step={getStep(budgetMin)}
+                  value={budgetMin}
+                  onChange={(e) => handleMinChange(parseInt(e.target.value))}
                   className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-min"
                 />
               </div>
-              {/* Manual Input for Budget */}
-              <div>
-                <label className="block text-[10px] sm:text-xs font-medium text-gray-400 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Or enter manually (e.g., 50K, 2L, 50000)
-                </label>
-                <input
-                  type="text"
-                  value={budgetInput}
-                  onChange={(e) => handleInputChange(e.target.value)}
-                  onBlur={() => {
-                    if (budget !== null) {
-                      setBudgetInput(formatCurrency(budget))
-                    }
-                  }}
-                  placeholder="5L"
-                  className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg sm:rounded-xl text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
-                  style={{ fontFamily: plusJakarta.style.fontFamily }}
-                />
-              </div>
+              <input
+                type="text"
+                value={minInput}
+                onChange={(e) => handleMinInputChange(e.target.value)}
+                onBlur={() => setMinInput(formatCurrency(budgetMin))}
+                placeholder="₹50K"
+                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg sm:rounded-xl text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+              />
             </div>
 
-            {/* Budget Display */}
-            {budget !== null && (
-              <div className="pt-3 sm:pt-4 border-t border-gray-700/50">
-                <div className="text-center">
-                  <p className="text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                    Selected Budget
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
-                    {formatCurrency(budget)}
-                  </p>
-                </div>
+            {/* Max Budget */}
+            <div>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <label className="text-xs sm:text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  Maximum Budget (Monthly Rent)
+                </label>
+                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  {formatCurrency(budgetMax)}
+                </span>
               </div>
-            )}
+              <div className="relative mb-3 sm:mb-4">
+                <input
+                  type="range"
+                  min={Math.max(budgetMin + 5000, 50000)}
+                  max="2000000"
+                  step={getStep(budgetMax)}
+                  value={budgetMax}
+                  onChange={(e) => handleMaxChange(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-max"
+                />
+              </div>
+              <input
+                type="text"
+                value={maxInput}
+                onChange={(e) => handleMaxInputChange(e.target.value)}
+                onBlur={() => setMaxInput(formatCurrency(budgetMax))}
+                placeholder="₹200K"
+                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg sm:rounded-xl text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+              />
+            </div>
+
+            {/* Budget Range Display */}
+            <div className="pt-3 sm:pt-4 border-t border-gray-700/50">
+              <div className="text-center">
+                <p className="text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  Budget Range
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
+                  {formatCurrency(budgetMin)} - {formatCurrency(budgetMax)}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -242,6 +282,34 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
         .slider-min::-moz-range-thumb:hover {
           transform: scale(1.2);
           box-shadow: 0 0 15px rgba(255, 82, 0, 0.8), 0 0 30px rgba(255, 82, 0, 0.5);
+        }
+        .slider-max::-webkit-slider-thumb {
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #E4002B, #FF5200);
+          cursor: pointer;
+          box-shadow: 0 0 10px rgba(228, 0, 43, 0.5), 0 0 20px rgba(228, 0, 43, 0.3);
+          transition: all 0.2s;
+        }
+        .slider-max::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
+          box-shadow: 0 0 15px rgba(228, 0, 43, 0.8), 0 0 30px rgba(228, 0, 43, 0.5);
+        }
+        .slider-max::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #E4002B, #FF5200);
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 0 10px rgba(228, 0, 43, 0.5), 0 0 20px rgba(228, 0, 43, 0.3);
+          transition: all 0.2s;
+        }
+        .slider-max::-moz-range-thumb:hover {
+          transform: scale(1.2);
+          box-shadow: 0 0 15px rgba(228, 0, 43, 0.8), 0 0 30px rgba(228, 0, 43, 0.5);
         }
       `}</style>
     </motion.section>
@@ -462,7 +530,7 @@ export default function BrandFilterPage() {
   const [sizeRangeSelected, setSizeRangeSelected] = useState<Set<string>>(new Set())
   const [locationSelected, setLocationSelected] = useState<Set<string>>(new Set())
   const [timelineSelected, setTimelineSelected] = useState<Set<string>>(new Set())
-  const [budgetValue, setBudgetValue] = useState<number>(0)
+  const [budgetRange, setBudgetRange] = useState<{ min: number; max: number }>({ min: 50000, max: 200000 })
   
   // Check if all required fields are filled
   const isFormValid = 
@@ -470,11 +538,12 @@ export default function BrandFilterPage() {
     sizeRangeSelected.size > 0 &&
     locationSelected.size > 0 &&
     timelineSelected.size > 0 &&
-    budgetValue > 0
+    budgetRange.min >= 50000 &&
+    budgetRange.max > budgetRange.min
 
   // Generate AI insights based on selections
   useEffect(() => {
-    const totalSelections = businessTypeSelected.size + sizeRangeSelected.size + locationSelected.size + timelineSelected.size + (budgetValue > 0 ? 1 : 0)
+    const totalSelections = businessTypeSelected.size + sizeRangeSelected.size + locationSelected.size + timelineSelected.size + (budgetRange.min >= 50000 ? 1 : 0)
     
     if (totalSelections >= 2) {
       const insights = [
@@ -495,7 +564,7 @@ export default function BrandFilterPage() {
     } else {
       setShowAiInsight(false)
     }
-  }, [businessTypeSelected, sizeRangeSelected, locationSelected, timelineSelected, budgetValue])
+  }, [businessTypeSelected, sizeRangeSelected, locationSelected, timelineSelected, budgetRange])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -624,9 +693,10 @@ export default function BrandFilterPage() {
           <FilterCard 
             title="Size Range" 
             items={sizeRanges} 
-            index={1} 
-            required
-            onSelectionChange={setSizeRangeSelected}
+          index={1} 
+          required
+          multi
+          onSelectionChange={setSizeRangeSelected}
           />
           <FilterCard 
             title="Location (Popular Areas)" 
@@ -639,7 +709,7 @@ export default function BrandFilterPage() {
           <BudgetSlider 
             index={3} 
             required
-            onBudgetChange={setBudgetValue}
+            onBudgetChange={setBudgetRange}
           />
           <FilterCard 
             title="Timeline" 
@@ -672,7 +742,19 @@ export default function BrandFilterPage() {
               whileTap={isFormValid ? { scale: 0.95 } : {}}
               onClick={() => {
                 if (isFormValid) {
-                  // Parse size range
+                  // Save filter data to localStorage for pre-filling onboarding form
+                  const filterData = {
+                    businessType: Array.from(businessTypeSelected),
+                    sizeRanges: Array.from(sizeRangeSelected),
+                    locations: Array.from(locationSelected),
+                    budgetMin: budgetRange.min,
+                    budgetMax: budgetRange.max,
+                    timeline: Array.from(timelineSelected)[0] || ''
+                  }
+                  
+                  localStorage.setItem('brandFilterData', JSON.stringify(filterData))
+
+                  // Parse size ranges for query params (use first range for search)
                   const sizeRangeStr = Array.from(sizeRangeSelected)[0] || ''
                   let sizeMin = 0
                   let sizeMax = 100000
@@ -691,14 +773,14 @@ export default function BrandFilterPage() {
                   params.set('sizeMin', sizeMin.toString())
                   params.set('sizeMax', sizeMax.toString())
                   params.set('locations', Array.from(locationSelected).join(','))
-                  params.set('budgetMin', '0')
-                  params.set('budgetMax', budgetValue.toString())
+                  params.set('budgetMin', budgetRange.min.toString())
+                  params.set('budgetMax', budgetRange.max.toString())
                   if (Array.from(timelineSelected).length > 0) {
                     params.set('timeline', Array.from(timelineSelected)[0] || '')
                   }
 
-                  // Navigate to results page
-                  window.location.href = `/properties/results?${params.toString()}`
+                  // Navigate to onboarding form with pre-filled data
+                  window.location.href = `/onboarding/brand?prefilled=true`
                 }
               }}
             >

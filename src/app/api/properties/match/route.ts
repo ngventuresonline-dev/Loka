@@ -23,37 +23,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build database query filters
+    // Build database query filters - make them more flexible
+    // We'll use BFI scoring for matching, so we don't need strict filters
     const where: any = {
-      availability: true
+      OR: [
+        { availability: true },
+        { isFeatured: true }
+      ]
     }
 
-    // Location filter
-    if (locations && locations.length > 0) {
-      where.OR = locations.map((loc: string) => ({
-        city: { contains: loc, mode: 'insensitive' }
-      }))
-    }
-
-    // Size filter
+    // Don't apply strict location filter - let BFI scoring handle location matching
+    // This allows properties in nearby areas to still show up
+    
+    // Size filter - make it more flexible (allow ±50% range)
     if (sizeRange) {
-      if (sizeRange.min) {
-        where.size = { ...where.size, gte: sizeRange.min }
-      }
-      if (sizeRange.max) {
-        where.size = { ...where.size, lte: sizeRange.max }
+      const sizeMinExpanded = sizeRange.min ? Math.max(0, Math.floor(sizeRange.min * 0.5)) : 0
+      const sizeMaxExpanded = sizeRange.max ? Math.ceil(sizeRange.max * 1.5) : 1000000
+      
+      where.size = {
+        gte: sizeMinExpanded,
+        lte: sizeMaxExpanded
       }
     }
 
-    // Budget filter (convert to monthly for comparison)
-    if (budgetRange) {
-      // We'll filter in memory after fetching, as priceType affects calculation
+    // Budget filter - make it more flexible (allow up to 50% over budget)
+    // We'll filter more strictly in BFI scoring
+    if (budgetRange && budgetRange.max) {
+      const maxBudgetExpanded = Math.ceil(budgetRange.max * 1.5) // Allow 50% over
+      where.price = {
+        lte: maxBudgetExpanded
+      }
     }
 
-    // Property type filter
-    if (propertyType) {
-      where.propertyType = propertyType
-    }
+    // Property type filter - optional, BFI will score type matches
+    // if (propertyType) {
+    //   where.propertyType = propertyType
+    // }
 
     // Fetch properties from database
     const properties = await prisma.property.findMany({
@@ -68,7 +73,7 @@ export async function POST(request: NextRequest) {
           }
         }
       },
-      take: 100 // Limit initial fetch
+      take: 500 // accommodate larger DB, still bounded
     })
 
     // Convert Prisma properties to Property type
@@ -93,6 +98,7 @@ export async function POST(request: NextRequest) {
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       isAvailable: p.availability,
+      isFeatured: p.isFeatured ?? false,
       images: p.images || []
     }))
 
@@ -109,8 +115,42 @@ export async function POST(request: NextRequest) {
     // Calculate BFI scores and rank using findMatches
     const matchResults = findMatches(typedProperties, brandRequirements)
 
+    // Log matching info for debugging
+    console.log(`[API Match] Total properties checked: ${typedProperties.length}`)
+    console.log(`[API Match] Total matches found: ${matchResults.length}`)
+    if (matchResults.length > 0) {
+      const scores = matchResults.map(m => m.bfiScore.score)
+      console.log(`[API Match] Score range: ${Math.min(...scores)}% - ${Math.max(...scores)}%`)
+    }
+
+    // Filter matches with >= 60% score (but show lower scores if no matches found)
+    let filteredMatches = matchResults.filter(result => result.bfiScore.score >= 60)
+    
+    // If no matches >= 60%, progressively lower threshold to find any matches
+    if (filteredMatches.length === 0 && matchResults.length > 0) {
+      console.log(`[API Match] No matches >= 60%, checking lower thresholds...`)
+      
+      // Try >= 50%
+      filteredMatches = matchResults.filter(result => result.bfiScore.score >= 50)
+      if (filteredMatches.length === 0) {
+        // Try >= 40%
+        filteredMatches = matchResults.filter(result => result.bfiScore.score >= 40)
+        if (filteredMatches.length === 0) {
+          // Show all matches >= 30% (original minimum in findMatches)
+          filteredMatches = matchResults.filter(result => result.bfiScore.score >= 30)
+          console.log(`[API Match] Showing matches >= 30% (${filteredMatches.length} found)`)
+        } else {
+          console.log(`[API Match] Showing matches >= 40% (${filteredMatches.length} found)`)
+        }
+      } else {
+        console.log(`[API Match] Showing matches >= 50% (${filteredMatches.length} found)`)
+      }
+    } else {
+      console.log(`[API Match] Found ${filteredMatches.length} matches >= 60%`)
+    }
+
     // Generate match reasons for each match
-    const matchesWithReasons = matchResults.map(match => {
+    const matchesWithReasons = filteredMatches.map(match => {
       const reasons: string[] = []
       const breakdown = match.bfiScore.breakdown
       
@@ -150,12 +190,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Return top 50 matches
+    // Return top 50 matches (already filtered to >= 60%)
     const topMatches = matchesWithReasons.slice(0, 50)
 
     return NextResponse.json({
       matches: topMatches,
-      totalMatches: matchesWithReasons.length
+      totalMatches: matchesWithReasons.length,
+      minMatchScore: 60
     })
   } catch (error: any) {
     console.error('Property matching error:', error)

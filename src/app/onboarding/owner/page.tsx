@@ -5,6 +5,100 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 
+function BrandCard({ brand }: { brand: any }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  const matchScore = brand.matchScore || Math.floor(Math.random() * 30) + 70 // Fallback for demo
+  
+  return (
+    <div className="group relative">
+      {/* Compact capsule/button style card */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="relative bg-white border border-gray-200 rounded-full px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-[#FF5200]/50 flex items-center gap-2 sm:gap-3 whitespace-nowrap"
+      >
+        {/* Gradient accent dot */}
+        <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B] flex-shrink-0"></div>
+        
+        {/* Brand logo/initial - smaller */}
+        <div className="w-8 h-8 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+          {brand.name?.charAt(0) || 'B'}
+        </div>
+        
+        {/* Brand name - compact */}
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-xs font-semibold text-gray-900 truncate">{brand.name || 'Brand Name'}</h3>
+            <div className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
+              matchScore >= 90 ? 'bg-green-100 text-green-700' :
+              matchScore >= 80 ? 'bg-blue-100 text-blue-700' :
+              'bg-yellow-100 text-yellow-700'
+            }`}>
+              {matchScore}%
+            </div>
+          </div>
+        </div>
+        
+        {/* Dropdown arrow */}
+        <svg 
+          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {/* Expandable requirements section - appears below */}
+      {isExpanded && (
+        <div className="mt-2 bg-white border border-gray-200 rounded-xl p-3 shadow-md animate-[fadeInUp_0.3s_ease-out]">
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center gap-2 text-gray-600 mb-2">
+              <span className="font-medium text-gray-900">{brand.businessType || 'Business Type'}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <svg className="w-3 h-3 text-[#FF5200] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                <span className="truncate">{brand.sizeRange || 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <svg className="w-3 h-3 text-[#FF5200] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="truncate">{brand.budgetRange || 'N/A'}</span>
+              </div>
+            </div>
+            <div className="pt-2 border-t border-gray-100 space-y-1.5">
+              {brand.propertyTypes && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Property Type:</span>
+                  <span className="font-medium text-gray-900 text-right">{brand.propertyTypes.join(', ')}</span>
+                </div>
+              )}
+              {brand.locations && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Location:</span>
+                  <span className="font-medium text-gray-900 text-right">{brand.locations.join(', ')}</span>
+                </div>
+              )}
+              {brand.leaseTerm && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Lease Term:</span>
+                  <span className="font-medium text-gray-900">{brand.leaseTerm}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function OwnerOnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -27,6 +121,23 @@ function OwnerOnboardingContent() {
   })
 
 
+  // Map display names from filter page to internal property type values
+  const mapPropertyTypeDisplayToValue = (displayName: string): string => {
+    const mapping: Record<string, string> = {
+      'Standalone': 'standalone',
+      'Retail Space': 'retail',
+      'Office': 'office',
+      'Food Court': 'restaurant',
+      'Mall Space': 'mall',
+      'Warehouse': 'warehouse',
+      'Land': 'other',
+      'Restaurant Space': 'restaurant',
+      'Stall Space': 'kiosk',
+      'Other': 'other'
+    }
+    return mapping[displayName] || displayName.toLowerCase().replace(/\s+/g, '_')
+  }
+
   // Load pre-filled data from filter page
   useEffect(() => {
     const prefilled = searchParams.get('prefilled')
@@ -36,23 +147,35 @@ function OwnerOnboardingContent() {
         if (storedData) {
           const filterData = JSON.parse(storedData)
           
+          // Map property type display name to internal value
+          const mappedPropertyType = filterData.propertyType 
+            ? mapPropertyTypeDisplayToValue(filterData.propertyType)
+            : ''
+          
           setFormData(prev => ({
             ...prev,
-            propertyType: filterData.propertyType || prev.propertyType,
+            propertyType: mappedPropertyType || prev.propertyType,
             location: filterData.locations?.[0] || prev.location,
             size: filterData.size ? `${filterData.size} sq ft` : prev.size,
             rent: filterData.rent ? `₹${filterData.rent.toLocaleString()}` : prev.rent,
+            deposit: filterData.deposit ? `₹${parseInt(filterData.deposit.replace(/[^0-9]/g, '') || '0').toLocaleString('en-IN')}` : prev.deposit,
             amenities: filterData.features ? filterData.features.join(', ') : prev.amenities
           }))
           
           // Clear stored data after loading
           localStorage.removeItem('ownerFilterData')
           
-          // Generate AI description
-          generatePropertyDescription(filterData)
+          // Generate AI description (use mapped property type)
+          generatePropertyDescription({
+            ...filterData,
+            propertyType: mappedPropertyType || filterData.propertyType
+          })
           
-          // Fetch matching brands
-          fetchMatchingBrands(filterData)
+          // Fetch matching brands (use mapped property type)
+          fetchMatchingBrands({
+            ...filterData,
+            propertyType: mappedPropertyType || filterData.propertyType
+          })
         }
       } catch (error) {
         console.error('Error loading pre-filled data:', error)
@@ -228,7 +351,7 @@ function OwnerOnboardingContent() {
       <Navbar />
       
       <div className="relative z-10 pt-28 sm:pt-32 md:pt-36 pb-20 px-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Back to Home Button */}
           <button
             onClick={() => router.push('/')}
@@ -239,6 +362,42 @@ function OwnerOnboardingContent() {
             </svg>
             <span className="font-medium">Back to Home</span>
           </button>
+
+          {/* Matching Brands Section - Show from Step 1 onwards when we have enough data */}
+          {step >= 1 && formData.propertyType && formData.location && formData.size && formData.rent && (
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-3 text-left">
+                Brands Looking for Your Property
+              </h2>
+            
+            {loadingBrands ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 animate-pulse">
+                    <div className="h-16 bg-gray-200 rounded-lg mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : matchingBrands.length > 0 ? (
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                {matchingBrands.slice(0, 6).map((brand, index) => (
+                  <div key={index} className="flex-shrink-0">
+                    <BrandCard brand={brand} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 sm:p-8 text-center">
+                <p className="text-sm sm:text-base text-gray-600">No matching brands found yet. Complete more details below to see matches.</p>
+              </div>
+            )}
+            </div>
+          )}
+        </div>
+        
+        <div className="max-w-3xl mx-auto">
           {/* Progress Bar */}
           <div className="mb-12">
             <div className="flex justify-between items-center mb-4">
@@ -281,8 +440,10 @@ function OwnerOnboardingContent() {
                       <option value="retail">Retail Space</option>
                       <option value="office">Office Space</option>
                       <option value="restaurant">Restaurant Space</option>
+                      <option value="kiosk">Stall Space</option>
                       <option value="mall">Mall Kiosk</option>
                       <option value="standalone">Standalone Building</option>
+                      <option value="warehouse">Warehouse</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
@@ -306,17 +467,48 @@ function OwnerOnboardingContent() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Pin Exact Location <span className="text-red-500">*</span>
                     </label>
+                    <p className="text-xs text-gray-500 mb-3">(Share google map location here)</p>
                     <div className="flex gap-3">
                       <button
                         type="button"
                         onClick={handlePinLocation}
-                        className="flex-1 px-4 py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        className="relative flex-1 px-4 py-4 text-white rounded-xl font-bold hover:shadow-2xl transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98] border-2 border-transparent hover:border-white/30 overflow-hidden group"
+                        style={{
+                          boxShadow: '0 4px 15px rgba(228, 0, 43, 0.4), 0 0 20px rgba(255, 82, 0, 0.2)',
+                        }}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        {/* Animated moving gradient background */}
+                        <div 
+                          className="absolute inset-0 animate-gradient-shift"
+                          style={{
+                            background: 'linear-gradient(90deg, #FF5200 0%, #FF6B35 25%, #E4002B 50%, #FF5200 75%, #FF6B35 100%)',
+                            backgroundSize: '200% 100%',
+                          }}
+                        ></div>
+                        
+                        {/* Shiny overlay effect that moves across */}
+                        <div 
+                          className="absolute inset-0 animate-shine"
+                          style={{
+                            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+                            width: '50%',
+                          }}
+                        ></div>
+                        
+                        {/* Additional shine layer for depth */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        
+                        <svg className="w-6 h-6 relative z-10 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        Pin My Location
+                        <span className="relative z-10 text-base drop-shadow-lg font-extrabold">Pin My Location</span>
+                        
+                        {/* Pulsing border effect */}
+                        <div className="absolute inset-0 rounded-xl border-2 border-white/40 animate-pulse"></div>
+                        
+                        {/* Glow effect on hover */}
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#E4002B]/20 via-[#FF5200]/20 to-[#FF6B35]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
                       </button>
                       
                       {formData.latitude && formData.longitude && (
@@ -635,77 +827,6 @@ function OwnerOnboardingContent() {
             </form>
           </div>
 
-          {/* Matching Brands Section - Show from Step 2 onwards when we have enough data */}
-          {step >= 2 && formData.propertyType && formData.location && formData.size && formData.rent && (
-            <div className="mt-8 sm:mt-12">
-              <div className="mb-6 sm:mb-8">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                  Brands Looking for Your Type of Property
-                </h2>
-                <p className="text-sm sm:text-base text-gray-600">
-                  Based on your property details, these brands may be interested
-                </p>
-              </div>
-            
-            {loadingBrands ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 animate-pulse">
-                    <div className="h-16 bg-gray-200 rounded-lg mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ))}
-              </div>
-            ) : matchingBrands.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {matchingBrands.slice(0, 5).map((brand, index) => (
-                  <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg flex items-center justify-center text-white text-2xl font-bold">
-                        {brand.name?.charAt(0) || 'B'}
-                      </div>
-                      {brand.matchScore >= 80 && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                          {brand.matchScore}% Match
-                        </span>
-                      )}
-                    </div>
-                    
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{brand.name || 'Brand Name'}</h3>
-                    <p className="text-sm text-gray-600 mb-4">{brand.businessType || 'Business Type'}</p>
-                    
-                    <div className="space-y-2 mb-4 text-sm">
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                        </svg>
-                        <span>Size: {brand.sizeRange || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Budget: {brand.budgetRange || 'N/A'}</span>
-                      </div>
-                    </div>
-                    
-                    <button
-                      type="button"
-                      className="w-full px-4 py-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
-                    >
-                      View Requirements
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 sm:p-8 text-center">
-                <p className="text-sm sm:text-base text-gray-600">No matching brands found yet. Complete more details above to see matches.</p>
-              </div>
-            )}
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -714,15 +835,71 @@ function OwnerOnboardingContent() {
 
 export default function OwnerOnboarding() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+    <>
+      <style jsx>{`
+        @keyframes gradient-shift {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        
+        @keyframes shine {
+          0% {
+            transform: translateX(-200%) skewX(-20deg);
+          }
+          100% {
+            transform: translateX(400%) skewX(-20deg);
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-gradient-shift {
+          animation: gradient-shift 3s ease infinite;
+        }
+        
+        .animate-shine {
+          animation: shine 2.5s ease-in-out infinite;
+        }
+        
+        .animate-\\[fadeInUp_0\\.3s_ease-out\\] {
+          animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      <Suspense fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
-      <OwnerOnboardingContent />
-    </Suspense>
+      }>
+        <OwnerOnboardingContent />
+      </Suspense>
+    </>
   )
 }

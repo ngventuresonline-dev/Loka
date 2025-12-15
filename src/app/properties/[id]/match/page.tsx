@@ -32,10 +32,62 @@ function MatchDetailsContent() {
   const [loading, setLoading] = useState(true)
   const [matchDetails, setMatchDetails] = useState<MatchDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'location'>('overview')
+  const [showVisitModal, setShowVisitModal] = useState(false)
+  const [visitDateTime, setVisitDateTime] = useState('')
+  const [visitNote, setVisitNote] = useState('')
+  const [visitorName, setVisitorName] = useState('')
+  const [visitorEmail, setVisitorEmail] = useState('')
+  const [visitorPhone, setVisitorPhone] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [paywallAccepted, setPaywallAccepted] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [visitSubmitting, setVisitSubmitting] = useState(false)
+
+  useEffect(() => {
+    // Prefill visitor details from brand onboarding/filter data in localStorage
+    try {
+      const detailsRaw = localStorage.getItem('brandOnboardingDetails')
+      const submissionRaw = localStorage.getItem('brandOnboardingSubmission')
+      const filterRaw = localStorage.getItem('brandFilterData')
+
+      const details = detailsRaw ? JSON.parse(detailsRaw) : null
+      const submission = submissionRaw ? JSON.parse(submissionRaw) : null
+      const filter = filterRaw ? JSON.parse(filterRaw) : null
+
+      const name =
+        details?.contactPerson ||
+        submission?.brandName ||
+        ''
+      const email = details?.email || ''
+      const phone = details?.phone || ''
+      const company =
+        details?.companyName ||
+        submission?.brandName ||
+        filter?.businessType?.[0] ||
+        ''
+
+      if (name) setVisitorName(name)
+      if (email) setVisitorEmail(email)
+      if (phone) setVisitorPhone(phone)
+      if (company) setCompanyName(company)
+    } catch (err) {
+      console.error('Prefill visit form failed:', err)
+    }
+  }, [])
 
   useEffect(() => {
     fetchMatchDetails()
   }, [propertyId])
+
+  // Prefill notes using AI-ish template based on property and prefilled data
+  useEffect(() => {
+    if (showVisitModal && matchDetails && !visitNote) {
+      const propTitle = matchDetails.property?.title || 'this property'
+      const city = matchDetails.property?.city ? ` in ${matchDetails.property.city}` : ''
+      const defaultNote = `Interested in ${propTitle}${city}. Please schedule a visit at your earliest convenience. Also looking for support with brand requirements and CRE services.`
+      setVisitNote(defaultNote)
+    }
+  }, [showVisitModal, matchDetails, visitNote])
 
   const fetchMatchDetails = async () => {
     try {
@@ -130,6 +182,50 @@ function MatchDetailsContent() {
     }
   }
 
+  const handleVisitSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!visitDateTime) {
+      alert('Please pick a date and time.')
+      return
+    }
+    if (!visitorName || !visitorEmail || !visitorPhone) {
+      alert('Please fill your contact details.')
+      return
+    }
+    if (!paywallAccepted) {
+      alert('Please complete the payment to schedule the visit.')
+      return
+    }
+    try {
+      setVisitSubmitting(true)
+      const response = await fetch('/api/visits/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId,
+          dateTime: visitDateTime,
+          note: visitNote,
+          name: visitorName,
+          email: visitorEmail,
+          phone: visitorPhone,
+          company: companyName
+        })
+      })
+      if (!response.ok) {
+        throw new Error('Failed to schedule visit')
+      }
+      alert('Visit request submitted. We will confirm via email/WhatsApp.')
+      setShowVisitModal(false)
+      setVisitNote('')
+      setVisitDateTime('')
+    } catch (err) {
+      console.error(err)
+      alert('Could not schedule the visit. Please try again.')
+    } finally {
+      setVisitSubmitting(false)
+    }
+  }
+
   const formatPrice = (price: number, type: Property['priceType']) => {
     const formatted = new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -201,7 +297,7 @@ function MatchDetailsContent() {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 pb-28 md:pb-12">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
@@ -368,19 +464,206 @@ function MatchDetailsContent() {
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <button className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
-                Contact Owner
+              <button
+                onClick={() => setShowVisitModal(true)}
+                className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+              >
+                Schedule Visit
               </button>
-              <button className="w-full border-2 border-[#FF5200] text-[#FF5200] py-3 rounded-lg font-semibold hover:bg-[#FF5200] hover:text-white transition-colors">
-                Save Property
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                className="w-full border-2 border-[#FF5200] text-[#FF5200] py-3 rounded-lg font-semibold hover:bg-[#FF5200] hover:text-white transition-colors"
+              >
+                Get Exact Location
               </button>
               <button className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
-                Share Match
+                Connect with an Expert
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile Sticky Action Bar */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex gap-3">
+          <button
+            onClick={() => setShowVisitModal(true)}
+            className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+          >
+            Schedule Visit
+          </button>
+          <button
+            onClick={() => setShowPaymentModal(true)}
+            className="flex-1 border-2 border-[#FF5200] text-[#FF5200] py-3 rounded-lg font-semibold hover:bg-[#FF5200] hover:text-white transition-colors"
+          >
+            Get Exact Location
+          </button>
+        </div>
+      </div>
+
+      {/* Payment Modal for Exact Location */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 relative">
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              ×
+            </button>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Get Exact Location Pin</h3>
+            <p className="text-gray-700 mb-4">
+              Unlock the exact location pin and priority support with our Brand Onboarding / Listing package.
+            </p>
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-2 mb-4">
+              <h4 className="text-sm font-semibold text-orange-800">What&apos;s included:</h4>
+              <ul className="text-sm text-orange-900 list-disc list-inside space-y-1">
+                <li>Exact location pin & visit coordination</li>
+                <li>Brand requirements capture & CRE advisory</li>
+                <li>Shortlisted matches & expert guidance</li>
+                <li>Owner negotiation and paperwork assistance</li>
+              </ul>
+              <div className="pt-2">
+                <p className="text-sm font-semibold text-orange-900">Listing / Onboarding Fee:</p>
+                <p className="text-sm text-orange-900">Contact us for tailored pricing. Payment processed via Cashfree.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => router.push('/payments/brand-onboarding')}
+                className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+              >
+                Proceed to Payment (Cashfree)
+              </button>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="px-4 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              After payment, we’ll send the pin and notify you and admin via email/WhatsApp.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Visit Modal */}
+      {showVisitModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+            <button
+              onClick={() => setShowVisitModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              ×
+            </button>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Schedule a Visit</h3>
+            <form className="space-y-4" onSubmit={handleVisitSubmit}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Your Name</label>
+                  <input
+                    type="text"
+                    value={visitorName}
+                    onChange={(e) => setVisitorName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Company (optional)</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    placeholder="Brand / Business name"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={visitorEmail}
+                    onChange={(e) => setVisitorEmail(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={visitorPhone}
+                    onChange={(e) => setVisitorPhone(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Date & Time</label>
+                <input
+                  type="datetime-local"
+                  min={new Date().toISOString().slice(0,16)}
+                  value={visitDateTime}
+                  onChange={(e) => setVisitDateTime(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Notes (optional)</label>
+                <textarea
+                  value={visitNote}
+                  onChange={(e) => setVisitNote(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                  placeholder="Any preferences or questions"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={visitSubmitting}
+                  className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {visitSubmitting ? 'Scheduling...' : 'Confirm Visit'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowVisitModal(false)}
+                  className="px-4 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+              {/* Paywall placeholder */}
+              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-800">
+                To secure the visit, please complete payment via Cashfree. (Integration placeholder)
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaywallAccepted(true)}
+                    className="px-4 py-2 bg-[#FF5200] text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    Pay & Confirm
+                  </button>
+                  {paywallAccepted && <span className="text-green-700 font-semibold">Payment confirmed</span>}
+                </div>
+              </div>
+            </form>
+            <p className="text-xs text-gray-500 mt-3">
+              We’ll notify you and the admin via email/WhatsApp once the visit is scheduled and payment is confirmed.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

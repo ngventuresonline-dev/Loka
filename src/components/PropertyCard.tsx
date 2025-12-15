@@ -60,6 +60,33 @@ export default function PropertyCard({
     // TODO: Save to database
   }
 
+  const getFallbackImage = () => {
+    const size = property.size || 0
+    const type = (property.propertyType || '').toLowerCase()
+
+    if (type.includes('restaurant') || type.includes('qsr') || type.includes('cafe') || type.includes('café')) {
+      if (size < 800) {
+        return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=900&h=600&fit=crop&q=80'
+      }
+      if (size < 1500) {
+        return 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=900&h=600&fit=crop&q=80'
+      }
+      return 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=900&h=600&fit=crop&q=80'
+    }
+
+    if (type.includes('retail')) {
+      if (size < 800) {
+        return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=900&h=600&fit=crop&q=80'
+      }
+      if (size < 2000) {
+        return 'https://images.unsplash.com/photo-1521336575822-6da63fb45455?w=900&h=600&fit=crop&q=80'
+      }
+      return 'https://images.unsplash.com/photo-1529429617124-aee1f1650a5c?w=900&h=600&fit=crop&q=80'
+    }
+
+    return 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=900&h=600&fit=crop&q=80'
+  }
+
   return (
     <div className="group relative bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-[#FF5722] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
       <div className="absolute inset-0 bg-gradient-to-br from-[#FF5722]/5 to-[#E4002B]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -75,16 +102,13 @@ export default function PropertyCard({
             unoptimized
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FF5722] to-[#E4002B] rounded-xl mx-auto mb-3 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <span className="text-gray-600 text-sm">Premium Space</span>
-            </div>
-          </div>
+          <Image
+            src={getFallbackImage()}
+            alt={property.title || 'Property'}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-700"
+            unoptimized
+          />
         )}
         
         {/* Top Badges */}

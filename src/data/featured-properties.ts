@@ -6,7 +6,7 @@ export interface FeaturedProperty {
   floor: string
   rent: string
   deposit: string
-  badge?: 'Leased Out'
+  badge?: 'Leased Out' | 'Available'
 }
 
 export const featuredProperties: FeaturedProperty[] = [
@@ -28,8 +28,8 @@ export const featuredProperties: FeaturedProperty[] = [
     size: '5100 Sq. Ft.',
     floor: 'Ground & First Floor',
     rent: '₹8,50,000/month',
-    deposit: '11 months'
-    // No badge
+    deposit: '11 months',
+    badge: 'Available'
   },
   {
     id: 3,
@@ -89,8 +89,8 @@ export const featuredProperties: FeaturedProperty[] = [
     size: '4000 Sq. Ft.',
     floor: 'Old Bungalow',
     rent: '₹14,00,000/month',
-    deposit: '8 months'
-    // No badge
+    deposit: '8 months',
+    badge: 'Available'
   },
   {
     id: 9,

@@ -12,6 +12,7 @@ import Dashboard from '@/components/Dashboard'
 import AiSearchModal from '@/components/AiSearchModal'
 import HeroSearch, { type Mode as HeroMode } from '@/components/HeroSearch'
 import BrandRequirementsModal from '@/components/BrandRequirementsModal'
+import PropertyDetailsModal from '@/components/PropertyDetailsModal'
 import { featuredProperties, type FeaturedProperty } from '@/data/featured-properties'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
@@ -49,6 +50,8 @@ const mockProperties: Property[] = [
 function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<FeaturedProperty | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   
   // Responsive properties per page: 3 for desktop, 1 for mobile
   useEffect(() => {
@@ -168,16 +171,122 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
                   }}
                 ></div>
                 
-                {/* Image Placeholder */}
-                <div className="relative w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                {/* Property Image - Size-based F&B images */}
+                <div className="relative w-full h-48 overflow-hidden">
+                  {(() => {
+                    const sizeMatch = property.size.match(/(\d+)/)
+                    const size = sizeMatch ? parseInt(sizeMatch[1]) : 0
+                    const title = property.title.toLowerCase()
+                    let imageUrl = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80'
+                    
+                    // Size-based image selection
+                    if (size <= 300 || title.includes('kiosk')) {
+                      // Very small - kiosk/QSR
+                      const images = [
+                        'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=600&fit=crop&q=80'
+                      ]
+                      imageUrl = images[(property.id - 1) % images.length]
+                    } else if (size > 300 && size < 800) {
+                      // Small cafe/QSR
+                      const images = [
+                        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&h=600&fit=crop&q=80'
+                      ]
+                      imageUrl = images[(property.id - 1) % images.length]
+                    } else if (size >= 800 && size < 1500) {
+                      // Medium - cafe/casual dining
+                      const images = [
+                        'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1552569973-4c9c8e4e8b3f?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80'
+                      ]
+                      imageUrl = images[(property.id - 1) % images.length]
+                    } else if (size >= 1500 && size < 3000) {
+                      // Large - full-service restaurant
+                      const images = [
+                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1552569973-4c9c8e4e8b3f?w=800&h=600&fit=crop&q=80'
+                      ]
+                      imageUrl = images[(property.id - 1) % images.length]
+                    } else if (size >= 3000 && size < 5000) {
+                      // Very large - brewery/large restaurant
+                      const images = [
+                        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1550966873-5c0b0c4c8b8e?w=800&h=600&fit=crop&q=80'
+                      ]
+                      imageUrl = images[(property.id - 1) % images.length]
+                    } else {
+                      // Ultra large (5000+) - brewery/taproom
+                      const images = [
+                        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1550966873-5c0b0c4c8b8e?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80'
+                      ]
+                      imageUrl = images[(property.id - 1) % images.length]
+                    }
+                    
+                    // Fallback images in case of network errors
+                    const fallbackImages = [
+                      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
+                      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
+                      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80'
+                    ]
+                    
+                    return (
+                      <div className="relative w-full h-full bg-gradient-to-br from-gray-200 to-gray-300">
+                        <img
+                          src={imageUrl}
+                          alt={property.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            const retryCount = parseInt(target.getAttribute('data-retry') || '0')
+                            
+                            // Prevent infinite retry loop
+                            if (retryCount >= fallbackImages.length) {
+                              target.style.display = 'none'
+                              return
+                            }
+                            
+                            // Try next fallback image
+                            if (retryCount < fallbackImages.length) {
+                              target.setAttribute('data-retry', String(retryCount + 1))
+                              // Use setTimeout to prevent rapid retry loops
+                              setTimeout(() => {
+                                target.src = fallbackImages[retryCount] || fallbackImages[0]
+                              }, 100)
+                            }
+                          }}
+                          onLoad={(e) => {
+                            // Reset retry count on successful load
+                            const target = e.target as HTMLImageElement
+                            target.setAttribute('data-retry', '0')
+                          }}
+                        />
+                      </div>
+                    )
+                  })()}
+                  {property.badge && (
+                    <div className={`absolute top-3 right-3 px-2.5 py-1 text-white text-xs font-semibold rounded-full shadow-lg ${
+                      property.badge === 'Leased Out' 
+                        ? 'bg-red-500' 
+                        : 'bg-green-500'
+                    }`}>
+                      {property.badge}
                   </div>
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-md">
-                    <span className="text-xs font-semibold text-gray-600">Property Image</span>
-                  </div>
+                  )}
                 </div>
                 
                 {/* Animated Glow Effect */}
@@ -203,16 +312,11 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
                 </div>
                 
                 <div className="relative z-10 p-6 flex flex-col flex-1">
-                  {/* Title and Badge */}
+                  {/* Title */}
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="font-bold text-gray-900 text-base md:text-lg mb-1 pr-2 flex-1 line-clamp-2">
                       {property.title}
                     </h3>
-                    {property.badge && (
-                      <span className="px-2.5 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0">
-                        {property.badge}
-                      </span>
-                    )}
                   </div>
 
                   {/* Property Details */}
@@ -257,6 +361,22 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
                       <span><span className="font-semibold text-gray-900">Deposit:</span> {property.deposit}</span>
                     </div>
                   </div>
+
+                  {/* View Details Button */}
+                  <div className="mt-6 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        setSelectedProperty(property)
+                        setIsModalOpen(true)
+                      }}
+                      className="w-full px-4 py-2.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                      <span>View Details</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Enhanced Pulse Ring */}
@@ -267,6 +387,16 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
           )
         })}
       </div>
+
+      {/* Property Details Modal */}
+      <PropertyDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedProperty(null)
+        }}
+        property={selectedProperty}
+      />
     </div>
   )
 }
@@ -274,7 +404,7 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
 export default function Home() {
   const router = useRouter()
   
-  // Generate random flickering logos on mount
+  // Generate random flickering logos on mount (client-side only to avoid hydration mismatch)
   const getRandomFlickeringIndices = (total: number, count: number) => {
     const indices = new Set<number>()
     while (indices.size < count) {
@@ -283,15 +413,48 @@ export default function Home() {
     return indices
   }
   
-  // Generate random selections for each row (different each page load)
-  const row1Flickering = useMemo(() => getRandomFlickeringIndices(30, 8), [])
-  const row2Flickering = useMemo(() => getRandomFlickeringIndices(30, 7), [])
-  const row3Flickering = useMemo(() => getRandomFlickeringIndices(30, 6), [])
   const [currentStep, setCurrentStep] = useState<AppStep>('home')
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null)
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  
+  // Generate random selections for each row (client-side only)
+  const [row1Flickering, setRow1Flickering] = useState<Set<number>>(new Set())
+  const [row2Flickering, setRow2Flickering] = useState<Set<number>>(new Set())
+  
+  // Initialize flickering indices on client mount only
+  useEffect(() => {
+    if (isMounted) {
+      setRow1Flickering(getRandomFlickeringIndices(15, 8))
+      setRow2Flickering(getRandomFlickeringIndices(15, 7))
+    }
+  }, [isMounted])
+
+  // Get unique logo files (no duplicates) - distributed with longer logos between smaller ones
+  const uniqueLogos = [
+    '/logos/truffles logo.jpg',           // medium
+    '/logos/Eleven-Bakehouse-Coloured-Logos-01.png', // longer
+    '/logos/MPC.jpg',                     // small
+    '/logos/Burger Seigneur Logo 1.png',  // longer
+    '/logos/images (3).png',              // small
+    '/logos/blr brewing co logo.png',     // longer
+    '/logos/images (4).jpg',              // small
+    '/logos/TFG Logo.png',                 // medium
+    '/logos/bawri.jpeg',                   // small
+    '/logos/Boba Bhai Logo.jpg',           // medium
+    '/logos/Dolphins.jpg',                 // small
+    '/logos/Sandowitch logo.jpg',          // longer
+    '/logos/Qirfa logo.jpg',               // small
+    '/logos/Madam Chocolate Logo .png',    // longer
+    '/logos/Zed.jpg',                      // small
+    '/logos/Blue Tokai.jpg',               // medium
+    '/logos/Namaste logo.jpg',             // small
+    '/logos/Kried Logo.jpg',               // small
+    '/logos/Melts Logo.jpg',               // small
+    '/logos/TAN logo.jpg'                  // small
+  ]
+
   const [theme, setThemeState] = useState({ palette: 'cosmic-purple', background: 'floating-orbs' })
   
   // AI Search states
@@ -616,23 +779,23 @@ export default function Home() {
           <div className="absolute top-2/3 right-1/4 w-96 h-96 bg-[#E4002B]/5 rounded-full blur-[100px] animate-pulse" style={{animationDelay: '2s'}}></div>
         </div>
         
-        {/* First Row - Scrolling Left (Slower, Seamless) */}
-        <div className="relative overflow-hidden mb-5">
-          <div className="flex gap-5 md:gap-6 animate-[scroll_60s_linear_infinite] w-max">
+        {/* First Row - Auto-scrolling with manual scroll support */}
+        <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-5 md:gap-6 animate-[scroll_80s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth">
             {[
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe',
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe',
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe',
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe'
+              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
+              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
+              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
+              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports'
             ].map((brand, idx) => {
               // Random selection - different logos flicker each time
-              const shouldFlicker = row1Flickering.has(idx % 10)
+              const shouldFlicker = row1Flickering.has(idx % 15)
               const flickerDelay = idx * 0.2
               
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#FF5200]/60 hover:shadow-[0_0_30px_rgba(255,82,0,0.4),0_0_60px_rgba(255,82,0,0.2),inset_0_0_20px_rgba(255,82,0,0.1)]"
+                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#FF5200]/60 hover:shadow-[0_0_30px_rgba(255,82,0,0.4),0_0_60px_rgba(255,82,0,0.2),inset_0_0_20px_rgba(255,82,0,0.1)]"
                 >
                   {/* Constant subtle radiance */}
                   <div className="absolute inset-0 rounded-xl border border-[#FF5200]/10 shadow-[0_0_15px_rgba(255,82,0,0.15)]"></div>
@@ -658,23 +821,58 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Second Row - Scrolling Right (Slower, Seamless) */}
-        <div className="relative overflow-hidden mb-5">
-          <div className="flex gap-5 md:gap-6 animate-[scrollReverse_60s_linear_infinite] w-max">
+        {/* Second Row - Logo Images - Cinematic */}
+        <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-6 md:gap-8 animate-[scrollReverse_90s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth">
             {[
-              'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai',
-              'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai',
-              'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai',
-              'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai'
+              ...uniqueLogos,
+              ...uniqueLogos,
+              ...uniqueLogos
+            ].map((logoPath, idx) => (
+              <div
+                key={`logo-${idx}-${logoPath}`}
+                className="relative flex-shrink-0 snap-start h-20 md:h-24 w-auto"
+              >
+                <div className="relative h-full flex items-center justify-center group cursor-pointer">
+                  {/* Cinematic glow effect on hover */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#FF5200]/0 via-[#FF5200]/0 to-[#E4002B]/0 group-hover:from-[#FF5200]/20 group-hover:via-[#FF5200]/10 group-hover:to-[#E4002B]/20 transition-all duration-700 blur-xl opacity-0 group-hover:opacity-100"></div>
+                  
+                  {/* Logo image with rounded corners */}
+                  <img
+                    src={logoPath}
+                    alt={`Brand logo ${idx + 1}`}
+                    className="relative h-full w-auto max-w-[180px] md:max-w-[220px] object-contain rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:brightness-110 drop-shadow-[0_4px_12px_rgba(0,0,0,0.1)] group-hover:drop-shadow-[0_8px_24px_rgba(255,82,0,0.4)]"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                    }}
+                  />
+                  
+                  {/* Subtle border on hover */}
+                  <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-[#FF5200]/30 transition-all duration-500 pointer-events-none"></div>
+              </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Third Row - Auto-scrolling with manual scroll support */}
+        <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-5 md:gap-6 animate-[scroll_80s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth">
+            {[
+              'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
+              'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
+              'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
+              'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee'
             ].map((brand, idx) => {
               // Random selection - different logos flicker each time
-              const shouldFlicker = row2Flickering.has(idx % 10)
+              const shouldFlicker = row2Flickering.has(idx % 15)
               const flickerDelay = idx * 0.25
               
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#E4002B]/60 hover:shadow-[0_0_30px_rgba(228,0,43,0.4),0_0_60px_rgba(228,0,43,0.2),inset_0_0_20px_rgba(228,0,43,0.1)]"
+                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#E4002B]/60 hover:shadow-[0_0_30px_rgba(228,0,43,0.4),0_0_60px_rgba(228,0,43,0.2),inset_0_0_20px_rgba(228,0,43,0.1)]"
                 >
                   {/* Constant subtle radiance */}
                   <div className="absolute inset-0 rounded-xl border border-[#E4002B]/10 shadow-[0_0_15px_rgba(228,0,43,0.15)]"></div>
@@ -700,47 +898,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Third Row - Scrolling Left (Same Speed) */}
-        <div className="relative overflow-hidden">
-          <div className="flex gap-5 md:gap-6 animate-[scroll_60s_linear_infinite] w-max">
-            {[
-              'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
-              'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
-              'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
-              'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee'
-            ].map((brand, idx) => {
-              // Random selection - different logos flicker each time
-              const shouldFlicker = row3Flickering.has(idx % 10)
-              const flickerDelay = idx * 0.2
-              
-              return (
-              <div 
-                key={idx}
-                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#FF6B35]/60 hover:shadow-[0_0_30px_rgba(255,107,53,0.4),0_0_60px_rgba(255,107,53,0.2),inset_0_0_20px_rgba(255,107,53,0.1)]"
-                >
-                  {/* Constant subtle radiance */}
-                  <div className="absolute inset-0 rounded-xl border border-[#FF6B35]/10 shadow-[0_0_15px_rgba(255,107,53,0.15)]"></div>
-                  
-                  {/* Pulsing border for selected logos - only border, not whole capsule */}
-                  {shouldFlicker && (
-                    <div className="absolute inset-0 rounded-xl border-2 border-[#FF6B35]/30 animate-[borderPulseOrange_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
-                  )}
-                  
-                  {/* Enhanced glow on hover */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF6B35]/0 via-[#FF6B35]/0 to-[#FF6B35]/0 group-hover:from-[#FF6B35]/10 group-hover:via-[#FF6B35]/15 group-hover:to-[#FF6B35]/10 transition-all duration-500"></div>
-                
-                  {/* Multi-layer border radiance on hover */}
-                  <div className="absolute inset-0 rounded-xl border-2 border-[#FF6B35]/0 group-hover:border-[#FF6B35]/40 group-hover:shadow-[0_0_20px_rgba(255,107,53,0.6),0_0_40px_rgba(255,107,53,0.3)] transition-all duration-500"></div>
-                  <div className="absolute inset-[-2px] rounded-xl border border-[#FF6B35]/0 group-hover:border-[#FF6B35]/20 group-hover:blur-sm transition-all duration-500"></div>
-                
-                <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF6B35] group-hover:to-[#FF5200] transition-all duration-500">
-                  {brand}
-                </span>
-              </div>
-              )
-            })}
-          </div>
-        </div>
       </div>
 
       {/* Featured Brand Requirements Section */}

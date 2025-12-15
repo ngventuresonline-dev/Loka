@@ -52,6 +52,7 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState('')
   const [isTypingPlaceholder, setIsTypingPlaceholder] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const goToFilter = useCallback(() => {
     try {
@@ -137,14 +138,81 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
 
   const handleInputFocus = useCallback(() => {
     setIsTyping(true)
+    // Scrolling is handled by useEffect to ensure proper mobile keyboard handling
   }, [])
 
   const handleInputBlur = useCallback(() => {
     setIsTyping(searchQuery.length > 0)
   }, [searchQuery])
 
+  // Handle mobile viewport adjustment when keyboard appears
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const isMobile = window.innerWidth < 768
+    if (!isMobile) return
+
+    const scrollInputIntoView = () => {
+      if (inputRef.current) {
+        // Use requestAnimationFrame for smoother scrolling
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            if (inputRef.current) {
+              inputRef.current.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center',
+                inline: 'nearest'
+              })
+            }
+          }, 100)
+        })
+      }
+    }
+
+    const handleFocusIn = (e: FocusEvent) => {
+      if (e.target === inputRef.current || inputRef.current?.contains(e.target as Node)) {
+        scrollInputIntoView()
+      }
+    }
+
+    // Use visualViewport API for better mobile keyboard handling
+    const handleViewportResize = () => {
+      if (inputRef.current && document.activeElement === inputRef.current) {
+        scrollInputIntoView()
+      }
+    }
+
+    // Listen for input focus
+    const input = inputRef.current
+    if (input) {
+      input.addEventListener('focus', scrollInputIntoView)
+    }
+
+    window.addEventListener('focusin', handleFocusIn)
+    
+    // Use visualViewport API for better mobile keyboard handling
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportResize)
+      window.visualViewport.addEventListener('scroll', handleViewportResize)
+    }
+
+    return () => {
+      if (input) {
+        input.removeEventListener('focus', scrollInputIntoView)
+      }
+      window.removeEventListener('focusin', handleFocusIn)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportResize)
+        window.visualViewport.removeEventListener('scroll', handleViewportResize)
+      }
+    }
+  }, [])
+
   return (
-    <div className={`${fraunces.variable} ${plusJakarta.variable} w-full flex flex-col items-center gap-4 sm:gap-5`}>
+    <div 
+      ref={containerRef}
+      className={`${fraunces.variable} ${plusJakarta.variable} w-full flex flex-col items-center gap-4 sm:gap-5`}
+    >
       {/* Search Bar - Clean and Sleek with Rotating Gradient Border */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

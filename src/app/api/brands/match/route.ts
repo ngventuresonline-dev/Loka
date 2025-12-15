@@ -155,55 +155,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch brands from database (you may need to adjust this based on your schema)
-    // For now, we'll return mock data since brand schema might not exist
-    const mockBrands = [
-      {
-        id: '1',
-        name: 'Café Coffee Day',
-        businessType: 'Café/QSR',
-        sizeMin: 500,
-        sizeMax: 2000,
-        budgetMin: 50000,
-        budgetMax: 150000,
-        locations: ['Koramangala', 'Indiranagar', 'HSR'],
-        logo: null
-      },
-      {
-        id: '2',
-        name: 'Pizza Hut',
-        businessType: 'Restaurant',
-        sizeMin: 1000,
-        sizeMax: 3000,
-        budgetMin: 80000,
-        budgetMax: 200000,
-        locations: ['Whitefield', 'MG Road', 'Jayanagar'],
-        logo: null
-      },
-      {
-        id: '3',
-        name: 'Zara',
-        businessType: 'Retail',
-        sizeMin: 2000,
-        sizeMax: 5000,
-        budgetMin: 150000,
-        budgetMax: 400000,
-        locations: ['MG Road', 'Brigade Road', 'Indiranagar'],
-        logo: null
-      }
-    ]
+    // Fetch brands from database
+    const dbBrands = await prisma.brand_profiles.findMany({
+      take: 50, // limit
+    })
 
-    // Calculate PFI scores for each brand
-    const matches = mockBrands
+    const matches = dbBrands
       .map(brand => {
+        const sizeMin = brand.min_size ?? 0
+        const sizeMax = brand.max_size ?? Number.MAX_SAFE_INTEGER
+        const budgetMin = brand.budget_min ? Number(brand.budget_min) : 0
+        const budgetMax = brand.budget_max ? Number(brand.budget_max) : Number.MAX_SAFE_INTEGER
+        const locations = Array.isArray(brand.preferred_locations) ? brand.preferred_locations as string[] : []
+        const propertyTypes = Array.isArray(brand.preferred_property_types) ? brand.preferred_property_types as string[] : []
+
         const pfiScore = calculatePFI(
           {
-            sizeMin: brand.sizeMin,
-            sizeMax: brand.sizeMax,
-            budgetMin: brand.budgetMin,
-            budgetMax: brand.budgetMax,
-            locations: brand.locations,
-            businessType: brand.businessType
+            sizeMin,
+            sizeMax,
+            budgetMin,
+            budgetMax,
+            locations,
+            businessType: brand.industry || ''
           },
           {
             size: parseInt(size.toString().replace(/[^0-9]/g, '')),
@@ -215,10 +188,16 @@ export async function POST(request: NextRequest) {
         )
 
         return {
-          ...brand,
+          id: brand.id,
+          name: brand.company_name,
+          businessType: brand.industry || 'Brand',
           matchScore: pfiScore,
-          sizeRange: `${brand.sizeMin.toLocaleString()} - ${brand.sizeMax.toLocaleString()} sqft`,
-          budgetRange: `₹${(brand.budgetMin / 1000).toFixed(0)}K - ₹${(brand.budgetMax / 1000).toFixed(0)}K/month`
+          sizeRange: sizeMin && sizeMax ? `${sizeMin.toLocaleString()} - ${sizeMax.toLocaleString()} sqft` : 'Size flexible',
+          budgetRange: budgetMin && budgetMax && budgetMax !== Number.MAX_SAFE_INTEGER
+            ? `₹${(budgetMin / 1000).toFixed(0)}K - ₹${(budgetMax / 1000).toFixed(0)}K/month`
+            : 'Budget flexible',
+          propertyTypes,
+          locations
         }
       })
       .filter(match => match.matchScore >= 30) // Filter out poor matches

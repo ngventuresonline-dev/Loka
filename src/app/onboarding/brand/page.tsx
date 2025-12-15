@@ -1,28 +1,114 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 
-export default function BrandOnboarding() {
+const audiencePresets = [
+  'Young professionals',
+  'College students',
+  'Families with kids',
+  'High-income shoppers',
+  'Health-conscious',
+  'Tourists',
+  'Office crowd',
+  'Evening diners',
+  'Budget-conscious'
+]
+
+function BrandOnboardingContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
+  const [selectedSizeRanges, setSelectedSizeRanges] = useState<Set<string>>(new Set())
+  const [selectedAudience, setSelectedAudience] = useState<Set<string>>(new Set())
   const [formData, setFormData] = useState({
     brandName: '',
     storeType: '',
     size: '',
-    budget: '',
+    budgetMin: '',
+    budgetMax: '',
     targetAudience: '',
     preferredLocations: '',
     additionalRequirements: ''
   })
+
+  // Load pre-filled data from filter page
+  useEffect(() => {
+    const prefilled = searchParams.get('prefilled')
+    if (prefilled === 'true') {
+      try {
+        const storedData = localStorage.getItem('brandFilterData')
+        if (storedData) {
+          const filterData = JSON.parse(storedData)
+          
+          // Map business type to store type
+          const businessTypeMap: Record<string, string> = {
+            'Café/QSR': 'qsr',
+            'Restaurant': 'restaurant',
+            'Retail': 'retail',
+            'Bar/Brewery': 'bar',
+            'Gym': 'fitness',
+            'Entertainment': 'other',
+            'Others': 'other'
+          }
+          
+          const businessType = Array.isArray(filterData.businessType) 
+            ? filterData.businessType[0] 
+            : filterData.businessType || ''
+          
+          setFormData(prev => ({
+            ...prev,
+            storeType: businessTypeMap[businessType] || '',
+            budgetMin: filterData.budgetMin ? `₹${filterData.budgetMin.toLocaleString('en-IN')}` : prev.budgetMin,
+            budgetMax: filterData.budgetMax ? `₹${filterData.budgetMax.toLocaleString('en-IN')}` : prev.budgetMax,
+            preferredLocations: filterData.locations && Array.isArray(filterData.locations) 
+              ? filterData.locations.join(', ') 
+              : prev.preferredLocations
+          }))
+          
+          // Set size ranges
+          if (filterData.sizeRanges && filterData.sizeRanges.length > 0) {
+            setSelectedSizeRanges(new Set(filterData.sizeRanges))
+            setFormData(prev => ({
+              ...prev,
+              size: filterData.sizeRanges.join(', ')
+            }))
+          }
+          
+          // Clear stored data after loading
+          localStorage.removeItem('brandFilterData')
+        }
+      } catch (error) {
+        console.error('Error loading pre-filled data:', error)
+      }
+    }
+  }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     })
+  }
+
+  const toggleAudience = (item: string) => {
+    const next = new Set(selectedAudience)
+    if (next.has(item)) {
+      next.delete(item)
+    } else {
+      next.add(item)
+    }
+    setSelectedAudience(next)
+    const generated =
+      next.size > 0
+        ? Array.from(next).join(', ')
+        : ''
+    setFormData(prev => ({
+      ...prev,
+      targetAudience: generated || prev.targetAudience
+    }))
   }
 
   const handleNext = () => {
@@ -35,8 +121,44 @@ export default function BrandOnboarding() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Submit to API
-    router.push('/properties')
+    // Build query params to show matching properties
+    // Parse size ranges to find overall min/max
+    const parseSizeRanges = (ranges: Set<string>) => {
+      if (ranges.size === 0) return { min: 0, max: 100000 }
+      let globalMin = Number.MAX_SAFE_INTEGER
+      let globalMax = 0
+      ranges.forEach(range => {
+        if (range.includes('-')) {
+          const [minStr, maxStr] = range.split('-')
+          const min = parseInt(minStr.replace(/[^0-9]/g, '')) || 0
+          const max = parseInt(maxStr.replace(/[^0-9]/g, '')) || 0
+          globalMin = Math.min(globalMin, min)
+          globalMax = Math.max(globalMax, max)
+        } else if (range.includes('+')) {
+          const min = parseInt(range.replace(/[^0-9]/g, '')) || 0
+          globalMin = Math.min(globalMin, min)
+          globalMax = Math.max(globalMax, 100000)
+        }
+      })
+      if (globalMin === Number.MAX_SAFE_INTEGER) globalMin = 0
+      if (globalMax === 0) globalMax = 100000
+      return { min: globalMin, max: globalMax }
+    }
+
+    const sizeRange = parseSizeRanges(selectedSizeRanges)
+    const budgetMinNum = parseInt(formData.budgetMin.replace(/[^0-9]/g, '')) || 50000
+    const budgetMaxNum = parseInt(formData.budgetMax.replace(/[^0-9]/g, '')) || budgetMinNum + 5000
+
+    const params = new URLSearchParams()
+    if (formData.storeType) params.set('type', formData.storeType)
+    if (formData.preferredLocations) params.set('locations', formData.preferredLocations)
+    params.set('sizeMin', sizeRange.min.toString())
+    params.set('sizeMax', sizeRange.max.toString())
+    params.set('budgetMin', budgetMinNum.toString())
+    params.set('budgetMax', budgetMaxNum.toString())
+    // Save for future prefill if needed
+    localStorage.setItem('brandOnboardingSubmission', JSON.stringify(formData))
+    router.push(`/properties/results?${params.toString()}`)
   }
 
   return (
@@ -112,6 +234,7 @@ export default function BrandOnboarding() {
                       <option value="">Select store type</option>
                       <option value="qsr">Quick Service Restaurant (QSR)</option>
                       <option value="cafe">Café</option>
+                      <option value="restaurant">Restaurant</option>
                       <option value="retail">Retail Store</option>
                       <option value="bar">Bar/Pub</option>
                       <option value="fitness">Fitness Studio</option>
@@ -122,8 +245,36 @@ export default function BrandOnboarding() {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Required Space Size (sq ft) *
+                      Required Space Size (sq ft) * <span className="text-xs text-gray-500 font-normal">(You can select multiple ranges)</span>
                     </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                      {['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft'].map((range) => (
+                        <button
+                          key={range}
+                          type="button"
+                          onClick={() => {
+                            const newSet = new Set(selectedSizeRanges)
+                            if (newSet.has(range)) {
+                              newSet.delete(range)
+                            } else {
+                              newSet.add(range)
+                            }
+                            setSelectedSizeRanges(newSet)
+                            setFormData(prev => ({
+                              ...prev,
+                              size: Array.from(newSet).join(', ')
+                            }))
+                          }}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            selectedSizeRanges.has(range)
+                              ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white shadow-lg'
+                              : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:border-[#FF5200]'
+                          }`}
+                        >
+                          {range}
+                        </button>
+                      ))}
+                    </div>
                     <input
                       type="text"
                       name="size"
@@ -131,7 +282,8 @@ export default function BrandOnboarding() {
                       onChange={handleChange}
                       required
                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
-                      placeholder="e.g., 500-1000 sq ft"
+                      placeholder="Selected size ranges will appear here"
+                      readOnly
                     />
                   </div>
                 </div>
@@ -142,23 +294,60 @@ export default function BrandOnboarding() {
                 <div className="space-y-6 animate-[fadeInUp_0.5s_ease-out]">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Monthly Budget (₹) *
+                      Monthly Budget Range (₹) *
                     </label>
-                    <input
-                      type="text"
-                      name="budget"
-                      value={formData.budget}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
-                      placeholder="e.g., 50,000 - 1,00,000"
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Minimum</label>
+                        <input
+                          type="text"
+                          name="budgetMin"
+                          value={formData.budgetMin}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
+                          placeholder="₹50,000"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Maximum</label>
+                        <input
+                          type="text"
+                          name="budgetMax"
+                          value={formData.budgetMax}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
+                          placeholder="₹2,00,000"
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">Minimum rent: ₹50,000</p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Target Audience *
                     </label>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {audiencePresets.map((item) => {
+                        const active = selectedAudience.has(item)
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => toggleAudience(item)}
+                            className={`px-3 py-2 rounded-full text-sm font-medium transition-all border ${
+                              active
+                                ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow'
+                                : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#FF5200]'
+                            }`}
+                          >
+                            {item}
+                          </button>
+                        )
+                      })}
+                    </div>
                     <textarea
                       name="targetAudience"
                       value={formData.targetAudience}
@@ -257,5 +446,20 @@ export default function BrandOnboarding() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function BrandOnboarding() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <BrandOnboardingContent />
+    </Suspense>
   )
 }

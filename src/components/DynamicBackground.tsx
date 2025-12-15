@@ -26,12 +26,6 @@ type Trail = {
   opacity: number
 }
 
-type Location = {
-  name: string
-  x: number
-  y: number
-  color: string
-}
 
 export default function DynamicBackground({ paletteOverride, backgroundOverride }: BackgroundProps = {}) {
   const [theme, setTheme] = useState({ palette: 'cosmic-purple', background: 'floating-orbs' })
@@ -39,48 +33,7 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [particles, setParticles] = useState<Particle[]>([])
   const [trail, setTrail] = useState<Trail[]>([])
-  const [hoveredLocation, setHoveredLocation] = useState<string | null>(null)
   const [scrollY, setScrollY] = useState(0)
-
-  // Prime locations across major Indian cities - spread across margins
-  const locations: Location[] = [
-    // Bangalore - Left margin
-    { name: 'Indiranagar, Bangalore', x: 8, y: 15, color: '#FF5200' },
-    { name: 'Koramangala, Bangalore', x: 6, y: 35, color: '#E4002B' },
-    { name: 'HSR Layout, Bangalore', x: 10, y: 55, color: '#FF6B35' },
-    
-    // Bangalore - Right margin
-    { name: 'Whitefield, Bangalore', x: 92, y: 25, color: '#FF5200' },
-    { name: 'Electronic City, Bangalore', x: 94, y: 45, color: '#E4002B' },
-    
-    // Delhi NCR - Left margin
-    { name: 'Connaught Place, Delhi', x: 5, y: 75, color: '#FF6B35' },
-    { name: 'Cyber City, Gurgaon', x: 8, y: 95, color: '#FF5200' },
-    { name: 'Saket, Delhi', x: 7, y: 115, color: '#E4002B' },
-    
-    // Delhi NCR - Right margin
-    { name: 'Nehru Place, Delhi', x: 93, y: 65, color: '#FF6B35' },
-    { name: 'Noida Sector 18', x: 91, y: 85, color: '#FF5200' },
-    
-    // Mumbai - Left margin
-    { name: 'Bandra, Mumbai', x: 6, y: 135, color: '#E4002B' },
-    { name: 'Lower Parel, Mumbai', x: 9, y: 155, color: '#FF6B35' },
-    { name: 'Andheri, Mumbai', x: 7, y: 175, color: '#FF5200' },
-    
-    // Mumbai - Right margin
-    { name: 'BKC, Mumbai', x: 92, y: 105, color: '#E4002B' },
-    { name: 'Powai, Mumbai', x: 94, y: 125, color: '#FF6B35' },
-    
-    // Other Cities - Left margin
-    { name: 'Jubilee Hills, Hyderabad', x: 8, y: 195, color: '#FF5200' },
-    { name: 'Koregaon Park, Pune', x: 6, y: 215, color: '#E4002B' },
-    { name: 'Park Street, Kolkata', x: 9, y: 235, color: '#FF6B35' },
-    
-    // Other Cities - Right margin
-    { name: 'T Nagar, Chennai', x: 93, y: 145, color: '#FF5200' },
-    { name: 'Gachibowli, Hyderabad', x: 91, y: 165, color: '#E4002B' },
-    { name: 'SG Highway, Ahmedabad', x: 94, y: 185, color: '#FF6B35' },
-  ]
 
   useEffect(() => {
     setMounted(true)
@@ -221,77 +174,6 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
           ></div>
         ))}
 
-        {/* Location markers - visible in blank spaces */}
-        {locations.map((location, index) => {
-          // Calculate pixel position for hover detection
-          const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1000
-          const locY = (location.y / 100) * viewportHeight
-          const locX = (location.x / 100) * (typeof window !== 'undefined' ? window.innerWidth : 1920)
-          
-          // Calculate distance from mouse (accounting for scroll)
-          const dx = mousePosition.x - locX
-          const dy = mousePosition.y - locY
-          const distance = Math.sqrt(dx * dx + dy * dy)
-          const isNear = distance < 250 // Larger detection radius
-          
-          return (
-            <div
-              key={index}
-              className="absolute transition-all duration-300 pointer-events-auto cursor-pointer"
-              style={{
-                left: `${location.x}%`,
-                top: `${location.y}vh`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 2
-              }}
-              onMouseEnter={() => setHoveredLocation(location.name)}
-              onMouseLeave={() => setHoveredLocation(null)}
-            >
-              {/* Location dot - always visible */}
-              <div 
-                className="relative w-3 h-3 rounded-full transition-all duration-300"
-                style={{
-                  backgroundColor: location.color,
-                  boxShadow: isNear ? `0 0 20px ${location.color}, 0 0 10px ${location.color}` : `0 0 8px ${location.color}`,
-                  opacity: isNear ? 0.7 : 0.05,
-                  transform: isNear ? 'scale(2)' : 'scale(1)'
-                }}
-              >
-                {/* Pulsing ring on hover */}
-                {isNear && (
-                  <div 
-                    className="absolute inset-0 rounded-full animate-ping"
-                    style={{
-                      backgroundColor: location.color,
-                      opacity: 0.4
-                    }}
-                  ></div>
-                )}
-              </div>
-              
-              {/* Location label - shows on hover */}
-              <div 
-                className="absolute left-1/2 -translate-x-1/2 top-full mt-3 whitespace-nowrap pointer-events-none transition-all duration-300"
-                style={{
-                  opacity: isNear || hoveredLocation === location.name ? 0.8 : 0,
-                  transform: `translateY(${isNear || hoveredLocation === location.name ? '0' : '-10px'})`,
-                  pointerEvents: 'none'
-                }}
-              >
-                <div 
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white shadow-xl backdrop-blur-sm"
-                  style={{
-                    backgroundColor: location.color,
-                    boxShadow: `0 8px 24px ${location.color}60`,
-                    opacity: 0.8
-                  }}
-                >
-                  {location.name}
-                </div>
-              </div>
-            </div>
-          )
-        })}
       </div>
     )
   }  // Add other background types here in the future

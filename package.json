@@ -1,6 +1,6 @@
 {
   "name": "commercial-real-estate-platform",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "vercel-install": "npm install --legacy-peer-deps",
