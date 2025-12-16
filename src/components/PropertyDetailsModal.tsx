@@ -328,19 +328,19 @@ export default function PropertyDetailsModal({ isOpen, onClose, property }: Prop
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
             <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
               <div className="text-[10px] sm:text-xs text-gray-500 mb-1">Size</div>
-              <div className="text-sm sm:text-lg font-bold text-gray-900 break-words">{property.size}</div>
+              <div className="text-sm sm:text-lg font-bold text-gray-900">{property.size}</div>
             </div>
             <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
               <div className="text-[10px] sm:text-xs text-gray-500 mb-1">Floor</div>
-              <div className="text-sm sm:text-lg font-bold text-gray-900 break-words">{property.floor}</div>
+              <div className="text-sm sm:text-lg font-bold text-gray-900">{property.floor}</div>
             </div>
             <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
               <div className="text-[10px] sm:text-xs text-gray-500 mb-1">Rent</div>
-              <div className="text-sm sm:text-lg font-bold text-gray-900 break-words">{property.rent}</div>
+              <div className="text-sm sm:text-lg font-bold text-gray-900">{property.rent}</div>
             </div>
             <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
               <div className="text-[10px] sm:text-xs text-gray-500 mb-1">Deposit</div>
-              <div className="text-sm sm:text-lg font-bold text-gray-900 break-words">{property.deposit}</div>
+              <div className="text-sm sm:text-lg font-bold text-gray-900">{property.deposit}</div>
             </div>
           </div>
 

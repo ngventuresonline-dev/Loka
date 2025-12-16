@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
+import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 
 function BrandCard({ brand }: { brand: any }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -138,11 +139,12 @@ function OwnerOnboardingContent() {
     return mapping[displayName] || displayName.toLowerCase().replace(/\s+/g, '_')
   }
 
-  // Load pre-filled data from filter page
+  // Load pre-filled data from filter page and ownerSessionData
   useEffect(() => {
     const prefilled = searchParams.get('prefilled')
-    if (prefilled === 'true') {
-      try {
+    try {
+      // Primary: ownerFilterData (what we already used for onboarding)
+      if (prefilled === 'true') {
         const storedData = localStorage.getItem('ownerFilterData')
         if (storedData) {
           const filterData = JSON.parse(storedData)
@@ -158,7 +160,9 @@ function OwnerOnboardingContent() {
             location: filterData.locations?.[0] || prev.location,
             size: filterData.size ? `${filterData.size} sq ft` : prev.size,
             rent: filterData.rent ? `₹${filterData.rent.toLocaleString()}` : prev.rent,
-            deposit: filterData.deposit ? `₹${parseInt(filterData.deposit.replace(/[^0-9]/g, '') || '0').toLocaleString('en-IN')}` : prev.deposit,
+            deposit: filterData.deposit
+              ? `₹${parseInt(filterData.deposit.replace(/[^0-9]/g, '') || '0').toLocaleString('en-IN')}`
+              : prev.deposit,
             amenities: filterData.features ? filterData.features.join(', ') : prev.amenities
           }))
           
@@ -177,11 +181,58 @@ function OwnerOnboardingContent() {
             propertyType: mappedPropertyType || filterData.propertyType
           })
         }
-      } catch (error) {
-        console.error('Error loading pre-filled data:', error)
       }
+
+      // Secondary: ownerSessionData for any additional context
+      const sessionRaw = localStorage.getItem('ownerSessionData')
+      if (sessionRaw) {
+        const session = JSON.parse(sessionRaw) as {
+          propertyType?: string | null
+          location?: string | null
+          size?: number | null
+          rent?: number | null
+          deposit?: string | null
+          features?: string[]
+          availability?: string | null
+          contactInfo?: { name?: string | null; email?: string | null; phone?: string | null }
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          propertyType: session.propertyType
+            ? mapPropertyTypeDisplayToValue(session.propertyType)
+            : prev.propertyType,
+          location: session.location || prev.location,
+          size: session.size ? `${session.size} sq ft` : prev.size,
+          rent: session.rent ? `₹${session.rent.toLocaleString('en-IN')}` : prev.rent,
+          deposit: session.deposit
+            ? `₹${parseInt(String(session.deposit).replace(/[^0-9]/g, '') || '0').toLocaleString('en-IN')}`
+            : prev.deposit,
+          amenities: session.features && session.features.length > 0
+            ? session.features.join(', ')
+            : prev.amenities,
+        }))
+      }
+    } catch (error) {
+      console.error('Error loading owner pre-filled data:', error)
     }
   }, [searchParams])
+
+  const logOwnerOnboarding = (action: string, extra: any = {}) => {
+    const payload = {
+      status: 'in_progress',
+      onboarding_form: {
+        ...formData,
+      },
+      ...extra,
+    }
+    logSessionEvent({
+      sessionType: 'owner',
+      action,
+      data: payload,
+      userId: getClientSessionUserId(),
+    })
+  }
   
   const generatePropertyDescription = async (filterData: any) => {
     try {
@@ -295,10 +346,13 @@ function OwnerOnboardingContent() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
+    const next = {
       ...formData,
       [e.target.name]: e.target.value
-    })
+    }
+    setFormData(next)
+    // Log field-level changes for owner onboarding
+    logOwnerOnboarding('form_change', { changedField: e.target.name })
   }
 
   // Auto-fetch matching brands when key fields are filled
@@ -338,6 +392,9 @@ function OwnerOnboardingContent() {
       alert('Please pin your property location before submitting.')
       return
     }
+    
+    // Final session log for completed owner onboarding
+    logOwnerOnboarding('submit', { status: 'completed' })
     
     // Generate Property ID (will be done in backend)
     const propertyId = `PROP-${Date.now()}`
@@ -890,16 +947,16 @@ export default function OwnerOnboarding() {
           display: none;
         }
       `}</style>
-      <Suspense fallback={
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
-          </div>
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
-      }>
-        <OwnerOnboardingContent />
-      </Suspense>
+      </div>
+    }>
+      <OwnerOnboardingContent />
+    </Suspense>
     </>
   )
 }

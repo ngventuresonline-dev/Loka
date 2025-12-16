@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
 import { getPrisma } from '@/lib/get-prisma'
+import { generatePropertyId } from '@/lib/property-id-generator'
 
 interface CsvPropertyRow {
   id?: string
@@ -90,6 +91,12 @@ export async function POST(request: NextRequest) {
           },
         })
 
+        // Resolve property ID: use CSV id if valid prop-XXX, else generate next
+        let propertyId = row.id && row.id.trim() !== '' ? row.id.trim() : ''
+        if (!propertyId.startsWith('prop-')) {
+          propertyId = await generatePropertyId()
+        }
+
         // Prepare property data
         const images = row.images
           ? row.images.split('|').map((i) => i.trim()).filter(Boolean)
@@ -104,13 +111,13 @@ export async function POST(request: NextRequest) {
 
         await prisma.property.create({
           data: {
-            // id: if provided, otherwise Prisma default/our generator
-            id: row.id && row.id.trim() !== '' ? row.id.trim() : undefined,
+            id: propertyId,
             title,
             description: null,
             address,
             city,
-            state: row.state?.trim() || null,
+            // Prisma schema requires non-null state; fall back to empty string if missing
+            state: row.state?.trim() || '',
             zipCode: row.zipCode?.trim() || '',
             price: parseNumber(row.price, 0) ?? 0,
             priceType: (row.priceType?.trim() || 'monthly') as any,

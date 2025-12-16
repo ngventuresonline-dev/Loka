@@ -5,7 +5,18 @@ import { generatePropertyId } from '@/lib/property-id-generator'
 
 export async function GET(request: NextRequest) {
   try {
-    await requireUserType(request, ['admin'])
+    // Handle authentication separately to return proper status codes
+    let user
+    try {
+      user = await requireUserType(request, ['admin'])
+    } catch (authError: any) {
+      console.error('[Admin properties] Auth error:', authError?.message || authError)
+      const status = authError?.message?.includes('Forbidden') ? 403 : 401
+      return NextResponse.json(
+        { error: authError?.message || 'Authentication required' },
+        { status }
+      )
+    }
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -51,8 +62,10 @@ export async function GET(request: NextRequest) {
       orderBy.price = sortOrder
     }
 
-    const [properties, total] = await Promise.all([
-      prisma.property.findMany({
+    // Fetch properties first - this is what the UI needs
+    let properties
+    try {
+      properties = await prisma.property.findMany({
         where,
         orderBy,
         skip: (page - 1) * limit,
@@ -66,9 +79,24 @@ export async function GET(request: NextRequest) {
             }
           }
         }
-      }),
-      prisma.property.count({ where })
-    ])
+      })
+    } catch (dbError: any) {
+      console.error('[Admin properties] Database query error:', dbError?.message || dbError)
+      return NextResponse.json(
+        { error: 'Database query failed', details: dbError?.message },
+        { status: 500 }
+      )
+    }
+
+    // Try to get total count, but don't fail request if the count query hits
+    // connection limits in development (common with connection_limit=1).
+    let total = properties.length
+    try {
+      total = await prisma.property.count({ where })
+    } catch (countError: any) {
+      console.error('[Admin properties] Count query failed, using page length as total:', countError?.message || countError)
+      // Continue with properties.length as total
+    }
 
     const formattedProperties = properties.map(p => ({
       id: p.id,
@@ -95,10 +123,10 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit)
     })
   } catch (error: any) {
-    console.error('Admin properties error:', error)
+    console.error('[Admin properties] Unexpected error:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to fetch properties' },
-      { status: error.message?.includes('Forbidden') ? 403 : 500 }
+      { status: 500 }
     )
   }
 }
@@ -108,14 +136,31 @@ export async function POST(request: NextRequest) {
     await requireUserType(request, ['admin'])
 
     const body = await request.json()
-    const {
-      title, description, address, city, state, zipCode,
-      price, priceType, securityDeposit, rentEscalation,
-      size, propertyType, storePowerCapacity, powerBackup,
-      waterFacility, amenities, images, ownerId, availability, isFeatured, displayOrder
-    } = body
 
-    if (!title || !address || !city || !price || !size || !propertyType || !ownerId) {
+    const title = String(body.title || '').trim()
+    const description = body.description ? String(body.description).trim() : ''
+    const address = String(body.address || '').trim()
+    const city = String(body.city || '').trim()
+    const state = body.state ? String(body.state).trim() : ''
+    const zipCode = body.zipCode ? String(body.zipCode).trim() : ''
+    const rawPrice = body.price
+    const rawPriceType = body.priceType
+    const rawSecurityDeposit = body.securityDeposit
+    const rawRentEscalation = body.rentEscalation
+    const rawSize = body.size
+    const rawPropertyType = body.propertyType
+    const storePowerCapacity = body.storePowerCapacity ? String(body.storePowerCapacity).trim() : ''
+    const powerBackup = Boolean(body.powerBackup)
+    const waterFacility = Boolean(body.waterFacility)
+    const amenities = Array.isArray(body.amenities) ? body.amenities : []
+    const images = Array.isArray(body.images) ? body.images : []
+    const ownerId = body.ownerId as string | undefined
+    const availability = body.availability
+    const isFeatured = body.isFeatured
+    const displayOrder = body.displayOrder
+    const addedBy = body.addedBy as string | undefined
+
+    if (!title || !address || !city || rawPrice === undefined || rawSize === undefined || !rawPropertyType) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -130,8 +175,72 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Resolve owner based on addedBy flag (admin vs owner)
+    let finalOwnerId = ownerId
+
+    // If no ownerId provided or explicitly marked as admin, attach to admin user
+    const addedByValue = addedBy?.toLowerCase() || 'admin'
+    if (!finalOwnerId || addedByValue === 'admin') {
+      const adminEmail = 'admin@ngventures.com'
+      const adminUser = await prisma.user.upsert({
+        where: { email: adminEmail },
+        update: {
+          userType: 'admin',
+        },
+        create: {
+          email: adminEmail,
+          name: 'System Administrator',
+          password: '$2b$10$placeholder_hash_change_in_production',
+          userType: 'admin',
+        },
+      })
+      finalOwnerId = adminUser.id
+    }
+
     // Generate property ID in prop-XXX format
     const propertyId = await generatePropertyId()
+
+    // Normalise property type to match Prisma enum
+    const rawType = String(rawPropertyType || '').toLowerCase()
+    const validTypes = ['office', 'retail', 'warehouse', 'restaurant', 'other'] as const
+    let normalizedType: (typeof validTypes)[number] = 'other'
+
+    // Handle specific property type values
+    if (rawType === 'office' || rawType.includes('business-park') || rawType.includes('it-park') || rawType.includes('co-working-space')) {
+      normalizedType = 'office'
+    } else if (rawType === 'retail' || rawType.includes('mall-space') || rawType.includes('showroom') || rawType.includes('kiosk')) {
+      normalizedType = 'retail'
+    } else if (rawType === 'warehouse' || rawType.includes('industrial-space')) {
+      normalizedType = 'warehouse'
+    } else if (rawType === 'restaurant' || rawType.includes('food-court') || rawType.includes('cafe-coffee-shop') || rawType.includes('qsr') || rawType.includes('dessert-bakery') || rawType.includes('food') || rawType.includes('restaurant')) {
+      // Food court / F&B all map to restaurant
+      normalizedType = 'restaurant'
+    } else if (rawType.includes('bungalow') || rawType.includes('villa') || rawType.includes('standalone-building') || rawType.includes('commercial-complex') || rawType.includes('service-apartment') || rawType.includes('hotel-hospitality') || rawType.includes('land') || rawType === 'other') {
+      normalizedType = 'other'
+    } else if (validTypes.includes(rawType as any)) {
+      normalizedType = rawType as (typeof validTypes)[number]
+    }
+
+    // Normalise price / size / decimals
+    const numericPrice = Number(rawPrice)
+    const price = Number.isFinite(numericPrice) ? numericPrice : 0
+
+    const numericSize = Number(rawSize)
+    const size = Number.isFinite(numericSize) ? Math.trunc(numericSize) : 0
+
+    const securityDeposit =
+      rawSecurityDeposit !== undefined && rawSecurityDeposit !== null && rawSecurityDeposit !== ''
+        ? Number(rawSecurityDeposit)
+        : null
+
+    const rentEscalation =
+      rawRentEscalation !== undefined && rawRentEscalation !== null && rawRentEscalation !== ''
+        ? Number(rawRentEscalation)
+        : null
+
+    const priceTypeRaw = String(rawPriceType || 'monthly').toLowerCase()
+    const allowedPriceTypes = ['monthly', 'yearly', 'sqft'] as const
+    const priceType = (allowedPriceTypes.includes(priceTypeRaw as any) ? priceTypeRaw : 'monthly') as (typeof allowedPriceTypes)[number]
 
     const property = await prisma.property.create({
       data: {
@@ -140,23 +249,27 @@ export async function POST(request: NextRequest) {
         description: description || null,
         address,
         city,
-        state: state || null,
+        // Prisma schema requires non-null state; fall back to empty string
+        state: state || '',
         zipCode: zipCode || '',
-        price: parseFloat(price),
-        priceType: priceType || 'monthly',
-        securityDeposit: securityDeposit ? parseFloat(securityDeposit) : null,
-        rentEscalation: rentEscalation ? parseFloat(rentEscalation) : null,
-        size: parseInt(size),
-        propertyType,
+        price,
+        priceType,
+        securityDeposit,
+        rentEscalation,
+        size,
+        propertyType: normalizedType,
         storePowerCapacity: storePowerCapacity || null,
-        powerBackup: powerBackup || false,
-        waterFacility: waterFacility || false,
-        amenities: amenities || [],
-        images: images || [],
-        ownerId,
-        availability: availability !== undefined ? availability : true,
-        isFeatured: isFeatured || false,
-        displayOrder: displayOrder !== undefined && displayOrder !== null ? parseInt(String(displayOrder)) : null,
+        powerBackup,
+        waterFacility,
+        amenities,
+        images,
+        ownerId: finalOwnerId!,
+        availability: availability !== undefined ? Boolean(availability) : true,
+        isFeatured: Boolean(isFeatured),
+        displayOrder:
+          displayOrder !== undefined && displayOrder !== null && String(displayOrder).trim() !== ''
+            ? parseInt(String(displayOrder), 10)
+            : null,
       },
       include: {
         owner: {
@@ -226,8 +339,6 @@ export async function PATCH(request: NextRequest) {
     if (updateData.city !== undefined) data.city = updateData.city
     if (updateData.state !== undefined) data.state = updateData.state
     if (updateData.zipCode !== undefined) data.zipCode = updateData.zipCode
-    if (updateData.latitude !== undefined) data.latitude = updateData.latitude
-    if (updateData.longitude !== undefined) data.longitude = updateData.longitude
     
     // Pricing
     if (updateData.price !== undefined) data.price = updateData.price
@@ -238,11 +349,27 @@ export async function PATCH(request: NextRequest) {
     // Property details
     if (updateData.size !== undefined) data.size = updateData.size
     if (updateData.propertyType !== undefined) {
-      // Validate property type matches enum
-      const validTypes = ['office', 'retail', 'warehouse', 'restaurant', 'other']
-      data.propertyType = validTypes.includes(updateData.propertyType) 
-        ? updateData.propertyType 
-        : 'other'
+      // Normalise property type to match Prisma enum
+      const rawType = String(updateData.propertyType || '').toLowerCase()
+      const validTypes = ['office', 'retail', 'warehouse', 'restaurant', 'other'] as const
+      let normalizedType: (typeof validTypes)[number] = 'other'
+
+      // Handle specific property type values
+      if (rawType === 'office' || rawType.includes('business-park') || rawType.includes('it-park') || rawType.includes('co-working-space')) {
+        normalizedType = 'office'
+      } else if (rawType === 'retail' || rawType.includes('mall-space') || rawType.includes('showroom') || rawType.includes('kiosk')) {
+        normalizedType = 'retail'
+      } else if (rawType === 'warehouse' || rawType.includes('industrial-space')) {
+        normalizedType = 'warehouse'
+      } else if (rawType === 'restaurant' || rawType.includes('food-court') || rawType.includes('cafe-coffee-shop') || rawType.includes('qsr') || rawType.includes('dessert-bakery') || rawType.includes('food') || rawType.includes('restaurant')) {
+        normalizedType = 'restaurant'
+      } else if (rawType.includes('bungalow') || rawType.includes('villa') || rawType.includes('standalone-building') || rawType.includes('commercial-complex') || rawType.includes('service-apartment') || rawType.includes('hotel-hospitality') || rawType.includes('land') || rawType === 'other') {
+        normalizedType = 'other'
+      } else if (validTypes.includes(rawType as any)) {
+        normalizedType = rawType as (typeof validTypes)[number]
+      }
+      
+      data.propertyType = normalizedType
     }
     if (updateData.storePowerCapacity !== undefined) data.storePowerCapacity = updateData.storePowerCapacity
     if (updateData.powerBackup !== undefined) data.powerBackup = updateData.powerBackup

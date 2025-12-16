@@ -46,12 +46,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Budget filter - make it more flexible (allow up to 50% over budget)
-    // We'll filter more strictly in BFI scoring
-    if (budgetRange && budgetRange.max) {
-      const maxBudgetExpanded = Math.ceil(budgetRange.max * 1.5) // Allow 50% over
+    // Budget filter - strict filtering within range (allow small buffer for flexibility)
+    if (budgetRange) {
+      const minBudget = budgetRange.min || 0
+      const maxBudget = budgetRange.max || 20000000
+      // Allow small buffer: 10% under min and 20% over max for flexibility
+      const minBudgetAdjusted = Math.max(0, Math.floor(minBudget * 0.9))
+      const maxBudgetAdjusted = Math.ceil(maxBudget * 1.2)
+      
       where.price = {
-        lte: maxBudgetExpanded
+        gte: minBudgetAdjusted,
+        lte: maxBudgetAdjusted
       }
     }
 
@@ -149,8 +154,18 @@ export async function POST(request: NextRequest) {
       console.log(`[API Match] Found ${filteredMatches.length} matches >= 60%`)
     }
 
+    // Sort by budget score first (to prioritize closest budget matches), then overall BFI score
+    const sortedByBudget = [...filteredMatches].sort((a, b) => {
+      // First sort by budget score (descending)
+      if (b.bfiScore.breakdown.budgetScore !== a.bfiScore.breakdown.budgetScore) {
+        return b.bfiScore.breakdown.budgetScore - a.bfiScore.breakdown.budgetScore
+      }
+      // Then by overall BFI score
+      return b.bfiScore.score - a.bfiScore.score
+    })
+
     // Generate match reasons for each match
-    const matchesWithReasons = filteredMatches.map(match => {
+    const matchesWithReasons = sortedByBudget.map(match => {
       const reasons: string[] = []
       const breakdown = match.bfiScore.breakdown
       
@@ -190,7 +205,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Return top 50 matches (already filtered to >= 60%)
+    // Return top 50 matches (already filtered and sorted)
     const topMatches = matchesWithReasons.slice(0, 50)
 
     return NextResponse.json({

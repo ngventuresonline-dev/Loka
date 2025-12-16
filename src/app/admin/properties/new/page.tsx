@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import FileUpload from '@/components/admin/FileUpload'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function NewPropertyPage() {
   const router = useRouter()
+  const { user, isLoggedIn } = useAuth()
   const [loading, setLoading] = useState(false)
   const [owners, setOwners] = useState<any[]>([])
   const [images, setImages] = useState<string[]>([])
@@ -16,6 +18,7 @@ export default function NewPropertyPage() {
     description: '',
     address: '',
     city: '',
+    area: '',
     state: '',
     zipCode: '',
     latitude: '',
@@ -36,14 +39,207 @@ export default function NewPropertyPage() {
     location: '',
     rent: '',
     deposit: '',
-    // Owner & Status
+    // Added by & Status
+    addedBy: 'admin' as 'admin' | 'owner',
     ownerId: '',
     availability: true,
     isFeatured: false,
   })
 
-  const propertyTypes = ['Standalone', 'Retail Space', 'Office', 'Food Court', 'Mall Space', 'Warehouse', 'Land', 'Other']
-  const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road', 'Electronic City', 'Bellandur', 'Other']
+  const propertyTypes = [
+    'Office',
+    'Retail Space',
+    'Restaurant',
+    'Food Court',
+    'Café / Coffee Shop',
+    'QSR (Quick Service Restaurant)',
+    'Dessert / Bakery',
+    'Warehouse',
+    'Mall Space',
+    'Standalone Building',
+    'Bungalow',
+    'Villa',
+    'Commercial Complex',
+    'Business Park',
+    'IT Park',
+    'Co-working Space',
+    'Service Apartment',
+    'Hotel / Hospitality',
+    'Land',
+    'Industrial Space',
+    'Showroom',
+    'Kiosk',
+    'Other'
+  ]
+  
+  // Major Indian Metro Cities
+  const metroCities = [
+    'Bangalore',
+    'Delhi',
+    'Mumbai',
+    'Chennai',
+    'Hyderabad',
+    'Pune',
+    'Kolkata',
+    'Ahmedabad',
+    'Jaipur',
+    'Surat',
+    'Lucknow',
+    'Kanpur',
+    'Nagpur',
+    'Indore',
+    'Thane',
+    'Bhopal',
+    'Visakhapatnam',
+    'Patna',
+    'Vadodara',
+    'Ghaziabad',
+    'Ludhiana',
+    'Agra',
+    'Nashik',
+    'Faridabad',
+    'Meerut',
+    'Rajkot',
+    'Varanasi',
+    'Srinagar',
+    'Amritsar',
+    'Ranchi',
+    'Other'
+  ]
+
+  // Areas by City
+  const cityAreas: Record<string, string[]> = {
+    'Bangalore': [
+      'Koramangala',
+      'Indiranagar',
+      'Whitefield',
+      'HSR Layout',
+      'Jayanagar',
+      'BTM Layout',
+      'MG Road',
+      'Brigade Road',
+      'Marathahalli',
+      'Hebbal',
+      'Banashankari',
+      'Sarjapur Road',
+      'Electronic City',
+      'Bellandur',
+      'Bannerghatta Road',
+      'Rajajinagar',
+      'Malleshwaram',
+      'Basavanagudi',
+      'Vijayanagar',
+      'Yelahanka',
+      'Yeshwanthpur',
+      'RT Nagar',
+      'Frazer Town',
+      'Richmond Town',
+      'Ulsoor',
+      'Other'
+    ],
+    'Delhi': [
+      'Connaught Place',
+      'Gurgaon',
+      'Noida',
+      'Dwarka',
+      'Rohini',
+      'Pitampura',
+      'Rajouri Garden',
+      'Lajpat Nagar',
+      'Karol Bagh',
+      'Greater Kailash',
+      'Vasant Kunj',
+      'Saket',
+      'Hauz Khas',
+      'Defence Colony',
+      'South Extension',
+      'Other'
+    ],
+    'Mumbai': [
+      'Bandra',
+      'Andheri',
+      'Powai',
+      'Juhu',
+      'Worli',
+      'Lower Parel',
+      'BKC (Bandra Kurla Complex)',
+      'Colaba',
+      'Fort',
+      'Nariman Point',
+      'Malad',
+      'Borivali',
+      'Thane',
+      'Navi Mumbai',
+      'Other'
+    ],
+    'Chennai': [
+      'T Nagar',
+      'Anna Nagar',
+      'Adyar',
+      'Besant Nagar',
+      'Velachery',
+      'OMR (Old Mahabalipuram Road)',
+      'Porur',
+      'Guindy',
+      'Nungambakkam',
+      'Mylapore',
+      'Egmore',
+      'Other'
+    ],
+    'Hyderabad': [
+      'Banjara Hills',
+      'Jubilee Hills',
+      'Hitech City',
+      'Gachibowli',
+      'Kondapur',
+      'Madhapur',
+      'Secunderabad',
+      'Himayatnagar',
+      'Ameerpet',
+      'Kukatpally',
+      'Other'
+    ],
+    'Pune': [
+      'Koregaon Park',
+      'Viman Nagar',
+      'Hinjewadi',
+      'Baner',
+      'Aundh',
+      'Wakad',
+      'Kothrud',
+      'Hadapsar',
+      'Magarpatta',
+      'Other'
+    ],
+    'Kolkata': [
+      'Park Street',
+      'Salt Lake',
+      'New Town',
+      'Ballygunge',
+      'Alipore',
+      'Dum Dum',
+      'Howrah',
+      'Other'
+    ],
+    'Ahmedabad': [
+      'SG Highway',
+      'Prahlad Nagar',
+      'Satellite',
+      'Vastrapur',
+      'Navrangpura',
+      'Bodakdev',
+      'Other'
+    ],
+    'Jaipur': [
+      'Malviya Nagar',
+      'Vaishali Nagar',
+      'C Scheme',
+      'Pink City',
+      'Raja Park',
+      'Other'
+    ],
+    'Other': []
+  }
 
   useEffect(() => {
     fetchOwners()
@@ -78,12 +274,28 @@ export default function NewPropertyPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/admin/properties', {
+      if (!isLoggedIn || !user?.id || !user?.email) {
+        alert('You must be logged in as admin to create a property')
+        return
+      }
+
+      const params = new URLSearchParams({
+        userId: user.id,
+        userEmail: encodeURIComponent(user.email),
+      })
+
+      // Combine address with area if area is selected
+      const fullAddress = formData.location || formData.address
+      const addressWithArea = formData.area 
+        ? `${fullAddress}${fullAddress ? ', ' : ''}${formData.area}`
+        : fullAddress
+
+      const response = await fetch(`/api/admin/properties?${params.toString()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          address: formData.location || formData.address,
+          address: addressWithArea,
           price: parseFloat(formData.rent || formData.price || '0'),
           securityDeposit: formData.deposit ? parseFloat(formData.deposit) : (formData.securityDeposit ? parseFloat(formData.securityDeposit) : null),
           rentEscalation: formData.rentEscalation ? parseFloat(formData.rentEscalation) : null,
@@ -170,12 +382,26 @@ export default function NewPropertyPage() {
                 <select
                   required
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value, area: '' })}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 >
                   <option value="">Select city</option>
-                  {locations.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
+                  {metroCities.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Area</label>
+                <select
+                  value={formData.area}
+                  onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                  disabled={!formData.city || !cityAreas[formData.city] || cityAreas[formData.city].length === 0}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select area</option>
+                  {formData.city && cityAreas[formData.city]?.map(area => (
+                    <option key={area} value={area}>{area}</option>
                   ))}
                 </select>
               </div>
@@ -365,24 +591,25 @@ export default function NewPropertyPage() {
             />
           </div>
 
-          {/* Owner & Status */}
+          {/* Added By & Status */}
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Owner & Status</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Added By & Status</h2>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Owner *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Added By *</label>
                 <select
                   required
-                  value={formData.ownerId}
-                  onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
+                  value={formData.addedBy}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      addedBy: e.target.value as 'admin' | 'owner',
+                    })
+                  }
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 >
-                  <option value="">Select Owner</option>
-                  {owners.map((owner) => (
-                    <option key={owner.id} value={owner.id}>
-                      {owner.name} ({owner.email})
-                    </option>
-                  ))}
+                  <option value="owner">Owner / User</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">

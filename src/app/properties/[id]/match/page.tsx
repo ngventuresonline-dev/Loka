@@ -9,6 +9,7 @@ import { Property } from '@/types/workflow'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
+import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 
 interface MatchBreakdown {
   locationScore: number
@@ -79,6 +80,17 @@ function MatchDetailsContent() {
     fetchMatchDetails()
   }, [propertyId])
 
+  // Log a property view when the match page is opened and propertyId is available
+  useEffect(() => {
+    if (!propertyId) return
+    logSessionEvent({
+      sessionType: 'view',
+      action: 'property_match_view',
+      userId: getClientSessionUserId(),
+      data: { property_id: propertyId },
+    })
+  }, [propertyId])
+
   // Prefill notes using AI-ish template based on property and prefilled data
   useEffect(() => {
     if (showVisitModal && matchDetails && !visitNote) {
@@ -107,11 +119,13 @@ function MatchDetailsContent() {
 
       // Fetch property details
       const propertyResponse = await fetch(`/api/properties/${propertyId}`)
-      if (!propertyResponse.ok) {
-        throw new Error('Property not found')
+      let property: any | null = null
+      if (propertyResponse.ok) {
+        const propertyData = await propertyResponse.json()
+        property = propertyData.property || propertyData
+      } else {
+        console.warn('Property not found for id:', propertyId)
       }
-      const propertyData = await propertyResponse.json()
-      const property = propertyData.property || propertyData
 
       // Calculate match score
       const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
@@ -147,11 +161,30 @@ function MatchDetailsContent() {
             breakdown: match.breakdown
           })
         } else {
-          // If not in matches, create a basic match object
+          // If not in matches, but property data exists, create a basic match object
+          if (property) {
+            setMatchDetails({
+              property,
+              bfiScore: 75, // Default score
+              matchReasons: ['Property available in your preferred location', 'Size matches your requirements'],
+              breakdown: {
+                locationScore: 80,
+                sizeScore: 75,
+                budgetScore: 70,
+                typeScore: 80
+              }
+            })
+          } else {
+            setMatchDetails(null)
+          }
+        }
+      } else {
+        // Fallback if match API fails
+        if (property) {
           setMatchDetails({
             property,
-            bfiScore: 75, // Default score
-            matchReasons: ['Property available in your preferred location', 'Size matches your requirements'],
+            bfiScore: 75,
+            matchReasons: ['Property available in your preferred location'],
             breakdown: {
               locationScore: 80,
               sizeScore: 75,
@@ -159,24 +192,13 @@ function MatchDetailsContent() {
               typeScore: 80
             }
           })
+        } else {
+          setMatchDetails(null)
         }
-      } else {
-        // Fallback if match API fails
-        setMatchDetails({
-          property,
-          bfiScore: 75,
-          matchReasons: ['Property available in your preferred location'],
-          breakdown: {
-            locationScore: 80,
-            sizeScore: 75,
-            budgetScore: 70,
-            typeScore: 80
-          }
-        })
       }
     } catch (error) {
       console.error('Error fetching match details:', error)
-      router.push('/properties')
+      setMatchDetails(null)
     } finally {
       setLoading(false)
     }
@@ -367,24 +389,24 @@ function MatchDetailsContent() {
               </div>
 
               {/* Key Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-6 pb-6 border-b border-gray-200">
-                <div>
-                  <div className="text-2xl font-bold bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 pb-6 border-b border-gray-200">
+                <div className="flex flex-col min-w-0">
+                  <div className="text-lg sm:text-2xl md:text-3xl font-bold leading-tight bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">
                     {formatPrice(property.price, property.priceType)}
                   </div>
-                  <div className="text-sm text-gray-600">Rent</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mt-1">Rent</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">
+                <div className="flex flex-col min-w-0">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight">
                     {property.size.toLocaleString()} sqft
                   </div>
-                  <div className="text-sm text-gray-600">Size</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mt-1">Size</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 capitalize">
+                <div className="flex flex-col min-w-0">
+                  <div className="text-base sm:text-2xl font-bold text-gray-900 capitalize leading-tight">
                     {property.propertyType}
                   </div>
-                  <div className="text-sm text-gray-600">Type</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mt-1">Type</div>
                 </div>
               </div>
 

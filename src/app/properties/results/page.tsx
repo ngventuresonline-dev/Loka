@@ -312,38 +312,38 @@ function PropertiesResultsContent() {
         )}
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-1 sm:mb-2">
             AI-Matched <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Properties</span>
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             {loading ? 'Finding your perfect match...' : `${totalMatches} properties matched by AI`}
           </p>
         </div>
 
         {/* Filters Summary */}
         {getFilterChips().length > 0 && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-700">Applied Filters:</span>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-2 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <span className="text-xs sm:text-sm font-semibold text-gray-700">Filters:</span>
               <button
                 onClick={clearAllFilters}
-                className="text-sm text-[#FF5722] hover:text-[#E4002B] font-medium"
+                className="text-xs sm:text-sm text-[#FF5722] hover:text-[#E4002B] font-medium"
               >
                 Clear All
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
               {getFilterChips().map((chip, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm"
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white border border-gray-300 rounded-md sm:rounded-lg text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
                 >
-                  <span className="font-medium text-gray-700">{chip.label}:</span>
-                  <span className="text-gray-900">{chip.value}</span>
+                  <span className="font-medium text-gray-700 hidden sm:inline">{chip.label}:</span>
+                  <span className="text-gray-900 truncate max-w-[120px] sm:max-w-none">{chip.value}</span>
                   <button
                     onClick={() => removeFilter(chip.key)}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-gray-400 hover:text-red-500 transition-colors ml-0.5 sm:ml-0 flex-shrink-0"
                   >
                     ×
                   </button>
@@ -354,14 +354,14 @@ function PropertiesResultsContent() {
         )}
 
         {/* Sort and Results Count */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div className="text-sm text-gray-600">
-            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedMatches.length)} of {sortedMatches.length} matches
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <div className="text-xs sm:text-sm text-gray-600">
+            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedMatches.length)} of {sortedMatches.length}
           </div>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5722] w-full sm:w-auto"
           >
             <option value="best-match">Best Match</option>
             <option value="price-low">Price: Low to High</option>

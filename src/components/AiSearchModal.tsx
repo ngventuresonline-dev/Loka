@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import PropertyCard from './PropertyCard'
 import ButtonFlowModal from './ButtonFlowModal'
 import { ButtonFlowState } from '@/lib/ai-search/button-flow'
+import { getContextualInsight } from '@/lib/loading-insights'
 
 interface Message {
   id: string
@@ -77,6 +78,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
 
     // Get user type from session if available (before determining message type)
     let userType: 'brand' | 'owner' | null = null
+    let contextualInsight: string | null = null
     try {
       const sessionJson = localStorage.getItem('ngventures_session')
       if (sessionJson) {
@@ -85,11 +87,51 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
           userType = session.userType
         }
       }
+
+      // Try to build contextual insight from stored session/filter data
+      if (userType === 'brand') {
+        const saved =
+          localStorage.getItem('brandSessionData') ||
+          localStorage.getItem('brandFilterData')
+        if (saved) {
+          const data = JSON.parse(saved)
+          const businessType = Array.isArray(data.businessType)
+            ? data.businessType[0]
+            : data.businessType
+          const primaryLocation = Array.isArray(data.locations)
+            ? data.locations[0]
+            : data.locations
+          contextualInsight = getContextualInsight({
+            userType: 'brand',
+            businessType,
+            location: primaryLocation,
+            features: [],
+          })
+        }
+      } else if (userType === 'owner') {
+        const saved =
+          localStorage.getItem('ownerSessionData') ||
+          localStorage.getItem('ownerFilterData')
+        if (saved) {
+          const data = JSON.parse(saved)
+          const primaryLocation = Array.isArray(data.locations)
+            ? data.locations[0]
+            : data.location || data.locations
+          const features: string[] = data.features || []
+          contextualInsight = getContextualInsight({
+            userType: 'owner',
+            businessType: undefined,
+            location: primaryLocation,
+            features,
+          })
+        }
+      }
     } catch (e) {
-      // Ignore errors getting user type
+      // Ignore errors getting user type / session data
+      console.warn('[AiSearchModal] Failed to build contextual insight', e)
     }
 
-    // Determine thinking message based on user type and query
+    // Determine thinking message based on user type/query or contextual insight
     const lowerQuery = query.toLowerCase()
     const isListingQuery = lowerQuery.includes('have') || lowerQuery.includes('list') || 
                           lowerQuery.includes('available') || lowerQuery.includes('for rent') ||
@@ -99,7 +141,11 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
                          userType === 'brand'
     
     let thinkingContent = 'Let me help you with that...'
-    if (isListingQuery) {
+    if (contextualInsight) {
+      // Use contextual insight for both the thinking bubble and the loading message
+      thinkingContent = contextualInsight
+      setLoadingMessage(contextualInsight)
+    } else if (isListingQuery) {
       thinkingContent = 'Processing your property details...'
       setLoadingMessage('Processing your property details...')
     } else if (isSearchQuery) {

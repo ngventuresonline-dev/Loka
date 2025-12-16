@@ -41,36 +41,64 @@ export default function PropertiesPage() {
 
   const fetchProperties = async () => {
     if (!user?.id || !user?.email) {
-      console.error('User not authenticated')
+      console.error('[Properties] User not authenticated', { user })
       setLoading(false)
       return
     }
 
     try {
       setLoading(true)
-      // Fetch all properties with high limit
-      const response = await fetch(`/api/admin/properties?limit=1000&page=1&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`)
+      const url = `/api/admin/properties?limit=1000&page=1&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`
+      console.log('[Properties] Fetching from:', url)
+      
+      const response = await fetch(url)
+      const responseText = await response.text()
       
       if (response.ok) {
-        const data = await response.json()
-        console.log('[Properties] API Response:', {
-          propertiesCount: data.properties?.length || 0,
-          total: data.total,
-          page: data.page,
-          hasProperties: !!data.properties,
-          firstProperty: data.properties?.[0]
-        })
-        setProperties(data.properties || [])
+        try {
+          const data = JSON.parse(responseText)
+          console.log('[Properties] API Response:', {
+            propertiesCount: data.properties?.length || 0,
+            total: data.total,
+            page: data.page,
+            hasProperties: !!data.properties,
+            firstProperty: data.properties?.[0]
+          })
+          setProperties(data.properties || [])
+        } catch (parseError) {
+          console.error('[Properties] Failed to parse response:', parseError, 'Response text:', responseText.substring(0, 200))
+          setProperties([])
+        }
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Error fetching properties:', response.status, errorData)
+        let errorData = {}
+        try {
+          errorData = JSON.parse(responseText)
+        } catch {
+          errorData = { raw: responseText.substring(0, 200) }
+        }
+
+        const errorPayload = {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          url
+        }
+
+        // For auth errors, log a warning (we fall back to public API)
+        if (response.status === 401 || response.status === 403) {
+          console.warn('[Properties] Admin API auth error, using public API fallback:', errorPayload)
+        } else {
+          console.error('[Properties] Admin API error:', errorPayload)
+        }
+        
         // Try public API as fallback
         try {
+          console.log('[Properties] Trying public API as fallback...')
           const publicResponse = await fetch('/api/properties?limit=1000')
           if (publicResponse.ok) {
             const publicData = await publicResponse.json()
             const props = publicData.properties || publicData.data?.properties || []
-            console.log('Using public API, fetched:', props.length, 'properties')
+            console.log('[Properties] Using public API, fetched:', props.length, 'properties')
             setProperties(props.map((p: any) => ({
               id: p.id,
               title: p.title,
@@ -84,13 +112,19 @@ export default function PropertiesPage() {
               isFeatured: p.isFeatured || false,
               createdAt: p.createdAt
             })))
+          } else {
+            console.error('[Properties] Public API also failed:', publicResponse.status)
           }
         } catch (fallbackError) {
-          console.error('Fallback API also failed:', fallbackError)
+          console.error('[Properties] Fallback API error:', fallbackError)
         }
       }
-    } catch (error) {
-      console.error('Error fetching properties:', error)
+    } catch (error: any) {
+      console.error('[Properties] Network/fetch error:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      })
     } finally {
       setLoading(false)
     }
@@ -192,12 +226,47 @@ export default function PropertiesPage() {
             <h1 className="text-3xl font-bold text-white mb-2">Properties</h1>
             <p className="text-gray-400">Manage all property listings</p>
           </div>
-          <button
-            onClick={() => router.push('/admin/properties/new')}
-            className="px-6 py-3 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors font-medium"
-          >
-            Add New Property
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={async () => {
+                if (!confirm('Regenerate descriptions for all properties? This will overwrite existing descriptions.')) return
+                if (!user?.id || !user?.email) {
+                  alert('You must be logged in as admin to regenerate descriptions')
+                  return
+                }
+                const params = new URLSearchParams({
+                  userId: user.id,
+                  userEmail: encodeURIComponent(user.email),
+                })
+                try {
+                  const res = await fetch(`/api/admin/properties/describe?${params.toString()}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ all: true, mode: 'both' }),
+                  })
+                  const data = await res.json()
+                  if (res.ok) {
+                    alert(`Descriptions regenerated for ${data.updated ?? 0} properties.`)
+                    await fetchProperties()
+                  } else {
+                    alert(data.error || 'Failed to regenerate descriptions')
+                  }
+                } catch (err) {
+                  console.error('Bulk description regenerate error', err)
+                  alert('Failed to regenerate descriptions')
+                }
+              }}
+              className="px-4 py-2 bg-gray-800 text-xs text-white rounded-lg hover:bg-gray-700 transition-colors border border-gray-600"
+            >
+              Regenerate Titles & Descriptions (All)
+            </button>
+            <button
+              onClick={() => router.push('/admin/properties/new')}
+              className="px-6 py-3 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors font-medium"
+            >
+              Add New Property
+            </button>
+          </div>
         </div>
 
         {/* Search and Bulk Actions */}

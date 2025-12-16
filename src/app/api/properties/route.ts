@@ -205,24 +205,12 @@ export async function GET(request: NextRequest) {
       where.priceType = query.priceType
     }
 
-    // Boolean filters
+    // Boolean filters (only fields that actually exist in the Prisma schema)
     if (query.availability !== undefined) {
       where.availability = query.availability
     }
-    if (query.isVerified !== undefined) {
-      where.isVerified = query.isVerified
-    }
     if (query.isFeatured !== undefined) {
       where.isFeatured = query.isFeatured
-    }
-    if (query.parking !== undefined) {
-      where.parking = query.parking
-    }
-    if (query.publicTransport !== undefined) {
-      where.publicTransport = query.publicTransport
-    }
-    if (query.accessibility !== undefined) {
-      where.accessibility = query.accessibility
     }
 
     // Owner filter

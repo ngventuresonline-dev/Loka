@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
+import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
+import { getContextualInsight } from '@/lib/loading-insights'
 
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
@@ -14,19 +16,39 @@ const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar
 const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
 
 function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?: number; required?: boolean; onBudgetChange?: (budget: { min: number; max: number }) => void }) {
-  const [budgetMin, setBudgetMin] = useState<number>(50000)
-  const [budgetMax, setBudgetMax] = useState<number>(200000)
-  const [minInput, setMinInput] = useState('₹50K')
-  const [maxInput, setMaxInput] = useState('₹200K')
-  
+  // Direct INR values with exact 10K steps
+  const MIN_VALUE = 50000
+  const MAX_VALUE = 2000000
+  const STEP = 10000
+
   const formatCurrency = (value: number) => {
     if (value >= 100000) {
-      return `₹${(value / 100000).toFixed(1)}L`
+      const lakhs = value / 100000
+      return lakhs % 1 === 0 ? `₹${lakhs.toFixed(0)}L` : `₹${lakhs.toFixed(1)}L`
     }
     return `₹${(value / 1000).toFixed(0)}K`
   }
 
+  const formatCurrencyWithCommas = (value: number) => {
+    return `₹${value.toLocaleString('en-IN')}`
+  }
+
+  const [budgetMin, setBudgetMin] = useState<number>(MIN_VALUE)
+  const [budgetMax, setBudgetMax] = useState<number>(200000)
+
+  const [minInput, setMinInput] = useState(formatCurrency(MIN_VALUE))
+  const [maxInput, setMaxInput] = useState(formatCurrency(200000))
+  
+  // Initialize budget range on mount
+  useEffect(() => {
+    if (onBudgetChange) {
+      onBudgetChange({ min: budgetMin, max: budgetMax })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const parseBudgetInput = (input: string): number | null => {
+    // Remove currency symbols, commas, and spaces
     const cleaned = input.trim().replace(/[₹,\s]/g, '').toUpperCase()
     
     // Handle lakhs (L)
@@ -41,56 +63,57 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
       if (!isNaN(num)) return num * 1000
     }
     
-    // Handle plain number
-    const num = parseFloat(cleaned)
-    if (!isNaN(num)) {
-      // If number is < 1000, assume it's in thousands
-      if (num < 1000) return num * 1000
-      // If number is < 100, assume it's in lakhs
-      if (num < 100) return num * 100000
+    // Handle plain number (with or without commas)
+    const num = parseFloat(cleaned.replace(/,/g, ''))
+    if (!isNaN(num) && num > 0) {
       return num
     }
     
     return null
   }
 
-  const handleMinChange = (value: number) => {
-    const newMin = Math.max(50000, Math.min(value, budgetMax - 5000))
-    setBudgetMin(newMin)
-    setMinInput(formatCurrency(newMin))
+  const handleMinSliderChange = (value: number) => {
+    const clamped = Math.max(MIN_VALUE, Math.min(value, budgetMax - STEP))
+    const rounded = Math.round(clamped / STEP) * STEP
+    setBudgetMin(rounded)
+    setMinInput(formatCurrency(rounded))
     if (onBudgetChange) {
-      onBudgetChange({ min: newMin, max: budgetMax })
+      onBudgetChange({ min: rounded, max: budgetMax })
     }
   }
 
-  const handleMaxChange = (value: number) => {
-    const newMax = Math.max(budgetMin + 5000, Math.min(value, 2000000))
-    setBudgetMax(newMax)
-    setMaxInput(formatCurrency(newMax))
+  const handleMaxSliderChange = (value: number) => {
+    const clamped = Math.min(MAX_VALUE, Math.max(value, budgetMin + STEP))
+    const rounded = Math.round(clamped / STEP) * STEP
+    setBudgetMax(rounded)
+    setMaxInput(formatCurrency(rounded))
     if (onBudgetChange) {
-      onBudgetChange({ min: budgetMin, max: newMax })
+      onBudgetChange({ min: budgetMin, max: rounded })
     }
   }
 
   const handleMinInputChange = (input: string) => {
     setMinInput(input)
     const parsed = parseBudgetInput(input)
-    if (parsed !== null && parsed >= 50000 && parsed < budgetMax) {
-      handleMinChange(parsed)
+    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE) {
+      handleMinSliderChange(parsed)
     }
   }
 
   const handleMaxInputChange = (input: string) => {
     setMaxInput(input)
     const parsed = parseBudgetInput(input)
-    if (parsed !== null && parsed > budgetMin && parsed <= 2000000) {
-      handleMaxChange(parsed)
+    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE) {
+      handleMaxSliderChange(parsed)
     }
   }
 
-  // Calculate step based on value (5000 steps after 50k)
-  const getStep = (value: number) => {
-    return value >= 50000 ? 5000 : 1000
+  const handleMinInputBlur = () => {
+    setMinInput(formatCurrency(budgetMin))
+  }
+
+  const handleMaxInputBlur = () => {
+    setMaxInput(formatCurrency(budgetMax))
   }
   
   const hasError = required && (budgetMin < 50000 || budgetMax <= budgetMin)
@@ -167,82 +190,74 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
             </div>
           )}
 
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4">
             {/* Min Budget */}
             <div>
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <label className="text-xs sm:text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Minimum Budget (Monthly Rent)
+              <label className="block text-sm font-medium text-gray-300 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                Minimum Budget
                 </label>
-                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  {formatCurrency(budgetMin)}
-                </span>
-              </div>
-              <div className="relative mb-3 sm:mb-4">
+              <div className="flex gap-2 items-center">
                 <input
-                  type="range"
-                  min="50000"
-                  max={Math.min(budgetMax - 5000, 2000000)}
-                  step={getStep(budgetMin)}
-                  value={budgetMin}
-                  onChange={(e) => handleMinChange(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-min"
+                  type="text"
+                  value={minInput}
+                  onChange={(e) => handleMinInputChange(e.target.value)}
+                  onBlur={handleMinInputBlur}
+                  placeholder="₹50K or 100000"
+                  className={`flex-1 px-3 py-2 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-all`}
+                  style={{ fontFamily: plusJakarta.style.fontFamily }}
                 />
+                <span className="text-sm text-gray-400 whitespace-nowrap">or use slider</span>
               </div>
               <input
-                type="text"
-                value={minInput}
-                onChange={(e) => handleMinInputChange(e.target.value)}
-                onBlur={() => setMinInput(formatCurrency(budgetMin))}
-                placeholder="₹50K"
-                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg sm:rounded-xl text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
-                style={{ fontFamily: plusJakarta.style.fontFamily }}
+                type="range"
+                min={MIN_VALUE}
+                max={MAX_VALUE}
+                step={STEP}
+                value={budgetMin}
+                onChange={(e) => handleMinSliderChange(parseInt(e.target.value, 10))}
+                className="w-full h-2 mt-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-min"
               />
-            </div>
+              </div>
 
             {/* Max Budget */}
-            <div>
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <label className="text-xs sm:text-sm font-medium text-gray-300" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Maximum Budget (Monthly Rent)
+              <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                Maximum Budget
                 </label>
-                <span className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  {formatCurrency(budgetMax)}
-                </span>
-              </div>
-              <div className="relative mb-3 sm:mb-4">
+              <div className="flex gap-2 items-center">
                 <input
-                  type="range"
-                  min={Math.max(budgetMin + 5000, 50000)}
-                  max="2000000"
-                  step={getStep(budgetMax)}
-                  value={budgetMax}
-                  onChange={(e) => handleMaxChange(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-max"
+                  type="text"
+                  value={maxInput}
+                  onChange={(e) => handleMaxInputChange(e.target.value)}
+                  onBlur={handleMaxInputBlur}
+                  placeholder="₹200K or 200000"
+                  className={`flex-1 px-3 py-2 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-all`}
+                  style={{ fontFamily: plusJakarta.style.fontFamily }}
                 />
+                <span className="text-sm text-gray-400 whitespace-nowrap">or use slider</span>
               </div>
               <input
-                type="text"
-                value={maxInput}
-                onChange={(e) => handleMaxInputChange(e.target.value)}
-                onBlur={() => setMaxInput(formatCurrency(budgetMax))}
-                placeholder="₹200K"
-                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg sm:rounded-xl text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none transition-all duration-200`}
-                style={{ fontFamily: plusJakarta.style.fontFamily }}
+                type="range"
+                min={MIN_VALUE}
+                max={MAX_VALUE}
+                step={STEP}
+                value={budgetMax}
+                onChange={(e) => handleMaxSliderChange(parseInt(e.target.value, 10))}
+                className="w-full h-2 mt-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-max"
               />
             </div>
 
             {/* Budget Range Display */}
-            <div className="pt-3 sm:pt-4 border-t border-gray-700/50">
-              <div className="text-center">
-                <p className="text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Budget Range
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
+            <div className="pt-3 border-t border-gray-700/50">
+                <div className="text-center">
+                <p className="text-xs text-gray-400 mb-1" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  Selected Range
+                  </p>
+                <p className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B]" style={{ fontFamily: fraunces.style.fontFamily }}>
                   {formatCurrency(budgetMin)} - {formatCurrency(budgetMax)}
-                </p>
+                  </p>
+                </div>
               </div>
-            </div>
           </div>
         </div>
 
@@ -524,6 +539,9 @@ export default function BrandFilterPage() {
   const [showApplyButton, setShowApplyButton] = useState(false)
   const [aiInsight, setAiInsight] = useState<string>('')
   const [showAiInsight, setShowAiInsight] = useState(false)
+  const [showContactModal, setShowContactModal] = useState(false)
+  const [contactMethod, setContactMethod] = useState<'email' | 'phone' | null>(null)
+  const [contactInfo, setContactInfo] = useState({ email: '', phone: '' })
   
   // Track selections for validation
   const [businessTypeSelected, setBusinessTypeSelected] = useState<Set<string>>(new Set())
@@ -531,6 +549,95 @@ export default function BrandFilterPage() {
   const [locationSelected, setLocationSelected] = useState<Set<string>>(new Set())
   const [timelineSelected, setTimelineSelected] = useState<Set<string>>(new Set())
   const [budgetRange, setBudgetRange] = useState<{ min: number; max: number }>({ min: 50000, max: 200000 })
+  const brandLogTimeoutRef = useRef<number | null>(null)
+
+  const buildFilterStepPayload = () => {
+    // Derive a combined size range from all selected ranges
+    const sizeLabels = Array.from(sizeRangeSelected)
+    let globalMin = Number.MAX_SAFE_INTEGER
+    let globalMax = 0
+
+    sizeLabels.forEach(label => {
+      if (label.includes('-')) {
+        const [minStr, maxStr] = label.split('-').map(v => v.trim())
+        const min = parseInt(minStr.replace(/[^0-9]/g, '')) || 0
+        const max = parseInt(maxStr.replace(/[^0-9]/g, '')) || 0
+        if (min > 0) globalMin = Math.min(globalMin, min)
+        if (max > 0) globalMax = Math.max(globalMax, max)
+      } else if (label.includes('+')) {
+        const min = parseInt(label.replace(/[^0-9]/g, '')) || 0
+        if (min > 0) {
+          globalMin = Math.min(globalMin, min)
+          globalMax = Math.max(globalMax, 2000000)
+        }
+      }
+    })
+
+    if (globalMin === Number.MAX_SAFE_INTEGER) globalMin = 0
+    if (globalMax === 0) globalMax = 100000
+
+    return {
+      businessType: Array.from(businessTypeSelected),
+      sizeRange: { min: globalMin, max: globalMax },
+      locations: Array.from(locationSelected),
+      budgetRange: { min: budgetRange.min, max: budgetRange.max },
+      timeline: Array.from(timelineSelected)[0] || null,
+    }
+  }
+
+  const saveBrandSessionToLocalStorage = () => {
+    if (typeof window === 'undefined') return
+    const filterStep = buildFilterStepPayload()
+    try {
+      const sessionPayload = {
+        businessType: filterStep.businessType,
+        sizeRange: filterStep.sizeRange,
+        locations: filterStep.locations,
+        budgetRange: filterStep.budgetRange,
+        timeline: filterStep.timeline,
+        contactInfo: {
+          name: null,
+          email: contactInfo.email || '',
+          phone: contactInfo.phone ? `+91${contactInfo.phone}` : '',
+        },
+      }
+      localStorage.setItem('brandSessionData', JSON.stringify(sessionPayload))
+    } catch (e) {
+      // Swallow localStorage errors (e.g. quota exceeded) silently
+      console.error('[BrandFilter] Failed to save brandSessionData', e)
+    }
+  }
+
+  const scheduleBrandLog = (action: string, extraData: any = {}) => {
+    if (typeof window === 'undefined') return
+    if (brandLogTimeoutRef.current) {
+      window.clearTimeout(brandLogTimeoutRef.current)
+    }
+
+    brandLogTimeoutRef.current = window.setTimeout(() => {
+      const filterStep = buildFilterStepPayload()
+      const payload = {
+        status: 'in_progress',
+        filter_step: filterStep,
+        contact_step: {
+          name: null,
+          email: contactInfo.email || null,
+          phone: contactInfo.phone ? `+91${contactInfo.phone}` : null,
+        },
+        ...extraData,
+      }
+
+      // Persist a simplified session snapshot for pre-filling other flows
+      saveBrandSessionToLocalStorage()
+
+      logSessionEvent({
+        sessionType: 'brand',
+        action,
+        data: payload,
+        userId: getClientSessionUserId(),
+      })
+    }, 500)
+  }
   
   // Check if all required fields are filled
   const isFormValid = 
@@ -541,24 +648,30 @@ export default function BrandFilterPage() {
     budgetRange.min >= 50000 &&
     budgetRange.max > budgetRange.min
 
-  // Generate AI insights based on selections
+  // Generate contextual AI insights based on selections
   useEffect(() => {
-    const totalSelections = businessTypeSelected.size + sizeRangeSelected.size + locationSelected.size + timelineSelected.size + (budgetRange.min >= 50000 ? 1 : 0)
-    
+    const totalSelections =
+      businessTypeSelected.size +
+      sizeRangeSelected.size +
+      locationSelected.size +
+      timelineSelected.size +
+      (budgetRange.min >= 50000 ? 1 : 0)
+
     if (totalSelections >= 2) {
-      const insights = [
-        'AI analyzing location patterns...',
-        'Learning your space requirements...',
-        'Calculating optimal budget matches...',
-        'Identifying high-traffic areas for your business type...',
-        'Cross-referencing with successful brand placements...',
-        'Optimizing for your timeline...'
-      ]
-      const randomInsight = insights[Math.floor(Math.random() * insights.length)]
-      setAiInsight(randomInsight)
+      const businessType = Array.from(businessTypeSelected)[0]
+      const primaryLocation = Array.from(locationSelected)[0]
+
+      const contextual = getContextualInsight({
+        userType: 'brand',
+        businessType,
+        location: primaryLocation,
+        features: [],
+      })
+
+      setAiInsight(contextual)
       setShowAiInsight(true)
-      
-      // Hide after 3 seconds
+
+      // Hide after 3 seconds; progress bar already animates over 3s
       const timer = setTimeout(() => setShowAiInsight(false), 3000)
       return () => clearTimeout(timer)
     } else {
@@ -569,6 +682,7 @@ export default function BrandFilterPage() {
   useEffect(() => {
     const handleScroll = () => {
       setShowApplyButton(window.scrollY > 200)
+      scheduleBrandLog('scroll', {})
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
@@ -688,7 +802,10 @@ export default function BrandFilterPage() {
             items={businessTypes} 
             index={0} 
             required 
-            onSelectionChange={setBusinessTypeSelected}
+            onSelectionChange={(set) => {
+              setBusinessTypeSelected(set)
+              scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
+            }}
           />
           <FilterCard 
             title="Size Range" 
@@ -696,7 +813,10 @@ export default function BrandFilterPage() {
           index={1} 
           required
           multi
-          onSelectionChange={setSizeRangeSelected}
+          onSelectionChange={(set) => {
+            setSizeRangeSelected(set)
+            scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
+          }}
           />
           <FilterCard 
             title="Location (Popular Areas)" 
@@ -704,19 +824,28 @@ export default function BrandFilterPage() {
             multi 
             index={2} 
             required
-            onSelectionChange={setLocationSelected}
+            onSelectionChange={(set) => {
+              setLocationSelected(set)
+              scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
+            }}
           />
           <BudgetSlider 
             index={3} 
             required
-            onBudgetChange={setBudgetRange}
+            onBudgetChange={(budget) => {
+              setBudgetRange(budget)
+              scheduleBrandLog('filter_change', { filter_step: { ...buildFilterStepPayload(), budgetRange: budget } })
+            }}
           />
           <FilterCard 
             title="Timeline" 
             items={timelines} 
             index={4} 
             required
-            onSelectionChange={setTimelineSelected}
+            onSelectionChange={(set) => {
+              setTimelineSelected(set)
+              scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
+            }}
           />
         </div>
       </div>
@@ -742,45 +871,8 @@ export default function BrandFilterPage() {
               whileTap={isFormValid ? { scale: 0.95 } : {}}
               onClick={() => {
                 if (isFormValid) {
-                  // Save filter data to localStorage for pre-filling onboarding form
-                  const filterData = {
-                    businessType: Array.from(businessTypeSelected),
-                    sizeRanges: Array.from(sizeRangeSelected),
-                    locations: Array.from(locationSelected),
-                    budgetMin: budgetRange.min,
-                    budgetMax: budgetRange.max,
-                    timeline: Array.from(timelineSelected)[0] || ''
-                  }
-                  
-                  localStorage.setItem('brandFilterData', JSON.stringify(filterData))
-
-                  // Parse size ranges for query params (use first range for search)
-                  const sizeRangeStr = Array.from(sizeRangeSelected)[0] || ''
-                  let sizeMin = 0
-                  let sizeMax = 100000
-                  if (sizeRangeStr.includes('-')) {
-                    const [min, max] = sizeRangeStr.split('-').map(v => parseInt(v.replace(/[^0-9]/g, '')))
-                    sizeMin = min || 0
-                    sizeMax = max || 100000
-                  } else if (sizeRangeStr.includes('+')) {
-                    sizeMin = parseInt(sizeRangeStr.replace(/[^0-9]/g, '')) || 0
-                    sizeMax = 100000
-                  }
-
-                  // Build query params
-                  const params = new URLSearchParams()
-                  params.set('businessType', Array.from(businessTypeSelected)[0] || '')
-                  params.set('sizeMin', sizeMin.toString())
-                  params.set('sizeMax', sizeMax.toString())
-                  params.set('locations', Array.from(locationSelected).join(','))
-                  params.set('budgetMin', budgetRange.min.toString())
-                  params.set('budgetMax', budgetRange.max.toString())
-                  if (Array.from(timelineSelected).length > 0) {
-                    params.set('timeline', Array.from(timelineSelected)[0] || '')
-                  }
-
-                  // Navigate to onboarding form with pre-filled data
-                  window.location.href = `/onboarding/brand?prefilled=true`
+                  // Show contact modal first
+                  setShowContactModal(true)
                 }
               }}
             >
@@ -814,6 +906,265 @@ export default function BrandFilterPage() {
 
       {/* Bottom Glow Line */}
       <div className="relative z-10 mt-16 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
+
+      {/* Contact Capture Modal */}
+      <AnimatePresence>
+        {showContactModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => {
+              setShowContactModal(false)
+              setContactMethod(null)
+              setContactInfo({ email: '', phone: '' })
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative group bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50 max-w-md w-full"
+            >
+              {/* Animated Glow Effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+              
+              {/* Animated Corner Accent */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500"></div>
+              
+              {/* Particle Effect */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping"></div>
+                <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+              </div>
+
+              <div className="relative z-10">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-2" style={{ fontFamily: fraunces.style.fontFamily }}>
+                  Quick Sign-In
+                </h2>
+                <p className="text-gray-400 mb-6 text-sm" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  Enter your contact details to view property matches
+                </p>
+
+                <div className="space-y-4">
+                  {/* Contact Number Field - Always Visible */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                      Contact Number *
+                    </label>
+                    <div className="flex items-center">
+                      <span className="px-3 py-3 bg-gray-800/60 border-2 border-r-0 border-gray-700/50 rounded-l-lg text-white text-sm">+91</span>
+                      <input
+                        type="tel"
+                        value={contactInfo.phone}
+                        onChange={(e) => {
+                          // Only allow digits, max 10 digits
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 10)
+                          setContactInfo({ ...contactInfo, phone: digits })
+                          if (digits) {
+                            setContactMethod('phone')
+                          }
+                          scheduleBrandLog('contact_change')
+                        }}
+                        placeholder="98765 43210"
+                        maxLength={10}
+                        className="flex-1 px-4 py-3 bg-gray-800/60 border-2 border-gray-700/50 focus:border-[#FF5200] rounded-r-lg text-white placeholder-gray-500 focus:outline-none transition-all"
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                      />
+                    </div>
+                    {contactInfo.phone.length > 0 && contactInfo.phone.length < 10 && (
+                      <p className="text-xs text-red-400 mt-1">Enter 10 digit number</p>
+                    )}
+                  </div>
+
+                  {/* Email Field - Shown when email link is clicked */}
+                  {contactMethod === 'email' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        value={contactInfo.email}
+                        onChange={(e) => {
+                          setContactInfo({ ...contactInfo, email: e.target.value })
+                          scheduleBrandLog('contact_change')
+                        }}
+                        placeholder="your@email.com"
+                        required
+                        className="w-full px-4 py-3 bg-gray-800/60 border-2 border-gray-700/50 focus:border-[#FF5200] rounded-lg text-white placeholder-gray-500 focus:outline-none transition-all"
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+
+                  {/* Sign up with Email Link */}
+                  {contactMethod !== 'email' && (
+                    <div className="text-center">
+                      <button
+                        onClick={() => setContactMethod('email')}
+                        className="text-[#FF5200] hover:text-[#E4002B] text-sm font-medium transition-colors underline underline-offset-2"
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                      >
+                        Sign up with Email
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    {contactMethod === 'email' && (
+                      <button
+                        onClick={() => {
+                          setContactMethod(null)
+                          setContactInfo({ ...contactInfo, email: '' })
+                        }}
+                        className="flex-1 px-4 py-3 bg-gray-800/60 border-2 border-gray-700/50 text-white rounded-lg font-semibold hover:border-gray-600 transition-colors"
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                      >
+                        Back
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        const hasValidPhone = contactInfo.phone.length === 10
+                        const hasValidEmail = contactInfo.email.includes('@') && contactInfo.email.includes('.')
+                        
+                        if (hasValidPhone || hasValidEmail) {
+                          // Save filter data with contact
+                          const filterData = {
+                            businessType: Array.from(businessTypeSelected),
+                            sizeRanges: Array.from(sizeRangeSelected),
+                            locations: Array.from(locationSelected),
+                            budgetMin: budgetRange.min,
+                            budgetMax: budgetRange.max,
+                            timeline: Array.from(timelineSelected)[0] || '',
+                            contactEmail: contactInfo.email,
+                            contactPhone: hasValidPhone ? `+91${contactInfo.phone}` : ''
+                          }
+                          
+                          localStorage.setItem('brandFilterData', JSON.stringify(filterData))
+
+                          // Also persist session snapshot for AI / onboarding prefill
+                          saveBrandSessionToLocalStorage()
+
+                          // Fire-and-forget brand lead creation (non-blocking)
+                          try {
+                            const sessionDataRaw = localStorage.getItem('brandSessionData')
+                            const sessionData = sessionDataRaw ? JSON.parse(sessionDataRaw) : {
+                              businessType: filterData.businessType,
+                              sizeRange: {
+                                // Persist the first selected size label (if any) and fall back to budget range
+                                label: filterData.sizeRanges?.[0] ?? '',
+                                min: filterData.budgetMin,
+                                max: filterData.budgetMax,
+                              },
+                              locations: filterData.locations,
+                              budgetRange: {
+                                min: filterData.budgetMin,
+                                max: filterData.budgetMax,
+                              },
+                              timeline: filterData.timeline,
+                            }
+
+                            fetch('/api/leads/create', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                name: filterData.contactEmail || filterData.contactPhone || 'Brand Lead',
+                                email: filterData.contactEmail || null,
+                                phone: filterData.contactPhone || null,
+                                sessionData,
+                              }),
+                              keepalive: true,
+                            }).catch(() => {
+                              // Ignore network errors for lead creation to avoid breaking UX
+                            })
+                          } catch (e) {
+                            console.error('[BrandFilter] Failed to create brand lead', e)
+                          }
+
+                          logSessionEvent({
+                            sessionType: 'brand',
+                            action: 'contact_submit',
+                            userId: getClientSessionUserId(),
+                            data: {
+                              status: 'in_progress',
+                              filter_step: buildFilterStepPayload(),
+                              contact_step: {
+                                name: null,
+                                email: contactInfo.email || null,
+                                phone: hasValidPhone ? `+91${contactInfo.phone}` : null,
+                              },
+                            },
+                          })
+
+                          // Parse ALL selected size ranges for query params
+                          const sizeLabels = Array.from(sizeRangeSelected)
+                          let sizeMin = Number.MAX_SAFE_INTEGER
+                          let sizeMax = 0
+                          sizeLabels.forEach(label => {
+                            if (label.includes('-')) {
+                              const [minStr, maxStr] = label.split('-').map(v => v.trim())
+                              const min = parseInt(minStr.replace(/[^0-9]/g, '')) || 0
+                              const max = parseInt(maxStr.replace(/[^0-9]/g, '')) || 0
+                              if (min > 0) sizeMin = Math.min(sizeMin, min)
+                              if (max > 0) sizeMax = Math.max(sizeMax, max)
+                            } else if (label.includes('+')) {
+                              const min = parseInt(label.replace(/[^0-9]/g, '')) || 0
+                              if (min > 0) {
+                                sizeMin = Math.min(sizeMin, min)
+                                sizeMax = Math.max(sizeMax, 2000000)
+                              }
+                            }
+                          })
+                          if (sizeMin === Number.MAX_SAFE_INTEGER) sizeMin = 0
+                          if (sizeMax === 0) sizeMax = 100000
+
+                          // Build query params
+                          const params = new URLSearchParams()
+                          params.set('businessType', Array.from(businessTypeSelected)[0] || '')
+                          params.set('sizeMin', sizeMin.toString())
+                          params.set('sizeMax', sizeMax.toString())
+                          params.set('locations', Array.from(locationSelected).join(','))
+                          params.set('budgetMin', budgetRange.min.toString())
+                          params.set('budgetMax', budgetRange.max.toString())
+                          if (Array.from(timelineSelected).length > 0) {
+                            params.set('timeline', Array.from(timelineSelected)[0] || '')
+                          }
+
+                          // Navigate to property results page
+                          window.location.href = `/properties/results?${params.toString()}`
+                        }
+                      }}
+                      disabled={contactInfo.phone.length !== 10 && (!contactInfo.email || !contactInfo.email.includes('@') || !contactInfo.email.includes('.'))}
+                      className={`${contactMethod === 'email' ? 'flex-1' : 'w-full'} px-4 py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed`}
+                      style={{ fontFamily: plusJakarta.style.fontFamily }}
+                    >
+                      View Matches
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Footer Text */}
+                <div className="mt-6 pt-4 border-t border-gray-700/50">
+                  <p className="text-gray-500 text-xs text-center" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                    Sign In/Up to match with the right property
+                  </p>
+                </div>
+              </div>
+              
+              {/* Enhanced Pulse Ring */}
+              <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+              <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
+

@@ -36,6 +36,7 @@ export default function AdminSidebar() {
       children: [
         { name: 'All Brands', href: '/admin/brands', icon: null },
         { name: 'Add New', href: '/admin/brands/new', icon: null },
+        { name: 'Bulk Upload Brands', href: '/admin/brands/bulk-upload', icon: null },
       ]
     },
     {
@@ -49,6 +50,7 @@ export default function AdminSidebar() {
       children: [
         { name: 'All Properties', href: '/admin/properties', icon: null },
         { name: 'Add New', href: '/admin/properties/new', icon: null },
+        { name: 'Bulk Upload Properties', href: '/admin/properties/bulk-upload', icon: null },
       ]
     },
     {

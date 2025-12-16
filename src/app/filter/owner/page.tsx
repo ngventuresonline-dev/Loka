@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
+import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
@@ -700,6 +701,7 @@ export default function OwnerFilterPage() {
   const [depositValue, setDepositValue] = useState<string>('')
   const [featuresSelected, setFeaturesSelected] = useState<Set<string>>(new Set())
   const [availabilitySelected, setAvailabilitySelected] = useState<Set<string>>(new Set())
+  const ownerLogTimeoutRef = useRef<number | null>(null)
   
   // Error states
   const [errors, setErrors] = useState({
@@ -728,6 +730,61 @@ export default function OwnerFilterPage() {
     rentValue > 0 &&
     featuresSelected.size > 0 &&
     availabilitySelected.size > 0
+  
+  const buildOwnerFilterSessionPayload = () => {
+    return {
+      propertyType: Array.from(propertyTypeSelected)[0] || null,
+      location: Array.from(locationSelected)[0] || null,
+      size: sizeValue || null,
+      rent: rentValue || null,
+      deposit: depositValue || null,
+      features: Array.from(featuresSelected),
+      availability: Array.from(availabilitySelected)[0] || null,
+    }
+  }
+
+  const saveOwnerSessionToLocalStorage = () => {
+    if (typeof window === 'undefined') return
+    const payload = buildOwnerFilterSessionPayload()
+    try {
+      const snapshot = {
+        ...payload,
+        contactInfo: {
+          name: null,
+          email: null,
+          phone: null,
+        },
+      }
+      window.localStorage.setItem('ownerSessionData', JSON.stringify(snapshot))
+    } catch (e) {
+      console.error('[OwnerFilter] Failed to save ownerSessionData', e)
+    }
+  }
+
+  const scheduleOwnerLog = (action: string, extraData: any = {}) => {
+    if (typeof window === 'undefined') return
+    if (ownerLogTimeoutRef.current) {
+      window.clearTimeout(ownerLogTimeoutRef.current)
+    }
+    ownerLogTimeoutRef.current = window.setTimeout(() => {
+      const filter_step = buildOwnerFilterSessionPayload()
+      const payload = {
+        status: 'in_progress',
+        filter_step,
+        onboarding_form: null,
+        ...extraData,
+      }
+
+      saveOwnerSessionToLocalStorage()
+
+      logSessionEvent({
+        sessionType: 'owner',
+        action,
+        data: payload,
+        userId: getClientSessionUserId(),
+      })
+    }, 500)
+  }
   
   const handleSubmit = () => {
     // Validate all fields
@@ -764,6 +821,17 @@ export default function OwnerFilterPage() {
     }
     
     localStorage.setItem('ownerFilterData', JSON.stringify(filterData))
+    saveOwnerSessionToLocalStorage()
+    logSessionEvent({
+      sessionType: 'owner',
+      action: 'submit',
+      data: {
+        status: 'in_progress',
+        filter_step: buildOwnerFilterSessionPayload(),
+        onboarding_form: null,
+      },
+      userId: getClientSessionUserId(),
+    })
     
     // Redirect to onboarding
     router.push('/onboarding/owner?prefilled=true')
@@ -851,7 +919,10 @@ export default function OwnerFilterPage() {
               items={propertyTypes} 
               index={0} 
               required 
-              onSelectionChange={setPropertyTypeSelected}
+              onSelectionChange={(set) => {
+                setPropertyTypeSelected(set)
+                scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+              }}
               error={errors.propertyType}
             />
           </div>
@@ -859,7 +930,10 @@ export default function OwnerFilterPage() {
             <SizeSlider 
               index={1} 
               required 
-              onSizeChange={setSizeValue}
+              onSizeChange={(size) => {
+                setSizeValue(size)
+                scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+              }}
               error={errors.size}
             />
           </div>
@@ -870,7 +944,10 @@ export default function OwnerFilterPage() {
               multi 
               index={2} 
               required
-              onSelectionChange={setLocationSelected}
+              onSelectionChange={(set) => {
+                setLocationSelected(set)
+                scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+              }}
               error={errors.location}
             />
           </div>
@@ -878,7 +955,10 @@ export default function OwnerFilterPage() {
             <RentSlider 
               index={3} 
               required 
-              onRentChange={setRentValue}
+              onRentChange={(rent) => {
+                setRentValue(rent)
+                scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+              }}
               error={errors.rent}
             />
           </div>
@@ -886,7 +966,10 @@ export default function OwnerFilterPage() {
             <SecurityDepositInput 
               index={4} 
               required={false}
-              onDepositChange={setDepositValue}
+              onDepositChange={(value) => {
+                setDepositValue(value)
+                scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+              }}
               error={errors.deposit}
             />
           </div>
@@ -897,7 +980,10 @@ export default function OwnerFilterPage() {
               multi 
               index={5} 
               required
-              onSelectionChange={setFeaturesSelected}
+              onSelectionChange={(set) => {
+                setFeaturesSelected(set)
+                scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+              }}
               error={errors.features}
             />
           </div>
@@ -907,7 +993,10 @@ export default function OwnerFilterPage() {
               items={availabilities} 
               index={6} 
               required
-              onSelectionChange={setAvailabilitySelected}
+              onSelectionChange={(set) => {
+                setAvailabilitySelected(set)
+                scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+              }}
               error={errors.availability}
             />
           </div>

@@ -311,15 +311,15 @@ function BrandOnboardingContent() {
                       </div>
                       <div>
                         <label className="block text-xs text-gray-600 mb-1">Maximum</label>
-                        <input
-                          type="text"
+                    <input
+                      type="text"
                           name="budgetMax"
                           value={formData.budgetMax}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
                           placeholder="₹2,00,000"
-                        />
+                    />
                       </div>
                     </div>
                     <p className="mt-2 text-xs text-gray-500">Minimum rent: ₹50,000</p>

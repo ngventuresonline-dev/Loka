@@ -4,27 +4,27 @@ import { useState } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { useAuth } from '@/contexts/AuthContext'
 
-interface BulkResult {
+interface BulkBrandResult {
   success: boolean
   inserted: number
   skipped: number
   errors: { row: number; error: string }[]
 }
 
-export default function BulkUploadPropertiesPage() {
+export default function BulkUploadBrandsPage() {
   const { user, isLoggedIn } = useAuth()
   const [rowsPreview, setRowsPreview] = useState<any[]>([])
   const [rowsToUpload, setRowsToUpload] = useState<any[]>([])
   const [parsing, setParsing] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [result, setResult] = useState<BulkResult | null>(null)
+  const [result, setResult] = useState<BulkBrandResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   if (!isLoggedIn || user?.userType !== 'admin') {
     return (
       <AdminLayout>
         <div className="min-h-[60vh] flex items-center justify-center">
-          <p className="text-gray-300">You must be logged in as an admin to use bulk upload.</p>
+          <p className="text-gray-300">You must be logged in as an admin to use bulk brand upload.</p>
         </div>
       </AdminLayout>
     )
@@ -82,7 +82,7 @@ export default function BulkUploadPropertiesPage() {
         userEmail: encodeURIComponent(user.email),
       })
 
-      const response = await fetch(`/api/admin/properties/bulk?${params.toString()}`, {
+      const response = await fetch(`/api/admin/brands/bulk?${params.toString()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,21 +110,21 @@ export default function BulkUploadPropertiesPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Bulk Upload Properties</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Bulk Upload Brands</h1>
             <p className="text-gray-400">
-              Upload a CSV file to create or update multiple properties at once.
+              Upload a CSV file to create multiple brands and their profiles at once.
             </p>
           </div>
         </div>
 
         <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6 space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">1. Download CSV Template</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">1. CSV Format</h2>
             <p className="text-gray-400 text-sm mb-3">
-              The CSV should have these columns:
+              Use this header row:
             </p>
             <code className="block bg-gray-800 text-gray-100 text-xs p-3 rounded">
-              id,title,address,city,state,zipCode,price,priceType,size,propertyType,ownerName,ownerEmail,isFeatured,availability,images,amenities,displayOrder
+              name,email,industry,companyName,preferredLocations,budgetMin,budgetMax,minSize,maxSize,preferredPropertyTypes,mustHaveAmenities
             </code>
           </div>
 

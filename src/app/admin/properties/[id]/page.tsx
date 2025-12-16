@@ -20,6 +20,7 @@ export default function EditPropertyPage() {
     description: '',
     address: '',
     city: '',
+    area: '',
     state: '',
     zipCode: '',
     latitude: '',
@@ -34,6 +35,7 @@ export default function EditPropertyPage() {
     powerBackup: false,
     waterFacility: false,
     amenities: [] as string[],
+    addedBy: 'owner' as 'admin' | 'owner',
     ownerId: '',
     availability: true,
     isFeatured: false,
@@ -41,13 +43,246 @@ export default function EditPropertyPage() {
   })
 
   const propertyTypes = [
-    { label: 'Office', value: 'office' },
-    { label: 'Retail Space', value: 'retail' },
-    { label: 'Warehouse', value: 'warehouse' },
-    { label: 'Restaurant', value: 'restaurant' },
-    { label: 'Other', value: 'other' }
+    { label: 'Office', value: 'office', dbValue: 'office' },
+    { label: 'Retail Space', value: 'retail', dbValue: 'retail' },
+    { label: 'Restaurant', value: 'restaurant', dbValue: 'restaurant' },
+    { label: 'Food Court', value: 'food-court', dbValue: 'restaurant' },
+    { label: 'Café / Coffee Shop', value: 'cafe-coffee-shop', dbValue: 'restaurant' },
+    { label: 'QSR (Quick Service Restaurant)', value: 'qsr', dbValue: 'restaurant' },
+    { label: 'Dessert / Bakery', value: 'dessert-bakery', dbValue: 'restaurant' },
+    { label: 'Warehouse', value: 'warehouse', dbValue: 'warehouse' },
+    { label: 'Mall Space', value: 'mall-space', dbValue: 'retail' },
+    { label: 'Standalone Building', value: 'standalone-building', dbValue: 'other' },
+    { label: 'Bungalow', value: 'bungalow', dbValue: 'other' },
+    { label: 'Villa', value: 'villa', dbValue: 'other' },
+    { label: 'Commercial Complex', value: 'commercial-complex', dbValue: 'other' },
+    { label: 'Business Park', value: 'business-park', dbValue: 'office' },
+    { label: 'IT Park', value: 'it-park', dbValue: 'office' },
+    { label: 'Co-working Space', value: 'co-working-space', dbValue: 'office' },
+    { label: 'Service Apartment', value: 'service-apartment', dbValue: 'other' },
+    { label: 'Hotel / Hospitality', value: 'hotel-hospitality', dbValue: 'other' },
+    { label: 'Land', value: 'land', dbValue: 'other' },
+    { label: 'Industrial Space', value: 'industrial-space', dbValue: 'warehouse' },
+    { label: 'Showroom', value: 'showroom', dbValue: 'retail' },
+    { label: 'Kiosk', value: 'kiosk', dbValue: 'retail' },
+    { label: 'Other', value: 'other', dbValue: 'other' }
   ]
-  const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road', 'Electronic City', 'Bellandur', 'Other']
+
+  // Helper to get display value from database value
+  // Tries to match based on title/description keywords if dbValue is generic
+  const getPropertyTypeValue = (dbValue: string, title?: string, description?: string) => {
+    const text = `${title || ''} ${description || ''}`.toLowerCase()
+    
+    // If dbValue is generic 'other', try to match from title/description
+    if (dbValue === 'other') {
+      if (text.includes('bungalow')) return 'bungalow'
+      if (text.includes('villa')) return 'villa'
+      if (text.includes('standalone')) return 'standalone-building'
+      if (text.includes('commercial complex')) return 'commercial-complex'
+      if (text.includes('service apartment')) return 'service-apartment'
+      if (text.includes('hotel') || text.includes('hospitality')) return 'hotel-hospitality'
+      if (text.includes('land')) return 'land'
+    }
+    
+    // If dbValue is 'restaurant', try to match specific type
+    if (dbValue === 'restaurant') {
+      if (text.includes('food court') || text.includes('fc')) return 'food-court'
+      if (text.includes('cafe') || text.includes('coffee')) return 'cafe-coffee-shop'
+      if (text.includes('qsr') || text.includes('quick service')) return 'qsr'
+      if (text.includes('dessert') || text.includes('bakery')) return 'dessert-bakery'
+    }
+    
+    // If dbValue is 'office', try to match specific type
+    if (dbValue === 'office') {
+      if (text.includes('business park')) return 'business-park'
+      if (text.includes('it park')) return 'it-park'
+      if (text.includes('co-working') || text.includes('coworking')) return 'co-working-space'
+    }
+    
+    // If dbValue is 'retail', try to match specific type
+    if (dbValue === 'retail') {
+      if (text.includes('mall')) return 'mall-space'
+      if (text.includes('showroom')) return 'showroom'
+      if (text.includes('kiosk')) return 'kiosk'
+    }
+    
+    // If dbValue is 'warehouse', try to match specific type
+    if (dbValue === 'warehouse') {
+      if (text.includes('industrial')) return 'industrial-space'
+    }
+    
+    // Default: find first match or return the dbValue
+    const found = propertyTypes.find(pt => pt.dbValue === dbValue)
+    return found ? found.value : dbValue
+  }
+  // Major Indian Metro Cities
+  const metroCities = [
+    'Bangalore',
+    'Delhi',
+    'Mumbai',
+    'Chennai',
+    'Hyderabad',
+    'Pune',
+    'Kolkata',
+    'Ahmedabad',
+    'Jaipur',
+    'Surat',
+    'Lucknow',
+    'Kanpur',
+    'Nagpur',
+    'Indore',
+    'Thane',
+    'Bhopal',
+    'Visakhapatnam',
+    'Patna',
+    'Vadodara',
+    'Ghaziabad',
+    'Ludhiana',
+    'Agra',
+    'Nashik',
+    'Faridabad',
+    'Meerut',
+    'Rajkot',
+    'Varanasi',
+    'Srinagar',
+    'Amritsar',
+    'Ranchi',
+    'Other'
+  ]
+
+  // Areas by City
+  const cityAreas: Record<string, string[]> = {
+    'Bangalore': [
+      'Koramangala',
+      'Indiranagar',
+      'Whitefield',
+      'HSR Layout',
+      'Jayanagar',
+      'BTM Layout',
+      'MG Road',
+      'Brigade Road',
+      'Marathahalli',
+      'Hebbal',
+      'Banashankari',
+      'Sarjapur Road',
+      'Electronic City',
+      'Bellandur',
+      'Bannerghatta Road',
+      'Rajajinagar',
+      'Malleshwaram',
+      'Basavanagudi',
+      'Vijayanagar',
+      'Yelahanka',
+      'Yeshwanthpur',
+      'RT Nagar',
+      'Frazer Town',
+      'Richmond Town',
+      'Ulsoor',
+      'Other'
+    ],
+    'Delhi': [
+      'Connaught Place',
+      'Gurgaon',
+      'Noida',
+      'Dwarka',
+      'Rohini',
+      'Pitampura',
+      'Rajouri Garden',
+      'Lajpat Nagar',
+      'Karol Bagh',
+      'Greater Kailash',
+      'Vasant Kunj',
+      'Saket',
+      'Hauz Khas',
+      'Defence Colony',
+      'South Extension',
+      'Other'
+    ],
+    'Mumbai': [
+      'Bandra',
+      'Andheri',
+      'Powai',
+      'Juhu',
+      'Worli',
+      'Lower Parel',
+      'BKC (Bandra Kurla Complex)',
+      'Colaba',
+      'Fort',
+      'Nariman Point',
+      'Malad',
+      'Borivali',
+      'Thane',
+      'Navi Mumbai',
+      'Other'
+    ],
+    'Chennai': [
+      'T Nagar',
+      'Anna Nagar',
+      'Adyar',
+      'Besant Nagar',
+      'Velachery',
+      'OMR (Old Mahabalipuram Road)',
+      'Porur',
+      'Guindy',
+      'Nungambakkam',
+      'Mylapore',
+      'Egmore',
+      'Other'
+    ],
+    'Hyderabad': [
+      'Banjara Hills',
+      'Jubilee Hills',
+      'Hitech City',
+      'Gachibowli',
+      'Kondapur',
+      'Madhapur',
+      'Secunderabad',
+      'Himayatnagar',
+      'Ameerpet',
+      'Kukatpally',
+      'Other'
+    ],
+    'Pune': [
+      'Koregaon Park',
+      'Viman Nagar',
+      'Hinjewadi',
+      'Baner',
+      'Aundh',
+      'Wakad',
+      'Kothrud',
+      'Hadapsar',
+      'Magarpatta',
+      'Other'
+    ],
+    'Kolkata': [
+      'Park Street',
+      'Salt Lake',
+      'New Town',
+      'Ballygunge',
+      'Alipore',
+      'Dum Dum',
+      'Howrah',
+      'Other'
+    ],
+    'Ahmedabad': [
+      'SG Highway',
+      'Prahlad Nagar',
+      'Satellite',
+      'Vastrapur',
+      'Navrangpura',
+      'Bodakdev',
+      'Other'
+    ],
+    'Jaipur': [
+      'Malviya Nagar',
+      'Vaishali Nagar',
+      'C Scheme',
+      'Pink City',
+      'Raja Park',
+      'Other'
+    ],
+    'Other': []
+  }
   const availableAmenities = [
     'Ground Floor', 'Corner Unit', 'Main Road', 'Parking', 'Kitchen Setup', 
     'AC', 'Security', 'Storage', 'WiFi', 'Restroom', 'Elevator', 'Other'
@@ -72,6 +307,7 @@ export default function EditPropertyPage() {
           description: prop.description || '',
           address: prop.address || '',
           city: prop.city || '',
+          area: prop.area || '',
           state: prop.state || '',
           zipCode: prop.zipCode || '',
           latitude: prop.latitude?.toString() || '',
@@ -81,11 +317,12 @@ export default function EditPropertyPage() {
           securityDeposit: prop.securityDeposit?.toString() || '',
           rentEscalation: prop.rentEscalation?.toString() || '',
           size: prop.size?.toString() || '',
-          propertyType: prop.propertyType || 'office',
+          propertyType: getPropertyTypeValue(prop.propertyType || 'office', prop.title, prop.description),
           storePowerCapacity: prop.storePowerCapacity || '',
           powerBackup: prop.powerBackup || false,
           waterFacility: prop.waterFacility || false,
           amenities: (prop.amenities as string[]) || [],
+          addedBy: prop.owner?.userType === 'admin' || prop.ownerId === user?.id ? 'admin' : 'owner',
           ownerId: prop.ownerId || prop.owner?.id || '',
           availability: prop.availability !== undefined ? prop.availability : true,
           isFeatured: prop.isFeatured || false,
@@ -126,12 +363,24 @@ export default function EditPropertyPage() {
     setSaving(true)
 
     try {
+      // Combine address with area if area is selected
+      const fullAddress = formData.address
+      const addressWithArea = formData.area 
+        ? `${fullAddress}${fullAddress ? ', ' : ''}${formData.area}`
+        : fullAddress
+
+      // Convert display property type value to database enum value
+      const selectedType = propertyTypes.find(pt => pt.value === formData.propertyType)
+      const dbPropertyType = selectedType ? selectedType.dbValue : formData.propertyType
+
       const response = await fetch(`/api/admin/properties?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
           propertyId,
           ...formData,
+          propertyType: dbPropertyType,
+          address: addressWithArea,
           price: parseFloat(formData.price || '0'),
           securityDeposit: formData.securityDeposit ? parseFloat(formData.securityDeposit) : null,
           rentEscalation: formData.rentEscalation ? parseFloat(formData.rentEscalation) : null,
@@ -200,22 +449,90 @@ export default function EditPropertyPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
+                <div className="flex gap-2 items-center">
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                    className="flex-1 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!user?.id || !user?.email) {
+                        alert('You must be logged in as admin to generate titles')
+                        return
+                      }
+                      const params = new URLSearchParams({
+                        userId: user.id,
+                        userEmail: encodeURIComponent(user.email),
+                      })
+                      try {
+                        const res = await fetch(`/api/admin/properties/describe?${params.toString()}`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ propertyId, mode: 'title' }),
+                        })
+                        const data = await res.json()
+                        if (res.ok && data.title) {
+                          setFormData((prev) => ({ ...prev, title: data.title }))
+                        } else {
+                          alert(data.error || 'Failed to generate title')
+                        }
+                      } catch (err) {
+                        console.error('Generate title error', err)
+                        alert('Failed to generate title')
+                      }
+                    }}
+                    className="px-3 py-1 bg-gray-800 text-xs text-gray-200 rounded hover:bg-gray-700 border border-gray-600 whitespace-nowrap"
+                  >
+                    {formData.title ? 'Regenerate Title' : 'Generate Title'}
+                  </button>
+                </div>
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                <div className="space-y-2">
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!user?.id || !user?.email) {
+                        alert('You must be logged in as admin to generate descriptions')
+                        return
+                      }
+                      const params = new URLSearchParams({
+                        userId: user.id,
+                        userEmail: encodeURIComponent(user.email),
+                      })
+                      try {
+                        const res = await fetch(`/api/admin/properties/describe?${params.toString()}`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ propertyId, mode: 'description' }),
+                        })
+                        const data = await res.json()
+                        if (res.ok && data.description) {
+                          setFormData((prev) => ({ ...prev, description: data.description }))
+                        } else {
+                          alert(data.error || 'Failed to generate description')
+                        }
+                      } catch (err) {
+                        console.error('Generate description error', err)
+                        alert('Failed to generate description')
+                      }
+                    }}
+                    className="px-3 py-1 bg-gray-800 text-xs text-gray-200 rounded hover:bg-gray-700 border border-gray-600"
+                  >
+                    {formData.description ? 'Regenerate Description' : 'Generate Description'}
+                  </button>
+                </div>
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Location Address *</label>
@@ -232,12 +549,26 @@ export default function EditPropertyPage() {
                 <select
                   required
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value, area: '' })}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 >
                   <option value="">Select city</option>
-                  {locations.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
+                  {metroCities.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Area</label>
+                <select
+                  value={formData.area}
+                  onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                  disabled={!formData.city || !cityAreas[formData.city] || cityAreas[formData.city].length === 0}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select area</option>
+                  {formData.city && cityAreas[formData.city]?.map(area => (
+                    <option key={area} value={area}>{area}</option>
                   ))}
                 </select>
               </div>
@@ -353,8 +684,8 @@ export default function EditPropertyPage() {
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 >
                   <option value="">Select property type</option>
-                  {propertyTypes.map(type => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
+                  {propertyTypes.map((type, index) => (
+                    <option key={`${type.value}-${index}`} value={type.value}>{type.label}</option>
                   ))}
                 </select>
               </div>
@@ -418,24 +749,25 @@ export default function EditPropertyPage() {
             />
           </div>
 
-          {/* Owner & Status */}
+          {/* Added By & Status */}
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Owner & Status</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Added By & Status</h2>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Owner *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Added By *</label>
                 <select
                   required
-                  value={formData.ownerId}
-                  onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
+                  value={formData.addedBy}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      addedBy: e.target.value as 'admin' | 'owner',
+                    })
+                  }
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 >
-                  <option value="">Select Owner</option>
-                  {owners.map((owner) => (
-                    <option key={owner.id} value={owner.id}>
-                      {owner.name} ({owner.email})
-                    </option>
-                  ))}
+                  <option value="owner">Owner / User</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">

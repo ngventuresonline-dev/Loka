@@ -1,8 +1,8 @@
 # BUILD TRUTH - N&G Ventures Commercial Real Estate Platform
 
-**Version:** 0.1.0  
-**Last Updated:** 2024  
-**Platform:** Next.js 15 Commercial Real Estate Matching Platform
+**Version:** 0.2.0  
+**Last Updated:** 2025-12-16  
+**Platform:** Next.js 16 AI‑Matched Commercial Real Estate Platform
 
 ---
 
@@ -320,36 +320,67 @@ Component Update
 ### Models
 
 #### **User**
-- Supports Brands, Property Owners, and Admins
-- Fields: email, name, userType, brandName, industry, etc.
-- Relations: properties, savedProperties, inquiries, searchHistory
+- Single user table backing Brands, Property Owners, and Admins (`users`)
+- Fields: email, name, phone, `userType` (`brand | owner | admin`), createdAt, isActive, etc.
+- Relations: `brand_profiles`, `owner_profiles`, `properties`, `saved_properties`, `inquiries`, `location_reports`, `property_views`
+
+#### **BrandProfile** (`brand_profiles`)
+- One‑to‑one with a `User` of type `brand`
+- Fields: `company_name`, `industry`, `preferred_locations` (JSON array), `budget_min/max`, `min_size/max_size`, `preferred_property_types`, `must_have_amenities`
+
+#### **OwnerProfile** (`owner_profiles`)
+- One‑to‑one with a `User` of type `owner`
+- Fields: `company_name`, `license_number`, `total_properties`
 
 #### **Property**
-- Commercial real estate listings
-- Location: address, city, state, coordinates
-- Details: size, propertyType, condition, amenities
-- Pricing: price, priceType, securityDeposit
-- Relations: owner, savedBy, inquiries
+- Commercial real estate listings (`properties`)
+- Location: address, city, state, zipCode, optional lat/lng
+- Details: `size`, `propertyType` (`office | retail | warehouse | restaurant | other`), power/utility flags, amenities (JSON)
+- Pricing: `price`, `priceType` (`monthly | yearly | sqft`), `securityDeposit`, `rentEscalation`
+- Flags: `availability`, `isFeatured`, `displayOrder`, `views_count`
+- Relations: `owner` (`users`), `inquiries`, `saved_properties`, `property_views`
 
 #### **SavedProperty**
-- Brands saving properties of interest
-- Relations: user, property
+- Join table for users saving properties of interest (`saved_properties`)
+- Fields: `user_id`, `property_id`, optional `notes`, `created_at`
+- Relations: `user`, `property`
 
 #### **Inquiry**
-- Communication between brands and owners
-- Status tracking: pending, responded, closed
-- Relations: brand, property
+- Represents an interest / conversation between a brand and an owner (`inquiries`)
+- Fields: `property_id`, `brand_id`, optional `owner_id`, `message`, `status` (`pending | responded | closed`), timestamps
+- Relations: `property`, `brand` (`users`), `owner` (`users`), `inquiry_responses`
 
-#### **SearchHistory**
-- Track AI search queries
-- Analytics: resultsCount, clickedPropertyId
-- Relations: user
+#### **InquiryResponse** (`inquiry_responses`)
+- Threaded messages inside an inquiry
+- Fields: `inquiry_id`, `sender_id`, `message`, `created_at`
+
+#### **LocationReport** (`location_reports`)
+- Stores location intelligence / report requests
+- Fields: `user_id`, `location`, `category`, `report_data` (JSON), `is_free`, `payment_id`, `amount`, `status`, `expires_at`
+
+#### **PropertyView** (`property_views`)
+- Event‑level tracking of property views
+- Fields: `property_id`, optional `user_id`, `ip_address`, `user_agent`, `viewed_at`
+
+#### **Sessions (DB‑level, used via raw SQL)**
+- **`brand_onboarding_sessions`** – snapshots of brand filter / quick sign‑in / onboarding form
+  - Columns (recommended): `id`, `user_id`, `flow_type`, `status`, `filter_step` (JSONB), `contact_step` (JSONB), `onboarding_form` (JSONB), `created_at`, `updated_at`
+- **`property_onboarding_sessions`** – snapshots of owner filter / property listing onboarding
+  - Columns (recommended): `id`, `user_id`, `flow_type`, `status`, `filter_step` (JSONB), `onboarding_form` (JSONB), `created_at`, `updated_at`
+- **Logging endpoint:** `POST /api/sessions/log` (raw SQL via Prisma `$executeRawUnsafe`)
+  - Payload: `{ sessionType: 'brand' | 'owner', userId: string, data: any }`
+  - Current behavior: simple `INSERT` per call (no `ON CONFLICT`); if `userId` is missing the request is skipped; DB errors are logged but a success response is still returned to avoid UX breaks.
+  - If de‑duplication is needed, add a unique constraint on `user_id` or implement an upsert; as of now duplicates are possible by design.
 
 ### Indexes
-- User: email, userType
-- Property: city+propertyType, ownerId, availability, priceType+price
-- Inquiry: brandId, propertyId, status
-- SearchHistory: userId, queryType, createdAt
+- User: `email`, `user_type`
+- Property: `city`, `property_type`, `owner_id`, `is_available`, `price`, `size`
+- BrandProfile / OwnerProfile: `user_id`
+- Inquiry: `brand_id`, `owner_id`, `property_id`, `status`
+- SavedProperty: composite unique (`user_id`, `property_id`)
+- LocationReport: `user_id`, `status`
+- PropertyView: `property_id`, `viewed_at`
+- Session tables (if created): `user_id`, `status`
 
 ---
 

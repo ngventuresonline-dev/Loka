@@ -173,7 +173,7 @@ function calculateSizeScore(property: Property, sizeMin: number, sizeMax: number
  * - Rent within brand's budget: 100 points
  * - Rent 10% over budget: 70 points
  * - Rent 20% over budget: 40 points
- * - More than 20% over: 0 points
+ * - More than 20% over (or below minimum budget): 0 points
  */
 function calculateBudgetScore(property: Property, budgetMin: number, budgetMax: number): number {
   // Convert property price to monthly rent
@@ -206,23 +206,6 @@ function calculateBudgetScore(property: Property, budgetMin: number, budgetMax: 
 
     // More than 20% over
     return 0
-  }
-
-  // Under budget (still acceptable, score based on how close)
-  if (monthlyRent < budgetMin) {
-    const underAmount = budgetMin - monthlyRent
-    const underPercent = underAmount / budgetMin
-
-    // If very close to minimum, still give good score
-    if (underPercent <= 0.1) {
-      return 90
-    }
-    if (underPercent <= 0.2) {
-      return 80
-    }
-
-    // Too far under budget
-    return 50
   }
 
   return 0

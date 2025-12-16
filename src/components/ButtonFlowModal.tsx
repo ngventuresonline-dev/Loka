@@ -47,6 +47,81 @@ export default function ButtonFlowModal({ isOpen, onClose, onComplete }: ButtonF
 
   const currentStepConfig = FLOW_STEPS[state.currentStep]
 
+  // Pre-fill from brandSessionData (if available) when modal opens for brand flow
+  useEffect(() => {
+    if (!isOpen) return
+    if (typeof window === 'undefined') return
+    // Avoid overriding if user already interacted in this session
+    if (state.data && Object.keys(state.data).length > 0) return
+
+    try {
+      const saved = window.localStorage.getItem('brandSessionData')
+      if (!saved) return
+      const session = JSON.parse(saved) as {
+        businessType?: string[] | string
+        sizeRange?: { min: number; max: number }
+        locations?: string[]
+        budgetRange?: { min: number; max: number }
+        timeline?: string | null
+        contactInfo?: { email?: string; phone?: string }
+      }
+
+      // Map display business type to internal enum
+      const rawBusinessType = Array.isArray(session.businessType)
+        ? session.businessType[0]
+        : session.businessType
+
+      const businessTypeMap: Record<string, ButtonFlowState['data']['businessType']> = {
+        'Café/QSR': 'cafe_qsr',
+        'Cafe/QSR': 'cafe_qsr',
+        'Restaurant': 'restaurant',
+        'Bar/Brewery': 'bar_brewery',
+        'Retail': 'retail_other',
+        'Gym': 'gym_wellness',
+        'Entertainment': 'entertainment',
+        'Others': 'other',
+      }
+
+      const mappedBusinessType =
+        (rawBusinessType && businessTypeMap[rawBusinessType]) || undefined
+
+      // Map human timeline label to enum
+      const timelineMap: Record<string, ButtonFlowState['data']['timeline']> = {
+        Immediate: 'immediate',
+        '1 month': '1_month',
+        '1-2 months': '2_months',
+        '2-3 months': '3_months',
+        Flexible: 'flexible',
+      }
+
+      const mappedTimeline =
+        (session.timeline && timelineMap[session.timeline]) || undefined
+
+      setState({
+        currentStep: 'step_9_confirmation',
+        data: {
+          entityType: 'brand',
+          businessType: mappedBusinessType,
+          sizeRange: session.sizeRange,
+          selectedAreas: session.locations || [],
+          budgetRange: session.budgetRange,
+          timeline: mappedTimeline,
+          phone: session.contactInfo?.phone || '',
+          email: session.contactInfo?.email || '',
+        },
+        history: ['step_1_entity_type', 'step_2_business_type', 'step_3_size_range', 'step_4_all_locations', 'step_6_budget_range', 'step_7_timeline'],
+      })
+
+      setFormData(prev => ({
+        ...prev,
+        phone: session.contactInfo?.phone?.replace(/^\+91/, '') || '',
+        email: session.contactInfo?.email || '',
+      }))
+    } catch (e) {
+      console.error('[ButtonFlow] Failed to load brandSessionData', e)
+    }
+  }, [isOpen])
+
   // Initialize with welcome message
   useEffect(() => {
     if (isOpen && messages.length === 0 && state.currentStep === 'step_0_welcome') {

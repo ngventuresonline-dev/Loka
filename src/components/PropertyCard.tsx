@@ -2,6 +2,7 @@ import { Property } from '@/types'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
+import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 
 interface PropertyCardProps {
   property: Property
@@ -87,8 +88,21 @@ export default function PropertyCard({
     return 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=900&h=600&fit=crop&q=80'
   }
 
+  const handleViewClick = () => {
+    logSessionEvent({
+      sessionType: 'view',
+      action: 'property_card_click',
+      userId: getClientSessionUserId(),
+      data: {
+        property_id: property.id,
+      },
+    })
+  }
+
   return (
-    <div className="group relative bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-[#FF5722] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
+    <div
+      className="group relative bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-[#FF5722] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
+    >
       <div className="absolute inset-0 bg-gradient-to-br from-[#FF5722]/5 to-[#E4002B]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       
       {/* Image Section */}
@@ -166,14 +180,16 @@ export default function PropertyCard({
         </div>
 
         {/* Price and Size */}
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <div className="text-2xl font-black bg-gradient-to-r from-[#FF5722] to-[#E4002B] bg-clip-text text-transparent">
+        <div className="flex flex-wrap justify-between items-baseline gap-3 mb-4">
+          <div className="min-w-0 flex-1">
+            <div className="text-lg sm:text-xl md:text-2xl font-black leading-tight bg-gradient-to-r from-[#FF5722] to-[#E4002B] bg-clip-text text-transparent">
               {formatPrice(property.price, property.priceType)}
             </div>
-            <div className="text-sm text-gray-600 mt-1">{property.size.toLocaleString()} sq ft</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">
+              {property.size.toLocaleString()} sq ft
+            </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          <span className={`mt-1 sm:mt-0 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap ${
             property.isAvailable 
               ? 'bg-green-100 border border-green-400 text-green-700' 
               : 'bg-red-100 border border-red-400 text-red-700'
@@ -227,6 +243,7 @@ export default function PropertyCard({
         <div className="flex gap-2">
           <Link 
             href={bfiScore !== undefined ? `/properties/${property.id}/match` : `/properties/${property.id}`}
+            onClick={handleViewClick}
             className="flex-1 bg-gradient-to-r from-[#FF5722] to-[#E4002B] hover:from-[#FF6B35] hover:to-[#FF5722] text-white text-center py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 text-sm"
           >
             {bfiScore !== undefined ? 'View Match' : 'View Details'}
