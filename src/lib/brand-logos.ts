@@ -6,7 +6,7 @@
  * Logos are mapped based on their actual filenames
  */
 
-const brandLogoMap: Record<string, string> = {
+const brandLogoMap: Record<string, string | null> = {
   // Coffee & Beverages
   'Blue Tokai': '/logos/Blue Tokai.jpg',
   'TAN Coffee': '/logos/TAN logo.jpg',
