@@ -708,58 +708,6 @@ export const brandRequirements: BrandRequirement[] = [
 
   // Other Bars
   {
-    brandName: 'Birch, by Romeo Lane',
-    businessType: 'Fine Dining',
-    sizeRequirement: {
-      category: 'Mega',
-      range: '5,000-6,000 sqft',
-      sqft: { min: 5000, max: 6000 }
-    },
-    budgetRange: {
-      category: 'High-end',
-      range: '₹4L-6L/month',
-      monthly: { min: 400000, max: 600000 }
-    },
-    preferredLocations: {
-      primary: ['Indiranagar', 'Koramangala'],
-      secondary: ['MG Road', 'Whitefield']
-    },
-    mustHaveFeatures: ['Ground floor', 'Parking', 'Natural light', 'Outdoor seating', 'High ceiling', 'Ambiance'],
-    timeline: '1-2 months',
-    bfiWeights: {
-      location: 40,
-      budget: 20,
-      size: 25,
-      features: 15
-    }
-  },
-  {
-    brandName: 'Romeo Lane',
-    businessType: 'Bar',
-    sizeRequirement: {
-      category: 'Large',
-      range: '1,500-2,500 sqft',
-      sqft: { min: 1500, max: 2500 }
-    },
-    budgetRange: {
-      category: 'Premium',
-      range: '₹1.5L-2.5L/month',
-      monthly: { min: 150000, max: 250000 }
-    },
-    preferredLocations: {
-      primary: ['Indiranagar', 'Koramangala', 'MG Road'],
-      secondary: ['HSR Layout', 'Whitefield']
-    },
-    mustHaveFeatures: ['Ground floor', 'Parking', 'Late night access', 'Ambiance'],
-    timeline: '1-2 months',
-    bfiWeights: {
-      location: 35,
-      budget: 25,
-      size: 25,
-      features: 15
-    }
-  },
-  {
     brandName: 'Bawri',
     businessType: 'Fine Dining',
     sizeRequirement: {

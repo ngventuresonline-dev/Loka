@@ -73,11 +73,6 @@ const brandLogoMap: Record<string, string | null> = {
   'Go Rally': '/logos/GoRally Logo.png',
   'GoRally': '/logos/GoRally Logo.png',
   'Klutch- Sports': null, // No logo available
-  
-  // Romeo Lane Brands
-  'Romeo Lane': '/logos/Romeo Lane Logo.webp',
-  'Birch, by Romeo Lane': '/logos/Romeo Lane Logo.webp',
-  'Birch': '/logos/Romeo Lane Logo.webp',
 }
 
 /**
