@@ -800,9 +800,9 @@ function FilterCard({
                 </svg>
               </button>
 
-              {/* Quick options row (first N capsules always visible) */}
-              {hasQuickOptions && quickItems.length > 0 && (
-                <div className="mt-3 mb-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+              {/* Quick options row (first N capsules always visible) - hidden when dropdown is open */}
+              {hasQuickOptions && quickItems.length > 0 && !isDropdownOpen && (
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                   {quickItems.map((item) => {
                     const active = selected.has(item)
                     return (
@@ -838,13 +838,14 @@ function FilterCard({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    // Scrollable dropdown body - positioned directly below the input field
-                    className="absolute z-[9999] w-full mt-2 bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-20 max-h-[60vh] overflow-y-auto"
+                    // Scrollable dropdown body - positioned directly below the input field (minimal spacing like SS2)
+                    className="absolute z-[9999] w-full bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-20 max-h-[60vh] overflow-y-auto"
                     style={{ 
                       position: 'absolute', 
                       top: '100%', 
                       left: 0, 
-                      right: 0
+                      right: 0,
+                      marginTop: '0.25rem'
                     }}
                   >
                     {moreLabel && dropdownItems.length > 0 && (
@@ -983,6 +984,36 @@ function FilterCard({
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Quick options row (first N capsules always visible) - shown when dropdown is closed */}
+              {hasQuickOptions && quickItems.length > 0 && !isDropdownOpen && (
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                  {quickItems.map((item) => {
+                    const active = selected.has(item)
+                    return (
+                      <motion.button
+                        key={item}
+                        onClick={() => toggle(item)}
+                        className={`relative ${
+                          compactCapsules
+                            ? 'px-2.5 py-1.5 sm:px-3 sm:px-2 text-xs sm:text-sm'
+                            : 'px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base'
+                        } rounded-lg sm:rounded-xl font-medium transition-all duration-300 border-2 ${
+                          active
+                            ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
+                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
+                        }`}
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                        whileHover={{ scale: 1.03, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        initial={false}
+                      >
+                        {item}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             // Grid Mode (Original)
