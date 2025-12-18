@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
 
         if (wantTitle) {
           data.title = generatePropertyTitle({
-            city: p.city,
             propertyType: p.propertyType,
           })
         }
