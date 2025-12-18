@@ -111,6 +111,7 @@ model Property {
   amenities            Json?
   images               Json?
   ownerId              String             @map("owner_id") @db.VarChar(36)
+  status                property_status_enum @default(pending)
   availability         Boolean?           @map("is_available") @default(true)
   isFeatured           Boolean?           @map("is_featured") @default(false)
   views                Int?               @map("views_count") @default(0)
@@ -129,6 +130,7 @@ model Property {
   @@index([price], map: "idx_properties_price")
   @@index([propertyType], map: "idx_properties_property_type")
   @@index([size], map: "idx_properties_size")
+  @@index([status], map: "idx_properties_status")
 }
 
 model property_views {
@@ -215,4 +217,10 @@ enum user_type_enum {
   brand
   owner
   admin
+}
+
+enum property_status_enum {
+  pending
+  approved
+  rejected
 }

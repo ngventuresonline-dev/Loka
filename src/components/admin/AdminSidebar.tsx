@@ -1,19 +1,43 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface NavItem {
   name: string
   href: string
   icon: React.ReactNode
   children?: NavItem[]
+  badge?: number
 }
 
 export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { user } = useAuth()
   const [expandedItems, setExpandedItems] = useState<string[]>(['brands', 'properties'])
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    if (user?.id && user?.email) {
+      fetchPendingCount()
+    }
+  }, [user])
+
+  const fetchPendingCount = async () => {
+    try {
+      const url = `/api/admin/properties?limit=1000&page=1&status=occupied&userId=${user?.id}&userEmail=${encodeURIComponent(user?.email || '')}`
+      const response = await fetch(url)
+      if (response.ok) {
+        const data = await response.json()
+        const pending = (data.properties || []).filter((p: any) => !p.availability)
+        setPendingCount(pending.length)
+      }
+    } catch (error) {
+      console.error('Error fetching pending count:', error)
+    }
+  }
 
   const navItems: NavItem[] = [
     {
@@ -49,6 +73,7 @@ export default function AdminSidebar() {
       ),
       children: [
         { name: 'All Properties', href: '/admin/properties', icon: null },
+        { name: 'Pending Approvals', href: '/admin/properties/pending', icon: null, badge: pendingCount },
         { name: 'Add New', href: '/admin/properties/new', icon: null },
         { name: 'Bulk Upload Properties', href: '/admin/properties/bulk-upload', icon: null },
       ]
@@ -65,6 +90,15 @@ export default function AdminSidebar() {
         { name: 'All Owners', href: '/admin/owners', icon: null },
         { name: 'Add New', href: '/admin/owners/new', icon: null },
       ]
+    },
+    {
+      name: 'Brand Matches',
+      href: '/admin/matches',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
     },
     {
       name: 'Submissions',
@@ -180,13 +214,18 @@ export default function AdminSidebar() {
                     <button
                       key={child.name}
                       onClick={() => router.push(child.href)}
-                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm ${
+                      className={`w-full flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-colors text-sm ${
                         pathname === child.href
                           ? 'bg-gray-800 text-[#FF5200]'
                           : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
                       }`}
                     >
-                      {child.name}
+                      <span>{child.name}</span>
+                      {child.badge !== undefined && child.badge > 0 && (
+                        <span className="px-2 py-0.5 bg-[#FF5200] text-white text-xs font-bold rounded-full min-w-[20px] text-center">
+                          {child.badge}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>

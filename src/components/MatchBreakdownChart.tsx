@@ -35,18 +35,18 @@ export default function MatchBreakdownChart({ breakdown, overallScore }: MatchBr
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Overall Score */}
       <div className="text-center">
-        <div className="text-4xl font-black bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent mb-2">
+        <div className="text-2xl sm:text-3xl md:text-4xl font-black bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent mb-1 sm:mb-2 leading-none">
           {overallScore}%
         </div>
-        <div className="text-sm text-gray-600">Overall Brand Fit Index</div>
-        <div className="text-xs text-gray-500 mt-1">{getScoreLabel(overallScore)} Match</div>
+        <div className="text-xs sm:text-sm text-gray-600 break-words leading-tight">Overall Brand Fit Index</div>
+        <div className="text-xs text-gray-500 mt-1 whitespace-nowrap">{getScoreLabel(overallScore)} Match</div>
       </div>
 
       {/* Breakdown Bars */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {breakdownItems.map((item, index) => {
           const score = breakdown[item.key as keyof MatchBreakdown]
           return (
@@ -56,14 +56,14 @@ export default function MatchBreakdownChart({ breakdown, overallScore }: MatchBr
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                  <span className="text-xs text-gray-500">({item.weight}%)</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                  <span className="text-xs sm:text-sm font-medium text-gray-700 break-words leading-tight">{item.label}</span>
+                  <span className="text-xs text-gray-500 flex-shrink-0 whitespace-nowrap">({item.weight}%)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-gray-900">{score}%</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                  <span className="text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap">{score}%</span>
+                  <span className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap ${
                     score >= 80 ? 'bg-green-100 text-green-700' :
                     score >= 60 ? 'bg-yellow-100 text-yellow-700' :
                     'bg-orange-100 text-orange-700'
@@ -72,7 +72,7 @@ export default function MatchBreakdownChart({ breakdown, overallScore }: MatchBr
                   </span>
                 </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${score}%` }}
@@ -86,23 +86,23 @@ export default function MatchBreakdownChart({ breakdown, overallScore }: MatchBr
       </div>
 
       {/* Weighted Contribution */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="text-xs text-gray-600 mb-3">Weighted Contribution to Overall Score:</div>
-        <div className="space-y-2">
+      <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+        <div className="text-xs text-gray-600 mb-2 sm:mb-3 break-words leading-tight">Weighted Contribution to Overall Score:</div>
+        <div className="space-y-1.5 sm:space-y-2">
           {breakdownItems.map((item) => {
             const score = breakdown[item.key as keyof MatchBreakdown]
             const contribution = (score * item.weight) / 100
             return (
-              <div key={item.key} className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">{item.label}:</span>
-                <span className="font-medium text-gray-900">{contribution.toFixed(1)} points</span>
+              <div key={item.key} className="flex items-center justify-between text-xs min-w-0">
+                <span className="text-gray-600 break-words pr-2 flex-1 min-w-0">{item.label}:</span>
+                <span className="font-medium text-gray-900 flex-shrink-0 whitespace-nowrap">{contribution.toFixed(1)} points</span>
               </div>
             )
           })}
         </div>
-        <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-900">Total:</span>
-          <span className="text-sm font-bold text-[#FF5200]">{overallScore}%</span>
+        <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 flex items-center justify-between">
+          <span className="text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">Total:</span>
+          <span className="text-xs sm:text-sm font-bold text-[#FF5200] whitespace-nowrap">{overallScore}%</span>
         </div>
       </div>
     </div>

@@ -16,28 +16,70 @@ const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar
 const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
 
 function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?: number; required?: boolean; onBudgetChange?: (budget: { min: number; max: number }) => void }) {
-  // Direct INR values with exact 10K steps
-  const MIN_VALUE = 50000
-  const MAX_VALUE = 2000000
-  const STEP = 10000
+  // Hybrid scale:
+  // - 0-70% slider: linear 0 → 3L (more precision in normal range)
+  // - 70-100% slider: exponential 3L → 1Cr (compressed high range)
+  const MIN_VALUE = 0
+  const MAX_VALUE = 10000000 // 1 crore max
+  const LINEAR_MAX = 300000 // 3L
+  const LINEAR_PORTION = 70 // percent of slider reserved for linear section
+  const EXP_K = Math.log(MAX_VALUE / LINEAR_MAX) // growth factor for exponential tail
+
+  // Convert slider value (0-100) to actual budget value
+  const sliderToValue = (slider: number): number => {
+    const clampedSlider = Math.max(0, Math.min(100, slider))
+
+    // Linear region 0–LINEAR_PORTION%
+    if (clampedSlider <= LINEAR_PORTION) {
+      const value = (clampedSlider / LINEAR_PORTION) * LINEAR_MAX
+      return Math.round(value / 10000) * 10000
+    }
+
+    // Exponential tail LINEAR_PORTION–100%
+    const t = (clampedSlider - LINEAR_PORTION) / (100 - LINEAR_PORTION) // 0..1
+    const expValue = LINEAR_MAX * Math.exp(EXP_K * t)
+    const clampedValue = Math.min(expValue, MAX_VALUE)
+    return Math.round(clampedValue / 10000) * 10000
+  }
+
+  // Convert actual budget value to slider value (0-100)
+  const valueToSlider = (value: number): number => {
+    const clampedValue = Math.max(MIN_VALUE, Math.min(MAX_VALUE, value))
+
+    // Map values in linear range directly
+    if (clampedValue <= LINEAR_MAX) {
+      const slider = (clampedValue / LINEAR_MAX) * LINEAR_PORTION
+      return Math.max(0, Math.min(100, slider))
+    }
+
+    // Invert exponential mapping for high range
+    const t = Math.log(clampedValue / LINEAR_MAX) / EXP_K // 0..1
+    const slider = LINEAR_PORTION + t * (100 - LINEAR_PORTION)
+    return Math.max(LINEAR_PORTION, Math.min(100, slider))
+  }
 
   const formatCurrency = (value: number) => {
+    if (value >= 10000000) {
+      return `₹${(value / 10000000).toFixed(1)}Cr`
+    }
     if (value >= 100000) {
       const lakhs = value / 100000
       return lakhs % 1 === 0 ? `₹${lakhs.toFixed(0)}L` : `₹${lakhs.toFixed(1)}L`
     }
-    return `₹${(value / 1000).toFixed(0)}K`
-  }
-
-  const formatCurrencyWithCommas = (value: number) => {
+    if (value >= 1000) {
+      return `₹${(value / 1000).toFixed(0)}K`
+    }
     return `₹${value.toLocaleString('en-IN')}`
   }
 
-  const [budgetMin, setBudgetMin] = useState<number>(MIN_VALUE)
+  const [budgetMin, setBudgetMin] = useState<number>(50000)
   const [budgetMax, setBudgetMax] = useState<number>(200000)
 
-  const [minInput, setMinInput] = useState(formatCurrency(MIN_VALUE))
-  const [maxInput, setMaxInput] = useState(formatCurrency(200000))
+  const [sliderMin, setSliderMin] = useState(valueToSlider(50000))
+  const [sliderMax, setSliderMax] = useState(valueToSlider(200000))
+
+  const [minInput, setMinInput] = useState('50000')
+  const [maxInput, setMaxInput] = useState('200000')
   
   // Initialize budget range on mount
   useEffect(() => {
@@ -50,6 +92,12 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
   const parseBudgetInput = (input: string): number | null => {
     // Remove currency symbols, commas, and spaces
     const cleaned = input.trim().replace(/[₹,\s]/g, '').toUpperCase()
+    
+    // Handle crores (Cr)
+    if (cleaned.endsWith('CR')) {
+      const num = parseFloat(cleaned.slice(0, -2))
+      if (!isNaN(num)) return num * 10000000
+    }
     
     // Handle lakhs (L)
     if (cleaned.endsWith('L')) {
@@ -65,58 +113,82 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
     
     // Handle plain number (with or without commas)
     const num = parseFloat(cleaned.replace(/,/g, ''))
-    if (!isNaN(num) && num > 0) {
+    if (!isNaN(num) && num >= 0) {
       return num
     }
     
     return null
   }
 
-  const handleMinSliderChange = (value: number) => {
-    const clamped = Math.max(MIN_VALUE, Math.min(value, budgetMax - STEP))
-    const rounded = Math.round(clamped / STEP) * STEP
-    setBudgetMin(rounded)
-    setMinInput(formatCurrency(rounded))
+  const handleMinSliderChange = (sliderValue: number) => {
+    const actualValue = sliderToValue(sliderValue)
+    const clamped = Math.max(MIN_VALUE, Math.min(actualValue, budgetMax - 10000))
+    setBudgetMin(clamped)
+    setSliderMin(valueToSlider(clamped))
+    setMinInput(clamped.toLocaleString('en-IN'))
     if (onBudgetChange) {
-      onBudgetChange({ min: rounded, max: budgetMax })
+      onBudgetChange({ min: clamped, max: budgetMax })
     }
   }
 
-  const handleMaxSliderChange = (value: number) => {
-    const clamped = Math.min(MAX_VALUE, Math.max(value, budgetMin + STEP))
-    const rounded = Math.round(clamped / STEP) * STEP
-    setBudgetMax(rounded)
-    setMaxInput(formatCurrency(rounded))
+  const handleMaxSliderChange = (sliderValue: number) => {
+    const actualValue = sliderToValue(sliderValue)
+    const clamped = Math.min(MAX_VALUE, Math.max(actualValue, budgetMin + 10000))
+    setBudgetMax(clamped)
+    setSliderMax(valueToSlider(clamped))
+    setMaxInput(clamped.toLocaleString('en-IN'))
     if (onBudgetChange) {
-      onBudgetChange({ min: budgetMin, max: rounded })
+      onBudgetChange({ min: budgetMin, max: clamped })
     }
   }
 
   const handleMinInputChange = (input: string) => {
     setMinInput(input)
     const parsed = parseBudgetInput(input)
-    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE) {
-      handleMinSliderChange(parsed)
+    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE && parsed <= budgetMax) {
+      setBudgetMin(parsed)
+      setSliderMin(valueToSlider(parsed))
+      if (onBudgetChange) {
+        onBudgetChange({ min: parsed, max: budgetMax })
+      }
     }
   }
 
   const handleMaxInputChange = (input: string) => {
     setMaxInput(input)
     const parsed = parseBudgetInput(input)
-    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE) {
-      handleMaxSliderChange(parsed)
+    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE && parsed >= budgetMin) {
+      setBudgetMax(parsed)
+      setSliderMax(valueToSlider(parsed))
+      if (onBudgetChange) {
+        onBudgetChange({ min: budgetMin, max: parsed })
+      }
     }
   }
 
   const handleMinInputBlur = () => {
-    setMinInput(formatCurrency(budgetMin))
+    const parsed = parseBudgetInput(minInput)
+    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE && parsed <= budgetMax) {
+      setBudgetMin(parsed)
+      setSliderMin(valueToSlider(parsed))
+      setMinInput(parsed.toLocaleString('en-IN'))
+    } else {
+      setMinInput(budgetMin.toLocaleString('en-IN'))
+    }
   }
 
   const handleMaxInputBlur = () => {
-    setMaxInput(formatCurrency(budgetMax))
+    const parsed = parseBudgetInput(maxInput)
+    if (parsed !== null && parsed >= MIN_VALUE && parsed <= MAX_VALUE && parsed >= budgetMin) {
+      setBudgetMax(parsed)
+      setSliderMax(valueToSlider(parsed))
+      setMaxInput(parsed.toLocaleString('en-IN'))
+    } else {
+      setMaxInput(budgetMax.toLocaleString('en-IN'))
+    }
   }
   
-  const hasError = required && (budgetMin < 50000 || budgetMax <= budgetMin)
+  const hasError = required && (budgetMin < 0 || budgetMax <= budgetMin)
 
   const borderColors = [
     'border-[#FF5200]/30 hover:border-[#FF5200]',
@@ -202,7 +274,7 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
                   value={minInput}
                   onChange={(e) => handleMinInputChange(e.target.value)}
                   onBlur={handleMinInputBlur}
-                  placeholder="₹50K or 100000"
+                  placeholder="50000 or 300000"
                   className={`flex-1 px-3 py-2 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-all`}
                   style={{ fontFamily: plusJakarta.style.fontFamily }}
                 />
@@ -210,10 +282,10 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
               </div>
               <input
                 type="range"
-                min={MIN_VALUE}
-                max={MAX_VALUE}
-                step={STEP}
-                value={budgetMin}
+                min={0}
+                max={100}
+                step={1}
+                value={sliderMin}
                 onChange={(e) => handleMinSliderChange(parseInt(e.target.value, 10))}
                 className="w-full h-2 mt-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-min"
               />
@@ -230,7 +302,7 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
                   value={maxInput}
                   onChange={(e) => handleMaxInputChange(e.target.value)}
                   onBlur={handleMaxInputBlur}
-                  placeholder="₹200K or 200000"
+                  placeholder="200000 or 1000000"
                   className={`flex-1 px-3 py-2 bg-gray-800/60 border-2 ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-gray-700/50 focus:border-[#FF5200]'} rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-all`}
                   style={{ fontFamily: plusJakarta.style.fontFamily }}
                 />
@@ -238,10 +310,10 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
               </div>
               <input
                 type="range"
-                min={MIN_VALUE}
-                max={MAX_VALUE}
-                step={STEP}
-                value={budgetMax}
+                min={0}
+                max={100}
+                step={1}
+                value={sliderMax}
                 onChange={(e) => handleMaxSliderChange(parseInt(e.target.value, 10))}
                 className="w-full h-2 mt-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider slider-max"
               />
@@ -539,9 +611,7 @@ export default function BrandFilterPage() {
   const [showApplyButton, setShowApplyButton] = useState(false)
   const [aiInsight, setAiInsight] = useState<string>('')
   const [showAiInsight, setShowAiInsight] = useState(false)
-  const [showContactModal, setShowContactModal] = useState(false)
-  const [contactMethod, setContactMethod] = useState<'email' | 'phone' | null>(null)
-  const [contactInfo, setContactInfo] = useState({ email: '', phone: '' })
+  const [contactInfo] = useState({ email: '', phone: '' })
   
   // Track selections for validation
   const [businessTypeSelected, setBusinessTypeSelected] = useState<Set<string>>(new Set())
@@ -647,6 +717,83 @@ export default function BrandFilterPage() {
     timelineSelected.size > 0 &&
     budgetRange.min >= 50000 &&
     budgetRange.max > budgetRange.min
+
+  // Prefill filters when coming back from results via "Edit Filters" or when session data exists
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const editingFlag = window.localStorage.getItem('editingFilters')
+    const isEditing = editingFlag === 'true'
+
+    let filterData: any = null
+    let sessionData: any = null
+
+    try {
+      const filterRaw = window.localStorage.getItem('brandFilterData')
+      if (filterRaw) {
+        filterData = JSON.parse(filterRaw)
+      }
+    } catch (e) {
+      console.error('[BrandFilter] Failed to parse brandFilterData', e)
+    }
+
+    try {
+      const sessionRaw = window.localStorage.getItem('brandSessionData')
+      if (sessionRaw) {
+        sessionData = JSON.parse(sessionRaw)
+      }
+    } catch (e) {
+      console.error('[BrandFilter] Failed to parse brandSessionData', e)
+    }
+
+    // Once detected, clear the editing flag so future visits behave normally
+    if (isEditing) {
+      window.localStorage.removeItem('editingFilters')
+    }
+
+    // Prefer the richer filter snapshot when editing; otherwise fall back to session
+    const source = (isEditing && filterData) ? filterData : sessionData
+    if (!source) return
+
+    try {
+      // Business type (array of labels)
+      if (Array.isArray(source.businessType) && source.businessType.length > 0) {
+        setBusinessTypeSelected(new Set<string>(source.businessType))
+      }
+
+      // Size ranges – prefer saved label set from filterData
+      if (Array.isArray(source.sizeRanges) && source.sizeRanges.length > 0) {
+        setSizeRangeSelected(new Set<string>(source.sizeRanges))
+      }
+
+      // Locations
+      if (Array.isArray(source.locations) && source.locations.length > 0) {
+        setLocationSelected(new Set<string>(source.locations))
+      }
+
+      // Timeline (single value)
+      const timelineValue = source.timeline || source.timelineSelected
+      if (timelineValue) {
+        setTimelineSelected(new Set<string>([timelineValue]))
+      }
+
+      // Budget range
+      const minBudget =
+        (source.budgetRange && typeof source.budgetRange.min === 'number' && source.budgetRange.min) ||
+        (typeof source.budgetMin === 'number' && source.budgetMin) ||
+        budgetRange.min
+      const maxBudget =
+        (source.budgetRange && typeof source.budgetRange.max === 'number' && source.budgetRange.max) ||
+        (typeof source.budgetMax === 'number' && source.budgetMax) ||
+        budgetRange.max
+
+      if (minBudget && maxBudget && maxBudget > minBudget) {
+        setBudgetRange({ min: minBudget, max: maxBudget })
+      }
+    } catch (e) {
+      console.error('[BrandFilter] Failed to prefill from session/filter data', e)
+    }
+  }, [])
 
   // Generate contextual AI insights based on selections
   useEffect(() => {
@@ -870,10 +1017,57 @@ export default function BrandFilterPage() {
               whileHover={isFormValid ? { scale: 1.05, y: -2 } : {}}
               whileTap={isFormValid ? { scale: 0.95 } : {}}
               onClick={() => {
-                if (isFormValid) {
-                  // Show contact modal first
-                  setShowContactModal(true)
+                if (!isFormValid) return
+
+                // Save filters to localStorage
+                const filterData = {
+                  businessType: Array.from(businessTypeSelected),
+                  sizeRanges: Array.from(sizeRangeSelected),
+                  locations: Array.from(locationSelected),
+                  budgetMin: budgetRange.min,
+                  budgetMax: budgetRange.max,
+                  timeline: Array.from(timelineSelected)[0] || '',
                 }
+                
+                localStorage.setItem('brandFilterData', JSON.stringify(filterData))
+                saveBrandSessionToLocalStorage()
+
+                // Parse ALL selected size ranges for query params
+                const sizeLabels = Array.from(sizeRangeSelected)
+                let sizeMin = Number.MAX_SAFE_INTEGER
+                let sizeMax = 0
+                sizeLabels.forEach(label => {
+                  if (label.includes('-')) {
+                    const [minStr, maxStr] = label.split('-').map(v => v.trim())
+                    const min = parseInt(minStr.replace(/[^0-9]/g, '')) || 0
+                    const max = parseInt(maxStr.replace(/[^0-9]/g, '')) || 0
+                    if (min > 0) sizeMin = Math.min(sizeMin, min)
+                    if (max > 0) sizeMax = Math.max(sizeMax, max)
+                  } else if (label.includes('+')) {
+                    const min = parseInt(label.replace(/[^0-9]/g, '')) || 0
+                    if (min > 0) {
+                      sizeMin = Math.min(sizeMin, min)
+                      sizeMax = Math.max(sizeMax, 2000000)
+                    }
+                  }
+                })
+                if (sizeMin === Number.MAX_SAFE_INTEGER) sizeMin = 0
+                if (sizeMax === 0) sizeMax = 100000
+
+                // Build query params
+                const params = new URLSearchParams()
+                params.set('businessType', Array.from(businessTypeSelected)[0] || '')
+                params.set('sizeMin', sizeMin.toString())
+                params.set('sizeMax', sizeMax.toString())
+                params.set('locations', Array.from(locationSelected).join(','))
+                params.set('budgetMin', budgetRange.min.toString())
+                params.set('budgetMax', budgetRange.max.toString())
+                if (Array.from(timelineSelected).length > 0) {
+                  params.set('timeline', Array.from(timelineSelected)[0] || '')
+                }
+
+                // Navigate directly to property results page
+                window.location.href = `/properties/results?${params.toString()}`
               }}
             >
               {isFormValid && (
@@ -907,263 +1101,6 @@ export default function BrandFilterPage() {
       {/* Bottom Glow Line */}
       <div className="relative z-10 mt-16 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
 
-      {/* Contact Capture Modal */}
-      <AnimatePresence>
-        {showContactModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => {
-              setShowContactModal(false)
-              setContactMethod(null)
-              setContactInfo({ email: '', phone: '' })
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative group bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50 max-w-md w-full"
-            >
-              {/* Animated Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-              
-              {/* Animated Corner Accent */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500"></div>
-              
-              {/* Particle Effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping"></div>
-                <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
-              </div>
-
-              <div className="relative z-10">
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-2" style={{ fontFamily: fraunces.style.fontFamily }}>
-                  Quick Sign-In
-                </h2>
-                <p className="text-gray-400 mb-6 text-sm" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                  Enter your contact details to view property matches
-                </p>
-
-                <div className="space-y-4">
-                  {/* Contact Number Field - Always Visible */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                      Contact Number *
-                    </label>
-                    <div className="flex items-center">
-                      <span className="px-3 py-3 bg-gray-800/60 border-2 border-r-0 border-gray-700/50 rounded-l-lg text-white text-sm">+91</span>
-                      <input
-                        type="tel"
-                        value={contactInfo.phone}
-                        onChange={(e) => {
-                          // Only allow digits, max 10 digits
-                          const digits = e.target.value.replace(/\D/g, '').slice(0, 10)
-                          setContactInfo({ ...contactInfo, phone: digits })
-                          if (digits) {
-                            setContactMethod('phone')
-                          }
-                          scheduleBrandLog('contact_change')
-                        }}
-                        placeholder="98765 43210"
-                        maxLength={10}
-                        className="flex-1 px-4 py-3 bg-gray-800/60 border-2 border-gray-700/50 focus:border-[#FF5200] rounded-r-lg text-white placeholder-gray-500 focus:outline-none transition-all"
-                        style={{ fontFamily: plusJakarta.style.fontFamily }}
-                      />
-                    </div>
-                    {contactInfo.phone.length > 0 && contactInfo.phone.length < 10 && (
-                      <p className="text-xs text-red-400 mt-1">Enter 10 digit number</p>
-                    )}
-                  </div>
-
-                  {/* Email Field - Shown when email link is clicked */}
-                  {contactMethod === 'email' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                        Email *
-                      </label>
-                      <input
-                        type="email"
-                        value={contactInfo.email}
-                        onChange={(e) => {
-                          setContactInfo({ ...contactInfo, email: e.target.value })
-                          scheduleBrandLog('contact_change')
-                        }}
-                        placeholder="your@email.com"
-                        required
-                        className="w-full px-4 py-3 bg-gray-800/60 border-2 border-gray-700/50 focus:border-[#FF5200] rounded-lg text-white placeholder-gray-500 focus:outline-none transition-all"
-                        style={{ fontFamily: plusJakarta.style.fontFamily }}
-                        autoFocus
-                      />
-                    </div>
-                  )}
-
-                  {/* Sign up with Email Link */}
-                  {contactMethod !== 'email' && (
-                    <div className="text-center">
-                      <button
-                        onClick={() => setContactMethod('email')}
-                        className="text-[#FF5200] hover:text-[#E4002B] text-sm font-medium transition-colors underline underline-offset-2"
-                        style={{ fontFamily: plusJakarta.style.fontFamily }}
-                      >
-                        Sign up with Email
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-2">
-                    {contactMethod === 'email' && (
-                      <button
-                        onClick={() => {
-                          setContactMethod(null)
-                          setContactInfo({ ...contactInfo, email: '' })
-                        }}
-                        className="flex-1 px-4 py-3 bg-gray-800/60 border-2 border-gray-700/50 text-white rounded-lg font-semibold hover:border-gray-600 transition-colors"
-                        style={{ fontFamily: plusJakarta.style.fontFamily }}
-                      >
-                        Back
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        const hasValidPhone = contactInfo.phone.length === 10
-                        const hasValidEmail = contactInfo.email.includes('@') && contactInfo.email.includes('.')
-                        
-                        if (hasValidPhone || hasValidEmail) {
-                          // Save filter data with contact
-                          const filterData = {
-                            businessType: Array.from(businessTypeSelected),
-                            sizeRanges: Array.from(sizeRangeSelected),
-                            locations: Array.from(locationSelected),
-                            budgetMin: budgetRange.min,
-                            budgetMax: budgetRange.max,
-                            timeline: Array.from(timelineSelected)[0] || '',
-                            contactEmail: contactInfo.email,
-                            contactPhone: hasValidPhone ? `+91${contactInfo.phone}` : ''
-                          }
-                          
-                          localStorage.setItem('brandFilterData', JSON.stringify(filterData))
-
-                          // Also persist session snapshot for AI / onboarding prefill
-                          saveBrandSessionToLocalStorage()
-
-                          // Fire-and-forget brand lead creation (non-blocking)
-                          try {
-                            const sessionDataRaw = localStorage.getItem('brandSessionData')
-                            const sessionData = sessionDataRaw ? JSON.parse(sessionDataRaw) : {
-                              businessType: filterData.businessType,
-                              sizeRange: {
-                                // Persist the first selected size label (if any) and fall back to budget range
-                                label: filterData.sizeRanges?.[0] ?? '',
-                                min: filterData.budgetMin,
-                                max: filterData.budgetMax,
-                              },
-                              locations: filterData.locations,
-                              budgetRange: {
-                                min: filterData.budgetMin,
-                                max: filterData.budgetMax,
-                              },
-                              timeline: filterData.timeline,
-                            }
-
-                            fetch('/api/leads/create', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                name: filterData.contactEmail || filterData.contactPhone || 'Brand Lead',
-                                email: filterData.contactEmail || null,
-                                phone: filterData.contactPhone || null,
-                                sessionData,
-                              }),
-                              keepalive: true,
-                            }).catch(() => {
-                              // Ignore network errors for lead creation to avoid breaking UX
-                            })
-                          } catch (e) {
-                            console.error('[BrandFilter] Failed to create brand lead', e)
-                          }
-
-                          logSessionEvent({
-                            sessionType: 'brand',
-                            action: 'contact_submit',
-                            userId: getClientSessionUserId(),
-                            data: {
-                              status: 'in_progress',
-                              filter_step: buildFilterStepPayload(),
-                              contact_step: {
-                                name: null,
-                                email: contactInfo.email || null,
-                                phone: hasValidPhone ? `+91${contactInfo.phone}` : null,
-                              },
-                            },
-                          })
-
-                          // Parse ALL selected size ranges for query params
-                          const sizeLabels = Array.from(sizeRangeSelected)
-                          let sizeMin = Number.MAX_SAFE_INTEGER
-                          let sizeMax = 0
-                          sizeLabels.forEach(label => {
-                            if (label.includes('-')) {
-                              const [minStr, maxStr] = label.split('-').map(v => v.trim())
-                              const min = parseInt(minStr.replace(/[^0-9]/g, '')) || 0
-                              const max = parseInt(maxStr.replace(/[^0-9]/g, '')) || 0
-                              if (min > 0) sizeMin = Math.min(sizeMin, min)
-                              if (max > 0) sizeMax = Math.max(sizeMax, max)
-                            } else if (label.includes('+')) {
-                              const min = parseInt(label.replace(/[^0-9]/g, '')) || 0
-                              if (min > 0) {
-                                sizeMin = Math.min(sizeMin, min)
-                                sizeMax = Math.max(sizeMax, 2000000)
-                              }
-                            }
-                          })
-                          if (sizeMin === Number.MAX_SAFE_INTEGER) sizeMin = 0
-                          if (sizeMax === 0) sizeMax = 100000
-
-                          // Build query params
-                          const params = new URLSearchParams()
-                          params.set('businessType', Array.from(businessTypeSelected)[0] || '')
-                          params.set('sizeMin', sizeMin.toString())
-                          params.set('sizeMax', sizeMax.toString())
-                          params.set('locations', Array.from(locationSelected).join(','))
-                          params.set('budgetMin', budgetRange.min.toString())
-                          params.set('budgetMax', budgetRange.max.toString())
-                          if (Array.from(timelineSelected).length > 0) {
-                            params.set('timeline', Array.from(timelineSelected)[0] || '')
-                          }
-
-                          // Navigate to property results page
-                          window.location.href = `/properties/results?${params.toString()}`
-                        }
-                      }}
-                      disabled={contactInfo.phone.length !== 10 && (!contactInfo.email || !contactInfo.email.includes('@') || !contactInfo.email.includes('.'))}
-                      className={`${contactMethod === 'email' ? 'flex-1' : 'w-full'} px-4 py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed`}
-                      style={{ fontFamily: plusJakarta.style.fontFamily }}
-                    >
-                      View Matches
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Footer Text */}
-                <div className="mt-6 pt-4 border-t border-gray-700/50">
-                  <p className="text-gray-500 text-xs text-center" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                    Sign In/Up to match with the right property
-                  </p>
-                </div>
-              </div>
-              
-              {/* Enhanced Pulse Ring */}
-              <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-              <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

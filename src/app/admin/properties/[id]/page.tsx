@@ -178,6 +178,11 @@ export default function EditPropertyPage() {
       'Frazer Town',
       'Richmond Town',
       'Ulsoor',
+      'Kanakapura Road',
+      'New Bel Road',
+      'Kalyan Nagar',
+      'Kamanahalli',
+      'Sahakar Nagar',
       'Other'
     ],
     'Delhi': [
@@ -298,44 +303,71 @@ export default function EditPropertyPage() {
   const fetchProperty = async () => {
     try {
       setLoading(true)
+      console.log('[Edit Property] Fetching property:', propertyId)
       const response = await fetch(`/api/properties/${propertyId}`)
-      if (response.ok) {
-        const data = await response.json()
-        const prop = data.property || data
-        setFormData({
-          title: prop.title || '',
-          description: prop.description || '',
-          address: prop.address || '',
-          city: prop.city || '',
-          area: prop.area || '',
-          state: prop.state || '',
-          zipCode: prop.zipCode || '',
-          latitude: prop.latitude?.toString() || '',
-          longitude: prop.longitude?.toString() || '',
-          price: prop.price?.toString() || '',
-          priceType: prop.priceType || 'monthly',
-          securityDeposit: prop.securityDeposit?.toString() || '',
-          rentEscalation: prop.rentEscalation?.toString() || '',
-          size: prop.size?.toString() || '',
-          propertyType: getPropertyTypeValue(prop.propertyType || 'office', prop.title, prop.description),
-          storePowerCapacity: prop.storePowerCapacity || '',
-          powerBackup: prop.powerBackup || false,
-          waterFacility: prop.waterFacility || false,
-          amenities: (prop.amenities as string[]) || [],
-          addedBy: prop.owner?.userType === 'admin' || prop.ownerId === user?.id ? 'admin' : 'owner',
-          ownerId: prop.ownerId || prop.owner?.id || '',
-          availability: prop.availability !== undefined ? prop.availability : true,
-          isFeatured: prop.isFeatured || false,
-          displayOrder: prop.displayOrder || 0,
-        })
-        setImages((prop.images as string[]) || [])
-      } else {
-        alert('Property not found')
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[Edit Property] API error:', response.status, errorData)
+        
+        if (response.status === 404) {
+          alert(`Property not found: ${propertyId}\n\nPlease check the property ID and try again.`)
+        } else if (response.status === 503) {
+          alert('Database connection failed. Please check your database configuration.')
+        } else {
+          alert(`Failed to load property: ${errorData.error || errorData.message || 'Unknown error'}`)
+        }
         router.push('/admin/properties')
+        return
       }
-    } catch (error) {
-      console.error('Error fetching property:', error)
-      alert('Failed to load property')
+
+      const data = await response.json()
+      console.log('[Edit Property] Received data:', { 
+        hasProperty: !!data.property, 
+        hasData: !!data,
+        propertyId: data.property?.id || data.id 
+      })
+      
+      const prop = data.property || data
+      
+      if (!prop || !prop.id) {
+        console.error('[Edit Property] Invalid property data:', data)
+        alert('Invalid property data received')
+        router.push('/admin/properties')
+        return
+      }
+
+      setFormData({
+        title: prop.title || '',
+        description: prop.description || '',
+        address: prop.address || '',
+        city: prop.city || '',
+        area: prop.area || '',
+        state: prop.state || '',
+        zipCode: prop.zipCode || '',
+        latitude: prop.latitude?.toString() || '',
+        longitude: prop.longitude?.toString() || '',
+        price: prop.price ? Number(prop.price).toString() : '',
+        priceType: prop.priceType || 'monthly',
+        securityDeposit: prop.securityDeposit ? Number(prop.securityDeposit).toString() : '',
+        rentEscalation: prop.rentEscalation ? Number(prop.rentEscalation).toString() : '',
+        size: prop.size ? Number(prop.size).toString() : '',
+        propertyType: getPropertyTypeValue(prop.propertyType || 'office', prop.title, prop.description),
+        storePowerCapacity: prop.storePowerCapacity || '',
+        powerBackup: prop.powerBackup || false,
+        waterFacility: prop.waterFacility || false,
+        amenities: Array.isArray(prop.amenities) ? prop.amenities : [],
+        addedBy: prop.owner?.userType === 'admin' || prop.ownerId === user?.id ? 'admin' : 'owner',
+        ownerId: prop.ownerId || prop.owner?.id || '',
+        availability: prop.availability !== undefined ? prop.availability : true,
+        isFeatured: prop.isFeatured || false,
+        displayOrder: prop.displayOrder || 0,
+      })
+      setImages(Array.isArray(prop.images) ? prop.images : [])
+    } catch (error: any) {
+      console.error('[Edit Property] Error fetching property:', error)
+      alert(`Failed to load property: ${error.message || 'Network error'}`)
+      router.push('/admin/properties')
     } finally {
       setLoading(false)
     }

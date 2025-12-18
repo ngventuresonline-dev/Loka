@@ -41,8 +41,18 @@ const createPrismaClient = () => {
       if (!existingParams.has('pgbouncer')) {
         existingParams.set('pgbouncer', 'true')
       }
+      // Increase connection limit to prevent pool exhaustion
+      // Remove connection_limit=1 if present (too restrictive)
+      if (existingParams.has('connection_limit') && existingParams.get('connection_limit') === '1') {
+        existingParams.delete('connection_limit')
+      }
+      // Set reasonable connection limit (5-10 for development, higher for production)
       if (!existingParams.has('connection_limit')) {
-        existingParams.set('connection_limit', '1')
+        existingParams.set('connection_limit', process.env.NODE_ENV === 'production' ? '10' : '5')
+      }
+      // Increase pool timeout
+      if (!existingParams.has('connect_timeout')) {
+        existingParams.set('connect_timeout', '30')
       }
     }
     
@@ -63,13 +73,15 @@ const createPrismaClient = () => {
   }
   
   const client = new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'], // Removed 'query' to reduce noise
     errorFormat: 'pretty',
     datasources: {
       db: {
         url: databaseUrl,
       },
     },
+    // Connection pool settings
+    // Prisma will manage connections automatically - don't need explicit $connect()
   })
   
   // Handle connection errors gracefully

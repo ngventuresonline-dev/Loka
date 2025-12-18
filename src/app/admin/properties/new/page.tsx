@@ -135,6 +135,11 @@ export default function NewPropertyPage() {
       'Frazer Town',
       'Richmond Town',
       'Ulsoor',
+      'Kanakapura Road',
+      'New Bel Road',
+      'Kalyan Nagar',
+      'Kamanahalli',
+      'Sahakar Nagar',
       'Other'
     ],
     'Delhi': [

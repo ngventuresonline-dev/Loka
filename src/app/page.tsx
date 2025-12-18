@@ -13,7 +13,7 @@ import AiSearchModal from '@/components/AiSearchModal'
 import HeroSearch, { type Mode as HeroMode } from '@/components/HeroSearch'
 import BrandRequirementsModal from '@/components/BrandRequirementsModal'
 import PropertyDetailsModal from '@/components/PropertyDetailsModal'
-import { featuredProperties, type FeaturedProperty } from '@/data/featured-properties'
+import { type FeaturedProperty } from '@/data/featured-properties'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
 import { getTheme, getPaletteColors } from '@/lib/theme'
@@ -402,6 +402,75 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
 }
 
 export default function Home() {
+  const [featuredProperties, setFeaturedProperties] = useState<FeaturedProperty[]>([])
+  const [loadingFeatured, setLoadingFeatured] = useState(true)
+
+  // Fetch featured properties from API
+  useEffect(() => {
+    const fetchFeaturedProperties = async () => {
+      try {
+        setLoadingFeatured(true)
+        // Fetch only featured and approved properties
+        // Note: status filter is handled by API (only approved shown), so we just need isFeatured
+        const apiUrl = '/api/properties?isFeatured=true&limit=20'
+        console.log('[Featured Properties] Fetching from:', apiUrl)
+        const response = await fetch(apiUrl)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const properties = data.properties || data.data?.properties || []
+          
+          console.log('[Featured Properties] API Response:', {
+            success: data.success,
+            propertiesCount: properties.length,
+            total: data.total || data.pagination?.total,
+            sampleProperty: properties[0] || null,
+            allProperties: properties.map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              isFeatured: p.isFeatured,
+              status: p.status,
+              availability: p.availability
+            }))
+          })
+          
+          // Transform API properties to FeaturedProperty format
+          const transformed: FeaturedProperty[] = properties.map((p: any) => ({
+            id: parseInt(p.id?.replace(/\D/g, '') || '0') || Math.random(),
+            title: p.title || '',
+            location: p.city || '',
+            size: `${p.size?.toLocaleString() || 0} Sq. Ft.`,
+            floor: 'Ground Floor', // Default value, can be enhanced if floor info is available
+            rent: p.priceType === 'monthly' 
+              ? `₹${Number(p.price || 0).toLocaleString()}/month`
+              : `₹${Number(p.price || 0).toLocaleString()}/year`,
+            deposit: p.securityDeposit 
+              ? `${Math.round(Number(p.securityDeposit) / Number(p.price || 1))} months`
+              : '10 months',
+            badge: p.availability ? 'Available' : 'Leased Out'
+          }))
+          
+          console.log('[Featured Properties] Transformed:', transformed.length, 'properties')
+          setFeaturedProperties(transformed)
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error')
+          console.error('[Featured Properties] API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText
+          })
+          setFeaturedProperties([])
+        }
+      } catch (error) {
+        console.error('Error fetching featured properties:', error)
+        setFeaturedProperties([])
+      } finally {
+        setLoadingFeatured(false)
+      }
+    }
+
+    fetchFeaturedProperties()
+  }, [])
   const router = useRouter()
   
   // Generate random flickering logos on mount (client-side only to avoid hydration mismatch)
@@ -1454,7 +1523,17 @@ export default function Home() {
           </div>
 
           {/* Properties Carousel */}
-          <PropertyCarousel properties={featuredProperties} />
+          {loadingFeatured ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200]"></div>
+            </div>
+          ) : featuredProperties.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">No featured properties available at the moment.</p>
+            </div>
+          ) : (
+            <PropertyCarousel properties={featuredProperties} />
+          )}
         </div>
       </section>
 

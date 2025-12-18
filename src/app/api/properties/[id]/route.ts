@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/get-prisma'
 import {
   requireOwnerOrAdmin,
   getAuthenticatedUser,
@@ -20,8 +20,27 @@ export async function GET(
     const { id } = await params
     const propertyId = id
 
+    const prisma = await getPrisma()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database connection failed. Please check your database configuration.',
+        },
+        { status: 503 }
+      )
+    }
+
+    // IMPORTANT:
+    // - This endpoint is used by both public property pages AND the admin edit page.
+    // - If we filter by status=approved here, admins won't be able to edit pending properties (404).
+    // - Public visibility is already controlled by the list endpoint (/api/properties) and frontend logic.
+    //
+    // So we ONLY filter by id here, and keep status filtering in the list API.
     const property = await prisma.property.findUnique({
-      where: { id: propertyId },
+      where: { 
+        id: propertyId,
+      },
       include: {
         owner: {
           select: {
@@ -104,6 +123,17 @@ export async function PUT(
 
     // Authenticate user
     const user = await requireOwnerOrAdmin(request)
+
+    const prisma = await getPrisma()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database connection failed. Please check your database configuration.',
+        },
+        { status: 503 }
+      )
+    }
 
     // Check if property exists
     const existingProperty = await prisma.property.findUnique({
@@ -246,6 +276,17 @@ export async function DELETE(
 
     // Authenticate user
     const user = await requireOwnerOrAdmin(request)
+
+    const prisma = await getPrisma()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database connection failed. Please check your database configuration.',
+        },
+        { status: 503 }
+      )
+    }
 
     // Check if property exists
     const existingProperty = await prisma.property.findUnique({

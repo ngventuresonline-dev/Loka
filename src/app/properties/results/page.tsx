@@ -39,6 +39,14 @@ function PropertiesResultsContent() {
     bestTime: '',
     additionalRequirements: ''
   })
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false)
+  const [requirementsFormData, setRequirementsFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    requirements: ''
+  })
+  const [submittingRequirements, setSubmittingRequirements] = useState(false)
 
   const itemsPerPage = 12
 
@@ -61,6 +69,55 @@ function PropertiesResultsContent() {
     fetchMatches()
   }, [searchParams])
 
+  // Prefill requirements from filters
+  useEffect(() => {
+    if (showRequirementsModal && !requirementsFormData.requirements) {
+      const requirementsParts: string[] = []
+      if (filters.businessType) requirementsParts.push(`Business Type: ${filters.businessType}`)
+      if (filters.locations.length > 0) requirementsParts.push(`Locations: ${filters.locations.join(', ')}`)
+      if (filters.sizeMin > 0 || filters.sizeMax < 100000) {
+        requirementsParts.push(`Size: ${filters.sizeMin.toLocaleString()} - ${filters.sizeMax.toLocaleString()} sqft`)
+      }
+      if (filters.budgetMin > 0 || filters.budgetMax < 10000000) {
+        requirementsParts.push(`Budget: ₹${(filters.budgetMin / 1000).toFixed(0)}K - ₹${(filters.budgetMax / 1000).toFixed(0)}K`)
+      }
+      if (filters.propertyType) requirementsParts.push(`Property Type: ${filters.propertyType}`)
+      if (filters.timeline) requirementsParts.push(`Timeline: ${filters.timeline}`)
+      
+      setRequirementsFormData(prev => ({
+        ...prev,
+        requirements: requirementsParts.join('\n')
+      }))
+    }
+  }, [showRequirementsModal, filters])
+
+  // Prefill name/email from localStorage if available
+  useEffect(() => {
+    if (showRequirementsModal) {
+      try {
+        const detailsRaw = localStorage.getItem('brandOnboardingDetails')
+        const submissionRaw = localStorage.getItem('brandOnboardingSubmission')
+        const details = detailsRaw ? JSON.parse(detailsRaw) : null
+        const submission = submissionRaw ? JSON.parse(submissionRaw) : null
+        
+        const name = details?.contactPerson || submission?.brandName || ''
+        const email = details?.email || ''
+        const phone = details?.phone || ''
+        
+        if (name || email || phone) {
+          setRequirementsFormData(prev => ({
+            ...prev,
+            name: prev.name || name,
+            email: prev.email || email,
+            phone: prev.phone || phone
+          }))
+        }
+      } catch (err) {
+        console.error('Prefill requirements form failed:', err)
+      }
+    }
+  }, [showRequirementsModal])
+
   const fetchMatches = async () => {
     try {
       setLoading(true)
@@ -79,7 +136,7 @@ function PropertiesResultsContent() {
       // Simulate AI matching steps
       for (let i = 0; i < steps.length; i++) {
         setMatchingStep(i)
-        await new Promise(resolve => setTimeout(resolve, 600))
+        await new Promise(resolve => setTimeout(resolve, 250))
       }
       
       // Check if user is logged in as a brand - if yes, use brand profile automatically
@@ -149,7 +206,26 @@ function PropertiesResultsContent() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch matches')
+        // Log detailed error information but don't throw to avoid noisy console errors
+        try {
+          const errorBody = await response.json().catch(() => null)
+          console.error('[Results] Match API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorBody
+          })
+        } catch (e) {
+          console.error('[Results] Match API error (no body):', {
+            status: response.status,
+            statusText: response.statusText
+          })
+        }
+
+        // Gracefully degrade: show empty state instead of crashing
+        setMatches([])
+        setTotalMatches(0)
+        setAiMatching(false)
+        return
       }
 
       const data = await response.json()
@@ -167,8 +243,6 @@ function PropertiesResultsContent() {
         console.warn('[Results] No matches found. Filters:', filters)
       }
       
-      // Small delay before showing results
-      await new Promise(resolve => setTimeout(resolve, 500))
       setAiMatching(false)
     } catch (error) {
       console.error('Error fetching matches:', error)
@@ -211,6 +285,18 @@ function PropertiesResultsContent() {
   // Clear all filters
   const clearAllFilters = () => {
     router.push('/properties')
+  }
+
+  // Edit filters - return to brand filter page with pre-filled values
+  const handleEditFilters = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('editingFilters', 'true')
+      } catch (e) {
+        console.warn('[Results] Failed to set editingFilters flag', e)
+      }
+    }
+    router.push('/filter/brand')
   }
 
   // Format filter display
@@ -265,6 +351,49 @@ function PropertiesResultsContent() {
       console.error('Error submitting contact form:', error)
       alert('Failed to submit. Please try again.')
     }
+  }
+
+  const handleRequirementsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!requirementsFormData.name || !requirementsFormData.phone || !requirementsFormData.email) {
+      alert('Please fill in all required fields.')
+      return
+    }
+
+    try {
+      setSubmittingRequirements(true)
+      const response = await fetch('/api/leads/requirements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...requirementsFormData,
+          searchCriteria: filters,
+          source: 'properties_results_page'
+        })
+      })
+
+      if (response.ok) {
+        alert('Thank you! We\'ve saved your requirements. Our team will find the perfect property for you.')
+        setShowRequirementsModal(false)
+        setRequirementsFormData({ name: '', phone: '', email: '', requirements: '' })
+      } else {
+        throw new Error('Failed to save requirements')
+      }
+    } catch (error) {
+      console.error('Error submitting requirements:', error)
+      alert('Failed to submit. Please try again.')
+    } finally {
+      setSubmittingRequirements(false)
+    }
+  }
+
+  const handleContactTeam = () => {
+    const phoneNumber = '+919876543210' // Replace with actual WhatsApp number
+    const message = encodeURIComponent(
+      `Hi! I'm looking for a commercial property. Can you help me find the perfect match?\n\n` +
+      `My requirements:\n${requirementsFormData.requirements || 'See my search filters'}`
+    )
+    window.open(`https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${message}`, '_blank')
   }
 
   return (
@@ -326,12 +455,20 @@ function PropertiesResultsContent() {
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-2 sm:p-4 mb-4 sm:mb-6">
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <span className="text-xs sm:text-sm font-semibold text-gray-700">Filters:</span>
-              <button
-                onClick={clearAllFilters}
-                className="text-xs sm:text-sm text-[#FF5722] hover:text-[#E4002B] font-medium"
-              >
-                Clear All
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleEditFilters}
+                  className="text-[11px] sm:text-xs text-gray-600 hover:text-gray-900 font-medium underline underline-offset-2"
+                >
+                  Edit Filters
+                </button>
+                <button
+                  onClick={clearAllFilters}
+                  className="text-xs sm:text-sm text-[#FF5722] hover:text-[#E4002B] font-medium"
+                >
+                  Clear All
+                </button>
+              </div>
             </div>
             <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
               {getFilterChips().map((chip, index) => (
@@ -541,7 +678,143 @@ function PropertiesResultsContent() {
             )}
           </>
         )}
+
+        {/* Can't Find Property CTA Section */}
+        {!loading && matches.length > 0 && (
+          <div className="bg-gray-50 border-t border-gray-200 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-12 mt-12">
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+                Can&apos;t Find Your Ideal Property?
+              </h2>
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-6 sm:mb-8">
+                Let our team find the perfect match for you
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+                {/* List Your Requirements Button */}
+                <button
+                  onClick={() => setShowRequirementsModal(true)}
+                  className="w-full sm:w-auto bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  List Your Requirements
+                </button>
+
+                {/* Contact Our Team Button */}
+                <button
+                  onClick={handleContactTeam}
+                  className="w-full sm:w-auto bg-white border-2 border-[#FF5200] text-[#FF5200] px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold hover:bg-[#FF5200] hover:text-white transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Contact Our Team
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Requirements Modal */}
+      {showRequirementsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-3 sm:px-4 py-4 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 relative my-auto max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowRequirementsModal(false)}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl leading-none w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center"
+              aria-label="Close"
+            >
+              ×
+            </button>
+            
+            <div className="mb-4 sm:mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2">List Your Requirements</h3>
+              <p className="text-xs sm:text-sm text-gray-600 text-center">
+                We&apos;ll find the perfect property match for you
+              </p>
+            </div>
+
+            <form onSubmit={handleRequirementsSubmit} className="space-y-3 sm:space-y-4">
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={requirementsFormData.name}
+                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, name: e.target.value })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                  placeholder="Your full name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Phone *</label>
+                <input
+                  type="tel"
+                  required
+                  value={requirementsFormData.phone}
+                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, phone: e.target.value })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                  placeholder="+91 98765 43210"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={requirementsFormData.email}
+                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, email: e.target.value })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                  placeholder="your.email@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Requirements</label>
+                <textarea
+                  value={requirementsFormData.requirements}
+                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, requirements: e.target.value })}
+                  rows={6}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200] resize-y"
+                  placeholder="Your property requirements (pre-filled from your search filters)"
+                />
+                <p className="text-xs text-gray-500 mt-1">Your search filters have been pre-filled above</p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={submittingRequirements}
+                  className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {submittingRequirements ? 'Saving...' : 'Save Requirements'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRequirementsModal(false)}
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg font-semibold text-sm sm:text-base text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+
+            <p className="text-xs text-gray-500 mt-3 sm:mt-4 text-center">
+              Our team will review your requirements and contact you within 24 hours
+            </p>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

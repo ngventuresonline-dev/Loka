@@ -82,29 +82,30 @@ export async function POST(request: NextRequest) {
     })
 
     // Convert Prisma properties to Property type
+    // Be defensive about null/undefined fields so matching engine doesn't crash
     const typedProperties: Property[] = properties.map((p: any) => ({
       id: p.id,
-      title: p.title,
-      description: p.description,
-      address: p.address,
-      city: p.city,
-      state: p.state,
-      zipCode: p.zipCode,
-      price: p.price,
-      priceType: p.priceType,
-      size: p.size,
-      propertyType: p.propertyType,
-      condition: p.condition,
-      amenities: p.amenities || [],
-      accessibility: p.accessibility || false,
-      parking: p.parking || false,
-      publicTransport: p.publicTransport || false,
+      title: p.title || 'Property',
+      description: p.description || '',
+      address: p.address || '',
+      city: p.city || '',
+      state: p.state || '',
+      zipCode: p.zipCode || '',
+      price: Number(p.price) || 0,
+      priceType: p.priceType || 'monthly',
+      size: Number(p.size) || 0,
+      propertyType: p.propertyType || '',
+      condition: (p.condition as any) || 'good',
+      amenities: Array.isArray(p.amenities) ? p.amenities : [],
+      accessibility: Boolean(p.accessibility),
+      parking: Boolean(p.parking),
+      publicTransport: Boolean(p.publicTransport),
       ownerId: p.ownerId,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-      isAvailable: p.availability,
-      isFeatured: p.isFeatured ?? false,
-      images: p.images || []
+      createdAt: new Date(p.createdAt),
+      updatedAt: new Date(p.updatedAt || p.createdAt),
+      isAvailable: p.availability !== false,
+      isFeatured: Boolean(p.isFeatured),
+      images: Array.isArray(p.images) ? p.images : []
     }))
 
     // Prepare brand requirements for BFI calculation

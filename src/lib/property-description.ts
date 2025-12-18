@@ -21,10 +21,11 @@ interface DescriptionInput {
   size?: number | null
   propertyType: property_type_enum | string
   amenities?: string[] | null
+  price?: number | null
 }
 
 export function generatePropertyDescription(input: DescriptionInput): string {
-  const city = input.city?.trim() || 'a prime micro-market'
+  const city = input.city?.trim() || 'a prime F&B micro-market'
   const size =
     typeof input.size === 'number' && input.size > 0
       ? `${input.size.toLocaleString()} sq ft`
@@ -56,8 +57,10 @@ export function generatePropertyDescription(input: DescriptionInput): string {
     titleLower.includes('bakery')
 
   let typeSentence = ''
+  let headlineTypeLabel = 'commercial'
 
   if (isFoodCourt || type === 'restaurant') {
+    headlineTypeLabel = 'F&B'
     if (isFoodCourt) {
       typeSentence = pickVariant(hashKey, [
         'Food court stall with captive seating and steady shared footfalls across dayparts.',
@@ -85,16 +88,19 @@ export function generatePropertyDescription(input: DescriptionInput): string {
       ])
     }
   } else if (type === 'retail' || type.includes('retail')) {
+    headlineTypeLabel = 'retail'
     typeSentence = pickVariant(hashKey, [
       'High-street retail frontage with strong visibility, deep glazing and merchandising-friendly layout.',
       'Retail-ready space designed for display-heavy brands and strong walk-in traffic.',
     ])
   } else if (type === 'office') {
+    headlineTypeLabel = 'office'
     typeSentence = pickVariant(hashKey, [
       'Modern office / studio volume with clean spans and efficient cores, ready for fast fit-outs.',
       'Light-filled workspace footprint ideal for studios, consulting rooms or compact HQs.',
     ])
   } else if (type === 'warehouse') {
+    headlineTypeLabel = 'warehousing'
     typeSentence = pickVariant(hashKey, [
       'Urban warehousing space suited for dark store, fulfillment or stock-holding operations.',
       'Back-of-house logistics unit with practical proportions for storage and dispatch.',
@@ -106,9 +112,13 @@ export function generatePropertyDescription(input: DescriptionInput): string {
     ])
   }
 
+  const cityPhrase = city === 'a prime F&B micro-market'
+    ? 'a prime F&B micro-market'
+    : `one of ${city}'s most vibrant F&B destinations`
+
   const baseSentenceVariants = [
-    `Commercial space in ${city} with ${size} carpet area.`,
-    `${size} commercial space positioned in ${city}, suited to high-street brand requirements.`,
+    `${size} ${headlineTypeLabel} space located in ${cityPhrase}.`,
+    `${size} ${headlineTypeLabel} space positioned in ${cityPhrase}.`,
   ]
   const baseSentence = pickVariant(`${hashKey}-base`, baseSentenceVariants)
 
@@ -135,91 +145,145 @@ export function generatePropertyDescription(input: DescriptionInput): string {
 
 interface TitleInput {
   title?: string | null
-  city?: string | null
   propertyType: property_type_enum | string
+  amenities?: string[] | null
+  size?: number | null
 }
 
 export function generatePropertyTitle(input: TitleInput): string {
-  const city = input.city?.trim() || ''
   const existingTitle = input.title?.trim() || ''
-  const type = String(input.propertyType)
-
-  const citySuffix = city ? ` in ${city}` : ''
-
+  const typeRaw = String(input.propertyType).toLowerCase()
   const lowerTitle = existingTitle.toLowerCase()
-  const mentionsFoodCourt =
-    lowerTitle.includes('food court') || lowerTitle.includes('fc')
+  const hashKey = `${existingTitle}|${typeRaw}`
 
-  const hashKey = `${existingTitle}|${city}|${type}`
-
-  if (type === 'restaurant') {
-    if (mentionsFoodCourt) {
-      return pickVariant(hashKey, [
-        `Food Court F&B Stall${citySuffix}`,
-        `High-Impact Food Court Counter${citySuffix}`,
-      ])
-    }
-    if (
-      lowerTitle.includes('qsr') ||
-      lowerTitle.includes('quick service') ||
-      lowerTitle.includes('takeaway') ||
-      lowerTitle.includes('kiosk')
-    ) {
-      return pickVariant(hashKey, [
-        `Premium QSR Space${citySuffix}`,
-        `High-Throughput QSR Format${citySuffix}`,
-      ])
-    }
-    if (
-      lowerTitle.includes('café') ||
-      lowerTitle.includes('cafe') ||
-      lowerTitle.includes('coffee')
-    ) {
-      return pickVariant(hashKey, [
-        `Neighbourhood Café Space${citySuffix}`,
-        `Signature Coffee / Café Format${citySuffix}`,
-      ])
-    }
-    if (
-      lowerTitle.includes('dessert') ||
-      lowerTitle.includes('ice cream') ||
-      lowerTitle.includes('creamery') ||
-      lowerTitle.includes('bakery')
-    ) {
-      return pickVariant(hashKey, [
-        `Dessert / Bakery Format Store${citySuffix}`,
-        `Impulse Dessert Kiosk / Store${citySuffix}`,
-      ])
-    }
-    return pickVariant(hashKey, [
-      `Prime Restaurant / Bar Space${citySuffix}`,
-      `Full-Service Restaurant Format${citySuffix}`,
-    ])
+  // Determine high-level F&B / Retail label
+  let typeLabel = 'Commercial'
+  if (
+    typeRaw.includes('restaurant') ||
+    typeRaw.includes('food') ||
+    lowerTitle.includes('restaurant') ||
+    lowerTitle.includes('food')
+  ) {
+    typeLabel = 'Restaurant'
+  }
+  if (
+    typeRaw.includes('qsr') ||
+    lowerTitle.includes('qsr') ||
+    lowerTitle.includes('quick service') ||
+    lowerTitle.includes('takeaway')
+  ) {
+    typeLabel = 'QSR'
+  } else if (
+    typeRaw.includes('cafe') ||
+    typeRaw.includes('café') ||
+    lowerTitle.includes('cafe') ||
+    lowerTitle.includes('café') ||
+    lowerTitle.includes('coffee')
+  ) {
+    typeLabel = 'Café'
+  } else if (typeRaw.includes('retail') || lowerTitle.includes('retail')) {
+    typeLabel = 'Retail'
+  } else if (typeRaw.includes('office') || lowerTitle.includes('office')) {
+    typeLabel = 'Office'
+  } else if (typeRaw.includes('warehouse') || lowerTitle.includes('warehouse')) {
+    typeLabel = 'Warehouse'
   }
 
-  if (type === 'retail') {
-    return pickVariant(hashKey, [
-      `High-Street Retail Flagship${citySuffix}`,
-      `Ground Floor Retail Front${citySuffix}`,
-    ])
+  const amenities = (input.amenities || []).map((a) => a.toLowerCase())
+
+  const hasGround = amenities.some((a) => a.includes('ground'))
+  const hasCorner = amenities.some((a) => a.includes('corner'))
+  const hasHighVis =
+    amenities.some((a) => a.includes('high') && a.includes('visib')) ||
+    amenities.some((a) => a.includes('main road'))
+  const hasParking = amenities.some((a) => a.includes('parking'))
+  const hasStreetFacing = amenities.some((a) => a.includes('street'))
+
+  // Multiple adjective options based on different factors
+  const adjectiveOptions: string[] = []
+  
+  // Size-based adjectives
+  if (input.size && input.size > 3000) {
+    adjectiveOptions.push('Spacious', 'Large', 'Expansive')
+  } else if (input.size && input.size > 2000) {
+    adjectiveOptions.push('Spacious', 'Well-Sized', 'Generous')
+  } else if (input.size && input.size < 1000) {
+    adjectiveOptions.push('Compact', 'Cozy', 'Efficient')
   }
-  if (type === 'office') {
-    return pickVariant(hashKey, [
-      `Grade-A Office / Studio Space${citySuffix}`,
-      `Compact Office / Studio Floor${citySuffix}`,
-    ])
+  
+  // Visibility-based adjectives (only if actually high visibility)
+  if (hasHighVis && hasCorner) {
+    adjectiveOptions.push('High-Visibility', 'Premium', 'Prime Corner')
+  } else if (hasHighVis) {
+    adjectiveOptions.push('High-Visibility', 'Prime', 'Premium')
+  } else if (hasCorner) {
+    adjectiveOptions.push('Corner', 'Prime', 'Strategic')
+  } else if (hasStreetFacing) {
+    adjectiveOptions.push('Street-Facing', 'Prime', 'Well-Positioned')
   }
-  if (type === 'warehouse') {
-    return pickVariant(hashKey, [
-      `Urban Warehouse / Dark Store Unit${citySuffix}`,
-      `Back-of-House Logistics Unit${citySuffix}`,
-    ])
+  
+  // Ground floor specific adjectives (varied, not always high-visibility)
+  if (hasGround && !hasHighVis && !hasCorner) {
+    adjectiveOptions.push('Prime', 'Well-Located', 'Accessible', 'Convenient', 'Strategic')
+  }
+  
+  // Default fallback
+  if (adjectiveOptions.length === 0) {
+    adjectiveOptions.push('Prime', 'Well-Positioned', 'Strategic', 'Premium')
   }
 
-  return pickVariant(hashKey, [
-    `Ready-to-Fit Commercial Space${citySuffix}`,
-    `Multi-Use Commercial Format${citySuffix}`,
-  ])
+  // Pick adjective using hash for consistency
+  const adjective = pickVariant(`${hashKey}-adj`, adjectiveOptions)
+
+  const featureParts: string[] = []
+  if (hasGround) featureParts.push('Ground Floor')
+  if (hasCorner && !adjective.toLowerCase().includes('corner')) featureParts.push('Corner')
+
+  const featurePhrase = featureParts.join(' ').trim()
+
+  // Multiple title format variations
+  const titleVariations: string[] = []
+  
+  if (featurePhrase) {
+    // Format 1: [Adjective] [Feature] [Type] Space [Parking]
+    titleVariations.push(`${adjective} ${featurePhrase} ${typeLabel} Space`)
+    
+    // Format 2: [Feature] [Type] Space [Adjective] [Parking]
+    titleVariations.push(`${featurePhrase} ${typeLabel} Space`)
+    
+    // Format 3: [Adjective] [Type] Space on [Feature] [Parking]
+    titleVariations.push(`${adjective} ${typeLabel} Space on ${featurePhrase}`)
+  } else {
+    // Format 1: [Adjective] [Type] Space [Parking]
+    titleVariations.push(`${adjective} ${typeLabel} Space`)
+    
+    // Format 2: [Type] Space - [Adjective] [Parking]
+    titleVariations.push(`${typeLabel} Space`)
+  }
+  
+  // Add variations with different word orders
+  if (hasParking) {
+    const baseTitles = [...titleVariations]
+    titleVariations.length = 0
+    baseTitles.forEach(title => {
+      titleVariations.push(`${title} with Parking`)
+      titleVariations.push(`${title} + Parking`)
+      if (!title.toLowerCase().includes('parking')) {
+        titleVariations.push(`Parking-Enabled ${title}`)
+      }
+    })
+  }
+
+  // Pick a title variant using hash
+  let title = pickVariant(hashKey, titleVariations)
+  title = title.replace(/\s+/g, ' ').trim()
+
+  // Ensure parking is mentioned if available
+  if (hasParking && !title.toLowerCase().includes('parking')) {
+    title += ' with Parking'
+  }
+
+  return title
 }
 
 

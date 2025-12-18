@@ -33,6 +33,59 @@ body {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Comprehensive Text Optimization Utilities */
+  .text-optimize {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+  }
+
+  .text-no-overflow {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .text-wrap-safe {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.5;
+  }
+
+  .text-responsive {
+    font-size: clamp(0.75rem, 2vw, 1rem);
+  }
+
+  /* Ensure flex containers don't break text */
+  .flex-text-safe {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+}
+
+/* Global text optimization for all elements */
+* {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Ensure proper text handling in common containers */
+p, span, div, h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Prevent text overflow in flex containers */
+.flex > * {
+  min-width: 0;
+}
+
+.grid > * {
+  min-width: 0;
 }
 
 /* Custom Animations */

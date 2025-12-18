@@ -1,7 +1,7 @@
 import { Property } from '@/types'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 
 interface PropertyCardProps {
@@ -11,7 +11,7 @@ interface PropertyCardProps {
   showOwnerContact?: boolean
 }
 
-export default function PropertyCard({ 
+function PropertyCard({ 
   property, 
   bfiScore, 
   matchReasons = [],
@@ -27,12 +27,13 @@ export default function PropertyCard({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price)
-    
+
+    // Use short units so rent text doesn't wrap or truncate on cards
     switch (type) {
       case 'monthly':
-        return `${formatted}/month`
+        return `${formatted}/mo`
       case 'yearly':
-        return `${formatted}/year`
+        return `${formatted}/yr`
       case 'sqft':
         return `${formatted}/sq ft`
       default:
@@ -88,6 +89,20 @@ export default function PropertyCard({
     return 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=900&h=600&fit=crop&q=80'
   }
 
+  const getInitialImageSrc = () => {
+    if (property.images && property.images.length > 0) {
+      const src = property.images[0]
+      // Skip known broken local paths and localhost images
+      if (src.startsWith('/images/') || src.includes('localhost:3000/images')) {
+        return getFallbackImage()
+      }
+      return src
+    }
+    return getFallbackImage()
+  }
+
+  const [imageSrc, setImageSrc] = useState<string>(getInitialImageSrc)
+
   const handleViewClick = () => {
     logSessionEvent({
       sessionType: 'view',
@@ -101,29 +116,27 @@ export default function PropertyCard({
 
   return (
     <div
-      className="group relative bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-[#FF5722] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
+      className="group relative bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-[#FF5722] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl flex flex-col h-full"
     >
       <div className="absolute inset-0 bg-gradient-to-br from-[#FF5722]/5 to-[#E4002B]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       
       {/* Image Section */}
       <div className="relative h-56 w-full overflow-hidden">
-        {property.images && property.images.length > 0 ? (
-          <Image
-            src={property.images[0]}
-            alt={property.title}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-700"
-            unoptimized
-          />
-        ) : (
-          <Image
-            src={getFallbackImage()}
-            alt={property.title || 'Property'}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-700"
-            unoptimized
-          />
-        )}
+        <Image
+          src={imageSrc}
+          alt={property.title || 'Property'}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-700"
+          unoptimized
+          loading="lazy"
+          sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+          onError={() => {
+            const fallback = getFallbackImage()
+            if (imageSrc !== fallback) {
+              setImageSrc(fallback)
+            }
+          }}
+        />
         
         {/* Top Badges */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
@@ -164,7 +177,7 @@ export default function PropertyCard({
       </div>
       
       {/* Content Section */}
-      <div className="relative z-10 p-6">
+      <div className="relative z-10 p-6 flex flex-col h-full">
         {/* Header */}
         <div className="mb-4">
           <h3 className="text-xl font-bold text-gray-900 truncate group-hover:text-[#FF5722] transition-colors duration-300 mb-2">
@@ -183,7 +196,9 @@ export default function PropertyCard({
         <div className="flex flex-wrap justify-between items-baseline gap-3 mb-4">
           <div className="min-w-0 flex-1">
             <div className="text-lg sm:text-xl md:text-2xl font-black leading-tight bg-gradient-to-r from-[#FF5722] to-[#E4002B] bg-clip-text text-transparent">
-              {formatPrice(property.price, property.priceType)}
+              <span className="whitespace-nowrap inline-block">
+                {formatPrice(property.price, property.priceType)}
+              </span>
             </div>
             <div className="text-xs sm:text-sm text-gray-600 mt-1">
               {property.size.toLocaleString()} sq ft
@@ -240,7 +255,7 @@ export default function PropertyCard({
         </div>
         
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="mt-auto flex gap-2 pt-2 border-t border-gray-100">
           <Link 
             href={bfiScore !== undefined ? `/properties/${property.id}/match` : `/properties/${property.id}`}
             onClick={handleViewClick}
@@ -261,3 +276,5 @@ export default function PropertyCard({
     </div>
   )
 }
+
+export default memo(PropertyCard)

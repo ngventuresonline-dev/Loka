@@ -10,9 +10,76 @@ import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
-const propertyTypes = ['Standalone', 'Retail Space', 'Office', 'Food Court', 'Mall Space', 'Warehouse', 'Land', 'Restaurant Space', 'Stall Space', 'Other']
-const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road', 'Electronic City', 'Bellandur', 'Other']
-const features = ['Ground Floor', 'Corner Unit', 'Main Road', 'Parking', 'Kitchen Setup', 'AC', 'Security', 'Storage', 'Other']
+const propertyTypes = [
+  'Office',
+  'Retail Space',
+  'Restaurant',
+  'Food Court',
+  'Café / Coffee Shop',
+  'QSR (Quick Service Restaurant)',
+  'Dessert / Bakery',
+  'Warehouse',
+  'Mall Space',
+  'Standalone Building',
+  'Bungalow',
+  'Villa',
+  'Commercial Complex',
+  'Business Park',
+  'IT Park',
+  'Co-working Space',
+  'Service Apartment',
+  'Hotel / Hospitality',
+  'Land',
+  'Industrial Space',
+  'Showroom',
+  'Kiosk',
+  'Other'
+]
+const locations = [
+  'Koramangala',
+  'Indiranagar',
+  'Whitefield',
+  'HSR Layout',
+  'Jayanagar',
+  'BTM Layout',
+  'MG Road',
+  'Brigade Road',
+  'Marathahalli',
+  'Hebbal',
+  'Banashankari',
+  'Sarjapur Road',
+  'Electronic City',
+  'Bellandur',
+  'Bannerghatta Road',
+  'Rajajinagar',
+  'Malleshwaram',
+  'Basavanagudi',
+  'Vijayanagar',
+  'Yelahanka',
+  'Yeshwanthpur',
+  'RT Nagar',
+  'Frazer Town',
+  'Richmond Town',
+  'Ulsoor',
+  'Kanakapura Road',
+  'New Bel Road',
+  'Kalyan Nagar',
+  'Kamanahalli',
+  'Sahakar Nagar',
+  'Other'
+]
+const featuresCategories = {
+  'Floor': ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor+', 'Basement', 'Mezzanine'],
+  'Location & Visibility': ['Corner Unit', 'Main Road', 'Street Facing', 'High Visibility'],
+  'Parking & Access': ['Parking', 'Valet Parking', 'Elevator', 'Wheelchair Accessible'],
+  'Infrastructure': ['AC', 'Power Backup', 'Water Supply', 'WiFi', 'Fire Safety', 'CCTV'],
+  'Setup & Facilities': ['Kitchen Setup', 'Restroom', 'Storage', 'Warehouse Space'],
+  'Security & Services': ['Security', '24/7 Security', 'Signage Allowed', 'Loading Dock'],
+  'Other': ['Other']
+}
+
+// Flatten for backward compatibility
+const features = Object.values(featuresCategories).flat()
 const availabilities = ['Immediate', '1 month', '1-2 months', '3+ months']
 
 function SizeSlider({ index = 0, required = false, onSizeChange, error }: { index?: number; required?: boolean; onSizeChange?: (size: number) => void; error?: boolean }) {
@@ -501,7 +568,13 @@ function FilterCard({
   index = 0,
   required = false,
   onSelectionChange,
-  error
+  error,
+  useDropdown = false,
+  categories,
+  instructionText,
+  visibleCount,
+  compactCapsules = false,
+  moreLabel,
 }: { 
   title: string
   items: string[]
@@ -510,9 +583,31 @@ function FilterCard({
   required?: boolean
   onSelectionChange?: (selected: Set<string>) => void
   error?: boolean
+  useDropdown?: boolean
+  categories?: Record<string, string[]>
+  instructionText?: string
+  visibleCount?: number
+  compactCapsules?: boolean
+  moreLabel?: string
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [otherValue, setOtherValue] = useState('')
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isDropdownOpen])
+  
   const borderColors = [
     'border-[#E4002B]/30 hover:border-[#E4002B]',
     'border-[#FF5200]/30 hover:border-[#FF5200]',
@@ -583,14 +678,26 @@ function FilterCard({
   const count = selected.size
   const colorIndex = index % 5
 
+  // Split items into always-visible quick options and dropdown-only options
+  const hasQuickOptions = useDropdown && typeof visibleCount === 'number' && visibleCount > 0 && !categories
+  const quickItems = hasQuickOptions ? items.slice(0, visibleCount as number) : []
+  const dropdownItems = hasQuickOptions ? items.slice(visibleCount as number) : items
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
-      className="relative group"
+      className={`relative group ${useDropdown ? 'overflow-visible' : ''}`}
+      style={{ zIndex: useDropdown && isDropdownOpen ? 50 : 'auto' }}
     >
-      <div className={`relative bg-white/90 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
+      <div
+        className={`relative bg-white/90 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${
+          borderColors[colorIndex]
+        } transition-all duration-500 ${!useDropdown ? 'overflow-hidden' : 'overflow-visible'} shadow-2xl ${
+          shadowColors[colorIndex]
+        } group-hover:-translate-y-2`}
+      >
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
         
@@ -604,24 +711,275 @@ function FilterCard({
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-start justify-between mb-4 sm:mb-6">
+            <div className="flex-1">
             <h3
               className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900"
               style={{ fontFamily: fraunces.style.fontFamily }}
             >
               {title} {required && <span className="text-red-500 text-base sm:text-lg">*</span>}
             </h3>
+              {instructionText && (
+                <p className="text-xs sm:text-sm text-gray-600 mt-1.5" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                  {instructionText}
+                </p>
+              )}
+            </div>
             {multi && count > 0 && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-lg shadow-[#E4002B]/50"
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-lg shadow-[#E4002B]/50 ml-4 flex-shrink-0"
               >
                 {count}
               </motion.div>
             )}
           </div>
           
+          {useDropdown ? (
+            // Dropdown Mode
+            <div className="relative z-50" ref={dropdownRef}>
+              {/* Dropdown Button */}
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`w-full px-4 py-3 bg-white border-2 rounded-lg sm:rounded-xl text-left flex items-center justify-between transition-all duration-200 ${
+                  error && required && selected.size === 0
+                    ? 'border-red-300 focus:border-red-500'
+                    : isDropdownOpen
+                    ? 'border-[#E4002B]'
+                    : 'border-gray-200 hover:border-[#E4002B]/50'
+                }`}
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+              >
+                <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+                  {selected.size === 0 ? (
+                    <span className="text-gray-500 text-sm sm:text-base">
+                      {title === 'Property Type'
+                        ? 'Choose your property type'
+                        : title.startsWith('Property Location')
+                        ? 'Select from other locations'
+                        : `Select ${title.toLowerCase()}...`}
+                    </span>
+                  ) : (
+                    Array.from(selected).slice(0, 2).map(item => (
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white text-xs sm:text-sm rounded-md font-medium"
+                      >
+                        {item}
+                        {multi && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggle(item)
+                            }}
+                            className="hover:bg-white/20 rounded-full p-0.5"
+                          >
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
+                      </span>
+                    ))
+                  )}
+                  {selected.size > 2 && (
+                    <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                      +{selected.size - 2} more
+                    </span>
+                  )}
+                </div>
+                <svg
+                  className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Quick options row (first N capsules always visible) */}
+              {hasQuickOptions && quickItems.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                  {quickItems.map((item) => {
+                    const active = selected.has(item)
+                    return (
+                      <motion.button
+                        key={item}
+                        onClick={() => toggle(item)}
+                        className={`relative ${
+                          compactCapsules
+                            ? 'px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm'
+                            : 'px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base'
+                        } rounded-lg sm:rounded-xl font-medium transition-all duration-300 border-2 ${
+                          active
+                            ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
+                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
+                        }`}
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                        whileHover={{ scale: 1.03, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        initial={false}
+                      >
+                        {item}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Dropdown Menu with Capsules */}
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    // Scrollable dropdown body with extra bottom padding
+                    className="absolute z-[9999] w-full mt-2 bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-20 max-h-[60vh] overflow-y-auto"
+                    style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}
+                  >
+                    {moreLabel && dropdownItems.length > 0 && (
+                      <p
+                        className="text-xs sm:text-sm text-gray-500 mb-3"
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                      >
+                        {moreLabel}
+                      </p>
+                    )}
+                    {/* Capsule Grid with Categories */}
+                    {categories ? (
+                      <div className="space-y-4">
+                        {Object.entries(categories).map(([categoryName, categoryItems]) => (
+                          <div key={categoryName}>
+                            <h4 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wider" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                              {categoryName}
+                            </h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                              {categoryItems.map((item) => {
+                                const active = selected.has(item)
+                                const isOther = item === 'Other' || item === 'Others'
+                                return (
+                                  <motion.button
+                                    key={item}
+                                    onClick={() => {
+                                      toggle(item)
+                                      if (!multi && !isOther) {
+                                        setIsDropdownOpen(false)
+                                      }
+                                    }}
+                                    className={`relative ${
+                                      compactCapsules
+                                        ? 'px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm'
+                                        : 'px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base'
+                                    } rounded-lg sm:rounded-xl font-medium transition-all duration-300 border-2 ${
+                                      active
+                                        ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
+                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
+                                    }`}
+                                    style={{ fontFamily: plusJakarta.style.fontFamily }}
+                                    whileHover={{ scale: 1.05, y: -2 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    initial={false}
+                                  >
+                                    {item}
+                                    {multi && active && (
+                                      <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md"
+                                      >
+                                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#E4002B]" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </motion.div>
+                                    )}
+                                    {active && (
+                                      <motion.div
+                                        className="absolute inset-0 rounded-xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 animate-ping"
+                                        style={{ animationDuration: '2s' }}
+                                      />
+                                    )}
+                                  </motion.button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                        {dropdownItems.map((item) => {
+                          const active = selected.has(item)
+                          const isOther = item === 'Other' || item === 'Others'
+                          return (
+                            <motion.button
+                              key={item}
+                              onClick={() => {
+                                toggle(item)
+                                if (!multi && !isOther) {
+                                  setIsDropdownOpen(false)
+                                }
+                              }}
+                              className={`relative ${
+                                compactCapsules
+                                  ? 'px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm'
+                                  : 'px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base'
+                              } rounded-lg sm:rounded-xl font-medium transition-all duration-300 border-2 ${
+                                active
+                                  ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
+                                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
+                              }`}
+                              style={{ fontFamily: plusJakarta.style.fontFamily }}
+                              whileHover={{ scale: 1.05, y: -2 }}
+                              whileTap={{ scale: 0.98 }}
+                              initial={false}
+                            >
+                              {item}
+                              {multi && active && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md"
+                                >
+                                  <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#E4002B]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </motion.div>
+                              )}
+                              {active && (
+                                <motion.div
+                                  className="absolute inset-0 rounded-xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 animate-ping"
+                                  style={{ animationDuration: '2s' }}
+                                />
+                              )}
+                            </motion.button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {/* Show text input when "Other" is selected */}
+                    {(selected.has('Other') || selected.has('Others')) && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <input
+                          type="text"
+                          value={otherValue}
+                          onChange={(e) => handleOtherValueChange(e.target.value)}
+                          placeholder="Please specify..."
+                          className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
+                          style={{ fontFamily: plusJakarta.style.fontFamily }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            // Grid Mode (Original)
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {items.map((item, itemIndex) => {
               const active = selected.has(item)
@@ -661,8 +1019,9 @@ function FilterCard({
               )
             })}
           </div>
-          {/* Show text input when "Other" or "Others" is selected */}
-          {(selected.has('Other') || selected.has('Others')) && (
+          )}
+          {/* Show text input when "Other" or "Others" is selected (only in grid mode) */}
+          {!useDropdown && (selected.has('Other') || selected.has('Others')) && (
             <div className="mt-4">
               <input
                 type="text"
@@ -854,7 +1213,7 @@ export default function OwnerFilterPage() {
         <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_4s_ease-in-out_infinite_2s]"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-12 pb-24 sm:pb-32 md:pb-40">
         {/* Header with Back Button */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -912,13 +1271,18 @@ export default function OwnerFilterPage() {
         </motion.div>
 
         {/* Filter Cards - Platform Performance Style */}
-        <div className="grid gap-4 sm:gap-6 md:gap-8">
-          <div data-field="propertyType">
+        <div className="grid gap-4 sm:gap-6 md:gap-8 overflow-visible mb-8 sm:mb-12 md:mb-16">
+          <div data-field="propertyType" className="overflow-visible relative z-20">
             <FilterCard 
               title="Property Type" 
               items={propertyTypes} 
               index={0} 
               required 
+              useDropdown={true}
+              visibleCount={6}
+              compactCapsules
+              instructionText="Highest & Instant matches for FnB properties"
+              moreLabel="Choose from more property types"
               onSelectionChange={(set) => {
                 setPropertyTypeSelected(set)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
@@ -937,13 +1301,17 @@ export default function OwnerFilterPage() {
               error={errors.size}
             />
           </div>
-          <div data-field="location">
+          <div data-field="location" className="overflow-visible relative z-20">
             <FilterCard 
-              title="Location (Popular Areas)" 
+              title="Property Location" 
               items={locations} 
-              multi 
+              /* Owners should choose a single primary location at a time */
               index={2} 
               required
+              useDropdown={true}
+              visibleCount={6}
+              compactCapsules
+              moreLabel="Choose more areas across the city"
               onSelectionChange={(set) => {
                 setLocationSelected(set)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
@@ -973,13 +1341,17 @@ export default function OwnerFilterPage() {
               error={errors.deposit}
             />
           </div>
-          <div data-field="features">
+          <div data-field="features" className="overflow-visible relative z-20">
             <FilterCard 
               title="Features" 
               items={features} 
               multi 
               index={5} 
               required
+              useDropdown={true}
+              categories={featuresCategories}
+              compactCapsules
+              instructionText="Choose any Features relevant to your property"
               onSelectionChange={(set) => {
                 setFeaturesSelected(set)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
@@ -1037,8 +1409,19 @@ export default function OwnerFilterPage() {
         )}
       </AnimatePresence>
 
+      {/* Footer Note */}
+      <div className="relative z-0 mt-8 sm:mt-10 md:mt-12 mb-6 sm:mb-8 flex justify-center px-4">
+        <p
+          className="max-w-3xl text-[10px] sm:text-xs md:text-sm text-gray-500 text-center leading-relaxed"
+          style={{ fontFamily: plusJakarta.style.fontFamily }}
+        >
+          We use your preferences to instantly match your property with high-intent FnB and retail brands. 
+          Your details are kept confidential and only shared with verified matches to speed up closures.
+        </p>
+      </div>
+
       {/* Bottom Glow Line */}
-      <div className="relative z-10 mt-16 h-px bg-gradient-to-r from-transparent via-[#E4002B] to-transparent opacity-50"></div>
+      <div className="relative z-0 mt-8 sm:mt-10 md:mt-12 h-px bg-gradient-to-r from-transparent via-[#E4002B] to-transparent opacity-50"></div>
     </div>
   )
 }

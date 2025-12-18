@@ -13,6 +13,7 @@ interface Property {
   price: number
   priceType: string
   size: number
+  status: 'pending' | 'approved' | 'rejected'
   availability: boolean
   isFeatured: boolean
   createdAt: string
@@ -26,133 +27,125 @@ export default function PropertiesPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [properties, setProperties] = useState<Property[]>([])
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedProperties, setSelectedProperties] = useState<string[]>([])
+  const [selectedProperties, setSelectedProperties] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Column filters
+  const [filters, setFilters] = useState({
+    owner: '',
+    priceMin: '',
+    priceMax: '',
+    sizeMin: '',
+    sizeMax: '',
+    status: '',
+    availability: '',
+    featured: ''
+  })
 
   useEffect(() => {
-    if (user?.id && user?.email) {
-      console.log('[Properties Page] User authenticated, fetching properties...', { userId: user.id, email: user.email })
-      fetchProperties()
-    } else {
-      console.log('[Properties Page] Waiting for user authentication...', { user })
-    }
-  }, [user])
+    fetchProperties()
+  }, [])
+
+  useEffect(() => {
+    applyFilters(properties)
+  }, [filters, searchTerm, properties])
 
   const fetchProperties = async () => {
-    if (!user?.id || !user?.email) {
-      console.error('[Properties] User not authenticated', { user })
-      setLoading(false)
-      return
-    }
-
+    const userEmail = user?.email || 'admin@ngventures.com'
+    
     try {
       setLoading(true)
-      const url = `/api/admin/properties?limit=1000&page=1&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`
-      console.log('[Properties] Fetching from:', url)
-      
+      // Fetch ONLY approved properties from API
+      const url = `/api/admin/properties?userEmail=${encodeURIComponent(userEmail)}&status=approved&limit=1000`
       const response = await fetch(url)
-      const responseText = await response.text()
       
       if (response.ok) {
-        try {
-          const data = JSON.parse(responseText)
-          console.log('[Properties] API Response:', {
-            propertiesCount: data.properties?.length || 0,
-            total: data.total,
-            page: data.page,
-            hasProperties: !!data.properties,
-            firstProperty: data.properties?.[0]
-          })
-          setProperties(data.properties || [])
-        } catch (parseError) {
-          console.error('[Properties] Failed to parse response:', parseError, 'Response text:', responseText.substring(0, 200))
-          setProperties([])
-        }
+        const data = await response.json()
+        let allProps: Property[] = data.properties || []
+
+        // API already filters by status=approved, availability=true, or isFeatured=true
+        // Normalize status: if status is null, infer from availability
+        allProps = allProps.map((p: any) => ({
+          ...p,
+          status: p.status || (p.availability ? 'approved' : 'pending')
+        })).filter((p: Property) =>
+          // Include properties that are approved, available, or featured
+          p.status === 'approved' || 
+          p.availability === true || 
+          p.isFeatured === true
+        )
+
+        setProperties(allProps)
+        applyFilters(allProps)
       } else {
-        let errorData = {}
-        try {
-          errorData = JSON.parse(responseText)
-        } catch {
-          errorData = { raw: responseText.substring(0, 200) }
-        }
-
-        const errorPayload = {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          url
-        }
-
-        // For auth errors, log a warning (we fall back to public API)
-        if (response.status === 401 || response.status === 403) {
-          console.warn('[Properties] Admin API auth error, using public API fallback:', errorPayload)
-        } else {
-          console.error('[Properties] Admin API error:', errorPayload)
-        }
-        
-        // Try public API as fallback
-        try {
-          console.log('[Properties] Trying public API as fallback...')
-          const publicResponse = await fetch('/api/properties?limit=1000')
-          if (publicResponse.ok) {
-            const publicData = await publicResponse.json()
-            const props = publicData.properties || publicData.data?.properties || []
-            console.log('[Properties] Using public API, fetched:', props.length, 'properties')
-            setProperties(props.map((p: any) => ({
-              id: p.id,
-              title: p.title,
-              address: p.address,
-              city: p.city,
-              owner: p.owner || { name: 'N/A', email: '' },
-              price: Number(p.price) || 0,
-              priceType: p.priceType || 'monthly',
-              size: p.size || 0,
-              availability: p.availability !== undefined ? p.availability : true,
-              isFeatured: p.isFeatured || false,
-              createdAt: p.createdAt
-            })))
-          } else {
-            console.error('[Properties] Public API also failed:', publicResponse.status)
-          }
-        } catch (fallbackError) {
-          console.error('[Properties] Fallback API error:', fallbackError)
-        }
+        console.error('Failed to fetch properties:', response.status)
+        setProperties([])
       }
-    } catch (error: any) {
-      console.error('[Properties] Network/fetch error:', {
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name
-      })
+    } catch (error) {
+      console.error('Error fetching properties:', error)
+      setProperties([])
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this property? This action cannot be undone.')) return
-    
-    if (!user?.id || !user?.email) {
-      alert('You must be logged in to delete properties')
-      return
-    }
-
+  const handleApprove = async (propertyId: string) => {
     try {
-      const response = await fetch(`/api/admin/properties?propertyId=${id}&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/admin/properties/${propertyId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
       })
       
       if (response.ok) {
-        // Remove from local state immediately for better UX
-        setProperties(properties.filter(p => p.id !== id))
-        setSelectedProperties(selectedProperties.filter(pid => pid !== id))
-        // Refresh to ensure consistency
-        await fetchProperties()
+        fetchProperties() // Refresh list
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Delete error:', response.status, errorData)
-        alert(errorData.error || 'Failed to delete property')
+        alert('Failed to approve property')
+      }
+    } catch (error) {
+      console.error('Error approving property:', error)
+      alert('Error approving property')
+    }
+  }
+
+  const handleReject = async (propertyId: string) => {
+    try {
+      const response = await fetch(`/api/admin/properties/${propertyId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (response.ok) {
+        fetchProperties() // Refresh list
+      } else {
+        alert('Failed to reject property')
+      }
+    } catch (error) {
+      console.error('Error rejecting property:', error)
+      alert('Error rejecting property')
+    }
+  }
+
+  const handleDelete = async (propertyId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this property? This action cannot be undone.')
+    if (!confirmDelete) return
+
+    const userEmail = user?.email || 'admin@ngventures.com'
+
+    try {
+      const url = `/api/admin/properties?propertyId=${propertyId}&userEmail=${encodeURIComponent(userEmail)}`
+      const response = await fetch(url, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        fetchProperties()
+        setSelectedProperties(new Set())
+      } else {
+        const error = await response.json().catch(() => ({ error: 'Failed to delete property' }))
+        alert(error.error || 'Failed to delete property')
       }
     } catch (error) {
       console.error('Error deleting property:', error)
@@ -160,259 +153,415 @@ export default function PropertiesPage() {
     }
   }
 
-  const handleBulkDelete = async () => {
-    if (!confirm(`Are you sure you want to delete ${selectedProperties.length} properties?`)) return
-    
-    try {
-      await Promise.all(
-        selectedProperties.map(id =>
-          fetch(`/api/admin/properties?propertyId=${id}`, { method: 'DELETE' })
-        )
-      )
-      setSelectedProperties([])
-      await fetchProperties()
-    } catch (error) {
-      console.error('Error bulk deleting:', error)
-      alert('Failed to delete properties')
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProperties(new Set(filteredProperties.map(p => p.id)))
+    } else {
+      setSelectedProperties(new Set())
     }
   }
 
-  const handleFeature = async (id: string, currentFeatured: boolean) => {
-    if (!user?.id || !user?.email) {
-      alert('You must be logged in to update properties')
+  const handleSelectProperty = (propertyId: string, checked: boolean) => {
+    const newSelected = new Set(selectedProperties)
+    if (checked) {
+      newSelected.add(propertyId)
+    } else {
+      newSelected.delete(propertyId)
+    }
+    setSelectedProperties(newSelected)
+  }
+
+  const applyFilters = (props: Property[]) => {
+    let filtered = [...props]
+
+    // Apply search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      filtered = filtered.filter((p: Property) =>
+        p.title.toLowerCase().includes(search) ||
+        p.address.toLowerCase().includes(search) ||
+        p.city.toLowerCase().includes(search) ||
+        p.owner.name.toLowerCase().includes(search)
+      )
+    }
+
+    // Filter by owner
+    if (filters.owner) {
+      filtered = filtered.filter(p =>
+        p.owner.name.toLowerCase().includes(filters.owner.toLowerCase()) ||
+        p.owner.email.toLowerCase().includes(filters.owner.toLowerCase())
+      )
+    }
+
+    // Filter by price range
+    if (filters.priceMin) {
+      const minPrice = parseFloat(filters.priceMin)
+      if (!isNaN(minPrice)) {
+        filtered = filtered.filter(p => p.price >= minPrice)
+      }
+    }
+    if (filters.priceMax) {
+      const maxPrice = parseFloat(filters.priceMax)
+      if (!isNaN(maxPrice)) {
+        filtered = filtered.filter(p => p.price <= maxPrice)
+      }
+    }
+
+    // Filter by size range
+    if (filters.sizeMin) {
+      const minSize = parseInt(filters.sizeMin)
+      if (!isNaN(minSize)) {
+        filtered = filtered.filter(p => p.size >= minSize)
+      }
+    }
+    if (filters.sizeMax) {
+      const maxSize = parseInt(filters.sizeMax)
+      if (!isNaN(maxSize)) {
+        filtered = filtered.filter(p => p.size <= maxSize)
+      }
+    }
+
+    // Filter by status
+    if (filters.status) {
+      filtered = filtered.filter(p => p.status === filters.status)
+    }
+
+    // Filter by availability
+    if (filters.availability !== '') {
+      const isAvailable = filters.availability === 'true'
+      filtered = filtered.filter(p => p.availability === isAvailable)
+    }
+
+    // Filter by featured
+    if (filters.featured !== '') {
+      const isFeatured = filters.featured === 'true'
+      filtered = filtered.filter(p => p.isFeatured === isFeatured)
+    }
+
+    setFilteredProperties(filtered)
+  }
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }))
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      owner: '',
+      priceMin: '',
+      priceMax: '',
+      sizeMin: '',
+      sizeMax: '',
+      status: '',
+      availability: '',
+      featured: ''
+    })
+    setSearchTerm('')
+  }
+
+  const hasActiveFilters = () => {
+    return Object.values(filters).some(v => v !== '') || searchTerm !== ''
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedProperties.size === 0) {
+      alert('Please select at least one property to delete.')
       return
     }
 
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${selectedProperties.size} property/properties? This action cannot be undone.`
+    )
+    if (!confirmDelete) return
+
+    const userEmail = user?.email || 'admin@ngventures.com'
+    const propertyIds = Array.from(selectedProperties)
+
     try {
-      const response = await fetch('/api/admin/properties', {
-        method: 'PATCH',
+      setIsDeleting(true)
+      const url = `/api/admin/properties/bulk-delete?userEmail=${encodeURIComponent(userEmail)}`
+      const response = await fetch(url, {
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          propertyId: id,
-          isFeatured: !currentFeatured
-        })
+        body: JSON.stringify({ propertyIds }),
       })
-      
+
       if (response.ok) {
-        // Update local state immediately for better UX
-        setProperties(properties.map(p => 
-          p.id === id ? { ...p, isFeatured: !currentFeatured } : p
-        ))
-        // Refresh to ensure consistency
+        const result = await response.json()
+        alert(`Successfully deleted ${result.deletedCount || propertyIds.length} property/properties.`)
+        setSelectedProperties(new Set())
         await fetchProperties()
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Feature error:', response.status, errorData)
-        alert(errorData.error || 'Failed to update property')
+        const error = await response.json().catch(() => ({ error: 'Failed to delete properties' }))
+        alert(error.error || 'Failed to delete properties')
       }
     } catch (error) {
-      console.error('Error featuring property:', error)
-      alert('Failed to update property. Please try again.')
+      console.error('Error deleting properties:', error)
+      alert('Failed to delete properties. Please try again.')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
-  const filteredProperties = properties.filter(property =>
-    property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.city.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+    }
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || styles.pending}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    )
+  }
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Properties</h1>
-            <p className="text-gray-400">Manage all property listings</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={async () => {
-                if (!confirm('Regenerate descriptions for all properties? This will overwrite existing descriptions.')) return
-                if (!user?.id || !user?.email) {
-                  alert('You must be logged in as admin to regenerate descriptions')
-                  return
-                }
-                const params = new URLSearchParams({
-                  userId: user.id,
-                  userEmail: encodeURIComponent(user.email),
-                })
-                try {
-                  const res = await fetch(`/api/admin/properties/describe?${params.toString()}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ all: true, mode: 'both' }),
-                  })
-                  const data = await res.json()
-                  if (res.ok) {
-                    alert(`Descriptions regenerated for ${data.updated ?? 0} properties.`)
-                    await fetchProperties()
-                  } else {
-                    alert(data.error || 'Failed to regenerate descriptions')
-                  }
-                } catch (err) {
-                  console.error('Bulk description regenerate error', err)
-                  alert('Failed to regenerate descriptions')
-                }
-              }}
-              className="px-4 py-2 bg-gray-800 text-xs text-white rounded-lg hover:bg-gray-700 transition-colors border border-gray-600"
-            >
-              Regenerate Titles & Descriptions (All)
-            </button>
-            <button
-              onClick={() => router.push('/admin/properties/new')}
-              className="px-6 py-3 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors font-medium"
-            >
-              Add New Property
-            </button>
-          </div>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-white">Approved Properties</h1>
         </div>
 
         {/* Search and Bulk Actions */}
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex gap-4 items-center">
-            <input
-              type="text"
-              placeholder="Search properties..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF5200]"
-            />
-            {selectedProperties.length > 0 && (
-              <button
-                onClick={handleBulkDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete Selected ({selectedProperties.length})
-              </button>
-            )}
-          </div>
+        <div className="mb-4 flex gap-4 items-center">
+          <input
+            type="text"
+            placeholder="Search properties..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          {hasActiveFilters() && (
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+            >
+              Clear Filters
+            </button>
+          )}
+          {selectedProperties.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {isDeleting ? 'Deleting...' : `Delete Selected (${selectedProperties.size})`}
+            </button>
+          )}
         </div>
 
-        {/* Table */}
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>
-            </div>
-          ) : filteredProperties.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              {searchTerm ? (
-                <>
-                  <p>No properties found matching &quot;{searchTerm}&quot;</p>
-                  {properties.length > 0 && (
-                    <p className="text-sm mt-2">(Filtered from {properties.length} total properties)</p>
-                  )}
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="mt-4 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                  >
-                    Clear Search
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p>No properties found</p>
-                  {properties.length === 0 && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm">Make sure you&apos;re logged in as admin</p>
-                      <button
-                        onClick={fetchProperties}
-                        className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors text-sm"
-                      >
-                        Refresh
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead className="bg-gray-800 border-b border-gray-700">
+        {/* Properties Table */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-gray-600">Loading properties...</p>
+          </div>
+        ) : properties.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <p className="text-gray-600">No properties found</p>
+          </div>
+        ) : filteredProperties.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <p className="text-gray-600">No properties match the current filters</p>
+            <button
+              onClick={clearFilters}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white shadow overflow-hidden sm:rounded-md">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                     <input
                       type="checkbox"
-                      checked={selectedProperties.length === filteredProperties.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedProperties(filteredProperties.map(p => p.id))
-                        } else {
-                          setSelectedProperties([])
-                        }
-                      }}
-                      className="rounded"
+                      checked={filteredProperties.length > 0 && selectedProperties.size === filteredProperties.length && filteredProperties.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-gray-300 font-semibold">Title</th>
-                  <th className="px-6 py-4 text-left text-gray-300 font-semibold">Location</th>
-                  <th className="px-6 py-4 text-left text-gray-300 font-semibold">Owner</th>
-                  <th className="px-6 py-4 text-left text-gray-300 font-semibold">Price</th>
-                  <th className="px-6 py-4 text-left text-gray-300 font-semibold">Size</th>
-                  <th className="px-6 py-4 text-left text-gray-300 font-semibold">Status</th>
-                  <th className="px-6 py-4 text-left text-gray-300 font-semibold">Featured</th>
-                  <th className="px-6 py-4 text-right text-gray-300 font-semibold">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="space-y-2">
+                      <div>Owner</div>
+                      <input
+                        type="text"
+                        placeholder="Filter owner..."
+                        value={filters.owner}
+                        onChange={(e) => handleFilterChange('owner', e.target.value)}
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="space-y-2">
+                      <div>Price</div>
+                      <div className="flex gap-1">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={filters.priceMin}
+                          onChange={(e) => handleFilterChange('priceMin', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={filters.priceMax}
+                          onChange={(e) => handleFilterChange('priceMax', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="space-y-2">
+                      <div>Size</div>
+                      <div className="flex gap-1">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={filters.sizeMin}
+                          onChange={(e) => handleFilterChange('sizeMin', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={filters.sizeMax}
+                          onChange={(e) => handleFilterChange('sizeMax', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="space-y-2">
+                      <div>Status</div>
+                      <select
+                        value={filters.status}
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="space-y-2">
+                      <div>Availability</div>
+                      <select
+                        value={filters.availability}
+                        onChange={(e) => handleFilterChange('availability', e.target.value)}
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="">All</option>
+                        <option value="true">Available</option>
+                        <option value="false">Unavailable</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="space-y-2">
+                      <div>Featured</div>
+                      <select
+                        value={filters.featured}
+                        onChange={(e) => handleFilterChange('featured', e.target.value)}
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="">All</option>
+                        <option value="true">Featured</option>
+                        <option value="false">Not Featured</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {filteredProperties.map((property) => (
-                  <tr
-                    key={property.id}
-                    className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
+                  <tr key={property.id} className={selectedProperties.has(property.id) ? 'bg-blue-50' : ''}>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedProperties.includes(property.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedProperties([...selectedProperties, property.id])
-                          } else {
-                            setSelectedProperties(selectedProperties.filter(id => id !== property.id))
-                          }
-                        }}
-                        className="rounded"
+                        checked={selectedProperties.has(property.id)}
+                        onChange={(e) => handleSelectProperty(property.id, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-6 py-4 text-white font-medium">{property.title}</td>
-                    <td className="px-6 py-4 text-gray-300">{property.city}</td>
-                    <td className="px-6 py-4 text-gray-300">{property.owner.name}</td>
-                    <td className="px-6 py-4 text-white">
-                      ₹{property.price.toLocaleString()}/{property.priceType === 'monthly' ? 'mo' : property.priceType === 'yearly' ? 'yr' : 'sqft'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{property.title}</div>
+                      <div className="text-sm text-gray-500">{property.address}, {property.city}</div>
                     </td>
-                    <td className="px-6 py-4 text-gray-300">{property.size.toLocaleString()} sq ft</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        property.availability ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-                      }`}>
-                        {property.availability ? 'Available' : 'Occupied'}
-                      </span>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{property.owner.name}</div>
+                      <div className="text-sm text-gray-500">{property.owner.email}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleFeature(property.id, property.isFeatured)}
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          property.isFeatured
-                            ? 'bg-purple-500/20 text-purple-300'
-                            : 'bg-gray-500/20 text-gray-300'
-                        }`}
-                      >
-                        {property.isFeatured ? 'Yes' : 'No'}
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ₹{property.price.toLocaleString()}/{property.priceType}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {property.size.toLocaleString()} sqft
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(property.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {property.availability ? (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Available
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Unavailable
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {property.isFeatured ? (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          Featured
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          -
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10">
+                      <div className="flex space-x-2">
                         <button
                           onClick={() => router.push(`/admin/properties/${property.id}`)}
-                          className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"
+                          className="text-blue-600 hover:text-blue-900 whitespace-nowrap"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(property.id)}
-                          className="px-3 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 text-sm"
+                          className="text-red-600 hover:text-red-900 whitespace-nowrap"
                         >
                           Delete
                         </button>
@@ -422,10 +571,10 @@ export default function PropertiesPage() {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )
 }
-

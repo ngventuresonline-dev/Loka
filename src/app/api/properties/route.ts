@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/get-prisma'
 import { requireOwnerOrAdmin, getAuthenticatedUser } from '@/lib/api-auth'
 import { CreatePropertySchema, PropertyQuerySchema } from '@/lib/validations/property'
 import { generatePropertyId } from '@/lib/property-id-generator'
@@ -62,6 +62,15 @@ export async function POST(request: NextRequest) {
     }
     const mappedPropertyType = propertyTypeMap[data.propertyType] || 'other'
 
+    // Get Prisma client
+    const prisma = await getPrisma()
+    if (!prisma) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      )
+    }
+
     // Generate property ID in prop-XXX format
     const propertyId = await generatePropertyId()
 
@@ -82,7 +91,8 @@ export async function POST(request: NextRequest) {
         securityDeposit: data.securityDeposit,
         amenities: data.amenities || [],
         images: data.images || [],
-        availability: data.availability ?? true,
+        status: 'pending', // New properties start as pending
+        availability: data.availability ?? false, // Start as unavailable until approved
         isFeatured: data.isFeatured ?? false,
         ownerId: user.id,
         views: 0,
@@ -175,6 +185,18 @@ export async function GET(request: NextRequest) {
     // Build Prisma where clause
     const where: any = {}
 
+    // IMPORTANT: Only show approved properties on public API
+    where.status = 'approved'
+    
+    // Debug: Log query parameters for featured properties
+    if (query.isFeatured === true) {
+      console.log('[Properties API] Featured query params:', {
+        isFeatured: query.isFeatured,
+        type: typeof query.isFeatured,
+        rawParams: request.nextUrl.searchParams.toString()
+      })
+    }
+
     // Location filters
     if (query.city) {
       where.city = { contains: query.city, mode: 'insensitive' }
@@ -206,9 +228,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Boolean filters (only fields that actually exist in the Prisma schema)
-    if (query.availability !== undefined) {
+    // Note: For featured properties, we don't filter by availability - only status and isFeatured matter
+    if (query.isFeatured !== true && query.availability !== undefined) {
+      // Only apply availability filter if NOT filtering for featured properties
       where.availability = query.availability
     }
+    // Featured filter: Only show properties that are BOTH approved AND featured
+    // Availability is NOT considered for featured properties
     if (query.isFeatured !== undefined) {
       where.isFeatured = query.isFeatured
     }
@@ -238,10 +264,39 @@ export async function GET(request: NextRequest) {
       orderBy[query.sortBy || 'createdAt'] = query.sortOrder || 'desc'
     }
 
+    // Get Prisma client
+    const prisma = await getPrisma()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database connection failed. Please check your database configuration.',
+        },
+        { status: 503 }
+      )
+    }
+
     // Pagination
     const page = query.page || 1
     const limit = Math.min(query.limit || 20, 100) // Max 100 per page
     const skip = (page - 1) * limit
+
+    // Debug logging for featured properties query
+    if (query.isFeatured === true) {
+      console.log('[Properties API] Featured properties WHERE clause:', JSON.stringify(where, null, 2))
+      
+      // Also check raw count of featured properties in DB
+      const allFeaturedCount = await prisma.property.count({ where: { isFeatured: true } })
+      const approvedFeaturedCount = await prisma.property.count({ where: { isFeatured: true, status: 'approved' } })
+      const approvedCount = await prisma.property.count({ where: { status: 'approved' } })
+      
+      console.log('[Properties API] Database counts:', {
+        allFeatured: allFeaturedCount,
+        approvedAndFeatured: approvedFeaturedCount,
+        allApproved: approvedCount,
+        queryWillReturn: await prisma.property.count({ where })
+      })
+    }
 
     // Get total count for pagination
     const total = await prisma.property.count({ where })
@@ -274,6 +329,21 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(total / limit)
     const hasNextPage = page < totalPages
     const hasPreviousPage = page > 1
+
+    // Debug logging for featured properties response
+    if (query.isFeatured === true) {
+      console.log('[Properties API] Featured properties response:', {
+        total,
+        count: properties.length,
+        sampleIds: properties.slice(0, 3).map(p => ({ 
+          id: p.id, 
+          title: p.title, 
+          isFeatured: p.isFeatured, 
+          status: p.status,
+          availability: p.availability
+        }))
+      })
+    }
 
     return NextResponse.json({
       success: true,

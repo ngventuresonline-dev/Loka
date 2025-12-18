@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
         size: true,
         propertyType: true,
         amenities: true,
+        price: true,
       },
     })
 
@@ -113,14 +114,17 @@ export async function POST(request: NextRequest) {
         size: property.size,
         propertyType: property.propertyType,
         amenities: (property.amenities as string[]) || [],
+        price: property.price,
       })
       data.description = description
     }
 
     if (wantTitle) {
       title = generatePropertyTitle({
-        city: property.city,
+        title: property.title,
         propertyType: property.propertyType,
+        amenities: (property.amenities as string[]) || [],
+        size: property.size,
       })
       data.title = title
     }
