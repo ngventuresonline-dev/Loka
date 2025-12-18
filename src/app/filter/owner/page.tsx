@@ -739,7 +739,7 @@ function FilterCard({
           
           {useDropdown ? (
             // Dropdown Mode
-            <div className="relative" ref={dropdownRef} style={{ zIndex: 9999 }}>
+            <div className="relative w-full" ref={dropdownRef} style={{ zIndex: isDropdownOpen ? 9999 : 'auto' }}>
               {/* Dropdown Button */}
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -802,7 +802,7 @@ function FilterCard({
 
               {/* Quick options row (first N capsules always visible) */}
               {hasQuickOptions && quickItems.length > 0 && (
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                <div className="mt-3 mb-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                   {quickItems.map((item) => {
                     const active = selected.has(item)
                     return (
@@ -838,9 +838,14 @@ function FilterCard({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    // Scrollable dropdown body with extra bottom padding
+                    // Scrollable dropdown body - positioned directly below the input field
                     className="absolute z-[9999] w-full mt-2 bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-20 max-h-[60vh] overflow-y-auto"
-                    style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.5rem' }}
+                    style={{ 
+                      position: 'absolute', 
+                      top: '100%', 
+                      left: 0, 
+                      right: 0
+                    }}
                   >
                     {moreLabel && dropdownItems.length > 0 && (
                       <p
