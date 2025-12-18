@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         size: property.size,
         propertyType: property.propertyType,
         amenities: (property.amenities as string[]) || [],
-        price: property.price,
+        price: property.price ? property.price.toNumber() : undefined,
       })
       data.description = description
     }
