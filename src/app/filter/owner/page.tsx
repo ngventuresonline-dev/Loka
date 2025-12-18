@@ -697,6 +697,7 @@ function FilterCard({
         } transition-all duration-500 ${!useDropdown ? 'overflow-hidden' : 'overflow-visible'} shadow-2xl ${
           shadowColors[colorIndex]
         } group-hover:-translate-y-2`}
+        style={{ position: 'relative', zIndex: useDropdown && isDropdownOpen ? 50 : 'auto' }}
       >
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
@@ -738,7 +739,7 @@ function FilterCard({
           
           {useDropdown ? (
             // Dropdown Mode
-            <div className="relative z-50" ref={dropdownRef}>
+            <div className="relative" ref={dropdownRef} style={{ zIndex: 9999 }}>
               {/* Dropdown Button */}
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -839,7 +840,7 @@ function FilterCard({
                     transition={{ duration: 0.2 }}
                     // Scrollable dropdown body with extra bottom padding
                     className="absolute z-[9999] w-full mt-2 bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-20 max-h-[60vh] overflow-y-auto"
-                    style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}
+                    style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.5rem' }}
                   >
                     {moreLabel && dropdownItems.length > 0 && (
                       <p

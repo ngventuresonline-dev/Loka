@@ -17,6 +17,7 @@ import { type FeaturedProperty } from '@/data/featured-properties'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
 import { getTheme, getPaletteColors } from '@/lib/theme'
+import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 
 type AppStep = 'home' | 'brand-onboarding' | 'owner-onboarding' | 'brand-dashboard' | 'owner-dashboard'
 
@@ -500,29 +501,26 @@ export default function Home() {
     }
   }, [isMounted])
 
-  // Get unique logo files (no duplicates) - distributed with longer logos between smaller ones
-  const uniqueLogos = [
-    '/logos/truffles logo.jpg',           // medium
-    '/logos/Eleven-Bakehouse-Coloured-Logos-01.png', // longer
-    '/logos/MPC.jpg',                     // small
-    '/logos/Burger Seigneur Logo 1.png',  // longer
-    '/logos/images (3).png',              // small
-    '/logos/blr brewing co logo.png',     // longer
-    '/logos/images (4).jpg',              // small
-    '/logos/TFG Logo.png',                 // medium
-    '/logos/bawri.jpeg',                   // small
-    '/logos/Boba Bhai Logo.jpg',           // medium
-    '/logos/Dolphins.jpg',                 // small
-    '/logos/Sandowitch logo.jpg',          // longer
-    '/logos/Qirfa logo.jpg',               // small
-    '/logos/Madam Chocolate Logo .png',    // longer
-    '/logos/Zed.jpg',                      // small
-    '/logos/Blue Tokai.jpg',               // medium
-    '/logos/Namaste logo.jpg',             // small
-    '/logos/Kried Logo.jpg',               // small
-    '/logos/Melts Logo.jpg',               // small
-    '/logos/TAN logo.jpg'                  // small
+  // Get brand logos using the brand-logos utility, filtering out null values
+  const allBrands = [
+    'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 
+    'Blr Brewing Co.', 'Birch, by Romeo Lane', 'Burger Seigneur', 'Biggies Burger', 
+    'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 
+    'Klutch- Sports', 'Romeo Lane', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 
+    'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 
+    'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 
+    'TAN Coffee', 'Block Two Coffee'
   ]
+  
+  // Create array of brand logo data (logo path or null, with brand name and initial)
+  const brandLogoData = allBrands.map(brand => ({
+    brand,
+    logoPath: getBrandLogo(brand),
+    initial: getBrandInitial(brand)
+  })).filter(item => item.logoPath !== null) // Only include brands with logos
+  
+  // Use logo paths for the scrolling row
+  const uniqueLogos = brandLogoData.map(item => item.logoPath as string)
 
   const [theme, setThemeState] = useState({ palette: 'cosmic-purple', background: 'floating-orbs' })
   
@@ -919,7 +917,7 @@ export default function Home() {
                   
                   {/* Subtle border on hover */}
                   <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-[#FF5200]/30 transition-all duration-500 pointer-events-none"></div>
-              </div>
+                </div>
               </div>
             ))}
           </div>
