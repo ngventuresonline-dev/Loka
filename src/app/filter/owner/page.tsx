@@ -593,7 +593,27 @@ function FilterCard({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [otherValue, setOtherValue] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [openUpward, setOpenUpward] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  
+  // Calculate if dropdown should open upward
+  useEffect(() => {
+    if (isDropdownOpen && useDropdown && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const spaceBelow = viewportHeight - buttonRect.bottom
+      const spaceAbove = buttonRect.top
+      const estimatedDropdownHeight = 300 // Estimated max height
+      
+      // Open upward if not enough space below but enough space above
+      if (spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow) {
+        setOpenUpward(true)
+      } else {
+        setOpenUpward(false)
+      }
+    }
+  }, [isDropdownOpen, useDropdown])
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -742,6 +762,7 @@ function FilterCard({
             <div className="relative w-full" ref={dropdownRef} style={{ zIndex: isDropdownOpen ? 9999 : 'auto' }}>
               {/* Dropdown Button */}
               <button
+                ref={buttonRef}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={`w-full px-4 py-3 bg-white border-2 rounded-lg sm:rounded-xl text-left flex items-center justify-between transition-all duration-200 ${
                   error && required && selected.size === 0
@@ -800,9 +821,9 @@ function FilterCard({
                 </svg>
               </button>
 
-              {/* Quick options row (first N capsules always visible) - hidden when dropdown is open */}
-              {hasQuickOptions && quickItems.length > 0 && !isDropdownOpen && (
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+              {/* Quick options row (first N capsules always visible) */}
+              {hasQuickOptions && quickItems.length > 0 && (
+                <div className="mt-3 mb-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                   {quickItems.map((item) => {
                     const active = selected.has(item)
                     return (
@@ -834,18 +855,20 @@ function FilterCard({
               <AnimatePresence>
                 {isDropdownOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: openUpward ? 10 : -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    exit={{ opacity: 0, y: openUpward ? 10 : -10 }}
                     transition={{ duration: 0.2 }}
-                    // Scrollable dropdown body - positioned directly below the input field (minimal spacing like SS2)
-                    className="absolute z-[9999] w-full bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-20 max-h-[60vh] overflow-y-auto"
+                    // Scrollable dropdown body - smart positioning (upward or downward)
+                    className={`absolute z-[9999] w-full bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto ${
+                      openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+                    }`}
                     style={{ 
                       position: 'absolute', 
-                      top: '100%', 
                       left: 0, 
                       right: 0,
-                      marginTop: '0.25rem'
+                      maxHeight: 'min(60vh, 400px)',
+                      maxWidth: '100%'
                     }}
                   >
                     {moreLabel && dropdownItems.length > 0 && (
@@ -858,7 +881,7 @@ function FilterCard({
                     )}
                     {/* Capsule Grid with Categories */}
                     {categories ? (
-                      <div className="space-y-4">
+                      <div className="space-y-4 pb-2">
                         {Object.entries(categories).map(([categoryName, categoryItems]) => (
                           <div key={categoryName}>
                             <h4 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wider" style={{ fontFamily: plusJakarta.style.fontFamily }}>
@@ -917,7 +940,7 @@ function FilterCard({
                         ))}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 pb-2">
                         {dropdownItems.map((item) => {
                           const active = selected.has(item)
                           const isOther = item === 'Other' || item === 'Others'
@@ -984,36 +1007,6 @@ function FilterCard({
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Quick options row (first N capsules always visible) - shown when dropdown is closed */}
-              {hasQuickOptions && quickItems.length > 0 && !isDropdownOpen && (
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                  {quickItems.map((item) => {
-                    const active = selected.has(item)
-                    return (
-                      <motion.button
-                        key={item}
-                        onClick={() => toggle(item)}
-                        className={`relative ${
-                          compactCapsules
-                            ? 'px-2.5 py-1.5 sm:px-3 sm:px-2 text-xs sm:text-sm'
-                            : 'px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base'
-                        } rounded-lg sm:rounded-xl font-medium transition-all duration-300 border-2 ${
-                          active
-                            ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
-                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
-                        }`}
-                        style={{ fontFamily: plusJakarta.style.fontFamily }}
-                        whileHover={{ scale: 1.03, y: -1 }}
-                        whileTap={{ scale: 0.97 }}
-                        initial={false}
-                      >
-                        {item}
-                      </motion.button>
-                    )
-                  })}
-                </div>
-              )}
             </div>
           ) : (
             // Grid Mode (Original)
