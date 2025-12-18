@@ -519,8 +519,24 @@ export default function Home() {
     initial: getBrandInitial(brand)
   })).filter(item => item.logoPath !== null) // Only include brands with logos
   
-  // Use logo paths for the scrolling row
-  const uniqueLogos = brandLogoData.map(item => item.logoPath as string)
+  // Categorize logos by size - larger/wider logos need different sizing
+  const largerLogos = [
+    '/logos/Eleven-Bakehouse-Coloured-Logos-01.png',
+    '/logos/Burger Seigneur Logo 1.png',
+    '/logos/blr brewing co logo.png',
+    '/logos/Original_Burger_Co_Logo.png',
+    '/logos/Madam Chocolate Logo .png',
+    '/logos/Sandowitch logo.jpg'
+  ]
+  
+  // Create logo data with size category
+  const logoDataWithSize = brandLogoData.map(item => ({
+    ...item,
+    isLarge: largerLogos.includes(item.logoPath as string)
+  }))
+  
+  // Use logo data for the scrolling row
+  const uniqueLogos = logoDataWithSize
 
   const [theme, setThemeState] = useState({ palette: 'cosmic-purple', background: 'floating-orbs' })
   
@@ -890,25 +906,35 @@ export default function Home() {
 
         {/* Second Row - Logo Images - Cinematic */}
         <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex gap-6 md:gap-8 animate-[scrollReverse_90s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth">
+          <div className="flex gap-6 md:gap-8 animate-[scrollReverse_90s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth items-center">
             {[
               ...uniqueLogos,
               ...uniqueLogos,
               ...uniqueLogos
-            ].map((logoPath, idx) => (
+            ].map((logoItem, idx) => {
+              const logoPath = logoItem.logoPath as string
+              const isLarge = logoItem.isLarge
+              
+              return (
               <div
                 key={`logo-${idx}-${logoPath}`}
-                className="relative flex-shrink-0 snap-start h-20 md:h-24 w-auto"
+                className={`relative flex-shrink-0 snap-start w-auto flex items-center justify-center ${
+                  isLarge ? 'h-24 md:h-28' : 'h-20 md:h-24'
+                }`}
               >
                 <div className="relative h-full flex items-center justify-center group cursor-pointer">
                   {/* Cinematic glow effect on hover */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#FF5200]/0 via-[#FF5200]/0 to-[#E4002B]/0 group-hover:from-[#FF5200]/20 group-hover:via-[#FF5200]/10 group-hover:to-[#E4002B]/20 transition-all duration-700 blur-xl opacity-0 group-hover:opacity-100"></div>
                   
-                  {/* Logo image with rounded corners */}
+                  {/* Logo image with rounded corners - different sizing for large vs regular */}
                   <img
                     src={logoPath}
                     alt={`Brand logo ${idx + 1}`}
-                    className="relative h-full w-auto max-w-[180px] md:max-w-[220px] object-contain rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:brightness-110 drop-shadow-[0_4px_12px_rgba(0,0,0,0.1)] group-hover:drop-shadow-[0_8px_24px_rgba(255,82,0,0.4)]"
+                    className={`relative h-full w-auto object-contain rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:brightness-110 drop-shadow-[0_4px_12px_rgba(0,0,0,0.1)] group-hover:drop-shadow-[0_8px_24px_rgba(255,82,0,0.4)] ${
+                      isLarge 
+                        ? 'max-w-[240px] md:max-w-[280px]' 
+                        : 'max-w-[180px] md:max-w-[220px]'
+                    }`}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.style.display = 'none'
@@ -919,7 +945,7 @@ export default function Home() {
                   <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-[#FF5200]/30 transition-all duration-500 pointer-events-none"></div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
 
