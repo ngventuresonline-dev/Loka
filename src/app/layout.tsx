@@ -6,6 +6,11 @@ import GoogleMapsErrorHandler from '@/components/GoogleMapsErrorHandler'
 export const metadata: Metadata = {
   title: 'Lokazen - AI-Powered Commercial Real Estate Platform',
   description: 'Connect brands with property owners for commercial real estate. AI-powered matching platform.',
+  icons: {
+    icon: '/lokazen-favicon.svg',
+    shortcut: '/lokazen-favicon.svg',
+    apple: '/lokazen-favicon.svg',
+  },
 }
 
 export default function RootLayout({
