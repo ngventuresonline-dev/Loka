@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import GoogleMapsErrorHandler from '@/components/GoogleMapsErrorHandler'
-import { Analytics } from '@vercel/analytics/react'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
   title: 'Lokazen - Connect Brands with Properties | AI-Powered Commercial Real Estate Matching',
