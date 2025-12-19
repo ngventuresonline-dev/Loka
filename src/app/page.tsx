@@ -596,8 +596,35 @@ export default function Home() {
 
   const colors = getPaletteColors(theme.palette)
 
+  // Structured Data for SEO
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfessionalService',
+    name: 'Lokazen',
+    description: 'AI-powered commercial real estate matchmaking platform connecting brands with property owners',
+    url: 'https://lokazen.in',
+    areaServed: {
+      '@type': 'City',
+      name: 'Bangalore',
+      containedIn: {
+        '@type': 'Country',
+        name: 'India',
+      },
+    },
+    serviceType: 'Commercial Real Estate Matchmaking',
+    offers: {
+      '@type': 'Offer',
+      description: 'AI-powered property matching for brands and property owners',
+    },
+  }
+
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Structured Data JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* Network Map Background */}
       <NetworkMapBackground />
       
@@ -1683,8 +1710,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Timeline Journey Visualization - Redesigned */}
-          <div className="relative mb-20 opacity-0 animate-[fadeInUp_0.8s_ease-out_1s_forwards]" style={{animationDelay: '1s'}}>
+          {/* Timeline Journey Visualization - Redesigned (hidden as per latest requirements) */}
+          <div className="hidden" style={{animationDelay: '1s'}}>
             <div className="text-center mb-10 sm:mb-12 md:mb-16">
               <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 px-4">
                 Your Journey <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Timeline</span>

@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Allow: /filter/brand
+Allow: /filter/owner
+Allow: /about
+Allow: /location-intelligence
+
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /api
+Disallow: /onboarding
+Disallow: /_next
+Disallow: /static
+Disallow: /properties
+Disallow: /onboarding
+
+Sitemap: https://lokazen.in/sitemap.xml
+
