@@ -860,16 +860,18 @@ function FilterCard({
                     exit={{ opacity: 0, y: openUpward ? 10 : -10 }}
                     transition={{ duration: 0.2 }}
                     // Scrollable dropdown body - smart positioning (upward or downward)
-                    className={`absolute z-[9999] w-full bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto ${
-                      openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
-                    }`}
+                    className="absolute z-[9999] w-full bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto"
                     style={{ 
                       position: 'absolute', 
+                      ...(openUpward 
+                        ? { bottom: '100%', marginBottom: '0.5rem' }
+                        : { top: '100%', marginTop: '0.5rem' }
+                      ),
                       left: 0, 
                       right: 0,
                       maxHeight: 'min(60vh, 400px)',
                       maxWidth: '100%'
-                    }}
+                    } as React.CSSProperties}
                   >
                     {moreLabel && dropdownItems.length > 0 && (
                       <p
