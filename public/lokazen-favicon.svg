@@ -1,16 +1,16 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Core gradient, matching header logo colors -->
+    <!-- Core gradient, darker accent colors for light background -->
     <radialGradient id="lokazen-core" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FF6B35" />
-      <stop offset="45%" stop-color="#FF5200" />
-      <stop offset="100%" stop-color="#7C2D12" />
+      <stop offset="0%" stop-color="#DC4500" />
+      <stop offset="45%" stop-color="#C73E00" />
+      <stop offset="100%" stop-color="#9C2F00" />
     </radialGradient>
 
-    <!-- Small orb gradient -->
+    <!-- Small orb gradient - darker accent colors -->
     <linearGradient id="lokazen-orb" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF6B35" />
-      <stop offset="100%" stop-color="#E4002B" />
+      <stop offset="0%" stop-color="#DC4500" />
+      <stop offset="100%" stop-color="#C20023" />
     </linearGradient>
 
     <style>
@@ -46,8 +46,8 @@
     </style>
   </defs>
 
-  <!-- Dark rounded background to match header navbar -->
-  <rect width="64" height="64" rx="16" fill="#020617" />
+  <!-- Light rounded background -->
+  <rect width="64" height="64" rx="16" fill="#FAFAFA" />
 
   <!-- Outer quantum paths (two rings like header logo) -->
   <circle
@@ -55,23 +55,23 @@
     cy="32"
     r="18"
     fill="none"
-    stroke="#FF5200"
+    stroke="#DC4500"
     stroke-width="1.4"
-    stroke-opacity="0.18"
+    stroke-opacity="0.25"
   />
   <circle
     cx="32"
     cy="32"
     r="24"
     fill="none"
-    stroke="#FF5200"
+    stroke="#DC4500"
     stroke-width="1"
-    stroke-opacity="0.12"
+    stroke-opacity="0.18"
   />
 
   <!-- Center core node -->
   <circle cx="32" cy="32" r="7" fill="url(#lokazen-core)" />
-  <circle cx="32" cy="32" r="4" fill="#0B1120" opacity="0.5" />
+  <circle cx="32" cy="32" r="4" fill="#FFFFFF" opacity="0.3" />
 
   <!-- Four orbiting quantum nodes, matching header layout (top, right, bottom, left) -->
   <circle
