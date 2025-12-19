@@ -118,7 +118,7 @@ export default function DemoPage() {
       <div className="max-w-4xl mx-auto text-center py-20">
         <div className="mb-12">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent mb-6">
-            N&G VENTURES
+            Lokazen
           </h1>
           <p className="text-xl text-gray-200 mb-2">AI-Powered Commercial Real Estate Matching</p>
           <p className="text-gray-400">Experience the future of property-brand connections</p>

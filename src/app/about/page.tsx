@@ -11,13 +11,17 @@ export default function AboutPage() {
 
   // Generate particles only on client to avoid hydration mismatch
   useEffect(() => {
-    setParticles(
-      Array.from({ length: 25 }, () => ({
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-        animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite ${Math.random() * 2}s`
-      }))
-    )
+    try {
+      setParticles(
+        Array.from({ length: 25 }, () => ({
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+          animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite ${Math.random() * 2}s`
+        }))
+      )
+    } catch (error) {
+      console.error('Error setting particles:', error)
+    }
   }, [])
 
   return (

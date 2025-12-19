@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { FeaturedProperty } from '@/data/featured-properties'
+import LokazenNodesLoader from './LokazenNodesLoader'
+import LokazenNodesPlaceholder from './LokazenNodesPlaceholder'
 
 interface PropertyDetailsModalProps {
   isOpen: boolean
@@ -18,6 +20,26 @@ interface PropertyDescription {
   description: string
   idealFor: string[]
   locationDetails: string
+}
+
+// Helper component for property image with placeholder
+function PropertyImageWithPlaceholder({ imageUrl, alt }: { imageUrl: string | null, alt: string }) {
+  const [imageError, setImageError] = useState(false)
+  
+  // If no image URL provided or image fails, show Lokazen nodes placeholder
+  if (!imageUrl || imageError) {
+    return <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
+  }
+  
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      className="w-full h-full object-cover"
+      loading="lazy"
+      onError={() => setImageError(true)}
+    />
+  )
 }
 
 export default function PropertyDetailsModal({ isOpen, onClose, property }: PropertyDetailsModalProps) {
@@ -148,75 +170,24 @@ export default function PropertyDetailsModal({ isOpen, onClose, property }: Prop
 
   if (!isOpen || !property) return null
 
-  // Size-based F&B images - relevant to property size
+  // Get property image URL - only use actual property images, no fallbacks
   const getImageUrl = () => {
-    const sizeMatch = property.size.match(/(\d+)/)
-    const size = sizeMatch ? parseInt(sizeMatch[1]) : 0
-    const title = property.title.toLowerCase()
-    
-    // Small spaces (<= 300 sqft) - Kiosk/QSR images
-    if (size <= 300 || title.includes('kiosk')) {
-      const smallImages = [
-        'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=600&fit=crop&q=80', // Coffee kiosk
-        'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&h=600&fit=crop&q=80', // Small food counter
-        'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=600&fit=crop&q=80' // Compact QSR
-      ]
-      return smallImages[(property.id - 1) % smallImages.length]
+    // Check if property has images array (for Property type)
+    if ((property as any).images && Array.isArray((property as any).images) && (property as any).images.length > 0) {
+      const src = (property as any).images[0]
+      // Skip broken local paths
+      if (src && !src.startsWith('/images/') && !src.includes('localhost:3000/images') && src.trim() !== '') {
+        return src
+      }
     }
-    
-    // Small-medium (300-800 sqft) - Small cafe/QSR
-    if (size > 300 && size < 800) {
-      const smallCafeImages = [
-        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop&q=80', // Small cafe
-        'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=600&fit=crop&q=80', // Compact coffee shop
-        'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&h=600&fit=crop&q=80', // Small dining
-        'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&h=600&fit=crop&q=80' // QSR interior
-      ]
-      return smallCafeImages[(property.id - 1) % smallCafeImages.length]
+    // Check if property has image property (for FeaturedProperty type)
+    if ((property as any).image && typeof (property as any).image === 'string') {
+      const src = (property as any).image
+      if (src && !src.startsWith('/images/') && !src.includes('localhost:3000/images') && src.trim() !== '') {
+        return src
+      }
     }
-    
-    // Medium (800-1500 sqft) - Cafe/Casual dining
-    if (size >= 800 && size < 1500) {
-      const cafeImages = [
-        'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&h=600&fit=crop&q=80', // Cafe interior
-        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop&q=80', // Modern cafe
-        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80', // Casual dining
-        'https://images.unsplash.com/photo-1552569973-4c9c8e4e8b3f?w=800&h=600&fit=crop&q=80', // Cafe space
-        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80' // Dining area
-      ]
-      return cafeImages[(property.id - 1) % cafeImages.length]
-    }
-    
-    // Large (1500-3000 sqft) - Full-service restaurant
-    if (size >= 1500 && size < 3000) {
-      const restaurantImages = [
-        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80', // Restaurant interior
-        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80', // Restaurant dining
-        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80', // Full-service restaurant
-        'https://images.unsplash.com/photo-1552569973-4c9c8e4e8b3f?w=800&h=600&fit=crop&q=80' // Restaurant space
-      ]
-      return restaurantImages[(property.id - 1) % restaurantImages.length]
-    }
-    
-    // Very large (3000-5000 sqft) - Large restaurant/Brewery
-    if (size >= 3000 && size < 5000) {
-      const largeImages = [
-        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80', // Bar/pub
-        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80', // Large restaurant
-        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80', // Brewery
-        'https://images.unsplash.com/photo-1550966873-5c0b0c4c8b8e?w=800&h=600&fit=crop&q=80' // Large format
-      ]
-      return largeImages[(property.id - 1) % largeImages.length]
-    }
-    
-    // Ultra large (5000+ sqft) - Brewery/Taproom/Large format
-    const ultraLargeImages = [
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80', // Large bar
-      'https://images.unsplash.com/photo-1550966873-5c0b0c4c8b8e?w=800&h=600&fit=crop&q=80', // Brewery/taproom
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80', // Large format restaurant
-      'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80' // Event space
-    ]
-    return ultraLargeImages[(property.id - 1) % ultraLargeImages.length]
+    return null
   }
 
   return (
@@ -262,41 +233,8 @@ export default function PropertyDetailsModal({ isOpen, onClose, property }: Prop
         </button>
 
         {/* Property Image */}
-        <div className="relative w-full h-48 sm:h-64 md:h-80 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden flex-shrink-0">
-          <img
-            src={getImageUrl()}
-            alt={property.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement
-              const retryCount = parseInt(target.getAttribute('data-retry') || '0')
-              const fallbackImages = [
-                'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=600&fit=crop&q=80'
-              ]
-              
-              // Prevent infinite retry loop
-              if (retryCount >= fallbackImages.length) {
-                target.style.display = 'none'
-                return
-              }
-              
-              // Try next fallback image
-              if (retryCount < fallbackImages.length) {
-                target.setAttribute('data-retry', String(retryCount + 1))
-                setTimeout(() => {
-                  target.src = fallbackImages[retryCount] || fallbackImages[0]
-                }, 100)
-              }
-            }}
-            onLoad={(e) => {
-              // Reset retry count on successful load
-              const target = e.target as HTMLImageElement
-              target.setAttribute('data-retry', '0')
-            }}
-          />
+        <div className="relative w-full h-48 sm:h-64 md:h-80 overflow-hidden flex-shrink-0">
+          <PropertyImageWithPlaceholder imageUrl={getImageUrl() || ''} alt={property.title} />
           {property.badge && (
             <div className={`absolute top-3 left-3 sm:top-4 sm:left-4 px-2.5 py-1 sm:px-3 sm:py-1.5 text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg ${
               property.badge === 'Leased Out' 
@@ -383,9 +321,9 @@ export default function PropertyDetailsModal({ isOpen, onClose, property }: Prop
               About {property.location}
             </h3>
             {loading ? (
-              <div className="animate-pulse space-y-2">
-                <div className="h-3 sm:h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-3 sm:h-4 bg-gray-200 rounded w-5/6"></div>
+              <div className="flex flex-col items-center justify-center py-4">
+                <LokazenNodesLoader size="sm" />
+                <p className="mt-2 text-xs text-gray-500">Loading location info...</p>
               </div>
             ) : (
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{locationInfo?.areaBrief}</p>
@@ -401,10 +339,9 @@ export default function PropertyDetailsModal({ isOpen, onClose, property }: Prop
               Popular Brands in {property.location}
             </h3>
             {loading ? (
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-7 sm:h-8 bg-gray-200 rounded-full w-20 sm:w-24 animate-pulse"></div>
-                ))}
+              <div className="flex flex-col items-center justify-center py-4">
+                <LokazenNodesLoader size="sm" />
+                <p className="mt-2 text-xs text-gray-500">Loading competitors...</p>
               </div>
             ) : (
               <div className="flex flex-wrap gap-2 sm:gap-3">

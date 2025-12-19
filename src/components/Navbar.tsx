@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import Button from './ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import Logo from './Logo'
 
 export default function Navbar() {
   const { user, isLoggedIn, logout, loading } = useAuth()
@@ -28,16 +29,7 @@ export default function Navbar() {
       <div className="relative z-10 max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between items-center h-14 sm:h-16 lg:h-20">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center group">
-              <div className="relative w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl sm:rounded-2xl flex items-center justify-center mr-2 sm:mr-3 lg:mr-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-[#FF5200]/30">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl sm:rounded-2xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
-                <span className="relative text-white font-black text-xs sm:text-sm lg:text-lg">N&G</span>
-              </div>
-              <div>
-                <h1 className="text-sm sm:text-lg lg:text-2xl font-black text-gray-900">N&G VENTURES</h1>
-                <div className="text-[9px] sm:text-[10px] lg:text-xs text-gray-600 font-medium hidden sm:block">Commercial Real Estate</div>
-              </div>
-            </Link>
+            <Logo size="md" href="/" variant="light" />
           </div>
           
           <div className="hidden md:flex items-center space-x-8">

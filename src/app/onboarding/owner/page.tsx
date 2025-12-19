@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -8,6 +8,7 @@ import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import Image from 'next/image'
+import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
 
 const BANGALORE_CENTER = { lat: 12.9716, lng: 77.5946 }
 
@@ -176,8 +177,8 @@ function OwnerOnboardingContent() {
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null)
 
   const { isLoaded: isMapLoaded, loadError: mapLoadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places'],
+    googleMapsApiKey: getGoogleMapsApiKey(),
+    libraries: GOOGLE_MAPS_LIBRARIES,
   })
 
   const totalSteps = 3
@@ -1105,19 +1106,24 @@ function OwnerOnboardingContent() {
                   </div>
                       )}
                       {mapLoadError && (
-                        <div className="flex items-center justify-center h-full text-sm text-gray-500 px-4 text-center">
-                          Map could not be loaded. Please check your internet connection or try again later.
-                </div>
-              )}
+                        <div className="flex flex-col items-center justify-center h-full text-sm text-gray-500 px-4 text-center">
+                          <div className="mb-2">Map could not be loaded.</div>
+                          {!getGoogleMapsApiKey() && (
+                            <div className="text-[#FF5200] font-semibold text-xs">
+                              Google Maps API key is missing. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.
+                            </div>
+                          )}
+                          {getGoogleMapsApiKey() && (
+                            <div className="text-xs">Please check your Google Maps API key configuration and billing settings.</div>
+                          )}
+                        </div>
+                      )}
                       {isMapLoaded && !mapLoadError && (
                         <GoogleMap
                           mapContainerStyle={{ width: '100%', height: '100%' }}
                           center={markerPosition || mapCenter}
                           zoom={16}
-                          options={{
-                            disableDefaultUI: true,
-                            zoomControl: true,
-                          }}
+                          options={DEFAULT_MAP_OPTIONS}
                           onClick={handleMapClick}
                         >
                           {markerPosition && (

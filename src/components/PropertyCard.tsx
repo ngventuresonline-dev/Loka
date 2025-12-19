@@ -3,6 +3,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, memo } from 'react'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
+import LokazenNodesPlaceholder from './LokazenNodesPlaceholder'
+import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 
 interface PropertyCardProps {
   property: Property
@@ -62,46 +64,26 @@ function PropertyCard({
     // TODO: Save to database
   }
 
-  const getFallbackImage = () => {
-    const size = property.size || 0
-    const type = (property.propertyType || '').toLowerCase()
-
-    if (type.includes('restaurant') || type.includes('qsr') || type.includes('cafe') || type.includes('café')) {
-      if (size < 800) {
-        return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=900&h=600&fit=crop&q=80'
-      }
-      if (size < 1500) {
-        return 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=900&h=600&fit=crop&q=80'
-      }
-      return 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=900&h=600&fit=crop&q=80'
-    }
-
-    if (type.includes('retail')) {
-      if (size < 800) {
-        return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=900&h=600&fit=crop&q=80'
-      }
-      if (size < 2000) {
-        return 'https://images.unsplash.com/photo-1521336575822-6da63fb45455?w=900&h=600&fit=crop&q=80'
-      }
-      return 'https://images.unsplash.com/photo-1529429617124-aee1f1650a5c?w=900&h=600&fit=crop&q=80'
-    }
-
-    return 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=900&h=600&fit=crop&q=80'
-  }
-
   const getInitialImageSrc = () => {
     if (property.images && property.images.length > 0) {
       const src = property.images[0]
-      // Skip known broken local paths and localhost images
-      if (src.startsWith('/images/') || src.includes('localhost:3000/images')) {
-        return getFallbackImage()
+      // Skip broken local paths, localhost images, and Unsplash fallback images
+      if (
+        src.startsWith('/images/') || 
+        src.includes('localhost:3000/images') || 
+        src.includes('unsplash') ||
+        !src || 
+        src.trim() === ''
+      ) {
+        return null
       }
       return src
     }
-    return getFallbackImage()
+    return null
   }
 
-  const [imageSrc, setImageSrc] = useState<string>(getInitialImageSrc)
+  const [imageSrc, setImageSrc] = useState<string | null>(getInitialImageSrc)
+  const [imageError, setImageError] = useState(false)
 
   const handleViewClick = () => {
     logSessionEvent({
@@ -122,26 +104,27 @@ function PropertyCard({
       
       {/* Image Section */}
       <div className="relative h-56 w-full overflow-hidden">
-        <Image
-          src={imageSrc}
-          alt={property.title || 'Property'}
-          fill
-          className="object-cover group-hover:scale-110 transition-transform duration-700"
-          unoptimized
-          loading="lazy"
-          sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-          onError={() => {
-            const fallback = getFallbackImage()
-            if (imageSrc !== fallback) {
-              setImageSrc(fallback)
-            }
-          }}
-        />
+        {imageSrc && !imageError ? (
+          <Image
+            src={imageSrc}
+            alt={property.title || 'Property'}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-700"
+            unoptimized
+            loading="lazy"
+            sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+            onError={() => {
+              setImageError(true)
+            }}
+          />
+        ) : (
+          <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
+        )}
         
         {/* Top Badges */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-          <span className="bg-white/90 backdrop-blur-sm border border-gray-300 px-3 py-1 rounded-full text-xs font-semibold text-gray-900 capitalize">
-            {property.propertyType}
+          <span className="bg-white/90 backdrop-blur-sm border border-gray-300 px-3 py-1 rounded-full text-xs font-semibold text-gray-900">
+            {getPropertyTypeLabel(property.propertyType, property.title, property.description)}
           </span>
           
           {/* Save Button */}

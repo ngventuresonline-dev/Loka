@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createUser } from '@/lib/auth'
+import Logo from '@/components/Logo'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -93,19 +94,13 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           {/* Logo/Branding */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-2xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50">
-                <span className="text-white font-black text-xl">N&G</span>
-              </div>
-              <div className="text-left">
-                <div className="text-2xl font-black text-gray-900">N&G VENTURES</div>
-                <div className="text-xs text-gray-600">Commercial Real Estate</div>
-              </div>
+            <div className="flex justify-center mb-6">
+              <Logo size="lg" showText={true} href="/" variant="light" />
             </div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] mb-2">
               Create Account
             </h1>
-            <p className="text-gray-600">Join N&G Ventures today</p>
+            <p className="text-gray-600">Join Lokazen today</p>
           </div>
 
           {/* Register Card */}

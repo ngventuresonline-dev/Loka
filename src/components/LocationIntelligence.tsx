@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { GoogleMap, Marker, Circle, useLoadScript } from '@react-google-maps/api'
 import type { Property } from '@/types/workflow'
 import { motion } from 'framer-motion'
+import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
 
 type LocationIntelligenceData = {
   competitors: {
@@ -105,8 +106,8 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
   const coordinates = useMemo(() => getApproxCoords(property), [property])
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places'],
+    googleMapsApiKey: getGoogleMapsApiKey(),
+    libraries: GOOGLE_MAPS_LIBRARIES,
   })
 
   useEffect(() => {
@@ -207,8 +208,16 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
               </div>
             )}
             {loadError && (
-              <div className="flex items-center justify-center h-full px-3 sm:px-4 text-center text-xs sm:text-sm text-gray-600 break-words">
-                Map could not be loaded. Please check your Google Maps API key configuration.
+              <div className="flex flex-col items-center justify-center h-full px-3 sm:px-4 text-center text-xs sm:text-sm text-gray-600 break-words">
+                <div className="mb-2">Map could not be loaded.</div>
+                {!getGoogleMapsApiKey() && (
+                  <div className="text-[#FF5200] font-semibold">
+                    Google Maps API key is missing. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.
+                  </div>
+                )}
+                {getGoogleMapsApiKey() && (
+                  <div>Please check your Google Maps API key configuration and billing settings.</div>
+                )}
               </div>
             )}
             {isLoaded && !loadError && (
@@ -217,8 +226,7 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                 center={coordinates}
                 zoom={16}
                 options={{
-                  disableDefaultUI: true,
-                  zoomControl: true,
+                  ...DEFAULT_MAP_OPTIONS,
                   styles: [],
                 }}
               >

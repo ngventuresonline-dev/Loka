@@ -18,6 +18,7 @@ import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
 import { getTheme, getPaletteColors } from '@/lib/theme'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
+import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 
 type AppStep = 'home' | 'brand-onboarding' | 'owner-onboarding' | 'brand-dashboard' | 'owner-dashboard'
 
@@ -46,6 +47,46 @@ const mockProperties: Property[] = [
     isAvailable: true,
   }
 ]
+
+// Property Image Component - Only uses actual property images, Lokazen nodes placeholder otherwise
+function PropertyImage({ property, className = '' }: { property: FeaturedProperty, className?: string }) {
+  const [imageError, setImageError] = useState(false)
+  
+  // Get actual property image - check both images array and image property
+  const getImageUrl = () => {
+    if ((property as any).images && Array.isArray((property as any).images) && (property as any).images.length > 0) {
+      const src = (property as any).images[0]
+      if (src && !src.startsWith('/images/') && !src.includes('localhost:3000/images') && !src.includes('unsplash') && src.trim() !== '') {
+        return src
+      }
+    }
+    if ((property as any).image && typeof (property as any).image === 'string') {
+      const src = (property as any).image
+      if (src && !src.startsWith('/images/') && !src.includes('localhost:3000/images') && !src.includes('unsplash') && src.trim() !== '') {
+        return src
+      }
+    }
+    return null
+  }
+  
+  const imageUrl = getImageUrl()
+  
+  return (
+    <div className={`relative w-full h-full ${className}`}>
+      {imageUrl && !imageError ? (
+        <img
+          src={imageUrl}
+          alt={property.title}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          loading="lazy"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
+      )}
+    </div>
+  )
+}
 
 // Property Carousel Component
 function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
@@ -172,113 +213,9 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
                   }}
                 ></div>
                 
-                {/* Property Image - Size-based F&B images */}
+                {/* Property Image - Uses Animated Logo Placeholder when image fails */}
                 <div className="relative w-full h-48 overflow-hidden">
-                  {(() => {
-                    const sizeMatch = property.size.match(/(\d+)/)
-                    const size = sizeMatch ? parseInt(sizeMatch[1]) : 0
-                    const title = property.title.toLowerCase()
-                    let imageUrl = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80'
-                    
-                    // Size-based image selection
-                    if (size <= 300 || title.includes('kiosk')) {
-                      // Very small - kiosk/QSR
-                      const images = [
-                        'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=600&fit=crop&q=80'
-                      ]
-                      imageUrl = images[(property.id - 1) % images.length]
-                    } else if (size > 300 && size < 800) {
-                      // Small cafe/QSR
-                      const images = [
-                        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&h=600&fit=crop&q=80'
-                      ]
-                      imageUrl = images[(property.id - 1) % images.length]
-                    } else if (size >= 800 && size < 1500) {
-                      // Medium - cafe/casual dining
-                      const images = [
-                        'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1552569973-4c9c8e4e8b3f?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80'
-                      ]
-                      imageUrl = images[(property.id - 1) % images.length]
-                    } else if (size >= 1500 && size < 3000) {
-                      // Large - full-service restaurant
-                      const images = [
-                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1552569973-4c9c8e4e8b3f?w=800&h=600&fit=crop&q=80'
-                      ]
-                      imageUrl = images[(property.id - 1) % images.length]
-                    } else if (size >= 3000 && size < 5000) {
-                      // Very large - brewery/large restaurant
-                      const images = [
-                        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1550966873-5c0b0c4c8b8e?w=800&h=600&fit=crop&q=80'
-                      ]
-                      imageUrl = images[(property.id - 1) % images.length]
-                    } else {
-                      // Ultra large (5000+) - brewery/taproom
-                      const images = [
-                        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1550966873-5c0b0c4c8b8e?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&h=600&fit=crop&q=80'
-                      ]
-                      imageUrl = images[(property.id - 1) % images.length]
-                    }
-                    
-                    // Fallback images in case of network errors
-                    const fallbackImages = [
-                      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&q=80',
-                      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
-                      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop&q=80'
-                    ]
-                    
-                    return (
-                      <div className="relative w-full h-full bg-gradient-to-br from-gray-200 to-gray-300">
-                        <img
-                          src={imageUrl}
-                          alt={property.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          loading="lazy"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            const retryCount = parseInt(target.getAttribute('data-retry') || '0')
-                            
-                            // Prevent infinite retry loop
-                            if (retryCount >= fallbackImages.length) {
-                              target.style.display = 'none'
-                              return
-                            }
-                            
-                            // Try next fallback image
-                            if (retryCount < fallbackImages.length) {
-                              target.setAttribute('data-retry', String(retryCount + 1))
-                              // Use setTimeout to prevent rapid retry loops
-                              setTimeout(() => {
-                                target.src = fallbackImages[retryCount] || fallbackImages[0]
-                              }, 100)
-                            }
-                          }}
-                          onLoad={(e) => {
-                            // Reset retry count on successful load
-                            const target = e.target as HTMLImageElement
-                            target.setAttribute('data-retry', '0')
-                          }}
-                        />
-                      </div>
-                    )
-                  })()}
+                  <PropertyImage property={property} />
                   {property.badge && (
                     <div className={`absolute top-3 right-3 px-2.5 py-1 text-white text-xs font-semibold rounded-full shadow-lg ${
                       property.badge === 'Leased Out' 
@@ -403,75 +340,7 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
 }
 
 export default function Home() {
-  const [featuredProperties, setFeaturedProperties] = useState<FeaturedProperty[]>([])
-  const [loadingFeatured, setLoadingFeatured] = useState(true)
-
-  // Fetch featured properties from API
-  useEffect(() => {
-    const fetchFeaturedProperties = async () => {
-      try {
-        setLoadingFeatured(true)
-        // Fetch only featured and approved properties
-        // Note: status filter is handled by API (only approved shown), so we just need isFeatured
-        const apiUrl = '/api/properties?isFeatured=true&limit=20'
-        console.log('[Featured Properties] Fetching from:', apiUrl)
-        const response = await fetch(apiUrl)
-        
-        if (response.ok) {
-          const data = await response.json()
-          const properties = data.properties || data.data?.properties || []
-          
-          console.log('[Featured Properties] API Response:', {
-            success: data.success,
-            propertiesCount: properties.length,
-            total: data.total || data.pagination?.total,
-            sampleProperty: properties[0] || null,
-            allProperties: properties.map((p: any) => ({
-              id: p.id,
-              title: p.title,
-              isFeatured: p.isFeatured,
-              status: p.status,
-              availability: p.availability
-            }))
-          })
-          
-          // Transform API properties to FeaturedProperty format
-          const transformed: FeaturedProperty[] = properties.map((p: any) => ({
-            id: parseInt(p.id?.replace(/\D/g, '') || '0') || Math.random(),
-            title: p.title || '',
-            location: p.city || '',
-            size: `${p.size?.toLocaleString() || 0} Sq. Ft.`,
-            floor: 'Ground Floor', // Default value, can be enhanced if floor info is available
-            rent: p.priceType === 'monthly' 
-              ? `₹${Number(p.price || 0).toLocaleString()}/month`
-              : `₹${Number(p.price || 0).toLocaleString()}/year`,
-            deposit: p.securityDeposit 
-              ? `${Math.round(Number(p.securityDeposit) / Number(p.price || 1))} months`
-              : '10 months',
-            badge: p.availability ? 'Available' : 'Leased Out'
-          }))
-          
-          console.log('[Featured Properties] Transformed:', transformed.length, 'properties')
-          setFeaturedProperties(transformed)
-        } else {
-          const errorText = await response.text().catch(() => 'Unknown error')
-          console.error('[Featured Properties] API Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorText
-          })
-          setFeaturedProperties([])
-        }
-      } catch (error) {
-        console.error('Error fetching featured properties:', error)
-        setFeaturedProperties([])
-      } finally {
-        setLoadingFeatured(false)
-      }
-    }
-
-    fetchFeaturedProperties()
-  }, [])
+  // Featured properties removed - will be managed from backend/admin panel
   const router = useRouter()
   
   // Generate random flickering logos on mount (client-side only to avoid hydration mismatch)
@@ -554,22 +423,29 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // Only run once on mount
+    // Only run once on mount (client-side only)
+    if (typeof window === 'undefined') return
+    
     if (!isInitialized) {
-      // Initialize default admin account
-      initializeAdminAccount()
-      
-      // Load current theme
-      const currentTheme = getTheme()
-      setThemeState(currentTheme)
-      
-      // Note: Removed auto-redirect for admins - they can navigate freely
-      // Admins can access homepage and use "Dashboard" link in navbar to go to /admin
-      
-      setIsInitialized(true)
+      try {
+        // Initialize default admin account
+        initializeAdminAccount()
+        
+        // Load current theme
+        const currentTheme = getTheme()
+        setThemeState(currentTheme)
+        
+        // Note: Removed auto-redirect for admins - they can navigate freely
+        // Admins can access homepage and use "Dashboard" link in navbar to go to /admin
+        
+        setIsInitialized(true)
+      } catch (error) {
+        console.error('Error initializing page:', error)
+        setIsInitialized(true) // Set to true anyway to prevent infinite loops
+      }
     }
     setIsMounted(true)
-  }, [isInitialized, router])
+  }, [isInitialized])
 
   // Generate bar heights for data visualization
   useEffect(() => {
@@ -1503,33 +1379,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Properties Section */}
-      <section className="relative z-10 bg-white py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="text-center mb-6 sm:mb-8 md:mb-10">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Featured Properties
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-              Prime commercial spaces in Bangalore&apos;s top locations
-            </p>
-          </div>
-
-          {/* Properties Carousel */}
-          {loadingFeatured ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200]"></div>
-            </div>
-          ) : featuredProperties.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No featured properties available at the moment.</p>
-            </div>
-          ) : (
-            <PropertyCarousel properties={featuredProperties} />
-          )}
-        </div>
-      </section>
+      {/* Featured Properties Section - Removed from frontend, managed from backend/admin panel */}
 
       {/* How It Works - Card-Based Layout */}
       <section className="relative z-10 bg-gradient-to-b from-white via-gray-50/30 to-white py-12 md:py-16 overflow-hidden">
@@ -2886,7 +2736,7 @@ export default function Home() {
             {/* Company Info */}
             <div>
               <h3 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">
-                GVS Platform
+                Lokazen
               </h3>
               <p className="text-gray-400 mb-6 leading-relaxed">
                 AI-powered commercial real estate matchmaking platform connecting brands with perfect properties using location intelligence.
@@ -2964,7 +2814,7 @@ export default function Home() {
           {/* Bottom Bar */}
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
-              © 2025 GVS Platform. All rights reserved.
+              © 2025 Lokazen. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
               <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Privacy Policy</a>

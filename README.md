@@ -29,7 +29,13 @@ AI-powered commercial real estate matching platform built with Next.js 15.
    ```
    ANTHROPIC_API_KEY=your_anthropic_api_key
    DATABASE_URL=your_database_url
+   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
    ```
+   
+   **Google Maps API Key**: Get your API key from [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable the following APIs:
+   - Maps JavaScript API
+   - Places API
+   - Geocoding API
 
 3. **Run development server**:
    ```bash

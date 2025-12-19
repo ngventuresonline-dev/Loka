@@ -36,6 +36,9 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
   const [scrollY, setScrollY] = useState(0)
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return
+    
     setMounted(true)
     const currentTheme = getTheme()
     setTheme(currentTheme)
@@ -45,8 +48,8 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
     // Create static particles spread across the screen
     const initialParticles: Particle[] = []
     for (let i = 0; i < 80; i++) {
-      const baseX = Math.random() * window.innerWidth
-      const baseY = Math.random() * (window.innerHeight * 3) // Spread across full page height
+      const baseX = Math.random() * (window.innerWidth || 1920)
+      const baseY = Math.random() * ((window.innerHeight || 1080) * 3) // Spread across full page height
       initialParticles.push({
         x: baseX,
         y: baseY,
@@ -85,13 +88,15 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
       }
     }
 
-    window.addEventListener('mousemove', handleMouseMove)
-    
     // Track scroll position
     const handleScroll = () => {
       setScrollY(window.scrollY)
     }
-    window.addEventListener('scroll', handleScroll)
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('scroll', handleScroll)
+    }
     
     // Fade out trail dots
     const trailInterval = setInterval(() => {
@@ -99,8 +104,10 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
     }, 150)
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('scroll', handleScroll)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('scroll', handleScroll)
+      }
       clearInterval(trailInterval)
     }
   }, [])
@@ -125,7 +132,7 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
         {/* Static star particles that move when mouse is near */}
         {particles.map((particle) => {
           const dx = mousePosition.x - particle.baseX
-          const dy = mousePosition.y - particle.baseY + window.scrollY
+          const dy = mousePosition.y - particle.baseY + scrollY
           const distance = Math.sqrt(dx * dx + dy * dy)
           const maxDistance = 120
           
@@ -163,7 +170,7 @@ export default function DynamicBackground({ paletteOverride, backgroundOverride 
               width: '2px',
               height: '2px',
               left: dot.x,
-              top: dot.y + window.scrollY,
+              top: dot.y + scrollY,
               backgroundColor: dot.color,
               boxShadow: `0 0 8px ${dot.color}`,
               opacity: (index / trail.length) * 0.5,

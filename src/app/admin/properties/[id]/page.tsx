@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import FileUpload from '@/components/admin/FileUpload'
 import { useAuth } from '@/contexts/AuthContext'
+import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 
 export default function EditPropertyPage() {
   const router = useRouter()
@@ -86,9 +87,18 @@ export default function EditPropertyPage() {
     
     // If dbValue is 'restaurant', try to match specific type
     if (dbValue === 'restaurant') {
+      // Check for QSR first (most specific) - check multiple variations and common QSR keywords
+      if (text.includes('qsr') || 
+          text.includes('quick service') || 
+          text.includes('quick-service') ||
+          text.includes('quick service restaurant') ||
+          text.includes('fast food') ||
+          text.includes('fast-food') ||
+          (text.includes('corner') && (text.includes('restaurant') || text.includes('space')))) {
+        return 'qsr'
+      }
       if (text.includes('food court') || text.includes('fc')) return 'food-court'
       if (text.includes('cafe') || text.includes('coffee')) return 'cafe-coffee-shop'
-      if (text.includes('qsr') || text.includes('quick service')) return 'qsr'
       if (text.includes('dessert') || text.includes('bakery')) return 'dessert-bakery'
     }
     
@@ -458,7 +468,7 @@ export default function EditPropertyPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200] mx-auto mb-4"></div>
+            <LokazenNodesLoader size="lg" className="mb-4" />
             <p className="text-gray-400">Loading property...</p>
           </div>
         </div>

@@ -18,13 +18,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const refreshUser = () => {
-    const currentUser = getCurrentUser()
-    setUser(currentUser)
+    // Only run on client side
+    if (typeof window === 'undefined') return
+    try {
+      const currentUser = getCurrentUser()
+      setUser(currentUser)
+    } catch (error) {
+      console.error('Error refreshing user:', error)
+      setUser(null)
+    }
   }
 
   useEffect(() => {
-    // Check authentication on mount
-    refreshUser()
+    // Check authentication on mount (client-side only)
+    if (typeof window !== 'undefined') {
+      refreshUser()
+    }
     setLoading(false)
   }, [])
 

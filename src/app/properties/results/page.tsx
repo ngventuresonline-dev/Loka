@@ -7,6 +7,7 @@ import Footer from '@/components/Footer'
 import PropertyCard from '@/components/PropertyCard'
 import { Property } from '@/types/workflow'
 import { motion, AnimatePresence } from 'framer-motion'
+import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 
 interface MatchResult {
   property: Property
@@ -826,7 +827,7 @@ export default function PropertiesResultsPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <LokazenNodesLoader size="lg" className="mb-4" />
           <p className="text-gray-600">Loading results...</p>
         </div>
       </div>

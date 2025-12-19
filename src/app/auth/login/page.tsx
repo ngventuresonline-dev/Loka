@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { loginUser, initializeAdminAccount } from '@/lib/auth'
+import Logo from '@/components/Logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -39,7 +40,7 @@ export default function LoginPage() {
   }
 
   const handleAdminLogin = () => {
-    setEmail('admin@ngventures.com')
+    setEmail('admin@lokazen.in')
     setPassword('admin123')
   }
 
@@ -89,14 +90,8 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo/Branding */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-2xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50">
-                <span className="text-white font-black text-xl">N&G</span>
-              </div>
-              <div className="text-left">
-                <div className="text-2xl font-black text-gray-900">N&G VENTURES</div>
-                <div className="text-xs text-gray-600">Commercial Real Estate</div>
-              </div>
+            <div className="flex justify-center mb-6">
+              <Logo size="lg" showText={true} href="/" variant="light" />
             </div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] mb-2">
               Welcome Back
@@ -230,7 +225,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-600">
-                  Email: <span className="text-[#FF5200] font-mono">admin@ngventures.com</span>
+                  Email: <span className="text-[#FF5200] font-mono">admin@lokazen.in</span>
                   <br />
                   Password: <span className="text-[#FF5200] font-mono">admin123</span>
                 </p>

@@ -8,6 +8,7 @@ import AnalyticsCharts from '@/components/admin/AnalyticsCharts'
 import PlatformMetrics from '@/components/admin/PlatformMetrics'
 import RecentActivity from '@/components/admin/RecentActivity'
 import { useAuth } from '@/contexts/AuthContext'
+import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 
 interface Stats {
   overview: {
@@ -277,7 +278,7 @@ export default function AdminPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200] mx-auto mb-4"></div>
+            <LokazenNodesLoader size="lg" className="mb-4" />
             <p className="text-gray-400">Loading dashboard...</p>
           </div>
         </div>

@@ -11,43 +11,19 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import LocationIntelligence from '@/components/LocationIntelligence'
+import LokazenNodesLoader from '@/components/LokazenNodesLoader'
+import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
+import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 
-const getFallbackImage = (property: Property) => {
-  const size = property.size || 0
-  const type = (property.propertyType || '').toLowerCase()
-
-  if (type.includes('restaurant') || type.includes('qsr') || type.includes('cafe') || type.includes('café')) {
-    if (size < 800) {
-      return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&h=800&fit=crop&q=80'
-    }
-    if (size < 1500) {
-      return 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=1200&h=800&fit=crop&q=80'
-    }
-    return 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=1200&h=800&fit=crop&q=80'
-  }
-
-  if (type.includes('retail')) {
-    if (size < 800) {
-      return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&h=800&fit=crop&q=80'
-    }
-    if (size < 2000) {
-      return 'https://images.unsplash.com/photo-1521336575822-6da63fb45455?w=1200&h=800&fit=crop&q=80'
-    }
-    return 'https://images.unsplash.com/photo-1529429617124-aee1f1650a5c?w=1200&h=800&fit=crop&q=80'
-  }
-
-  return 'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?w=1200&h=800&fit=crop&q=80'
-}
-
-const getPrimaryImageSrc = (property: Property) => {
+const getPrimaryImageSrc = (property: Property): string | null => {
   if (property.images && property.images.length > 0) {
     const src = property.images[0]
-    if (src.startsWith('/images/') || src.includes('localhost:3000/images')) {
-      return getFallbackImage(property)
+    // Only return valid image URLs, no fallbacks
+    if (src && !src.startsWith('/images/') && !src.includes('localhost:3000/images') && !src.includes('unsplash') && src.trim() !== '') {
+      return src
     }
-    return src
   }
-  return getFallbackImage(property)
+  return null
 }
 
 interface MatchBreakdown {
@@ -326,7 +302,7 @@ function MatchDetailsContent() {
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <LokazenNodesLoader size="lg" className="mb-4" />
             <p className="text-gray-600">Loading match details...</p>
           </div>
         </div>
@@ -357,7 +333,11 @@ function MatchDetailsContent() {
   const mainImageSrc = getPrimaryImageSrc(property)
   const galleryImages = (property.images || []).filter(
     (src, index) =>
-      index > 0 && !src.startsWith('/images/') && !src.includes('localhost:3000/images')
+      index > 0 && 
+      !src.startsWith('/images/') && 
+      !src.includes('localhost:3000/images') &&
+      !src.includes('unsplash') &&
+      src.trim() !== ''
   )
 
   return (
@@ -382,15 +362,19 @@ function MatchDetailsContent() {
             {/* Property Images */}
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="relative h-48 sm:h-64 md:h-80 lg:h-96 w-full">
-                <Image
-                  src={mainImageSrc}
-                  alt={property.title}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                  loading="lazy"
-                  sizes="(min-width: 1024px) 66vw, 100vw"
-                />
+                {mainImageSrc ? (
+                  <Image
+                    src={mainImageSrc}
+                    alt={property.title}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                    loading="lazy"
+                    sizes="(min-width: 1024px) 66vw, 100vw"
+                  />
+                ) : (
+                  <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
+                )}
               </div>
               
               {/* Image Thumbnails */}
@@ -439,7 +423,7 @@ function MatchDetailsContent() {
                 </div>
                 <div className="flex flex-col min-w-0">
                   <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 capitalize leading-tight break-words">
-                    {property.propertyType}
+                    {getPropertyTypeLabel(property.propertyType, property.title, property.description)}
                   </div>
                   <div className="text-xs sm:text-sm text-gray-600 mt-1 whitespace-nowrap">Type</div>
                 </div>
@@ -737,7 +721,7 @@ export default function MatchDetailsPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <LokazenNodesLoader size="lg" className="mb-4" />
           <p className="text-gray-600">Loading match details...</p>
         </div>
       </div>

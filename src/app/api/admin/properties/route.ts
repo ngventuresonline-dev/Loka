@@ -67,58 +67,52 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Build all filter conditions
+    const andConditions: any[] = []
+    
+    // Add location filter
     if (location) {
-      where.city = location
+      andConditions.push({ city: location })
     }
-
-    // NEW: Filter by status (pending, approved, rejected)
-    // Note: If status column doesn't exist yet, we'll fallback to availability in the catch block
+    
+    // Add search filters if present
+    if (searchFilters.length > 0) {
+      andConditions.push({ OR: searchFilters })
+    }
+    
+    // Add status filter
     if (status === 'pending') {
-      where.status = 'pending'
-      if (searchFilters.length > 0) {
-        where.AND = [
-          { OR: searchFilters },
-          { status: 'pending' }
-        ]
-      }
+      andConditions.push({ status: 'pending' })
     } else if (status === 'approved') {
       // For approved properties, show:
       // 1. Properties with status='approved'
       // 2. Properties that are available (availability=true)
       // 3. Properties that are featured (isFeatured=true)
       // Use OR condition to include all of these
-      const statusFilters = [
-        { status: 'approved' },
-        { availability: true },
-        { isFeatured: true }
-      ]
-      
-      if (searchFilters.length > 0) {
-        // Combine search filters with status filters using AND
-        where.AND = [
-          { OR: searchFilters },
-          { OR: statusFilters }
+      andConditions.push({
+        OR: [
+          { status: 'approved' },
+          { availability: true },
+          { isFeatured: true }
         ]
-      } else {
-        where.OR = statusFilters
-      }
+      })
     } else if (status === 'rejected') {
-      where.status = 'rejected'
-      if (searchFilters.length > 0) {
-        where.AND = [
-          { OR: searchFilters },
-          { status: 'rejected' }
-        ]
-      }
-    } else if (searchFilters.length > 0) {
-      // No status filter but has search
-      where.OR = searchFilters
-    }
-    // Legacy: If no status filter but old availability filter
-    else if (status === 'available') {
-      where.availability = true
+      andConditions.push({ status: 'rejected' })
+    } else if (status === 'available') {
+      andConditions.push({ availability: true })
     } else if (status === 'occupied') {
-      where.availability = false
+      andConditions.push({ availability: false })
+    }
+    
+    // Combine all conditions
+    if (andConditions.length > 0) {
+      if (andConditions.length === 1) {
+        // If only one condition, use it directly
+        Object.assign(where, andConditions[0])
+      } else {
+        // Multiple conditions, use AND
+        where.AND = andConditions
+      }
     }
 
     const orderBy: any = {}
@@ -126,6 +120,11 @@ export async function GET(request: NextRequest) {
       orderBy.createdAt = sortOrder
     } else if (sortBy === 'rent') {
       orderBy.price = sortOrder
+    }
+
+    // Ensure orderBy is not empty (default to createdAt desc)
+    if (Object.keys(orderBy).length === 0) {
+      orderBy.createdAt = 'desc'
     }
 
     // Fetch ALL properties (admin should see everything)
@@ -154,8 +153,11 @@ export async function GET(request: NextRequest) {
         })
       }
       
+      // Ensure where is a valid object (empty object is valid for Prisma = all records)
+      const queryWhere = Object.keys(where).length > 0 ? where : {}
+      
       properties = await prisma.property.findMany({
-        where, // Empty where = all properties
+        where: queryWhere,
         orderBy,
         skip: (page - 1) * limit,
         take: limit,
@@ -260,7 +262,7 @@ export async function GET(request: NextRequest) {
     let total = properties.length
     try {
       total = await prisma.property.count({ where })
-      console.log('[Admin properties] Total properties in database:', total)
+      console.log('[Admin properties] Total properties matching filters:', total)
     } catch (countError: any) {
       console.warn('[Admin properties] Count query failed, using fetched length:', countError?.message || countError)
       // Use properties.length as fallback

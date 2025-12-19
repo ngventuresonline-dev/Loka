@@ -5,6 +5,7 @@ import PropertyCard from './PropertyCard'
 import ButtonFlowModal from './ButtonFlowModal'
 import { ButtonFlowState } from '@/lib/ai-search/button-flow'
 import { getContextualInsight } from '@/lib/loading-insights'
+import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 
 interface Message {
   id: string
@@ -519,7 +520,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
                           )}
                           <div className="absolute top-3 right-3">
                             <span className="px-3 py-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-xs rounded-full font-semibold shadow-[0_0_10px_rgba(255,82,0,0.6)]">
-                              {property.propertyType}
+                              {getPropertyTypeLabel(property.propertyType, property.title, property.description)}
                             </span>
                           </div>
                           {property.isFeatured && (

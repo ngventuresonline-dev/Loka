@@ -252,7 +252,7 @@ export default function StatusPage() {
           </motion.button>
           
           <motion.a
-            href="mailto:support@ngventures.com?subject=Platform Issue Report"
+            href="mailto:support@lokazen.in?subject=Platform Issue Report"
             className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:border-[#FF5200] hover:text-[#FF5200] transition-all flex items-center gap-2"
             style={{ fontFamily: plusJakarta.style.fontFamily }}
             whileHover={{ scale: 1.02 }}

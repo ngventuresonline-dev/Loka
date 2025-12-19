@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lokazen / Locazen Brand Logo Renders - AI-Powered Commercial Real Estate</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(255, 82, 0, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+        }
+
+        .brand-section {
+            margin-bottom: 80px;
+        }
+
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 30px;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(255, 82, 0, 0.1) 0%, rgba(228, 0, 43, 0.1) 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(255, 82, 0, 0.2);
+            border: 1px solid rgba(255, 82, 0, 0.3);
+        }
+
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .logo-card {
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255, 82, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #FF5200, #E4002B, transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .logo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(255, 82, 0, 0.3), 0 0 0 1px rgba(255, 82, 0, 0.3);
+        }
+
+        .logo-card:hover::before {
+            opacity: 1;
+        }
+
+        .logo-card h3 {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        .logo-variant {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Base text styles */
+        .main-text {
+            font-size: 32px;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+
+        .domain-text {
+            font-size: 13px;
+            color: #888;
+            font-weight: 500;
+            margin-top: 5px;
+        }
+
+        /* Style 1: Map Pin Badge */
+        .style-1 {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .map-badge-1 {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #FF5200 0%, #E4002B 100%);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(255, 82, 0, 0.4), inset 0 0 20px rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        .map-badge-1::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            bottom: -8px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .map-badge-1 .initial {
+            color: white;
+            font-size: 28px;
+            font-weight: 900;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Style 2: Network Nodes */
+        .style-2 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .network-container {
+            position: relative;
+            width: 120px;
+            height: 80px;
+        }
+
+        .network-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+        }
+
+        .network-node:nth-child(1) { top: 10px; left: 20px; }
+        .network-node:nth-child(2) { top: 10px; right: 20px; }
+        .network-node:nth-child(3) { bottom: 10px; left: 20px; }
+        .network-node:nth-child(4) { bottom: 10px; right: 20px; }
+        .network-node:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; }
+
+        .network-line {
+            position: absolute;
+            background: linear-gradient(90deg, rgba(255, 82, 0, 0.3), rgba(228, 0, 43, 0.3));
+            height: 1px;
+        }
+
+        .network-line:nth-child(6) { top: 16px; left: 26px; width: 68px; transform: rotate(0deg); }
+        .network-line:nth-child(7) { top: 16px; left: 26px; width: 68px; transform: rotate(90deg); transform-origin: left top; }
+        .network-line:nth-child(8) { bottom: 16px; left: 26px; width: 68px; }
+        .network-line:nth-child(9) { top: 50%; left: 26px; width: 30px; transform: rotate(45deg); transform-origin: left center; }
+
+        /* Style 3: Circuit Board */
+        .style-3 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .circuit-badge {
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            border: 2px solid #FF5200;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 82, 0, 0.5), inset 0 0 20px rgba(255, 82, 0, 0.1);
+        }
+
+        .circuit-badge::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px solid rgba(255, 82, 0, 0.3);
+            border-radius: 6px;
+        }
+
+        .circuit-line {
+            position: absolute;
+            background: #FF5200;
+            box-shadow: 0 0 8px rgba(255, 82, 0, 0.8);
+        }
+
+        .circuit-line:nth-child(1) { top: 20px; left: 15px; width: 20px; height: 2px; }
+        .circuit-line:nth-child(2) { top: 20px; left: 15px; width: 2px; height: 20px; }
+        .circuit-line:nth-child(3) { bottom: 20px; right: 15px; width: 20px; height: 2px; }
+        .circuit-line:nth-child(4) { bottom: 20px; right: 15px; width: 2px; height: 20px; }
+        .circuit-line:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 2px; }
+        .circuit-line:nth-child(6) { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 15px; }
+
+        .circuit-badge .initial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FF5200;
+            font-size: 24px;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(255, 82, 0, 0.8);
+        }
+
+        /* Style 4: City Skyline */
+        .style-4 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .skyline-container {
+            width: 140px;
+            height: 50px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .building {
+            background: linear-gradient(180deg, #FF5200 0%, #E4002B 100%);
+            margin: 0 2px;
+            position: relative;
+            box-shadow: 0 0 15px rgba(255, 82, 0, 0.5);
+        }
+
+        .building:nth-child(1) { width: 12px; height: 35px; }
+        .building:nth-child(2) { width: 15px; height: 45px; }
+        .building:nth-child(3) { width: 18px; height: 50px; }
+        .building:nth-child(4) { width: 15px; height: 40px; }
+        .building:nth-child(5) { width: 12px; height: 30px; }
+
+        .building::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+        }
+
+        /* Style 5: Neural Network */
+        .style-5 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .neural-badge {
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, rgba(255, 82, 0, 0.2), transparent);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .neural-layer {
+            position: absolute;
+            border: 2px solid rgba(255, 82, 0, 0.4);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .neural-layer:nth-child(1) { width: 50px; height: 50px; }
+        .neural-layer:nth-child(2) { width: 70px; height: 70px; animation-delay: 0.5s; }
+        .neural-layer:nth-child(3) { width: 90px; height: 90px; animation-delay: 1s; }
+
+        .neural-center {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        /* Style 6: Grid Map */
+        .style-6 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .grid-badge {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(30, 30, 30, 0.9));
+            border: 2px solid rgba(255, 82, 0, 0.5);
+            border-radius: 12px;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px;
+            padding: 4px;
+        }
+
+        .grid-cell {
+            background: rgba(255, 82, 0, 0.1);
+            border-radius: 2px;
+        }
+
+        .grid-cell.active {
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            box-shadow: 0 0 10px rgba(255, 82, 0, 0.6);
+        }
+
+        .grid-cell:nth-child(1), .grid-cell:nth-child(5), .grid-cell:nth-child(9) {
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            box-shadow: 0 0 10px rgba(255, 82, 0, 0.6);
+        }
+
+        /* Style 7: Location Pulse */
+        .style-7 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .pulse-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid #FF5200;
+            border-radius: 50%;
+            animation: pulseRing 2s infinite;
+        }
+
+        .pulse-ring:nth-child(1) { width: 60px; height: 60px; }
+        .pulse-ring:nth-child(2) { width: 80px; height: 80px; animation-delay: 0.5s; }
+
+        .pulse-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        .pulse-center::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+        }
+
+        /* Style 8: Data Flow */
+        .style-8 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .data-badge {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(30, 30, 30, 0.9));
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, #FF5200, transparent);
+            height: 2px;
+            animation: dataFlow 2s infinite;
+        }
+
+        .data-line:nth-child(1) { top: 15px; left: 0; right: 0; animation-delay: 0s; }
+        .data-line:nth-child(2) { top: 30px; left: 0; right: 0; animation-delay: 0.3s; }
+        .data-line:nth-child(3) { top: 45px; left: 0; right: 0; animation-delay: 0.6s; }
+        .data-line:nth-child(4) { top: 60px; left: 0; right: 0; animation-delay: 0.9s; }
+
+        .data-badge .initial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FF5200;
+            font-size: 28px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        /* Style 9: Hexagon Network */
+        .style-9 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .hex-container {
+            position: relative;
+            width: 90px;
+            height: 90px;
+        }
+
+        .hex {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            box-shadow: 0 0 20px rgba(255, 82, 0, 0.6);
+        }
+
+        .hex:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); }
+        .hex:nth-child(2) { bottom: 0; left: 50%; transform: translateX(-50%); }
+        .hex:nth-child(3) { top: 50%; left: 0; transform: translateY(-50%); }
+        .hex:nth-child(4) { top: 50%; right: 0; transform: translateY(-50%); }
+        .hex:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; z-index: 1; }
+
+        .hex-line {
+            position: absolute;
+            background: rgba(255, 82, 0, 0.4);
+            height: 1px;
+        }
+
+        .hex-line:nth-child(6) { top: 20px; left: 50%; width: 20px; transform: translateX(-50%) rotate(60deg); }
+        .hex-line:nth-child(7) { top: 20px; left: 50%; width: 20px; transform: translateX(-50%) rotate(-60deg); }
+        .hex-line:nth-child(8) { bottom: 20px; left: 50%; width: 20px; transform: translateX(-50%) rotate(60deg); }
+        .hex-line:nth-child(9) { bottom: 20px; left: 50%; width: 20px; transform: translateX(-50%) rotate(-60deg); }
+
+        /* Style 10: Satellite View */
+        .style-10 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .satellite-badge {
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, rgba(255, 82, 0, 0.1), rgba(26, 26, 26, 0.9));
+            border: 2px solid rgba(255, 82, 0, 0.5);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .satellite-grid {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255, 82, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 82, 0, 0.1) 1px, transparent 1px);
+            background-size: 10px 10px;
+        }
+
+        .satellite-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        .satellite-badge .initial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            font-weight: 900;
+            z-index: 2;
+        }
+
+        /* Style 11: Connection Graph */
+        .style-11 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .graph-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .graph-node {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #FF5200;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 82, 0, 0.8);
+        }
+
+        .graph-node:nth-child(1) { top: 10px; left: 50%; }
+        .graph-node:nth-child(2) { top: 50%; left: 10px; }
+        .graph-node:nth-child(3) { top: 50%; right: 10px; }
+        .graph-node:nth-child(4) { bottom: 10px; left: 50%; }
+        .graph-node:nth-child(5) { top: 50%; left: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%); }
+
+        .graph-connection {
+            position: absolute;
+            background: rgba(255, 82, 0, 0.3);
+            height: 1px;
+        }
+
+        .graph-connection:nth-child(6) { top: 15px; left: 50%; width: 1px; height: 35px; transform: translateX(-50%); }
+        .graph-connection:nth-child(7) { top: 50%; left: 15px; width: 35px; height: 1px; transform: translateY(-50%); }
+        .graph-connection:nth-child(8) { top: 50%; right: 15px; width: 35px; height: 1px; transform: translateY(-50%); }
+        .graph-connection:nth-child(9) { bottom: 15px; left: 50%; width: 1px; height: 35px; transform: translateX(-50%); }
+
+        /* Style 12: Radar Scan */
+        .style-12 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .radar-badge {
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, rgba(255, 82, 0, 0.1), rgba(26, 26, 26, 0.9));
+            border: 2px solid rgba(255, 82, 0, 0.5);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 50%;
+            background: linear-gradient(45deg, transparent, rgba(255, 82, 0, 0.3));
+            transform-origin: top left;
+            animation: radarSweep 3s infinite;
+        }
+
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: #FF5200;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        .radar-badge .initial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FF5200;
+            font-size: 24px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+            z-index: 2;
+        }
+
+        /* Style 13: Hologram Grid */
+        .style-13 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .hologram-container {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            perspective: 200px;
+        }
+
+        .hologram-cube {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(45deg) rotateY(45deg);
+            transform-style: preserve-3d;
+            animation: rotate3d 8s infinite;
+        }
+
+        .cube-face {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #FF5200;
+            background: rgba(255, 82, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(255, 82, 0, 0.3);
+        }
+
+        .cube-face.front { transform: rotateY(0deg) translateZ(30px); }
+        .cube-face.back { transform: rotateY(180deg) translateZ(30px); }
+        .cube-face.right { transform: rotateY(90deg) translateZ(30px); }
+        .cube-face.left { transform: rotateY(-90deg) translateZ(30px); }
+        .cube-face.top { transform: rotateX(90deg) translateZ(30px); }
+        .cube-face.bottom { transform: rotateX(-90deg) translateZ(30px); }
+
+        .cube-face .initial {
+            color: #FF5200;
+            font-size: 24px;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(255, 82, 0, 0.8);
+        }
+
+        /* Style 14: Waveform Data */
+        .style-14 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .waveform-badge {
+            width: 80px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(30, 30, 30, 0.9));
+            border: 2px solid rgba(255, 82, 0, 0.5);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .waveform-line {
+            position: absolute;
+            background: linear-gradient(90deg, #FF5200, #E4002B);
+            height: 2px;
+            animation: waveform 2s infinite;
+        }
+
+        .waveform-line:nth-child(1) { 
+            bottom: 15px; 
+            left: 10px; 
+            width: 60px; 
+            clip-path: polygon(0% 50%, 10% 0%, 20% 50%, 30% 100%, 40% 50%, 50% 0%, 60% 50%, 70% 100%, 80% 50%, 90% 0%, 100% 50%);
+        }
+
+        .waveform-badge .initial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FF5200;
+            font-size: 28px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        /* Style 15: AI Brain */
+        .style-15 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brain-container {
+            position: relative;
+            width: 90px;
+            height: 90px;
+        }
+
+        .brain-shape {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(255, 82, 0, 0.2), rgba(228, 0, 43, 0.2));
+            border: 2px solid #FF5200;
+            border-radius: 50% 30% 50% 30%;
+            box-shadow: 0 0 25px rgba(255, 82, 0, 0.5);
+        }
+
+        .brain-node {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #FF5200;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 82, 0, 0.8);
+        }
+
+        .brain-node:nth-child(2) { top: 20px; left: 30px; }
+        .brain-node:nth-child(3) { top: 30px; right: 25px; }
+        .brain-node:nth-child(4) { bottom: 25px; left: 25px; }
+        .brain-node:nth-child(5) { bottom: 30px; right: 30px; }
+        .brain-node:nth-child(6) { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; }
+
+        .brain-connection {
+            position: absolute;
+            background: rgba(255, 82, 0, 0.3);
+            height: 1px;
+        }
+
+        .brain-connection:nth-child(7) { top: 24px; left: 34px; width: 20px; transform: rotate(45deg); }
+        .brain-connection:nth-child(8) { top: 34px; right: 29px; width: 20px; transform: rotate(-45deg); }
+        .brain-connection:nth-child(9) { bottom: 29px; left: 29px; width: 20px; transform: rotate(45deg); }
+        .brain-connection:nth-child(10) { bottom: 34px; right: 34px; width: 20px; transform: rotate(-45deg); }
+
+        /* Style 16: Map Coordinates */
+        .style-16 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .coords-badge {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(30, 30, 30, 0.9));
+            border: 2px solid rgba(255, 82, 0, 0.5);
+            border-radius: 12px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .coords-grid {
+            position: absolute;
+            inset: 5px;
+            background-image: 
+                linear-gradient(rgba(255, 82, 0, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 82, 0, 0.2) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+
+        .coords-crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+        }
+
+        .coords-crosshair::before,
+        .coords-crosshair::after {
+            content: '';
+            position: absolute;
+            background: #FF5200;
+            box-shadow: 0 0 10px rgba(255, 82, 0, 0.8);
+        }
+
+        .coords-crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .coords-crosshair::after {
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+
+        .coords-badge .initial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FF5200;
+            font-size: 28px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        /* Style 17: Quantum Nodes */
+        .style-17 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .quantum-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .quantum-orb {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 82, 0, 0.8);
+            animation: quantumFloat 3s infinite;
+        }
+
+        .quantum-orb:nth-child(1) { top: 20px; left: 50%; animation-delay: 0s; }
+        .quantum-orb:nth-child(2) { top: 50%; right: 20px; animation-delay: 0.5s; }
+        .quantum-orb:nth-child(3) { bottom: 20px; left: 50%; animation-delay: 1s; }
+        .quantum-orb:nth-child(4) { top: 50%; left: 20px; animation-delay: 1.5s; }
+        .quantum-orb:nth-child(5) { top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); animation: none; }
+
+        .quantum-path {
+            position: absolute;
+            border: 1px solid rgba(255, 82, 0, 0.3);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .quantum-path:nth-child(6) { width: 60px; height: 60px; }
+        .quantum-path:nth-child(7) { width: 80px; height: 80px; }
+
+        /* Style 18: Topographic Map */
+        .style-18 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .topo-badge {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(30, 30, 30, 0.9));
+            border: 2px solid rgba(255, 82, 0, 0.5);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topo-line {
+            position: absolute;
+            border: 1px solid rgba(255, 82, 0, 0.4);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .topo-line:nth-child(1) { width: 20px; height: 20px; }
+        .topo-line:nth-child(2) { width: 35px; height: 35px; }
+        .topo-line:nth-child(3) { width: 50px; height: 50px; }
+
+        .topo-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: #FF5200;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+            z-index: 1;
+        }
+
+        .topo-badge .initial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FF5200;
+            font-size: 24px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 82, 0, 0.8);
+            z-index: 2;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        @keyframes pulseRing {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        @keyframes dataFlow {
+            0% { transform: translateX(-100%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+
+        @keyframes radarSweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes rotate3d {
+            0% { transform: translate(-50%, -50%) rotateX(45deg) rotateY(0deg); }
+            100% { transform: translate(-50%, -50%) rotateX(45deg) rotateY(360deg); }
+        }
+
+        @keyframes waveform {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes quantumFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(5px, -5px) scale(1.1); }
+            50% { transform: translate(0, -10px) scale(1); }
+            75% { transform: translate(-5px, -5px) scale(1.1); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .brand-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI-Powered Commercial Real Estate Platform</h1>
+        <p class="subtitle">Futuristic Logo Concepts with Maps, Networks & Tech Elements</p>
+
+        <!-- Lokazen.in Section -->
+        <div class="brand-section">
+            <div class="brand-title">Lokazen.in - Lokazen</div>
+            <div class="logo-grid">
+                <!-- Style 1: Map Pin Badge -->
+                <div class="logo-card">
+                    <h3>Style 1: Map Pin Badge</h3>
+                    <div class="logo-variant style-1">
+                        <div class="map-badge-1">
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-1">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 2: Network Nodes -->
+                <div class="logo-card">
+                    <h3>Style 2: Network Nodes</h3>
+                    <div class="logo-variant style-2">
+                        <div class="network-container">
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-line"></div>
+                            <div class="network-line"></div>
+                            <div class="network-line"></div>
+                            <div class="network-line"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 3: Circuit Board -->
+                <div class="logo-card">
+                    <h3>Style 3: Circuit Board</h3>
+                    <div class="logo-variant style-3">
+                        <div class="circuit-badge">
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 4: City Skyline -->
+                <div class="logo-card">
+                    <h3>Style 4: City Skyline</h3>
+                    <div class="logo-variant style-4">
+                        <div class="skyline-container">
+                            <div class="building"></div>
+                            <div class="building"></div>
+                            <div class="building"></div>
+                            <div class="building"></div>
+                            <div class="building"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 5: Neural Network -->
+                <div class="logo-card">
+                    <h3>Style 5: Neural Network</h3>
+                    <div class="logo-variant style-5">
+                        <div class="neural-badge">
+                            <div class="neural-layer"></div>
+                            <div class="neural-layer"></div>
+                            <div class="neural-layer"></div>
+                            <div class="neural-center"></div>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 6: Grid Map -->
+                <div class="logo-card">
+                    <h3>Style 6: Grid Map</h3>
+                    <div class="logo-variant style-6">
+                        <div class="grid-badge">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 7: Location Pulse -->
+                <div class="logo-card">
+                    <h3>Style 7: Location Pulse</h3>
+                    <div class="logo-variant style-7">
+                        <div class="pulse-container">
+                            <div class="pulse-ring"></div>
+                            <div class="pulse-ring"></div>
+                            <div class="pulse-center"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 8: Data Flow -->
+                <div class="logo-card">
+                    <h3>Style 8: Data Flow</h3>
+                    <div class="logo-variant style-8">
+                        <div class="data-badge">
+                            <div class="data-line"></div>
+                            <div class="data-line"></div>
+                            <div class="data-line"></div>
+                            <div class="data-line"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 9: Hexagon Network -->
+                <div class="logo-card">
+                    <h3>Style 9: Hexagon Network</h3>
+                    <div class="logo-variant style-9">
+                        <div class="hex-container">
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex-line"></div>
+                            <div class="hex-line"></div>
+                            <div class="hex-line"></div>
+                            <div class="hex-line"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 10: Satellite View -->
+                <div class="logo-card">
+                    <h3>Style 10: Satellite View</h3>
+                    <div class="logo-variant style-10">
+                        <div class="satellite-badge">
+                            <div class="satellite-grid"></div>
+                            <div class="satellite-center"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 11: Connection Graph -->
+                <div class="logo-card">
+                    <h3>Style 11: Connection Graph</h3>
+                    <div class="logo-variant style-11">
+                        <div class="graph-container">
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-connection"></div>
+                            <div class="graph-connection"></div>
+                            <div class="graph-connection"></div>
+                            <div class="graph-connection"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 12: Radar Scan -->
+                <div class="logo-card">
+                    <h3>Style 12: Radar Scan</h3>
+                    <div class="logo-variant style-12">
+                        <div class="radar-badge">
+                            <div class="radar-sweep"></div>
+                            <div class="radar-center"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 13: Hologram Grid -->
+                <div class="logo-card">
+                    <h3>Style 13: Hologram Grid</h3>
+                    <div class="logo-variant style-13">
+                        <div class="hologram-container">
+                            <div class="hologram-cube">
+                                <div class="cube-face front"><span class="initial">L</span></div>
+                                <div class="cube-face back"><span class="initial">L</span></div>
+                                <div class="cube-face right"><span class="initial">L</span></div>
+                                <div class="cube-face left"><span class="initial">L</span></div>
+                                <div class="cube-face top"><span class="initial">L</span></div>
+                                <div class="cube-face bottom"><span class="initial">L</span></div>
+                            </div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 14: Waveform Data -->
+                <div class="logo-card">
+                    <h3>Style 14: Waveform Data</h3>
+                    <div class="logo-variant style-14">
+                        <div class="waveform-badge">
+                            <div class="waveform-line"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 15: AI Brain -->
+                <div class="logo-card">
+                    <h3>Style 15: AI Brain</h3>
+                    <div class="logo-variant style-15">
+                        <div class="brain-container">
+                            <div class="brain-shape"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-connection"></div>
+                            <div class="brain-connection"></div>
+                            <div class="brain-connection"></div>
+                            <div class="brain-connection"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 16: Map Coordinates -->
+                <div class="logo-card">
+                    <h3>Style 16: Map Coordinates</h3>
+                    <div class="logo-variant style-16">
+                        <div class="coords-badge">
+                            <div class="coords-grid"></div>
+                            <div class="coords-crosshair"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 17: Quantum Nodes -->
+                <div class="logo-card">
+                    <h3>Style 17: Quantum Nodes</h3>
+                    <div class="logo-variant style-17">
+                        <div class="quantum-container">
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-path"></div>
+                            <div class="quantum-path"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Lokazen</div>
+                            <div class="domain-text">lokazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 18: Topographic Map -->
+                <div class="logo-card">
+                    <h3>Style 18: Topographic Map</h3>
+                    <div class="logo-variant style-18">
+                        <div class="topo-badge">
+                            <div class="topo-line"></div>
+                            <div class="topo-line"></div>
+                            <div class="topo-line"></div>
+                            <div class="topo-center"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Lokazen</span>
+                            <span class="domain-text">lokazen.in</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Locazen.in Section -->
+        <div class="brand-section">
+            <div class="brand-title">Locazen.in - Locazen</div>
+            <div class="logo-grid">
+                <!-- Style 1: Map Pin Badge -->
+                <div class="logo-card">
+                    <h3>Style 1: Map Pin Badge</h3>
+                    <div class="logo-variant style-1">
+                        <div class="map-badge-1">
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-1">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 2: Network Nodes -->
+                <div class="logo-card">
+                    <h3>Style 2: Network Nodes</h3>
+                    <div class="logo-variant style-2">
+                        <div class="network-container">
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-node"></div>
+                            <div class="network-line"></div>
+                            <div class="network-line"></div>
+                            <div class="network-line"></div>
+                            <div class="network-line"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 3: Circuit Board -->
+                <div class="logo-card">
+                    <h3>Style 3: Circuit Board</h3>
+                    <div class="logo-variant style-3">
+                        <div class="circuit-badge">
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <div class="circuit-line"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 4: City Skyline -->
+                <div class="logo-card">
+                    <h3>Style 4: City Skyline</h3>
+                    <div class="logo-variant style-4">
+                        <div class="skyline-container">
+                            <div class="building"></div>
+                            <div class="building"></div>
+                            <div class="building"></div>
+                            <div class="building"></div>
+                            <div class="building"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 5: Neural Network -->
+                <div class="logo-card">
+                    <h3>Style 5: Neural Network</h3>
+                    <div class="logo-variant style-5">
+                        <div class="neural-badge">
+                            <div class="neural-layer"></div>
+                            <div class="neural-layer"></div>
+                            <div class="neural-layer"></div>
+                            <div class="neural-center"></div>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 6: Grid Map -->
+                <div class="logo-card">
+                    <h3>Style 6: Grid Map</h3>
+                    <div class="logo-variant style-6">
+                        <div class="grid-badge">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 7: Location Pulse -->
+                <div class="logo-card">
+                    <h3>Style 7: Location Pulse</h3>
+                    <div class="logo-variant style-7">
+                        <div class="pulse-container">
+                            <div class="pulse-ring"></div>
+                            <div class="pulse-ring"></div>
+                            <div class="pulse-center"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 8: Data Flow -->
+                <div class="logo-card">
+                    <h3>Style 8: Data Flow</h3>
+                    <div class="logo-variant style-8">
+                        <div class="data-badge">
+                            <div class="data-line"></div>
+                            <div class="data-line"></div>
+                            <div class="data-line"></div>
+                            <div class="data-line"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 9: Hexagon Network -->
+                <div class="logo-card">
+                    <h3>Style 9: Hexagon Network</h3>
+                    <div class="logo-variant style-9">
+                        <div class="hex-container">
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex"></div>
+                            <div class="hex-line"></div>
+                            <div class="hex-line"></div>
+                            <div class="hex-line"></div>
+                            <div class="hex-line"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 10: Satellite View -->
+                <div class="logo-card">
+                    <h3>Style 10: Satellite View</h3>
+                    <div class="logo-variant style-10">
+                        <div class="satellite-badge">
+                            <div class="satellite-grid"></div>
+                            <div class="satellite-center"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 11: Connection Graph -->
+                <div class="logo-card">
+                    <h3>Style 11: Connection Graph</h3>
+                    <div class="logo-variant style-11">
+                        <div class="graph-container">
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-node"></div>
+                            <div class="graph-connection"></div>
+                            <div class="graph-connection"></div>
+                            <div class="graph-connection"></div>
+                            <div class="graph-connection"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 12: Radar Scan -->
+                <div class="logo-card">
+                    <h3>Style 12: Radar Scan</h3>
+                    <div class="logo-variant style-12">
+                        <div class="radar-badge">
+                            <div class="radar-sweep"></div>
+                            <div class="radar-center"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 13: Hologram Grid -->
+                <div class="logo-card">
+                    <h3>Style 13: Hologram Grid</h3>
+                    <div class="logo-variant style-13">
+                        <div class="hologram-container">
+                            <div class="hologram-cube">
+                                <div class="cube-face front"><span class="initial">L</span></div>
+                                <div class="cube-face back"><span class="initial">L</span></div>
+                                <div class="cube-face right"><span class="initial">L</span></div>
+                                <div class="cube-face left"><span class="initial">L</span></div>
+                                <div class="cube-face top"><span class="initial">L</span></div>
+                                <div class="cube-face bottom"><span class="initial">L</span></div>
+                            </div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 14: Waveform Data -->
+                <div class="logo-card">
+                    <h3>Style 14: Waveform Data</h3>
+                    <div class="logo-variant style-14">
+                        <div class="waveform-badge">
+                            <div class="waveform-line"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 15: AI Brain -->
+                <div class="logo-card">
+                    <h3>Style 15: AI Brain</h3>
+                    <div class="logo-variant style-15">
+                        <div class="brain-container">
+                            <div class="brain-shape"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-node"></div>
+                            <div class="brain-connection"></div>
+                            <div class="brain-connection"></div>
+                            <div class="brain-connection"></div>
+                            <div class="brain-connection"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 16: Map Coordinates -->
+                <div class="logo-card">
+                    <h3>Style 16: Map Coordinates</h3>
+                    <div class="logo-variant style-16">
+                        <div class="coords-badge">
+                            <div class="coords-grid"></div>
+                            <div class="coords-crosshair"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 17: Quantum Nodes -->
+                <div class="logo-card">
+                    <h3>Style 17: Quantum Nodes</h3>
+                    <div class="logo-variant style-17">
+                        <div class="quantum-container">
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-orb"></div>
+                            <div class="quantum-path"></div>
+                            <div class="quantum-path"></div>
+                        </div>
+                        <div class="text-3">
+                            <div class="main-text">Locazen</div>
+                            <div class="domain-text">locazen.in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style 18: Topographic Map -->
+                <div class="logo-card">
+                    <h3>Style 18: Topographic Map</h3>
+                    <div class="logo-variant style-18">
+                        <div class="topo-badge">
+                            <div class="topo-line"></div>
+                            <div class="topo-line"></div>
+                            <div class="topo-line"></div>
+                            <div class="topo-center"></div>
+                            <span class="initial">L</span>
+                        </div>
+                        <div class="text-4">
+                            <span class="main-text">Locazen</span>
+                            <span class="domain-text">locazen.in</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

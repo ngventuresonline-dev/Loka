@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Logo from './Logo'
 
 export default function Footer() {
   return (
@@ -9,9 +10,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">
-              GVS Platform
-            </h3>
+            <div className="mb-4">
+              <Logo size="md" showText={true} href="/" variant="dark" />
+            </div>
             <p className="text-gray-400 mb-6 leading-relaxed">
               AI-powered commercial real estate matchmaking platform connecting brands with perfect properties using location intelligence.
             </p>
@@ -88,7 +89,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} GVS Platform. All rights reserved.
+            © {new Date().getFullYear()} Lokazen. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
             <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Privacy Policy</a>

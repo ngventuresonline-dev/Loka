@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { useAuth } from '@/contexts/AuthContext'
+import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 
 interface Property {
   id: string
@@ -81,8 +82,22 @@ export default function PropertiesPage() {
         setProperties(allProps)
         applyFilters(allProps)
       } else {
-        console.error('Failed to fetch properties:', response.status)
+        // Try to get error details from response
+        let errorMessage = `Failed to fetch properties: ${response.status}`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.details || errorMessage
+          console.error('Failed to fetch properties:', {
+            status: response.status,
+            error: errorData.error,
+            details: errorData.details
+          })
+        } catch (parseError) {
+          console.error('Failed to fetch properties:', response.status, response.statusText)
+        }
         setProperties([])
+        // Optionally show error to user
+        // alert(errorMessage)
       }
     } catch (error) {
       console.error('Error fetching properties:', error)
@@ -357,7 +372,7 @@ export default function PropertiesPage() {
         {/* Properties Table */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <LokazenNodesLoader size="lg" className="mb-4" />
             <p className="mt-4 text-gray-600">Loading properties...</p>
           </div>
         ) : properties.length === 0 ? (
