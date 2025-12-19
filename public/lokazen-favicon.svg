@@ -1,50 +1,107 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="lg-core" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FF6B35"/>
-      <stop offset="40%" stop-color="#FF5200"/>
-      <stop offset="100%" stop-color="#1E1B4B"/>
+    <!-- Core gradient, matching header logo colors -->
+    <radialGradient id="lokazen-core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF6B35" />
+      <stop offset="45%" stop-color="#FF5200" />
+      <stop offset="100%" stop-color="#7C2D12" />
     </radialGradient>
-    <linearGradient id="lg-link" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF6B35"/>
-      <stop offset="100%" stop-color="#F97316"/>
+
+    <!-- Small orb gradient -->
+    <linearGradient id="lokazen-orb" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B35" />
+      <stop offset="100%" stop-color="#E4002B" />
     </linearGradient>
+
     <style>
-      @keyframes spinNodes {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+      /* Gentle floating animation, similar to header quantumFloat */
+      @keyframes qFloat1 {
+        0%   { transform: translate(0, -0.7px); }
+        50%  { transform: translate(0, 0.7px); }
+        100% { transform: translate(0, -0.7px); }
       }
-      .orbit {
-        transform-origin: 32px 32px;
-        animation: spinNodes 6s linear infinite;
+      @keyframes qFloat2 {
+        0%   { transform: translate(0.6px, 0); }
+        50%  { transform: translate(-0.6px, 0.4px); }
+        100% { transform: translate(0.6px, 0); }
       }
-      .orbit--slow {
-        animation-duration: 10s;
+      @keyframes qFloat3 {
+        0%   { transform: translate(0, 0.7px); }
+        50%  { transform: translate(0, -0.7px); }
+        100% { transform: translate(0, 0.7px); }
       }
+      @keyframes qFloat4 {
+        0%   { transform: translate(-0.6px, 0); }
+        50%  { transform: translate(0.6px, -0.4px); }
+        100% { transform: translate(-0.6px, 0); }
+      }
+      .orb {
+        transform-box: fill-box;
+        transform-origin: center;
+      }
+      .orb--1 { animation: qFloat1 4s ease-in-out infinite; }
+      .orb--2 { animation: qFloat2 4s ease-in-out infinite 0.4s; }
+      .orb--3 { animation: qFloat3 4s ease-in-out infinite 0.8s; }
+      .orb--4 { animation: qFloat4 4s ease-in-out infinite 1.2s; }
     </style>
   </defs>
 
-  <!-- Dark background -->
-  <rect width="64" height="64" rx="16" fill="#020617"/>
+  <!-- Dark rounded background to match header navbar -->
+  <rect width="64" height="64" rx="16" fill="#020617" />
 
-  <!-- Core quantum node -->
-  <circle cx="32" cy="32" r="13" fill="url(#lg-core)"/>
-  <circle cx="32" cy="32" r="9" fill="#020617" opacity="0.25"/>
+  <!-- Outer quantum paths (two rings like header logo) -->
+  <circle
+    cx="32"
+    cy="32"
+    r="18"
+    fill="none"
+    stroke="#FF5200"
+    stroke-width="1.4"
+    stroke-opacity="0.18"
+  />
+  <circle
+    cx="32"
+    cy="32"
+    r="24"
+    fill="none"
+    stroke="#FF5200"
+    stroke-width="1"
+    stroke-opacity="0.12"
+  />
 
-  <!-- Outer orbits with nodes -->
-  <g class="orbit">
-    <circle cx="32" cy="32" r="20" fill="none" stroke="url(#lg-link)" stroke-width="1.2" stroke-opacity="0.65"/>
-    <circle cx="32" cy="12" r="3" fill="#FF6B35"/>
-    <circle cx="49" cy="36" r="2.6" fill="#F97316"/>
-    <circle cx="15" cy="36" r="2.6" fill="#FDBA74"/>
-  </g>
+  <!-- Center core node -->
+  <circle cx="32" cy="32" r="7" fill="url(#lokazen-core)" />
+  <circle cx="32" cy="32" r="4" fill="#0B1120" opacity="0.5" />
 
-  <g class="orbit orbit--slow">
-    <circle cx="32" cy="32" r="26" fill="none" stroke="#1E293B" stroke-width="1" stroke-dasharray="2 6" stroke-opacity="0.9"/>
-    <circle cx="32" cy="6" r="2.2" fill="#F97316"/>
-    <circle cx="56" cy="32" r="2" fill="#FB923C"/>
-    <circle cx="8" cy="32" r="2" fill="#FB923C"/>
-  </g>
+  <!-- Four orbiting quantum nodes, matching header layout (top, right, bottom, left) -->
+  <circle
+    class="orb orb--1"
+    cx="32"
+    cy="18"
+    r="3"
+    fill="url(#lokazen-orb)"
+  />
+  <circle
+    class="orb orb--2"
+    cx="44"
+    cy="32"
+    r="3"
+    fill="url(#lokazen-orb)"
+  />
+  <circle
+    class="orb orb--3"
+    cx="32"
+    cy="46"
+    r="3"
+    fill="url(#lokazen-orb)"
+  />
+  <circle
+    class="orb orb--4"
+    cx="20"
+    cy="32"
+    r="3"
+    fill="url(#lokazen-orb)"
+  />
 </svg>
 
 
