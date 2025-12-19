@@ -856,11 +856,6 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Subtle ambient glow behind rows */}
-        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-[#FF5200]/5 rounded-full blur-[100px] animate-pulse"></div>
-          <div className="absolute top-2/3 right-1/4 w-96 h-96 bg-[#E4002B]/5 rounded-full blur-[100px] animate-pulse" style={{animationDelay: '2s'}}></div>
-        </div>
         
         {/* First Row - Auto-scrolling with manual scroll support */}
         <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
@@ -878,22 +873,12 @@ export default function Home() {
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#FF5200]/60 hover:shadow-[0_0_30px_rgba(255,82,0,0.4),0_0_60px_rgba(255,82,0,0.2),inset_0_0_20px_rgba(255,82,0,0.1)]"
+                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-300 group cursor-pointer select-none hover:-translate-y-0.5 hover:border-[#FF5200]/60"
                 >
-                  {/* Constant subtle radiance */}
-                  <div className="absolute inset-0 rounded-xl border border-[#FF5200]/10 shadow-[0_0_15px_rgba(255,82,0,0.15)]"></div>
-                  
                   {/* Pulsing border for selected logos - only border, not whole capsule */}
                   {shouldFlicker && (
                     <div className="absolute inset-0 rounded-xl border-2 border-[#FF5200]/30 animate-[borderPulse_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
                   )}
-                  
-                  {/* Enhanced glow on hover */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF5200]/0 via-[#FF5200]/0 to-[#FF5200]/0 group-hover:from-[#FF5200]/10 group-hover:via-[#FF5200]/15 group-hover:to-[#FF5200]/10 transition-all duration-500"></div>
-                
-                  {/* Multi-layer border radiance on hover */}
-                  <div className="absolute inset-0 rounded-xl border-2 border-[#FF5200]/0 group-hover:border-[#FF5200]/40 group-hover:shadow-[0_0_20px_rgba(255,82,0,0.6),0_0_40px_rgba(255,82,0,0.3)] transition-all duration-500"></div>
-                  <div className="absolute inset-[-2px] rounded-xl border border-[#FF5200]/0 group-hover:border-[#FF5200]/20 group-hover:blur-sm transition-all duration-500"></div>
                 
                 <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF5200] group-hover:to-[#E4002B] transition-all duration-500">
                   {brand}
@@ -923,14 +908,11 @@ export default function Home() {
                 }`}
               >
                 <div className="relative h-full flex items-center justify-center group cursor-pointer">
-                  {/* Cinematic glow effect on hover */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#FF5200]/0 via-[#FF5200]/0 to-[#E4002B]/0 group-hover:from-[#FF5200]/20 group-hover:via-[#FF5200]/10 group-hover:to-[#E4002B]/20 transition-all duration-700 blur-xl opacity-0 group-hover:opacity-100"></div>
-                  
                   {/* Logo image with rounded corners - different sizing for large vs regular */}
                   <img
                     src={logoPath}
                     alt={`Brand logo ${idx + 1}`}
-                    className={`relative h-full w-auto object-contain rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:brightness-110 drop-shadow-[0_4px_12px_rgba(0,0,0,0.1)] group-hover:drop-shadow-[0_8px_24px_rgba(255,82,0,0.4)] ${
+                    className={`relative h-full w-auto object-contain rounded-2xl transition-all duration-300 group-hover:scale-105 ${
                       isLarge 
                         ? 'max-w-[240px] md:max-w-[280px]' 
                         : 'max-w-[180px] md:max-w-[220px]'
@@ -940,9 +922,6 @@ export default function Home() {
                       target.style.display = 'none'
                     }}
                   />
-                  
-                  {/* Subtle border on hover */}
-                  <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-[#FF5200]/30 transition-all duration-500 pointer-events-none"></div>
                 </div>
               </div>
             )})}
@@ -965,22 +944,13 @@ export default function Home() {
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-500 group cursor-pointer select-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 hover:border-[#E4002B]/60 hover:shadow-[0_0_30px_rgba(228,0,43,0.4),0_0_60px_rgba(228,0,43,0.2),inset_0_0_20px_rgba(228,0,43,0.1)]"
+                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-300 group cursor-pointer select-none hover:-translate-y-0.5 hover:border-[#E4002B]/60"
                 >
-                  {/* Constant subtle radiance */}
-                  <div className="absolute inset-0 rounded-xl border border-[#E4002B]/10 shadow-[0_0_15px_rgba(228,0,43,0.15)]"></div>
-                  
                   {/* Pulsing border for selected logos - only border, not whole capsule */}
                   {shouldFlicker && (
                     <div className="absolute inset-0 rounded-xl border-2 border-[#E4002B]/30 animate-[borderPulseRed_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
                   )}
                   
-                  {/* Enhanced glow on hover */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#E4002B]/0 via-[#E4002B]/0 to-[#E4002B]/0 group-hover:from-[#E4002B]/10 group-hover:via-[#E4002B]/15 group-hover:to-[#E4002B]/10 transition-all duration-500"></div>
-                
-                  {/* Multi-layer border radiance on hover */}
-                  <div className="absolute inset-0 rounded-xl border-2 border-[#E4002B]/0 group-hover:border-[#E4002B]/40 group-hover:shadow-[0_0_20px_rgba(228,0,43,0.6),0_0_40px_rgba(228,0,43,0.3)] transition-all duration-500"></div>
-                  <div className="absolute inset-[-2px] rounded-xl border border-[#E4002B]/0 group-hover:border-[#E4002B]/20 group-hover:blur-sm transition-all duration-500"></div>
                 
                 <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#E4002B] group-hover:to-[#FF5200] transition-all duration-500">
                   {brand}
