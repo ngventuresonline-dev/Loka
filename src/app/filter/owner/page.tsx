@@ -859,13 +859,13 @@ function FilterCard({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: openUpward ? 10 : -10 }}
                     transition={{ duration: 0.2 }}
-                    // Scrollable dropdown body - smart positioning (upward or downward)
+                    // Scrollable dropdown body - smart positioning (upward or downward), attached to input
                     className="absolute z-[9999] w-full bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto"
                     style={{ 
                       position: 'absolute', 
                       ...(openUpward 
-                        ? { bottom: '100%', marginBottom: '0.5rem' }
-                        : { top: '100%', marginTop: '0.5rem' }
+                        ? { bottom: '100%', marginBottom: 0 }
+                        : { top: '100%', marginTop: 0 }
                       ),
                       left: 0, 
                       right: 0,
