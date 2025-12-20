@@ -20,6 +20,48 @@ body {
   overflow-x: hidden;
 }
 
+/* Prevent mobile zoom on input focus - Universal Fix */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  font-size: 16px !important; /* Prevents zoom on ALL mobile browsers (iOS & Android) */
+}
+
+/* Responsive font scaling for inputs */
+@media (min-width: 768px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 18px; /* Slightly larger on tablets */
+  }
+}
+
+@media (min-width: 1024px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 18px; /* Desktop size */
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

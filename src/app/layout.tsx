@@ -51,6 +51,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 }
 
 export default function RootLayout({

@@ -623,7 +623,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
               rows={1}
               className="flex-1 px-4 py-3 bg-gray-900/50 text-white rounded-xl border border-gray-700 focus:border-[#FF5200] focus:outline-none focus:ring-2 focus:ring-[#FF5200]/20 transition-all resize-none min-h-[48px] max-h-[120px] overflow-y-auto"
               disabled={isLoading}
-              style={{ height: 'auto' }}
+              style={{ height: 'auto', fontSize: '16px' }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement
                 target.style.height = 'auto'

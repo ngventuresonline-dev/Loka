@@ -226,10 +226,11 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
               onBlur={handleInputBlur}
               onKeyDown={handleKeyDown}
               placeholder=" "
-              className="w-full bg-transparent border-none outline-none text-sm sm:text-base md:text-lg text-gray-900 transition-all duration-300 font-medium relative z-10"
+              className="w-full bg-transparent border-none outline-none text-base sm:text-base md:text-lg text-gray-900 transition-all duration-300 font-medium relative z-10"
               style={{ 
                 fontFamily: plusJakarta.style.fontFamily,
-                touchAction: 'manipulation' // Allow native touch scrolling
+                touchAction: 'manipulation', // Allow native touch scrolling
+                fontSize: '16px' // Ensure 16px minimum to prevent mobile zoom
               }}
             />
             {mode === 'brand' && !isTyping && searchQuery.length === 0 && (
