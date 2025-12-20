@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch properties for this owner - limit to 50 to reduce egress
-    const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 50)
     const skip = (page - 1) * limit
