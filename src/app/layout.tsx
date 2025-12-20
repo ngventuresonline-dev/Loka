@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import GoogleMapsErrorHandler from '@/components/GoogleMapsErrorHandler'
 import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 export const metadata: Metadata = {
   title: 'Lokazen - Connect Brands with Properties | AI-Powered Commercial Real Estate Matching',
@@ -82,6 +83,7 @@ export default function RootLayout({
           {children}
         </AuthProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

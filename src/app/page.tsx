@@ -580,8 +580,7 @@ function getBrandColorScheme(brandName: string): {
 }
 
 // Dynamic Brand Card Component with Expandable Details
-function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
-  const [isExpanded, setIsExpanded] = useState(false)
+function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand: any, index: number, isExpanded: boolean, onToggleExpand: () => void }) {
   
   const companyName = brand.companyName || brand.name || 'Brand'
   const industry = brand.industry || 'Business'
@@ -614,9 +613,9 @@ function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
         opacity: 0,
         animation: `fadeInUp 0.8s ease-out ${delay}s forwards`
       }}
-      onClick={() => setIsExpanded(!isExpanded)}
+      onClick={onToggleExpand}
     >
-      <div className={`relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 ${isExpanded ? colors.borderHover.replace('hover:', '') : 'border-gray-200'} ${colors.borderHover} transition-all duration-500 overflow-hidden shadow-lg ${colors.shadowHover} group-hover:-translate-y-2 h-full flex flex-col`}>
+      <div className={`relative bg-white backdrop-blur-xl rounded-2xl p-4 sm:p-6 border-2 ${isExpanded ? colors.borderHover.replace('hover:', '') : 'border-gray-200'} ${colors.borderHover} transition-all duration-500 overflow-hidden shadow-lg ${colors.shadowHover} group-hover:-translate-y-2 flex flex-col`}>
         {/* Top Accent Bar - Brand Color */}
         <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl ${colors.glowFrom.replace('from-', 'bg-').replace('/20', '')}`}></div>
         
@@ -633,10 +632,10 @@ function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
         </div>
         
         <div className="relative z-10 flex-1 flex flex-col">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-start justify-between gap-2 sm:gap-3 mb-4">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
               {/* Brand Logo */}
-              <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colors.shadow} overflow-hidden bg-white p-1.5`}>
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colors.shadow} overflow-hidden bg-white p-1.5 flex-shrink-0`}>
                 {logoPath ? (
                   <img 
                     src={logoPath} 
@@ -645,22 +644,51 @@ function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
                   />
                 ) : (
                   <div className={`w-full h-full ${colors.iconBg} rounded-lg flex items-center justify-center`}>
-                    <span className={`${colors.iconColor} font-bold text-lg`}>{brandInitial}</span>
+                    <span className={`${colors.iconColor} font-bold text-base sm:text-lg`}>{brandInitial}</span>
                   </div>
                 )}
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg mb-1">{companyName}</h3>
-                <p className="text-sm text-gray-600">{industry}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-1 truncate">{companyName}</h3>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">{industry}</p>
               </div>
             </div>
-            <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0">Active</span>
+            {/* Multiple Badges */}
+            <div className="flex flex-wrap gap-1 sm:gap-1.5 justify-end flex-shrink-0">
+              {(profile.badges && Array.isArray(profile.badges) && profile.badges.length > 0) ? (
+                profile.badges.map((badge: string) => {
+                  const badgeColors: Record<string, { bg: string; border: string; text: string }> = {
+                    'Active': { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
+                    'Very Active': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+                    'Multiple Properties Matched': { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
+                    'Property Matched': { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
+                  }
+                  const colors = badgeColors[badge] || { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700' }
+                  
+                  // Shortened text for mobile
+                  const shortBadge = badge.length > 15 ? (badge === 'Multiple Properties Matched' ? 'Multiple Matched' : badge.substring(0, 12) + '...') : badge
+                  
+                  return (
+                    <span 
+                      key={badge} 
+                      className={`px-2 sm:px-2.5 py-0.5 sm:py-1 ${colors.bg} border ${colors.border} ${colors.text} text-[10px] sm:text-xs font-semibold rounded-full leading-tight`}
+                      title={badge}
+                    >
+                      <span className="hidden sm:inline">{badge}</span>
+                      <span className="sm:hidden">{shortBadge}</span>
+                    </span>
+                  )
+                })
+              ) : (
+                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-green-50 border border-green-200 text-green-700 text-[10px] sm:text-xs font-semibold rounded-full flex-shrink-0">Active</span>
+              )}
+            </div>
           </div>
           
           {/* Always visible: Size */}
-          <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
-            <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
-              <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700 mb-3">
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+              <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
             </div>
@@ -668,22 +696,23 @@ function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
           </div>
 
           {/* Expandable Details */}
-          <div className={`space-y-3 transition-all duration-300 overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          {isExpanded && (
+          <div className="space-y-3 mt-3 animate-in slide-in-from-top-2 duration-300">
             {locationText && (
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
-                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                  <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <span><span className="font-semibold text-gray-900">Location:</span> {locationText}</span>
+                <span className="break-words"><span className="font-semibold text-gray-900">Location:</span> {locationText}</span>
               </div>
             )}
             {budgetRange && (
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
-                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                  <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -691,9 +720,9 @@ function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
               </div>
             )}
             {timeline && timeline !== 'Flexible' && (
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
-                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                  <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -701,42 +730,43 @@ function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
               </div>
             )}
             {storeType && (
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
-                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                  <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <span><span className="font-semibold text-gray-900">Store Type:</span> {storeType}</span>
+                <span className="break-words"><span className="font-semibold text-gray-900">Store Type:</span> {storeType}</span>
               </div>
             )}
             {targetAudience && (
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center mt-0.5`}>
-                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-700">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center mt-0.5 flex-shrink-0`}>
+                  <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </div>
-                <span><span className="font-semibold text-gray-900">Target Audience:</span> {targetAudience}</span>
+                <span className="break-words"><span className="font-semibold text-gray-900">Target Audience:</span> {targetAudience}</span>
               </div>
             )}
             {additionalRequirements && (
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center mt-0.5`}>
-                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-700">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center mt-0.5 flex-shrink-0`}>
+                  <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <span><span className="font-semibold text-gray-900">Requirements:</span> {additionalRequirements}</span>
+                <span className="break-words"><span className="font-semibold text-gray-900">Requirements:</span> {additionalRequirements}</span>
               </div>
             )}
           </div>
+          )}
 
           {/* Expand/Collapse Indicator */}
           <div className="mt-auto pt-3 flex items-center justify-center">
-            <div className={`flex items-center gap-1 text-xs ${colors.iconColor} transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+            <div className={`flex items-center gap-1 text-xs sm:text-sm ${colors.iconColor} transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
               <span className="font-medium">{isExpanded ? 'Show Less' : 'Click for Details'}</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -760,7 +790,7 @@ export default function Home() {
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
-
+  
   // Get brand logos using the brand-logos utility, filtering out null values
   const allBrands = [
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 
@@ -843,7 +873,8 @@ export default function Home() {
   const [featuredBrands, setFeaturedBrands] = useState<any[]>([])
   const [brandsLoading, setBrandsLoading] = useState(true)
   const [brandsError, setBrandsError] = useState<string | null>(null)
-  
+  const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null)
+
   // Handle AI Search - Open modal with query
   const handleSearch = () => {
     if (!searchQuery.trim()) return
@@ -1244,9 +1275,9 @@ export default function Home() {
             AI-powered matching in 48 hours.
           </p>
           
-           <div className="mt-3 sm:mt-4 md:mt-5 mb-2 sm:mb-3 md:mb-4 w-full px-2 sm:px-0">
-             <HeroSearch onModeChange={setHeroMode} />
-           </div>
+          <div className="mt-3 sm:mt-4 md:mt-5 mb-2 sm:mb-3 md:mb-4 w-full px-2 sm:px-0">
+            <HeroSearch onModeChange={setHeroMode} />
+                    </div>
                   </div>
                   
         {/* Section Break Line */}
@@ -1301,10 +1332,12 @@ export default function Home() {
                 className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
               >
                 <div className="relative h-full flex items-center justify-center">
-                  {/* Logo image with consistent sizing and background removal */}
+                  {/* Logo image with consistent sizing and background removal - optimized */}
                   <img
                     src={logoPath}
-                    alt={`Brand logo ${idx + 1}`}
+                    alt={`${brandName} logo`}
+                    loading={idx < 6 ? 'eager' : 'lazy'}
+                    fetchPriority={idx < 6 ? 'high' : 'low'}
                     className={`relative h-full w-auto object-contain rounded-2xl max-w-[150px] md:max-w-[180px] ${
                       shouldRemoveBg 
                         ? hasBlackBackground(brandName) 
@@ -1312,6 +1345,7 @@ export default function Home() {
                           : 'logo-no-bg'
                         : ''
                     }`}
+                    style={{ height: '64px', minHeight: '64px' }}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.style.display = 'none'
@@ -1391,8 +1425,17 @@ export default function Home() {
                   fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:1195',message:'Rendering brand card',data:{index,brandId:brand.id,brandName:brand.companyName||brand.name,hasProfile:!!brand.brandProfile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
                   // #endregion
                   try {
+                    const brandId = brand.id || `brand-${index}`
                     return (
-                      <DynamicBrandCard key={brand.id || `brand-${index}`} brand={brand} index={index} />
+                      <DynamicBrandCard 
+                        key={brandId} 
+                        brand={brand} 
+                        index={index}
+                        isExpanded={expandedBrandId === brandId}
+                        onToggleExpand={() => {
+                          setExpandedBrandId(expandedBrandId === brandId ? null : brandId)
+                        }}
+                      />
                     )
                   } catch (error: any) {
                     // #region agent log

@@ -32,59 +32,83 @@ export default function EditBrandPage() {
     storeType: '',
     storeTypeOther: '',
     targetAudience: '',
+    targetAudienceTags: [] as string[],
     additionalRequirements: '',
+    // Badges - multiple selection
+    badges: [] as string[],
   })
+
+  // Available audience tags
+  const audienceTags = [
+    'Families',
+    'Young Professionals',
+    'Students',
+    'Corporate Employees',
+    'High-Income',
+    'Mid-Income',
+    'Health Conscious',
+    'Foodies',
+    'Shoppers'
+  ]
+
+  // Available badges
+  const availableBadges = [
+    'Active',
+    'Very Active',
+    'Multiple Properties Matched',
+    'Property Matched'
+  ]
 
   // Business types from brand filter page
   const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
   
-  // All locations from both owner and brand filter pages (combined unique list)
+  // All locations sorted alphabetically + new areas
   const locations = [
-    'Koramangala',
-    'Indiranagar',
-    'Whitefield',
-    'HSR Layout',
-    'Jayanagar',
-    'BTM Layout',
-    'MG Road',
-    'Brigade Road',
-    'Marathahalli',
-    'Hebbal',
     'Banashankari',
-    'Sarjapur Road',
-    'Electronic City',
-    'Bellandur',
     'Bannerghatta Road',
-    'Rajajinagar',
-    'Malleshwaram',
     'Basavanagudi',
+    'Bellandur',
+    'Brigade Road',
+    'BTM Layout',
+    'Church Street',
+    'Commercial Street',
+    'Devanahalli',
+    'Electronic City',
+    'Frazer Town',
+    'Hebbal',
+    'HSR Layout',
+    'Indiranagar',
+    'JP Nagar',
+    'Kamanahalli',
+    'Kanakapura Road',
+    'Kalyan Nagar',
+    'Kengeri',
+    'Koramangala',
+    'KR Puram',
+    'Lavelle Road',
+    'Magadi Road',
+    'Malleshwaram',
+    'Manyata Tech Park',
+    'Marathahalli',
+    'MG Road',
+    'Mysore Road',
+    'New Bel Road',
+    'Old Madras Road',
+    'Peenya',
+    'Raja Rajeshwari Nagar',
+    'Rajajinagar',
+    'Richmond Town',
+    'RR Nagar',
+    'RT Nagar',
+    'Sadashivanagar',
+    'Sahakar Nagar',
+    'Sarjapur Road',
+    'UB City',
+    'Ulsoor',
     'Vijayanagar',
+    'Whitefield',
     'Yelahanka',
     'Yeshwanthpur',
-    'RT Nagar',
-    'Frazer Town',
-    'Richmond Town',
-    'Ulsoor',
-    'Kanakapura Road',
-    'New Bel Road',
-    'Kalyan Nagar',
-    'Kamanahalli',
-    'Sahakar Nagar',
-    'Commercial Street',
-    'Church Street',
-    'UB City',
-    'JP Nagar',
-    'Manyata Tech Park',
-    'Peenya',
-    'Magadi Road',
-    'Mysore Road',
-    'Lavelle Road',
-    'Sadashivanagar',
-    'RR Nagar',
-    'Kengeri',
-    'Devanahalli',
-    'Old Madras Road',
-    'KR Puram',
     'Others'
   ]
   
@@ -153,7 +177,13 @@ export default function EditBrandPage() {
               storeType: profile?.storeType || '',
               storeTypeOther: '',
               targetAudience: profile?.targetAudience || '',
+              targetAudienceTags: Array.isArray(profile?.targetAudienceTags) 
+                ? profile.targetAudienceTags 
+                : [],
               additionalRequirements: profile?.additionalRequirements || '',
+              badges: Array.isArray(profile?.badges) 
+                ? profile.badges 
+                : [],
             }
             
             console.log('Setting form data:', formDataToSet)
@@ -206,6 +236,12 @@ export default function EditBrandPage() {
       const preferredLocations = formData.preferredLocations.includes('Others') && formData.preferredLocationsOther
         ? [...formData.preferredLocations.filter(l => l !== 'Others'), formData.preferredLocationsOther]
         : formData.preferredLocations
+      
+      // Combine audience tags with custom text
+      const targetAudienceText = formData.targetAudience.trim()
+      const targetAudienceFinal = formData.targetAudienceTags.length > 0
+        ? `${formData.targetAudienceTags.join(', ')}${targetAudienceText ? ` - ${targetAudienceText}` : ''}`
+        : targetAudienceText
 
       const response = await fetch(`/api/admin/brands/${id}?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, {
         method: 'PATCH',
@@ -221,8 +257,10 @@ export default function EditBrandPage() {
           preferredLocations: preferredLocations,
           timeline: formData.timeline,
           storeType: storeType,
-          targetAudience: formData.targetAudience,
+          targetAudience: targetAudienceFinal,
+          targetAudienceTags: formData.targetAudienceTags,
           additionalRequirements: formData.additionalRequirements,
+          badges: formData.badges,
         }),
       })
 
@@ -463,16 +501,65 @@ export default function EditBrandPage() {
                 </div>
               </div>
 
-              {/* Target Audience (from Onboarding) */}
+              {/* Target Audience (from Onboarding) - with clickable tags */}
               <div>
                 <label className="block text-gray-300 mb-2">Target Audience</label>
+                <div className="mb-3">
+                  <p className="text-sm text-gray-400 mb-2">Select audience tags:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {audienceTags.map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          const newTags = formData.targetAudienceTags.includes(tag)
+                            ? formData.targetAudienceTags.filter(t => t !== tag)
+                            : [...formData.targetAudienceTags, tag]
+                          setFormData({ ...formData, targetAudienceTags: newTags })
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                          formData.targetAudienceTags.includes(tag)
+                            ? 'bg-[#FF5200] text-white border border-[#FF5200]'
+                            : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-[#FF5200] hover:text-white'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <textarea
                   value={formData.targetAudience}
                   onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-                  placeholder="Describe the target audience for this brand (age, income level, preferences, etc.)"
-                  rows={4}
+                  placeholder="Additional audience details (age, income level, preferences, etc.)"
+                  rows={3}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF5200]"
                 />
+              </div>
+
+              {/* Status Badges - Multiple Selection */}
+              <div>
+                <label className="block text-gray-300 mb-2">Status Badges</label>
+                <p className="text-sm text-gray-400 mb-3">Select one or more badges to display on brand cards</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableBadges.map(badge => (
+                    <label key={badge} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.badges.includes(badge)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ ...formData, badges: [...formData.badges, badge] })
+                          } else {
+                            setFormData({ ...formData, badges: formData.badges.filter(b => b !== badge) })
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <span className="text-gray-300 text-sm">{badge}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Additional Requirements (from Onboarding) */}

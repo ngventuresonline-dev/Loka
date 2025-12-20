@@ -67,7 +67,9 @@ export async function GET(request: NextRequest) {
           timeline: requirements?.timeline || null,
           storeType: requirements?.storeType || null,
           targetAudience: requirements?.targetAudience || null,
-          additionalRequirements: requirements?.additionalRequirements || null
+          targetAudienceTags: Array.isArray(requirements?.targetAudienceTags) ? requirements.targetAudienceTags : [],
+          additionalRequirements: requirements?.additionalRequirements || null,
+          badges: Array.isArray(requirements?.badges) ? requirements.badges : []
         } : null
       }
       // #region agent log
@@ -76,11 +78,16 @@ export async function GET(request: NextRequest) {
       return formatted
     })
 
-    // Sort by displayOrder (nulls last), then by createdAt
+    // Sort by displayOrder (nulls last), then by createdAt - stable sort
     const sortedBrands = formattedBrands.sort((a, b) => {
-      // If both have displayOrder, sort by it
+      // If both have displayOrder, sort by it (ascending - lower numbers first)
       if (a.displayOrder != null && b.displayOrder != null) {
-        return a.displayOrder - b.displayOrder
+        const orderDiff = a.displayOrder - b.displayOrder
+        // If displayOrder is same, sort by createdAt (desc) for stability
+        if (orderDiff === 0) {
+          return 0 // Keep original order for stability
+        }
+        return orderDiff
       }
       // If only a has displayOrder, it comes first
       if (a.displayOrder != null) return -1
@@ -94,10 +101,10 @@ export async function GET(request: NextRequest) {
     fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/brands/route.ts:85',message:'Brands sorted and ready to return',data:{total:sortedBrands.length,first5Ids:sortedBrands.slice(0,5).map(b=>b.id),first5Names:sortedBrands.slice(0,5).map(b=>b.companyName||b.name),first5DisplayOrder:sortedBrands.slice(0,5).map(b=>b.displayOrder)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
     // #endregion
 
-    // Add caching headers (3 minutes as per requirements)
+    // Add aggressive caching headers (10 minutes for performance)
     const headers = getCacheHeaders({
-      maxAge: 180, // 3 minutes
-      staleWhileRevalidate: 360, // 6 minutes
+      maxAge: 600, // 10 minutes
+      staleWhileRevalidate: 1200, // 20 minutes
     })
     
     return NextResponse.json({ brands: sortedBrands }, { headers })

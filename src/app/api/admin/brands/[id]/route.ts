@@ -63,7 +63,9 @@ export async function GET(
           timeline: requirements?.timeline || null,
           storeType: requirements?.storeType || null,
           targetAudience: requirements?.targetAudience || null,
-          additionalRequirements: requirements?.additionalRequirements || null
+          targetAudienceTags: requirements?.targetAudienceTags || [],
+          additionalRequirements: requirements?.additionalRequirements || null,
+          badges: requirements?.badges || []
         } : null
       }
     })
@@ -85,7 +87,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { name, email, password, phone, companyName, industry, budgetMin, budgetMax, minSize, maxSize, preferredLocations, isActive, timeline, storeType, targetAudience, additionalRequirements, displayOrder } = body
+    const { name, email, password, phone, companyName, industry, budgetMin, budgetMax, minSize, maxSize, preferredLocations, isActive, timeline, storeType, targetAudience, targetAudienceTags, additionalRequirements, badges, displayOrder } = body
 
     const prisma = await getPrisma()
     if (!prisma) {
@@ -112,13 +114,15 @@ export async function PATCH(
 
     // Merge requirements if any are provided
     let mergedRequirements = existingReq
-    if (timeline !== undefined || storeType !== undefined || targetAudience !== undefined || additionalRequirements !== undefined) {
+    if (timeline !== undefined || storeType !== undefined || targetAudience !== undefined || additionalRequirements !== undefined || targetAudienceTags !== undefined || badges !== undefined) {
       mergedRequirements = {
         ...existingReq,
         ...(timeline !== undefined && { timeline }),
         ...(storeType !== undefined && { storeType }),
         ...(targetAudience !== undefined && { targetAudience }),
-        ...(additionalRequirements !== undefined && { additionalRequirements })
+        ...(targetAudienceTags !== undefined && { targetAudienceTags }),
+        ...(additionalRequirements !== undefined && { additionalRequirements }),
+        ...(badges !== undefined && { badges })
       }
     }
 
@@ -136,11 +140,13 @@ export async function PATCH(
               min_size: minSize ? parseInt(minSize) : null,
               max_size: maxSize ? parseInt(maxSize) : null,
               preferred_locations: preferredLocations || [],
-              must_have_amenities: (timeline || storeType || targetAudience || additionalRequirements) ? {
+              must_have_amenities: (timeline || storeType || targetAudience || additionalRequirements || targetAudienceTags || badges) ? {
                 timeline: timeline || null,
                 storeType: storeType || null,
                 targetAudience: targetAudience || null,
-                additionalRequirements: additionalRequirements || null
+                targetAudienceTags: targetAudienceTags || [],
+                additionalRequirements: additionalRequirements || null,
+                badges: badges || []
               } : null
             },
             update: {
@@ -151,7 +157,7 @@ export async function PATCH(
               min_size: minSize !== undefined ? (minSize ? parseInt(minSize) : null) : undefined,
               max_size: maxSize !== undefined ? (maxSize ? parseInt(maxSize) : null) : undefined,
               preferred_locations: preferredLocations !== undefined ? preferredLocations : undefined,
-              must_have_amenities: (timeline !== undefined || storeType !== undefined || targetAudience !== undefined || additionalRequirements !== undefined) ? mergedRequirements : undefined
+              must_have_amenities: (timeline !== undefined || storeType !== undefined || targetAudience !== undefined || additionalRequirements !== undefined || targetAudienceTags !== undefined || badges !== undefined) ? mergedRequirements : undefined
             }
           }
         }
@@ -176,7 +182,9 @@ export async function PATCH(
         timeline: requirements?.timeline || null,
         storeType: requirements?.storeType || null,
         targetAudience: requirements?.targetAudience || null,
-        additionalRequirements: requirements?.additionalRequirements || null
+        targetAudienceTags: requirements?.targetAudienceTags || [],
+        additionalRequirements: requirements?.additionalRequirements || null,
+        badges: requirements?.badges || []
       } : null
     })
   } catch (error: any) {
