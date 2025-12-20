@@ -112,7 +112,9 @@ export async function POST(request: NextRequest) {
           price: Number(p.price) || 0,
           priceType: (p.priceType as 'monthly' | 'yearly' | 'sqft') || 'monthly',
           size: Number(p.size) || 0,
-          propertyType: (p.propertyType as string) || 'other',
+          propertyType: (['office', 'retail', 'warehouse', 'restaurant', 'other'].includes(p.propertyType) 
+            ? p.propertyType 
+            : 'other') as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other',
           condition: 'good' as const,
           amenities: Array.isArray(p.amenities) ? p.amenities : [],
           accessibility: false,
