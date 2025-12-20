@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { findMatches } from '@/lib/matching-engine'
 import { Property } from '@/types/workflow'
 import { getPrisma } from '@/lib/get-prisma'
+import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,10 +66,27 @@ export async function POST(request: NextRequest) {
     //   where.propertyType = propertyType
     // }
 
-    // Fetch properties from database
+    // Fetch properties from database - limit to 50 to reduce egress
     const properties = await prisma.property.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        size: true,
+        propertyType: true,
+        price: true,
+        priceType: true,
+        amenities: true,
+        images: true,
+        availability: true,
+        isFeatured: true,
+        createdAt: true,
+        updatedAt: true,
         owner: {
           select: {
             id: true,
@@ -78,7 +96,7 @@ export async function POST(request: NextRequest) {
           }
         }
       },
-      take: 500 // accommodate larger DB, still bounded
+      take: 50 // Reduced from 500 to minimize egress
     })
 
     // Convert Prisma properties to Property type
@@ -209,11 +227,20 @@ export async function POST(request: NextRequest) {
     // Return top 50 matches (already filtered and sorted)
     const topMatches = matchesWithReasons.slice(0, 50)
 
-    return NextResponse.json({
+    const responseData = {
       matches: topMatches,
       totalMatches: matchesWithReasons.length,
       minMatchScore: 60
-    })
+    }
+    
+    // Log query size for monitoring
+    const responseSize = estimateJsonSize(responseData)
+    logQuerySize('/api/properties/match', responseSize, topMatches.length)
+    
+    // Add caching headers
+    const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_MATCHES)
+    
+    return NextResponse.json(responseData, { headers })
   } catch (error: any) {
     console.error('Property matching error:', error)
     return NextResponse.json(

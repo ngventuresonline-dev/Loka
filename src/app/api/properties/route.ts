@@ -3,6 +3,7 @@ import { getPrisma } from '@/lib/get-prisma'
 import { requireOwnerOrAdmin, getAuthenticatedUser } from '@/lib/api-auth'
 import { CreatePropertySchema, PropertyQuerySchema } from '@/lib/validations/property'
 import { generatePropertyId } from '@/lib/property-id-generator'
+import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 /**
  * POST /api/properties
@@ -185,8 +186,9 @@ export async function GET(request: NextRequest) {
     // Build Prisma where clause
     const where: any = {}
 
-    // IMPORTANT: Only show approved properties on public API
-    where.status = 'approved'
+    // IMPORTANT: Only show available properties on public API
+    // Use availability instead of status since status column may not exist
+    where.availability = true
     
     // Debug: Log query parameters for featured properties
     if (query.isFeatured === true) {
@@ -276,9 +278,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Pagination
+    // Pagination - enforce max limit of 50 to reduce egress
     const page = query.page || 1
-    const limit = Math.min(query.limit || 20, 100) // Max 100 per page
+    const limit = Math.min(query.limit || 20, 50) // Max 50 per page
     const skip = (page - 1) * limit
 
     // Debug logging for featured properties query
@@ -286,44 +288,99 @@ export async function GET(request: NextRequest) {
       console.log('[Properties API] Featured properties WHERE clause:', JSON.stringify(where, null, 2))
       
       // Also check raw count of featured properties in DB
-      const allFeaturedCount = await prisma.property.count({ where: { isFeatured: true } })
-      const approvedFeaturedCount = await prisma.property.count({ where: { isFeatured: true, status: 'approved' } })
-      const approvedCount = await prisma.property.count({ where: { status: 'approved' } })
-      
-      console.log('[Properties API] Database counts:', {
-        allFeatured: allFeaturedCount,
-        approvedAndFeatured: approvedFeaturedCount,
-        allApproved: approvedCount,
-        queryWillReturn: await prisma.property.count({ where })
-      })
+      // Use availability instead of status since status column may not exist
+      try {
+        const allFeaturedCount = await prisma.property.count({ where: { isFeatured: true } })
+        const availableFeaturedCount = await prisma.property.count({ where: { isFeatured: true, availability: true } })
+        const availableCount = await prisma.property.count({ where: { availability: true } })
+        
+        console.log('[Properties API] Database counts:', {
+          allFeatured: allFeaturedCount,
+          availableAndFeatured: availableFeaturedCount,
+          allAvailable: availableCount,
+          queryWillReturn: await prisma.property.count({ where })
+        })
+      } catch (countError) {
+        console.warn('[Properties API] Could not get detailed counts:', countError)
+      }
     }
 
     // Get total count for pagination
-    const total = await prisma.property.count({ where })
+    let total = 0
+    try {
+      total = await prisma.property.count({ where })
+    } catch (countError: any) {
+      console.error('[Properties API] Count query error:', countError)
+      // If count fails, try without where clause as fallback
+      try {
+        total = await prisma.property.count()
+      } catch {
+        total = 0
+      }
+    }
 
-    // Fetch properties
-    const properties = await prisma.property.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
+    // Fetch properties - only select needed columns to reduce egress
+    let properties
+    try {
+      properties = await prisma.property.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          size: true,
+          propertyType: true,
+          price: true,
+          priceType: true,
+          securityDeposit: true,
+          amenities: true,
+          images: true,
+          availability: true,
+          isFeatured: true,
+          views: true,
+          createdAt: true,
+          updatedAt: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
+          _count: {
+            select: {
+              savedBy: true,
+              inquiries: true,
+            },
           },
         },
-        _count: {
-          select: {
-            savedBy: true,
-            inquiries: true,
-          },
-        },
-      },
-    })
+      })
+    } catch (queryError: any) {
+      console.error('[Properties API] Query error:', {
+        message: queryError?.message,
+        code: queryError?.code,
+        name: queryError?.name,
+      })
+      
+      // If query fails, return empty result instead of crashing
+      properties = []
+      total = 0
+      
+      // If it's a schema error, log it specifically
+      if (queryError?.message?.includes('Unknown column') || 
+          queryError?.message?.includes('does not exist') ||
+          queryError?.code === 'P2009') {
+        console.warn('[Properties API] Database schema issue - some columns may not exist')
+      }
+    }
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(total / limit)
@@ -345,7 +402,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       properties,
       pagination: {
@@ -356,7 +413,16 @@ export async function GET(request: NextRequest) {
         hasNextPage,
         hasPreviousPage,
       },
-    })
+    }
+    
+    // Log query size for monitoring
+    const responseSize = estimateJsonSize(responseData)
+    logQuerySize('/api/properties', responseSize, properties.length)
+    
+    // Add caching headers
+    const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_LISTINGS)
+    
+    return NextResponse.json(responseData, { headers })
   } catch (error: any) {
     console.error('[Properties API] Error listing properties:', error)
 

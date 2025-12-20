@@ -12,13 +12,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Limit to 50 brands to reduce egress
     const brands = await prisma.user.findMany({
       where: { 
         userType: 'brand',
         isActive: true 
       },
-      include: {
-        brandProfiles: true
+      take: 50,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        brandProfiles: {
+          select: {
+            company_name: true,
+            industry: true,
+            budget_min: true,
+            budget_max: true,
+            min_size: true,
+            max_size: true,
+            preferred_locations: true,
+            must_have_amenities: true
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     })

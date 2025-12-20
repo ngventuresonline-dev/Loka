@@ -16,6 +16,7 @@ type Property = {
   price: number
   propertyType: string
   availability: boolean
+  status?: 'pending' | 'approved' | 'rejected'
   createdAt: string
 }
 
@@ -163,18 +164,31 @@ function PropertyListItem({
   isSelected: boolean
   onClick: () => void
 }) {
-  // Status configuration based on availability
-  const statusConfig = property.availability 
-    ? {
+  // Status configuration based on status field (approved/rejected/pending)
+  const statusConfig = (() => {
+    const status = property.status || 'pending'
+    
+    if (status === 'approved') {
+      return {
         label: 'Active',
         color: 'bg-green-100 text-green-700 border-green-300',
         message: 'Your property is live and visible to brands'
       }
-    : {
+    } else if (status === 'rejected') {
+      return {
+        label: 'Rejected',
+        color: 'bg-red-100 text-red-700 border-red-300',
+        message: 'This property listing was rejected. Please contact support for more information.'
+      }
+    } else {
+      // pending
+      return {
         label: 'Under Verification',
         color: 'bg-yellow-100 text-yellow-800 border-yellow-300',
         message: 'Our team will contact you within 24-48 hours'
       }
+    }
+  })()
 
   return (
     <div className="w-full">
@@ -205,11 +219,21 @@ function PropertyListItem({
       </button>
       
       {/* Status message below card */}
-      {!property.availability && (
-        <div className="mt-1.5 sm:mt-2 px-3 py-1.5 sm:py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+      {property.status !== 'approved' && (
+        <div className={`mt-1.5 sm:mt-2 px-3 py-1.5 sm:py-2 rounded-lg border ${
+          property.status === 'rejected' 
+            ? 'bg-red-50 border-red-200' 
+            : 'bg-yellow-50 border-yellow-200'
+        }`}>
           <div className="flex items-start gap-2">
-            <span className="text-yellow-600 text-sm">⏳</span>
-            <p className="text-xs text-yellow-800 flex-1">
+            <span className={`text-sm ${
+              property.status === 'rejected' ? 'text-red-600' : 'text-yellow-600'
+            }`}>
+              {property.status === 'rejected' ? '❌' : '⏳'}
+            </span>
+            <p className={`text-xs flex-1 ${
+              property.status === 'rejected' ? 'text-red-800' : 'text-yellow-800'
+            }`}>
               {statusConfig.message}
             </p>
           </div>
@@ -392,19 +416,32 @@ export default function OwnerDashboardPage() {
                       const selectedProperty = properties.find(p => p.id === selectedPropertyId)
                       if (!selectedProperty) return null
 
-                      const statusConfig = selectedProperty.availability 
-                        ? {
+                      const status = selectedProperty.status || 'pending'
+                      const statusConfig = (() => {
+                        if (status === 'approved') {
+                          return {
                             label: 'Active',
                             color: 'bg-green-100 text-green-700 border-green-300',
                             pillColor: 'bg-green-50 text-green-700 border-green-200',
                             message: 'Your property is live and visible to brands.'
                           }
-                        : {
+                        } else if (status === 'rejected') {
+                          return {
+                            label: 'Rejected',
+                            color: 'bg-red-100 text-red-700 border-red-300',
+                            pillColor: 'bg-red-50 text-red-700 border-red-200',
+                            message: 'This property listing was rejected. Please contact support for more information.'
+                          }
+                        } else {
+                          // pending
+                          return {
                             label: 'Under Verification',
                             color: 'bg-yellow-100 text-yellow-800 border-yellow-300',
                             pillColor: 'bg-yellow-50 text-yellow-800 border-yellow-200',
                             message: 'Our team is reviewing this property and will reach out shortly.'
                           }
+                        }
+                      })()
 
                       return (
                         <div className="mb-4 sm:mb-6">
@@ -446,10 +483,12 @@ export default function OwnerDashboardPage() {
                             </div>
                           </div>
 
-                          {/* Status message */}
-                          <div className={`mb-4 p-3 rounded-lg border text-xs sm:text-sm ${statusConfig.color}`}>
-                            {statusConfig.message}
-                          </div>
+                          {/* Status message - only show for non-approved properties */}
+                          {status !== 'approved' && (
+                            <div className={`mb-4 p-3 rounded-lg border text-xs sm:text-sm ${statusConfig.color}`}>
+                              {statusConfig.message}
+                            </div>
+                          )}
 
                           {/* Tab navigation */}
                           <div className="border-b border-gray-200 mb-4">

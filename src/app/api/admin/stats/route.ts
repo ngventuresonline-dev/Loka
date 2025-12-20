@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
 import { Prisma } from '@prisma/client'
 import { getPrisma } from '@/lib/get-prisma'
+import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 export async function GET(request: NextRequest) {
   try {
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
         where: dateFilter ? { createdAt: dateFilter } : undefined
       }).catch(() => []),
 
-      // Recent activity
+      // Recent activity - already limited to 10, but ensure select is optimized
       prisma.user.findMany({
         take: 10,
         orderBy: { createdAt: 'desc' },
@@ -99,7 +100,10 @@ export async function GET(request: NextRequest) {
       prisma.inquiry.findMany({
         take: 10,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
           brand: { select: { name: true, email: true } },
           property: { select: { title: true, address: true } }
         }
@@ -157,7 +161,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(stats)
+    // Log query size for monitoring
+    const responseSize = estimateJsonSize(stats)
+    logQuerySize('/api/admin/stats', responseSize, 
+      stats.recentActivity.users.length + stats.recentActivity.properties.length + stats.recentActivity.inquiries.length
+    )
+    
+    // Add caching headers
+    const headers = getCacheHeaders(CACHE_CONFIGS.STATS)
+    
+    return NextResponse.json(stats, { headers })
   } catch (error: any) {
     console.error('Admin stats error:', error)
     return NextResponse.json(

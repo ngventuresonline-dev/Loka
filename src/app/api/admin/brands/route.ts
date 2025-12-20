@@ -29,18 +29,45 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('[Admin Brands API] Fetching brands from database...')
-    // Fetch all brands - simple query without displayOrder
+    // Fetch brands - limit to 50 per page to reduce egress
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 50)
+    const skip = (page - 1) * limit
+    
     const brands = await prisma.user.findMany({
       where: { 
         userType: 'brand'
       },
-      include: {
-        brandProfiles: true
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        userType: true,
+        createdAt: true,
+        isActive: true,
+        brandProfiles: {
+          select: {
+            company_name: true,
+            industry: true,
+            budget_min: true,
+            budget_max: true,
+            min_size: true,
+            max_size: true,
+            preferred_locations: true,
+            must_have_amenities: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
+    
+    const total = await prisma.user.count({ where: { userType: 'brand' } })
 
     console.log(`[Admin Brands API] Found ${brands.length} brands in database`)
 
@@ -79,7 +106,15 @@ export async function GET(request: NextRequest) {
     }).filter(b => b !== null)
 
     console.log(`[Admin Brands API] Formatted ${formattedBrands.length} brands, returning response`)
-    return NextResponse.json({ brands: formattedBrands })
+    return NextResponse.json({ 
+      brands: formattedBrands,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    })
   } catch (error: any) {
     console.error('[Admin Brands API] Full error:', error)
     console.error('[Admin Brands API] Error stack:', error.stack)

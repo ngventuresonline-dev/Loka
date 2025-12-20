@@ -145,66 +145,43 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
     setIsTyping(searchQuery.length > 0)
   }, [searchQuery])
 
-  // Handle mobile viewport adjustment when keyboard appears
+  // Prevent scroll lock on mobile - ensure body remains scrollable
   useEffect(() => {
     if (typeof window === 'undefined') return
     
-    const isMobile = window.innerWidth < 768
-    if (!isMobile) return
-
-    const scrollInputIntoView = () => {
-      if (inputRef.current) {
-        // Use requestAnimationFrame for smoother scrolling
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            if (inputRef.current) {
-              inputRef.current.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center',
-                inline: 'nearest'
-              })
-            }
-          }, 100)
-        })
-      }
+    // Ensure body is always scrollable
+    const ensureBodyScrollable = () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.documentElement.style.overflow = ''
+      document.documentElement.style.position = ''
     }
 
-    const handleFocusIn = (e: FocusEvent) => {
-      if (e.target === inputRef.current || inputRef.current?.contains(e.target as Node)) {
-        scrollInputIntoView()
-      }
+    // Prevent any scroll locking when input is focused
+    const handleInputFocus = () => {
+      ensureBodyScrollable()
+      // Don't scroll input into view - let user scroll naturally
     }
 
-    // Use visualViewport API for better mobile keyboard handling
-    const handleViewportResize = () => {
-      if (inputRef.current && document.activeElement === inputRef.current) {
-        scrollInputIntoView()
-      }
+    const handleInputBlur = () => {
+      ensureBodyScrollable()
     }
 
-    // Listen for input focus
     const input = inputRef.current
     if (input) {
-      input.addEventListener('focus', scrollInputIntoView)
+      input.addEventListener('focus', handleInputFocus, { passive: true })
+      input.addEventListener('blur', handleInputBlur, { passive: true })
     }
 
-    window.addEventListener('focusin', handleFocusIn)
-    
-    // Use visualViewport API for better mobile keyboard handling
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize)
-      window.visualViewport.addEventListener('scroll', handleViewportResize)
-    }
+    // Ensure scrollable on mount
+    ensureBodyScrollable()
 
     return () => {
       if (input) {
-        input.removeEventListener('focus', scrollInputIntoView)
+        input.removeEventListener('focus', handleInputFocus)
+        input.removeEventListener('blur', handleInputBlur)
       }
-      window.removeEventListener('focusin', handleFocusIn)
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportResize)
-        window.visualViewport.removeEventListener('scroll', handleViewportResize)
-      }
+      ensureBodyScrollable()
     }
   }, [])
 
@@ -212,6 +189,7 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
     <div 
       ref={containerRef}
       className={`${fraunces.variable} ${plusJakarta.variable} w-full flex flex-col items-center gap-4 sm:gap-5`}
+      style={{ touchAction: 'pan-y pan-x' }} // Allow vertical and horizontal scrolling
     >
       {/* Search Bar - Clean and Sleek with Rotating Gradient Border */}
       <motion.div
@@ -249,7 +227,10 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
               onKeyDown={handleKeyDown}
               placeholder=" "
               className="w-full bg-transparent border-none outline-none text-sm sm:text-base md:text-lg text-gray-900 transition-all duration-300 font-medium relative z-10"
-              style={{ fontFamily: plusJakarta.style.fontFamily }}
+              style={{ 
+                fontFamily: plusJakarta.style.fontFamily,
+                touchAction: 'manipulation' // Allow native touch scrolling
+              }}
             />
             {mode === 'brand' && !isTyping && searchQuery.length === 0 && (
               <div className="absolute left-0 top-0 w-full h-full flex items-center pointer-events-none text-sm sm:text-base md:text-lg text-gray-400 font-medium overflow-hidden">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 /**
  * Calculate Property Fit Index (PFI) - reverse of BFI
@@ -155,9 +156,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch all brands
+    // Fetch brands - limit to 50 to reduce egress
     const brands = await prisma.brand_profiles.findMany({
-      include: {
+      take: 50,
+      select: {
+        id: true,
+        company_name: true,
+        industry: true,
+        min_size: true,
+        max_size: true,
+        budget_min: true,
+        budget_max: true,
+        preferred_locations: true,
+        preferred_property_types: true,
         user: {
           select: {
             id: true,
@@ -187,16 +198,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch all approved properties
+    // Fetch available properties - limit to 50 to reduce egress
+    // Use availability instead of status since status column may not exist
     const properties = await prisma.property.findMany({
       where: {
-        status: 'approved',
         availability: true,
         ...(propertyId ? { id: propertyId } : {}),
         ...(propertyTypeFilter ? { propertyType: propertyTypeFilter } : {}),
         ...(location ? { city: { contains: location, mode: 'insensitive' } } : {}),
       },
-      include: {
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        address: true,
+        city: true,
+        size: true,
+        price: true,
+        priceType: true,
+        propertyType: true,
+        createdAt: true,
         owner: {
           select: {
             id: true,
@@ -296,11 +317,17 @@ export async function GET(request: NextRequest) {
         }
         groupedByProperty[match.property.id].matches.push(match)
       }
-      return NextResponse.json({
+      const responseData = {
         view: 'property',
         matches: Object.values(groupedByProperty),
         total: allMatches.length,
-      })
+      }
+      
+      // Log query size for monitoring
+      const responseSize = estimateJsonSize(responseData)
+      logQuerySize('/api/admin/matches?view=property', responseSize, allMatches.length)
+      
+      return NextResponse.json(responseData)
     } else {
       // Group by brand
       const groupedByBrand: Record<string, any> = {}
@@ -313,11 +340,18 @@ export async function GET(request: NextRequest) {
         }
         groupedByBrand[match.brand.id].matches.push(match)
       }
-      return NextResponse.json({
+      
+      const responseData = {
         view: 'brand',
         matches: Object.values(groupedByBrand),
         total: allMatches.length,
-      })
+      }
+      
+      // Log query size for monitoring
+      const responseSize = estimateJsonSize(responseData)
+      logQuerySize('/api/admin/matches?view=brand', responseSize, allMatches.length)
+      
+      return NextResponse.json(responseData)
     }
   } catch (error: any) {
     console.error('[Admin Matches API] Error:', error)

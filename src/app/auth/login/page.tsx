@@ -40,7 +40,7 @@ export default function LoginPage() {
   }
 
   const handleAdminLogin = () => {
-    setEmail('admin@lokazen.in')
+    setEmail('admin@ngventures.com')
     setPassword('admin123')
   }
 
@@ -225,7 +225,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-600">
-                  Email: <span className="text-[#FF5200] font-mono">admin@lokazen.in</span>
+                  Email: <span className="text-[#FF5200] font-mono">admin@ngventures.com</span>
                   <br />
                   Password: <span className="text-[#FF5200] font-mono">admin123</span>
                 </p>

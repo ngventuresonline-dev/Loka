@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 /**
  * Calculate Property Fit Index (PFI) - reverse of BFI
@@ -203,9 +204,18 @@ export async function POST(request: NextRequest) {
       .filter(match => match.matchScore >= 30) // Filter out poor matches
       .sort((a, b) => b.matchScore - a.matchScore) // Sort by score
 
-    return NextResponse.json({
+    const responseData = {
       matches: matches.slice(0, 5) // Return top 5 matches
-    })
+    }
+    
+    // Log query size for monitoring
+    const responseSize = estimateJsonSize(responseData)
+    logQuerySize('/api/brands/match', responseSize, responseData.matches.length)
+    
+    // Add caching headers
+    const headers = getCacheHeaders(CACHE_CONFIGS.BRAND_MATCHES)
+    
+    return NextResponse.json(responseData, { headers })
   } catch (error: any) {
     console.error('Brand matching error:', error)
     return NextResponse.json(

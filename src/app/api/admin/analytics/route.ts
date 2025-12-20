@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
 import { getPrisma } from '@/lib/get-prisma'
+import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get analytics data
+    // Get analytics data - limit queries to reduce egress
     const [
       userRegistrations,
       propertyListings,
@@ -51,25 +52,28 @@ export async function GET(request: NextRequest) {
       propertyTypes,
       brandOwnerRatio
     ] = await Promise.all([
-      // User registrations over time
+      // User registrations over time - limit to last 1000 records
       prisma.user.findMany({
         where: dateFilter ? { createdAt: dateFilter } : undefined,
         select: { createdAt: true, userType: true },
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'desc' },
+        take: 1000 // Limit to reduce egress
       }).catch(() => []),
 
-      // Property listings over time
+      // Property listings over time - limit to last 1000 records
       prisma.property.findMany({
         where: dateFilter ? { createdAt: dateFilter } : undefined,
         select: { createdAt: true },
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'desc' },
+        take: 1000 // Limit to reduce egress
       }).catch(() => []),
 
-      // Inquiry creation over time
+      // Inquiry creation over time - limit to last 1000 records
       prisma.inquiry.findMany({
         where: dateFilter ? { createdAt: dateFilter } : undefined,
         select: { createdAt: true, status: true },
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'desc' },
+        take: 1000 // Limit to reduce egress
       }).catch(() => []),
 
       // Search history analytics (model not in current schema)
@@ -147,7 +151,16 @@ export async function GET(request: NextRequest) {
       })()
     }
 
-    return NextResponse.json(analytics)
+    // Log query size for monitoring
+    const responseSize = estimateJsonSize(analytics)
+    logQuerySize('/api/admin/analytics', responseSize, 
+      analytics.userRegistrations.length + analytics.propertyListings.length + analytics.inquiryCreation.length
+    )
+    
+    // Add caching headers
+    const headers = getCacheHeaders(CACHE_CONFIGS.ANALYTICS)
+    
+    return NextResponse.json(analytics, { headers })
   } catch (error: any) {
     console.error('Admin analytics error:', error)
     return NextResponse.json(

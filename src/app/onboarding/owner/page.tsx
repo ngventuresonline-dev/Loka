@@ -800,8 +800,8 @@ function OwnerOnboardingContent() {
         window.localStorage.setItem('ownerId', result.ownerId)
       }
 
-      // Redirect to success page so success message only appears after explicit submit
-      router.push('/onboarding/owner/success')
+      // Redirect to property dashboard after listing
+      router.push('/dashboard/owner')
       }
     } catch (error: any) {
       console.error('Error listing property:', error)

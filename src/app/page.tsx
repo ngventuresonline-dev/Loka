@@ -343,32 +343,11 @@ export default function Home() {
   // Featured properties removed - will be managed from backend/admin panel
   const router = useRouter()
   
-  // Generate random flickering logos on mount (client-side only to avoid hydration mismatch)
-  const getRandomFlickeringIndices = (total: number, count: number) => {
-    const indices = new Set<number>()
-    while (indices.size < count) {
-      indices.add(Math.floor(Math.random() * total))
-    }
-    return indices
-  }
-  
   const [currentStep, setCurrentStep] = useState<AppStep>('home')
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null)
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
-  
-  // Generate random selections for each row (client-side only)
-  const [row1Flickering, setRow1Flickering] = useState<Set<number>>(new Set())
-  const [row2Flickering, setRow2Flickering] = useState<Set<number>>(new Set())
-  
-  // Initialize flickering indices on client mount only
-  useEffect(() => {
-    if (isMounted) {
-      setRow1Flickering(getRandomFlickeringIndices(15, 8))
-      setRow2Flickering(getRandomFlickeringIndices(15, 7))
-    }
-  }, [isMounted])
 
   // Get brand logos using the brand-logos utility, filtering out null values
   const allBrands = [
@@ -428,17 +407,17 @@ export default function Home() {
     
     if (!isInitialized) {
       try {
-        // Initialize default admin account
-        initializeAdminAccount()
-        
-        // Load current theme
-        const currentTheme = getTheme()
-        setThemeState(currentTheme)
-        
-        // Note: Removed auto-redirect for admins - they can navigate freely
-        // Admins can access homepage and use "Dashboard" link in navbar to go to /admin
-        
-        setIsInitialized(true)
+      // Initialize default admin account
+      initializeAdminAccount()
+      
+      // Load current theme
+      const currentTheme = getTheme()
+      setThemeState(currentTheme)
+      
+      // Note: Removed auto-redirect for admins - they can navigate freely
+      // Admins can access homepage and use "Dashboard" link in navbar to go to /admin
+      
+      setIsInitialized(true)
       } catch (error) {
         console.error('Error initializing page:', error)
         setIsInitialized(true) // Set to true anyway to prevent infinite loops
@@ -753,37 +732,28 @@ export default function Home() {
       {/* Clientele Slider - Full Width */}
       <div className="relative z-10 mt-8 sm:mt-12 md:mt-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.8s_forwards]">
         <div className="text-center mb-14 md:mb-16">
-          <div className="relative inline-flex items-center px-5 py-2 bg-gradient-to-r from-[#FF5200]/15 via-[#E4002B]/15 to-[#FF6B35]/15 backdrop-blur-xl border-2 rounded-full animate-[radiate_2s_ease-in-out_infinite]">
-            <span className="relative w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2.5 animate-pulse shadow-[0_0_8px_rgba(255,82,0,0.9)]"></span>
-            <span className="relative text-sm font-medium bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent">Trusted by Leading Brands</span>
+          <div className="relative inline-flex items-center px-5 py-2 bg-gray-50 border border-gray-200 rounded-full">
+            <span className="relative w-1.5 h-1.5 bg-gray-400 rounded-full mr-2.5"></span>
+            <span className="relative text-sm font-medium text-gray-700">Trusted by Leading Brands</span>
           </div>
         </div>
         
         
-        {/* First Row - Auto-scrolling with manual scroll support */}
-        <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex gap-5 md:gap-6 animate-[scroll_80s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth">
+        {/* First Row - Simple horizontal scroll */}
+        <div className="relative mb-5 w-full overflow-x-auto overflow-y-visible scrollbar-hide" style={{ touchAction: 'pan-y pan-x', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-5 md:gap-6 w-max snap-x snap-mandatory scroll-smooth">
             {[
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports'
             ].map((brand, idx) => {
-              // Random selection - different logos flicker each time
-              const shouldFlicker = row1Flickering.has(idx % 15)
-              const flickerDelay = idx * 0.2
-              
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-300 group cursor-pointer select-none hover:-translate-y-0.5 hover:border-[#FF5200]/60"
+                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
                 >
-                  {/* Pulsing border for selected logos - only border, not whole capsule */}
-                  {shouldFlicker && (
-                    <div className="absolute inset-0 rounded-xl border-2 border-[#FF5200]/30 animate-[borderPulse_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
-                  )}
-                
-                <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF5200] group-hover:to-[#E4002B] transition-all duration-500">
+                <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap">
                   {brand}
                 </span>
               </div>
@@ -792,9 +762,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Second Row - Logo Images - Cinematic */}
-        <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex gap-6 md:gap-8 animate-[scrollReverse_90s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth items-center">
+        {/* Second Row - Logo Images */}
+        <div className="relative mb-5 w-full overflow-x-auto overflow-y-visible scrollbar-hide" style={{ touchAction: 'pan-y pan-x', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-6 md:gap-8 w-max snap-x snap-mandatory scroll-smooth items-center">
             {[
               ...uniqueLogos,
               ...uniqueLogos,
@@ -810,12 +780,12 @@ export default function Home() {
                   isLarge ? 'h-24 md:h-28' : 'h-20 md:h-24'
                 }`}
               >
-                <div className="relative h-full flex items-center justify-center group cursor-pointer">
+                <div className="relative h-full flex items-center justify-center">
                   {/* Logo image with rounded corners - different sizing for large vs regular */}
                   <img
                     src={logoPath}
                     alt={`Brand logo ${idx + 1}`}
-                    className={`relative h-full w-auto object-contain rounded-2xl transition-all duration-300 group-hover:scale-105 ${
+                    className={`relative h-full w-auto object-contain rounded-2xl ${
                       isLarge 
                         ? 'max-w-[240px] md:max-w-[280px]' 
                         : 'max-w-[180px] md:max-w-[220px]'
@@ -825,37 +795,27 @@ export default function Home() {
                       target.style.display = 'none'
                     }}
                   />
-                </div>
+              </div>
               </div>
             )})}
           </div>
         </div>
 
-        {/* Third Row - Auto-scrolling with manual scroll support */}
-        <div className="relative mb-5 w-full overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex gap-5 md:gap-6 animate-[scroll_80s_linear_infinite] w-max snap-x snap-mandatory scroll-smooth">
+        {/* Third Row - Simple horizontal scroll */}
+        <div className="relative mb-5 w-full overflow-x-auto overflow-y-visible scrollbar-hide" style={{ touchAction: 'pan-y pan-x', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-5 md:gap-6 w-max snap-x snap-mandatory scroll-smooth">
             {[
               'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
               'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
               'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
               'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee'
             ].map((brand, idx) => {
-              // Random selection - different logos flicker each time
-              const shouldFlicker = row2Flickering.has(idx % 15)
-              const flickerDelay = idx * 0.25
-              
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200/60 rounded-xl flex items-center justify-center transition-all duration-300 group cursor-pointer select-none hover:-translate-y-0.5 hover:border-[#E4002B]/60"
+                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
                 >
-                  {/* Pulsing border for selected logos - only border, not whole capsule */}
-                  {shouldFlicker && (
-                    <div className="absolute inset-0 rounded-xl border-2 border-[#E4002B]/30 animate-[borderPulseRed_2s_ease-in-out_infinite]" style={{ animationDelay: `${flickerDelay}s` }}></div>
-                  )}
-                  
-                
-                <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#E4002B] group-hover:to-[#FF5200] transition-all duration-500">
+                <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap">
                   {brand}
                 </span>
               </div>

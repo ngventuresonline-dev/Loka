@@ -12,7 +12,48 @@ const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500
 
 const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
 const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
-const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Others']
+const locations = [
+  'Koramangala',
+  'Indiranagar',
+  'Whitefield',
+  'HSR Layout',
+  'Jayanagar',
+  'BTM Layout',
+  'MG Road',
+  'Brigade Road',
+  'Marathahalli',
+  'Hebbal',
+  'Banashankari',
+  'Sarjapur Road',
+  'Electronic City',
+  'Bellandur',
+  'Bannerghatta Road',
+  'Rajajinagar',
+  'Malleshwaram',
+  'Basavanagudi',
+  'Vijayanagar',
+  'Yelahanka',
+  'Yeshwanthpur',
+  'RT Nagar',
+  'Frazer Town',
+  'Richmond Town',
+  'Commercial Street',
+  'Church Street',
+  'UB City',
+  'JP Nagar',
+  'Manyata Tech Park',
+  'Peenya',
+  'Magadi Road',
+  'Mysore Road',
+  'Lavelle Road',
+  'Sadashivanagar',
+  'RR Nagar',
+  'Kengeri',
+  'Devanahalli',
+  'Old Madras Road',
+  'KR Puram',
+  'Others'
+]
 const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
 
 function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?: number; required?: boolean; onBudgetChange?: (budget: { min: number; max: number }) => void }) {

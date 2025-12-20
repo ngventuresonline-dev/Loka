@@ -21,11 +21,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch properties for this owner
+    // Fetch properties for this owner - limit to 50 to reduce egress
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 50)
+    const skip = (page - 1) * limit
+    
     const properties = await prisma.property.findMany({
       where: {
         ownerId,
       },
+      skip,
+      take: limit,
       select: {
         id: true,
         title: true,
@@ -35,12 +42,15 @@ export async function GET(request: NextRequest) {
         price: true,
         propertyType: true,
         availability: true,
+        status: true,
         createdAt: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
     })
+    
+    const total = await prisma.property.count({ where: { ownerId } })
 
     return NextResponse.json({
       properties: properties.map(p => ({
@@ -52,8 +62,15 @@ export async function GET(request: NextRequest) {
         price: Number(p.price),
         propertyType: p.propertyType,
         availability: p.availability ?? true,
+        status: p.status || 'pending',
         createdAt: p.createdAt?.toISOString() || new Date().toISOString(),
       })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
     })
   } catch (error: any) {
     console.error('[Owner Properties API] Error:', error)
