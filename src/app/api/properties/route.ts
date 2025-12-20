@@ -320,7 +320,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch properties - only select needed columns to reduce egress
-    let properties
+    let properties: any[] = []
     try {
       properties = await prisma.property.findMany({
         where,
