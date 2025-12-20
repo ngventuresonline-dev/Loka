@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { brandRequirements, type BrandRequirement } from '@/data/brand-requirements'
-import { getBrandLogo, getBrandColor } from '@/lib/brand-utils'
+import { getBrandColor } from '@/lib/brand-utils'
+import { getBrandLogo } from '@/lib/brand-logos'
 
 interface BrandRequirementsModalProps {
   isOpen: boolean
@@ -26,6 +27,156 @@ interface DatabaseBrand {
     targetAudience: string | null
     additionalRequirements: string | null
   } | null
+}
+
+// Expandable Brand Card Component for Modal
+function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo }: { brand: BrandRequirement, colors: any, colorClasses: any, brandLogo: string | null }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  return (
+    <div
+      className="relative group h-full cursor-pointer"
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      <div className={`relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 ${isExpanded ? colorClasses.border.replace('hover:', '') : 'border-gray-200'} ${colorClasses.border} transition-all duration-500 overflow-hidden shadow-lg ${colorClasses.shadow} group-hover:-translate-y-2 h-full flex flex-col`}>
+        {/* Top Accent Bar - Brand Color */}
+        <div 
+          className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl z-20`}
+          style={{
+            backgroundColor: colorClasses.accent
+          }}
+        ></div>
+        
+        {/* Animated Glow Effect */}
+        <div 
+          className={`absolute inset-0 transition-all duration-500 ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100`}
+          style={{
+            background: `linear-gradient(to bottom right, ${colorClasses.glowFrom}, ${colorClasses.glowVia}, transparent)`
+          }}
+        ></div>
+        
+        {/* Animated Corner Accent */}
+        <div 
+          className={`absolute top-0 right-0 rounded-bl-full transition-all duration-500 ${isExpanded ? 'w-28 h-28' : 'w-20 h-20'} group-hover:w-28 group-hover:h-28`}
+          style={{
+            background: `linear-gradient(to bottom right, ${colorClasses.accent}, transparent)`
+          }}
+        ></div>
+        
+        {/* Particle Effect */}
+        <div className={`absolute inset-0 transition-opacity duration-500 ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100`}>
+          <div className={`absolute top-1/4 left-1/4 w-2 h-2 ${colorClasses.particle} rounded-full animate-ping`}></div>
+          <div className={`absolute top-3/4 right-1/4 w-2 h-2 ${colorClasses.particle} rounded-full animate-ping`} style={{animationDelay: '0.5s'}}></div>
+        </div>
+        
+        <div className="relative z-10 flex-1 flex flex-col">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              {/* Brand Logo */}
+              {brandLogo ? (
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg overflow-hidden bg-white p-1.5`}
+                  style={{
+                    boxShadow: `0 10px 15px -3px ${colorClasses.glowFrom.replace('0.2', '0.4')}, 0 4px 6px -2px ${colorClasses.glowVia.replace('0.1', '0.2')}`
+                  }}
+                >
+                  <img 
+                    src={brandLogo} 
+                    alt={`${brand.brandName} Logo`} 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colorClasses.iconBg} border`}
+                  style={{
+                    borderColor: `${colorClasses.glowFrom.replace('0.2', '0.3')}`,
+                    boxShadow: `0 10px 15px -3px ${colorClasses.glowFrom.replace('0.2', '0.4')}`
+                  }}
+                >
+                  <span className={`${colorClasses.iconText} font-bold text-lg`}>
+                    {brand.brandName.charAt(0)}
+                  </span>
+                </div>
+              )}
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg mb-1">{brand.brandName}</h3>
+                <p className="text-sm text-gray-600">{brand.businessType}</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0">Active</span>
+          </div>
+          
+          {/* Always visible: Size */}
+          <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+            <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
+              <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </div>
+            <span><span className="font-semibold text-gray-900">Size:</span> {brand.sizeRequirement.range}</span>
+          </div>
+
+          {/* Expandable Details */}
+          <div className={`space-y-3 transition-all duration-300 overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            {brand.preferredLocations.primary.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Location:</span> {brand.preferredLocations.primary.join(', ')}</span>
+              </div>
+            )}
+            {brand.budgetRange.range && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Budget:</span> {brand.budgetRange.range}</span>
+              </div>
+            )}
+            {brand.timeline && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Timeline:</span> {brand.timeline}</span>
+              </div>
+            )}
+            {brand.mustHaveFeatures && brand.mustHaveFeatures.length > 0 && (
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center mt-0.5`}>
+                  <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Requirements:</span> {brand.mustHaveFeatures.join(', ')}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Expand/Collapse Indicator */}
+          <div className="mt-auto pt-3 flex items-center justify-center">
+            <div className={`flex items-center gap-1 text-xs ${colorClasses.iconText} transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+              <span className="font-medium">{isExpanded ? 'Show Less' : 'Click for Details'}</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Pulse Ring */}
+        <div className={`absolute inset-0 rounded-2xl border-2 ${colorClasses.pulse} ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500`}></div>
+        <div className={`absolute inset-0 rounded-2xl ring-2 ${colorClasses.ring} ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 blur-sm transition-opacity duration-500`}></div>
+      </div>
+    </div>
+  )
 }
 
 export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequirementsModalProps) {
@@ -342,7 +493,7 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
               <p>No brands found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-stretch">
               {filteredBrands.map((brand, idx) => {
               const brandLogo = getBrandLogo(brand.brandName)
               const colors = getBrandColor(brand.brandName, brand.businessType)
@@ -350,119 +501,13 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
               const colorClasses = getColorClasses(colorBase)
               
               return (
-                <div
+                <ExpandableBrandCard
                   key={idx}
-                  className="relative group"
-                >
-                  <div className={`relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 ${colorClasses.border} transition-all duration-500 overflow-hidden shadow-lg ${colorClasses.shadow} group-hover:-translate-y-2`}>
-                    {/* Top Accent Bar - Brand Color */}
-                    <div 
-                      className="absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl z-20"
-                      style={{
-                        backgroundColor: colorClasses.accent
-                      }}
-                    ></div>
-                    
-                    {/* Animated Glow Effect */}
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500"
-                      style={{
-                        background: `linear-gradient(to bottom right, ${colorClasses.glowFrom}, ${colorClasses.glowVia}, transparent)`
-                      }}
-                    ></div>
-                    
-                    {/* Animated Corner Accent */}
-                    <div 
-                      className="absolute top-0 right-0 w-20 h-20 rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"
-                      style={{
-                        background: `linear-gradient(to bottom right, ${colorClasses.accent}, transparent)`
-                      }}
-                    ></div>
-                    
-                    {/* Particle Effect */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <div className={`absolute top-1/4 left-1/4 w-2 h-2 ${colorClasses.particle} rounded-full animate-ping`}></div>
-                      <div className={`absolute top-3/4 right-1/4 w-2 h-2 ${colorClasses.particle} rounded-full animate-ping`} style={{animationDelay: '0.5s'}}></div>
-                    </div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          {/* Brand Logo */}
-                          {brandLogo ? (
-                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg overflow-hidden bg-white p-1.5`}
-                              style={{
-                                boxShadow: `0 10px 15px -3px ${colorClasses.glowFrom.replace('0.2', '0.4')}, 0 4px 6px -2px ${colorClasses.glowVia.replace('0.1', '0.2')}`
-                              }}
-                            >
-                              <img 
-                                src={brandLogo} 
-                                alt={`${brand.brandName} Logo`} 
-                                className="w-full h-full object-contain"
-                              />
-                            </div>
-                          ) : (
-                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colorClasses.iconBg} border`}
-                              style={{
-                                borderColor: `${colorClasses.glowFrom.replace('0.2', '0.3')}`,
-                                boxShadow: `0 10px 15px -3px ${colorClasses.glowFrom.replace('0.2', '0.4')}`
-                              }}
-                            >
-                              <span className={`${colorClasses.iconText} font-bold text-lg`}>
-                                {brand.brandName.charAt(0)}
-                              </span>
-                            </div>
-                          )}
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-lg mb-1">{brand.brandName}</h3>
-                            <p className="text-sm text-gray-600">{brand.businessType}</p>
-                          </div>
-                        </div>
-                        <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">Active</span>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
-                            <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                            </svg>
-                          </div>
-                          <span><span className="font-semibold text-gray-900">Size:</span> {brand.sizeRequirement.range}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
-                            <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                          </div>
-                          <span><span className="font-semibold text-gray-900">Location:</span> {brand.preferredLocations.primary.join(', ')}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
-                            <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <span><span className="font-semibold text-gray-900">Budget:</span> {brand.budgetRange.range}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center`}>
-                            <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <span><span className="font-semibold text-gray-900">Timeline:</span> {brand.timeline}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Enhanced Pulse Ring */}
-                    <div className={`absolute inset-0 rounded-2xl border-2 ${colorClasses.pulse} opacity-0 group-hover:opacity-100 group-hover:animate-ping`}></div>
-                    <div className={`absolute inset-0 rounded-2xl ring-2 ${colorClasses.ring} opacity-0 group-hover:opacity-100 blur-sm`}></div>
-                  </div>
-                </div>
+                  brand={brand}
+                  colors={colors}
+                  colorClasses={colorClasses}
+                  brandLogo={brandLogo}
+                />
               )
             })}
             </div>

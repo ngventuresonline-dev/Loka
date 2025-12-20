@@ -278,9 +278,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Pagination - enforce max limit of 50 to reduce egress
+    // Pagination - enforce max limit of 20 for performance
     const page = query.page || 1
-    const limit = Math.min(query.limit || 20, 50) // Max 50 per page
+    const limit = Math.min(query.limit || 20, 20) // Max 20 per page
     const skip = (page - 1) * limit
 
     // Debug logging for featured properties query

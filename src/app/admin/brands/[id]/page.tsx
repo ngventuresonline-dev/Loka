@@ -35,11 +35,87 @@ export default function EditBrandPage() {
     additionalRequirements: '',
   })
 
+  // Business types from brand filter page
   const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
-  const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
-  const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Others']
+  
+  // All locations from both owner and brand filter pages (combined unique list)
+  const locations = [
+    'Koramangala',
+    'Indiranagar',
+    'Whitefield',
+    'HSR Layout',
+    'Jayanagar',
+    'BTM Layout',
+    'MG Road',
+    'Brigade Road',
+    'Marathahalli',
+    'Hebbal',
+    'Banashankari',
+    'Sarjapur Road',
+    'Electronic City',
+    'Bellandur',
+    'Bannerghatta Road',
+    'Rajajinagar',
+    'Malleshwaram',
+    'Basavanagudi',
+    'Vijayanagar',
+    'Yelahanka',
+    'Yeshwanthpur',
+    'RT Nagar',
+    'Frazer Town',
+    'Richmond Town',
+    'Ulsoor',
+    'Kanakapura Road',
+    'New Bel Road',
+    'Kalyan Nagar',
+    'Kamanahalli',
+    'Sahakar Nagar',
+    'Commercial Street',
+    'Church Street',
+    'UB City',
+    'JP Nagar',
+    'Manyata Tech Park',
+    'Peenya',
+    'Magadi Road',
+    'Mysore Road',
+    'Lavelle Road',
+    'Sadashivanagar',
+    'RR Nagar',
+    'Kengeri',
+    'Devanahalli',
+    'Old Madras Road',
+    'KR Puram',
+    'Others'
+  ]
+  
   const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
-  const storeTypes = ['Quick Service Restaurant (QSR)', 'Café', 'Retail Store', 'Bar/Pub', 'Fitness Studio', 'Salon/Spa', 'Other']
+  
+  // Property types from owner filter page - used as Store Types
+  const storeTypes = [
+    'Office',
+    'Retail Space',
+    'Restaurant',
+    'Food Court',
+    'Café / Coffee Shop',
+    'QSR (Quick Service Restaurant)',
+    'Dessert / Bakery',
+    'Warehouse',
+    'Mall Space',
+    'Standalone Building',
+    'Bungalow',
+    'Villa',
+    'Commercial Complex',
+    'Business Park',
+    'IT Park',
+    'Co-working Space',
+    'Service Apartment',
+    'Hotel / Hospitality',
+    'Land',
+    'Industrial Space',
+    'Showroom',
+    'Kiosk',
+    'Other'
+  ]
 
   useEffect(() => {
     const fetchBrand = async () => {

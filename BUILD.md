@@ -1,7 +1,7 @@
-# BUILD TRUTH - N&G Ventures Commercial Real Estate Platform
+# BUILD TRUTH - Lokazen Commercial Real Estate Platform
 
-**Version:** 0.2.0  
-**Last Updated:** 2025-12-16  
+**Version:** 0.2.1  
+**Last Updated:** 2025-01-XX  
 **Platform:** Next.js 16 AI‑Matched Commercial Real Estate Platform
 
 ---
@@ -26,7 +26,7 @@
 
 ## 🎯 Platform Overview
 
-**N&G Ventures** is an AI-powered commercial real estate platform that connects brands seeking commercial spaces with property owners. The platform uses intelligent matching algorithms, location intelligence, and conversational AI to streamline the property discovery and listing process.
+**Lokazen** is an AI-powered commercial real estate platform that connects brands seeking commercial spaces with property owners. The platform uses intelligent matching algorithms, location intelligence, and conversational AI to streamline the property discovery and listing process.
 
 ### Core Value Proposition
 - **For Brands**: Find ideal commercial spaces with AI-powered matching in 48 hours
@@ -44,8 +44,8 @@
 ## 🛠 Technology Stack
 
 ### Frontend Framework
-- **Next.js 15.0.1** - React framework with App Router
-- **React 18** - UI library
+- **Next.js 16.0.8** - React framework with App Router (Turbopack)
+- **React 19.2.1** - UI library
 - **TypeScript 5** - Type safety
 
 ### Styling
@@ -80,13 +80,14 @@
 ### Utilities
 - **Zod 4.1.13** - Schema validation
 - **AI SDK 5.0.106** - Vercel AI SDK
+- **@vercel/analytics 1.6.1** - Vercel Analytics integration
 
 ### Development Tools
 - **ESLint** - Code linting
 - **TypeScript** - Type checking
-- **TSX** - TypeScript execution
+- **TSX 4.21.0** - TypeScript execution
 - **PostCSS** - CSS processing
-- **Autoprefixer** - CSS vendor prefixing
+- **Autoprefixer 10.4.21** - CSS vendor prefixing
 
 ---
 
@@ -126,8 +127,10 @@ Loka/
 │   │   ├── theme-selector/           # Theme selector
 │   │   │   └── page.tsx
 │   │   ├── globals.css               # Global styles
-│   │   ├── layout.tsx                # Root layout
-│   │   └── page.tsx                   # Homepage
+│   │   ├── layout.tsx                # Root layout (with SEO, viewport, analytics)
+│   │   ├── page.tsx                   # Homepage
+│   │   ├── robots.ts                 # Dynamic robots.txt
+│   │   └── sitemap.ts                # Dynamic sitemap.xml
 │   │
 │   ├── components/                   # React Components
 │   │   ├── onboarding/               # Onboarding forms
@@ -175,7 +178,9 @@ Loka/
 │   └── seed.ts                      # Database seeding
 │
 ├── public/                           # Static Assets
-│   └── logos/                       # Brand logos
+│   ├── logos/                       # Brand logos
+│   ├── lokazen-favicon.svg          # Animated favicon
+│   └── robots.txt                   # Static robots.txt fallback
 │
 ├── database/                         # Database Scripts
 │   └── schema.sql                   # SQL schema
@@ -542,6 +547,7 @@ Component Update
 - **Minimal & Clean**: Elegant, uncluttered interface
 - **Futuristic**: Modern animations and effects
 - **Brand Colors**: Orange (#FF5200), Red (#E4002B), Orange-Red (#FF6B35)
+- **Mobile-First**: Responsive design with mobile zoom prevention (16px minimum input font size)
 
 ### Color Palette
 
@@ -593,6 +599,20 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 - **md**: 768px
 - **lg**: 1024px
 - **xl**: 1280px
+
+### Mobile Optimization
+
+**Viewport Configuration**:
+- `width: device-width`
+- `initialScale: 1`
+- `maximumScale: 1`
+- `userScalable: false`
+
+**Input Font Size**:
+- All inputs, textareas, and selects have minimum 16px font size to prevent mobile zoom
+- Mobile: 16px (prevents zoom on iOS & Android)
+- Tablet: 18px
+- Desktop: 18px+
 
 ---
 
@@ -651,10 +671,13 @@ npm run lint            # Run ESLint
 - Install Command: `npm install --legacy-peer-deps`
 
 **Environment Variables Required**:
-- `ANTHROPIC_API_KEY`
-- `DATABASE_URL`
-- `NEXTAUTH_SECRET`
-- `NEXTAUTH_URL`
+- `ANTHROPIC_API_KEY` - Anthropic Claude API key
+- `DATABASE_URL` - PostgreSQL connection string
+- `NEXTAUTH_SECRET` - NextAuth.js secret
+- `NEXTAUTH_URL` - Application URL
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side)
 
 ---
 
@@ -941,11 +964,15 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 ## 📈 Analytics & Monitoring
 
+### Current Integrations
+- **Vercel Analytics** - Integrated via `@vercel/analytics` package
+- **SEO Optimization** - Meta tags, Open Graph, Twitter Cards, JSON-LD structured data
+- **Sitemap & Robots** - Dynamic sitemap.ts and robots.ts for search engine optimization
+
 ### Recommended Integrations
-- Google Analytics
-- Vercel Analytics
 - Error tracking (Sentry)
 - Performance monitoring
+- Google Analytics (optional)
 
 ### Metrics to Track
 - User conversions
@@ -998,7 +1025,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 ## 📝 License
 
-**Private** - N&G Ventures Proprietary
+**Private** - Lokazen Proprietary
 
 ---
 
@@ -1016,9 +1043,9 @@ For issues, questions, or contributions, contact the development team.
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2024  
-**Maintained By**: N&G Ventures Development Team
+**Document Version**: 1.1  
+**Last Updated**: 2025-01  
+**Maintained By**: Lokazen Development Team
 
 ---
 

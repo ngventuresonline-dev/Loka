@@ -1,18 +1,21 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 import NetworkMapBackground from '@/components/NetworkMapBackground'
-import BrandOnboardingForm from '@/components/onboarding/BrandOnboardingForm'
-import PropertyOwnerOnboardingForm from '@/components/onboarding/PropertyOwnerOnboardingForm'
-import Dashboard from '@/components/Dashboard'
-import AiSearchModal from '@/components/AiSearchModal'
 import HeroSearch, { type Mode as HeroMode } from '@/components/HeroSearch'
-import BrandRequirementsModal from '@/components/BrandRequirementsModal'
-import PropertyDetailsModal from '@/components/PropertyDetailsModal'
+
+// Lazy load heavy components below the fold
+const BrandOnboardingForm = lazy(() => import('@/components/onboarding/BrandOnboardingForm'))
+const PropertyOwnerOnboardingForm = lazy(() => import('@/components/onboarding/PropertyOwnerOnboardingForm'))
+const Dashboard = lazy(() => import('@/components/Dashboard'))
+const AiSearchModal = lazy(() => import('@/components/AiSearchModal'))
+const BrandRequirementsModal = lazy(() => import('@/components/BrandRequirementsModal'))
+const PropertyDetailsModal = lazy(() => import('@/components/PropertyDetailsModal'))
 import { type FeaturedProperty } from '@/data/featured-properties'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
@@ -339,6 +342,415 @@ function PropertyCarousel({ properties }: { properties: FeaturedProperty[] }) {
   )
 }
 
+// Helper function to format budget range
+function formatBudget(min: number | null, max: number | null): string {
+  if (!min && !max) return 'Flexible'
+  const formatAmount = (amount: number) => {
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`
+    return `₹${(amount / 1000).toFixed(0)}K`
+  }
+  if (!min) return `Up to ${formatAmount(max!)}/month`
+  if (!max) return `${formatAmount(min)}+/month`
+  return `${formatAmount(min)}-${formatAmount(max)}/month`
+}
+
+// Helper function to format size range
+function formatSize(min: number | null, max: number | null): string {
+  if (!min && !max) return 'Flexible'
+  if (!min) return `Up to ${max!.toLocaleString()} sqft`
+  if (!max) return `${min.toLocaleString()}+ sqft`
+  return `${min.toLocaleString()}-${max.toLocaleString()} sqft`
+}
+
+// Helper function to format locations
+function formatLocations(locations: string[] | null | undefined): string {
+  if (!locations || locations.length === 0) return 'Flexible'
+  if (locations.length <= 2) return locations.join(', ')
+  return locations.slice(0, 2).join(', ') + '...'
+}
+
+// Helper function to get brand color scheme classes
+function getBrandColorScheme(brandName: string): {
+  borderHover: string
+  iconBg: string
+  iconColor: string
+  shadowHover: string
+  shadow: string
+  glowFrom: string
+  glowVia: string
+  pulseBorder: string
+  ringColor: string
+  particleColor: string
+} {
+  const brandColors: Record<string, any> = {
+    'Truffles': { 
+      borderHover: 'hover:border-teal-400', 
+      iconBg: 'bg-teal-50', 
+      iconColor: 'text-teal-600', 
+      shadowHover: 'hover:shadow-teal-500/30', 
+      shadow: 'shadow-teal-500/50',
+      glowFrom: 'from-teal-500/20',
+      glowVia: 'via-teal-400/10',
+      pulseBorder: 'border-teal-500',
+      ringColor: 'ring-teal-500/50',
+      particleColor: 'bg-teal-400'
+    },
+    'Original Burger Co.': { 
+      borderHover: 'hover:border-blue-400', 
+      iconBg: 'bg-blue-50', 
+      iconColor: 'text-blue-600', 
+      shadowHover: 'hover:shadow-blue-500/30', 
+      shadow: 'shadow-blue-500/50',
+      glowFrom: 'from-blue-500/20',
+      glowVia: 'via-blue-400/10',
+      pulseBorder: 'border-blue-500',
+      ringColor: 'ring-blue-500/50',
+      particleColor: 'bg-blue-400'
+    },
+    'Blr Brewing Co.': { 
+      borderHover: 'hover:border-amber-500', 
+      iconBg: 'bg-amber-50', 
+      iconColor: 'text-amber-600', 
+      shadowHover: 'hover:shadow-amber-600/30', 
+      shadow: 'shadow-amber-600/50',
+      glowFrom: 'from-amber-600/20',
+      glowVia: 'via-amber-500/10',
+      pulseBorder: 'border-amber-600',
+      ringColor: 'ring-amber-600/50',
+      particleColor: 'bg-amber-500'
+    },
+    'Mumbai Pav Co.': { 
+      borderHover: 'hover:border-blue-600', 
+      iconBg: 'bg-blue-50', 
+      iconColor: 'text-blue-600', 
+      shadowHover: 'hover:shadow-blue-700/30', 
+      shadow: 'shadow-blue-700/50',
+      glowFrom: 'from-blue-700/20',
+      glowVia: 'via-blue-600/10',
+      pulseBorder: 'border-blue-700',
+      ringColor: 'ring-blue-700/50',
+      particleColor: 'bg-blue-600'
+    },
+    'Blue Tokai': { 
+      borderHover: 'hover:border-sky-400', 
+      iconBg: 'bg-sky-50', 
+      iconColor: 'text-sky-600', 
+      shadowHover: 'hover:shadow-sky-500/30', 
+      shadow: 'shadow-sky-500/50',
+      glowFrom: 'from-sky-500/20',
+      glowVia: 'via-sky-400/10',
+      pulseBorder: 'border-sky-500',
+      ringColor: 'ring-sky-500/50',
+      particleColor: 'bg-sky-400'
+    },
+    'Namaste': { 
+      borderHover: 'hover:border-orange-500', 
+      iconBg: 'bg-orange-50', 
+      iconColor: 'text-orange-600', 
+      shadowHover: 'hover:shadow-orange-600/30', 
+      shadow: 'shadow-orange-600/50',
+      glowFrom: 'from-orange-600/20',
+      glowVia: 'via-orange-500/10',
+      pulseBorder: 'border-orange-600',
+      ringColor: 'ring-orange-600/50',
+      particleColor: 'bg-orange-500'
+    },
+    'Namaste- South Indian': { 
+      borderHover: 'hover:border-orange-500', 
+      iconBg: 'bg-orange-50', 
+      iconColor: 'text-orange-600', 
+      shadowHover: 'hover:shadow-orange-600/30', 
+      shadow: 'shadow-orange-600/50',
+      glowFrom: 'from-orange-600/20',
+      glowVia: 'via-orange-500/10',
+      pulseBorder: 'border-orange-600',
+      ringColor: 'ring-orange-600/50',
+      particleColor: 'bg-orange-500'
+    },
+    'Dolphins Bar & Kitchen': {
+      borderHover: 'hover:border-green-500',
+      iconBg: 'bg-green-50',
+      iconColor: 'text-green-600',
+      shadowHover: 'hover:shadow-green-500/30',
+      shadow: 'shadow-green-500/50',
+      glowFrom: 'from-green-500/20',
+      glowVia: 'via-green-400/10',
+      pulseBorder: 'border-green-500',
+      ringColor: 'ring-green-500/50',
+      particleColor: 'bg-green-400'
+    },
+    'Dolphins': {
+      borderHover: 'hover:border-green-500',
+      iconBg: 'bg-green-50',
+      iconColor: 'text-green-600',
+      shadowHover: 'hover:shadow-green-500/30',
+      shadow: 'shadow-green-500/50',
+      glowFrom: 'from-green-500/20',
+      glowVia: 'via-green-400/10',
+      pulseBorder: 'border-green-500',
+      ringColor: 'ring-green-500/50',
+      particleColor: 'bg-green-400'
+    },
+    'Samosa Party': {
+      borderHover: 'hover:border-yellow-500',
+      iconBg: 'bg-yellow-50',
+      iconColor: 'text-yellow-600',
+      shadowHover: 'hover:shadow-yellow-500/30',
+      shadow: 'shadow-yellow-500/50',
+      glowFrom: 'from-yellow-500/20',
+      glowVia: 'via-yellow-400/10',
+      pulseBorder: 'border-yellow-500',
+      ringColor: 'ring-yellow-500/50',
+      particleColor: 'bg-yellow-400'
+    },
+    'Burger Seigneur': {
+      borderHover: 'hover:border-purple-500',
+      iconBg: 'bg-purple-50',
+      iconColor: 'text-purple-600',
+      shadowHover: 'hover:shadow-purple-500/30',
+      shadow: 'shadow-purple-500/50',
+      glowFrom: 'from-purple-500/20',
+      glowVia: 'via-purple-400/10',
+      pulseBorder: 'border-purple-500',
+      ringColor: 'ring-purple-500/50',
+      particleColor: 'bg-purple-400'
+    },
+    'Biggies Burger': {
+      borderHover: 'hover:border-red-500',
+      iconBg: 'bg-red-50',
+      iconColor: 'text-red-600',
+      shadowHover: 'hover:shadow-red-500/30',
+      shadow: 'shadow-red-500/50',
+      glowFrom: 'from-red-500/20',
+      glowVia: 'via-red-400/10',
+      pulseBorder: 'border-red-500',
+      ringColor: 'ring-red-500/50',
+      particleColor: 'bg-red-400'
+    },
+    'Biggies': {
+      borderHover: 'hover:border-red-500',
+      iconBg: 'bg-red-50',
+      iconColor: 'text-red-600',
+      shadowHover: 'hover:shadow-red-500/30',
+      shadow: 'shadow-red-500/50',
+      glowFrom: 'from-red-500/20',
+      glowVia: 'via-red-400/10',
+      pulseBorder: 'border-red-500',
+      ringColor: 'ring-red-500/50',
+      particleColor: 'bg-red-400'
+    },
+    'Kried Ko- Burger': {
+      borderHover: 'hover:border-indigo-500',
+      iconBg: 'bg-indigo-50',
+      iconColor: 'text-indigo-600',
+      shadowHover: 'hover:shadow-indigo-500/30',
+      shadow: 'shadow-indigo-500/50',
+      glowFrom: 'from-indigo-500/20',
+      glowVia: 'via-indigo-400/10',
+      pulseBorder: 'border-indigo-500',
+      ringColor: 'ring-indigo-500/50',
+      particleColor: 'bg-indigo-400'
+    },
+    'Kried': {
+      borderHover: 'hover:border-indigo-500',
+      iconBg: 'bg-indigo-50',
+      iconColor: 'text-indigo-600',
+      shadowHover: 'hover:shadow-indigo-500/30',
+      shadow: 'shadow-indigo-500/50',
+      glowFrom: 'from-indigo-500/20',
+      glowVia: 'via-indigo-400/10',
+      pulseBorder: 'border-indigo-500',
+      ringColor: 'ring-indigo-500/50',
+      particleColor: 'bg-indigo-400'
+    },
+  }
+  
+  return brandColors[brandName] || { 
+    borderHover: 'hover:border-gray-400', 
+    iconBg: 'bg-gray-50', 
+    iconColor: 'text-gray-600', 
+    shadowHover: 'hover:shadow-gray-500/30', 
+    shadow: 'shadow-gray-500/50',
+    glowFrom: 'from-gray-500/20',
+    glowVia: 'via-gray-400/10',
+    pulseBorder: 'border-gray-500',
+    ringColor: 'ring-gray-500/50',
+    particleColor: 'bg-gray-400'
+  }
+}
+
+// Dynamic Brand Card Component with Expandable Details
+function DynamicBrandCard({ brand, index }: { brand: any, index: number }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  const companyName = brand.companyName || brand.name || 'Brand'
+  const industry = brand.industry || 'Business'
+  const logoPath = getBrandLogo(companyName)
+  const brandInitial = getBrandInitial(companyName)
+  const colors = getBrandColorScheme(companyName)
+  
+  const profile = brand.brandProfile || {}
+  const minSize = profile.minSize || null
+  const maxSize = profile.maxSize || null
+  const budgetMin = profile.budgetMin || null
+  const budgetMax = profile.budgetMax || null
+  const locations = profile.preferredLocations || []
+  const timeline = profile.timeline || null
+  const storeType = (profile as any)?.storeType || null
+  const targetAudience = (profile as any)?.targetAudience || null
+  const additionalRequirements = (profile as any)?.additionalRequirements || null
+  
+  const sizeRange = formatSize(minSize, maxSize)
+  const budgetRange = formatBudget(budgetMin, budgetMax)
+  const locationText = formatLocations(locations)
+  
+  const delay = (index + 1) * 0.1
+  
+  return (
+    <div 
+      data-brand-card 
+      className="relative group cursor-pointer"
+      style={{ 
+        opacity: 0,
+        animation: `fadeInUp 0.8s ease-out ${delay}s forwards`
+      }}
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      <div className={`relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 ${isExpanded ? colors.borderHover.replace('hover:', '') : 'border-gray-200'} ${colors.borderHover} transition-all duration-500 overflow-hidden shadow-lg ${colors.shadowHover} group-hover:-translate-y-2 h-full flex flex-col`}>
+        {/* Top Accent Bar - Brand Color */}
+        <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl ${colors.glowFrom.replace('from-', 'bg-').replace('/20', '')}`}></div>
+        
+        {/* Animated Glow Effect */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${colors.glowFrom} ${colors.glowVia} to-transparent ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 transition-all duration-500`}></div>
+        
+        {/* Animated Corner Accent */}
+        <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${colors.glowFrom.replace('/20', '/40')} to-transparent rounded-bl-full ${isExpanded ? 'w-28 h-28' : ''} group-hover:w-28 group-hover:h-28 transition-all duration-500`}></div>
+        
+        {/* Particle Effect */}
+        <div className={`absolute inset-0 ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 transition-opacity duration-500`}>
+          <div className={`absolute top-1/4 left-1/4 w-2 h-2 ${colors.particleColor} rounded-full animate-ping`}></div>
+          <div className={`absolute top-3/4 right-1/4 w-2 h-2 ${colors.particleColor} rounded-full animate-ping`} style={{animationDelay: '0.5s'}}></div>
+        </div>
+        
+        <div className="relative z-10 flex-1 flex flex-col">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              {/* Brand Logo */}
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colors.shadow} overflow-hidden bg-white p-1.5`}>
+                {logoPath ? (
+                  <img 
+                    src={logoPath} 
+                    alt={`${companyName} Logo`} 
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className={`w-full h-full ${colors.iconBg} rounded-lg flex items-center justify-center`}>
+                    <span className={`${colors.iconColor} font-bold text-lg`}>{brandInitial}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg mb-1">{companyName}</h3>
+                <p className="text-sm text-gray-600">{industry}</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0">Active</span>
+          </div>
+          
+          {/* Always visible: Size */}
+          <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+            <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
+              <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </div>
+            <span><span className="font-semibold text-gray-900">Size:</span> {sizeRange}</span>
+          </div>
+
+          {/* Expandable Details */}
+          <div className={`space-y-3 transition-all duration-300 overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            {locationText && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Location:</span> {locationText}</span>
+              </div>
+            )}
+            {budgetRange && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Budget:</span> {budgetRange}</span>
+              </div>
+            )}
+            {timeline && timeline !== 'Flexible' && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Timeline:</span> {timeline}</span>
+              </div>
+            )}
+            {storeType && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Store Type:</span> {storeType}</span>
+              </div>
+            )}
+            {targetAudience && (
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center mt-0.5`}>
+                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Target Audience:</span> {targetAudience}</span>
+              </div>
+            )}
+            {additionalRequirements && (
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colors.iconBg} rounded-lg flex items-center justify-center mt-0.5`}>
+                  <svg className={`w-4 h-4 ${colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span><span className="font-semibold text-gray-900">Requirements:</span> {additionalRequirements}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Expand/Collapse Indicator */}
+          <div className="mt-auto pt-3 flex items-center justify-center">
+            <div className={`flex items-center gap-1 text-xs ${colors.iconColor} transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+              <span className="font-medium">{isExpanded ? 'Show Less' : 'Click for Details'}</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Pulse Ring */}
+        <div className={`absolute inset-0 rounded-2xl border-2 ${colors.pulseBorder} ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500`}></div>
+        <div className={`absolute inset-0 rounded-2xl ring-2 ${colors.ringColor} ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 blur-sm transition-opacity duration-500`}></div>
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   // Featured properties removed - will be managed from backend/admin panel
   const router = useRouter()
@@ -385,6 +797,38 @@ export default function Home() {
   
   // Use logo data for the scrolling row
   const uniqueLogos = logoDataWithSize
+  
+  // Logos that need background removal
+  const logosWithWhiteBackgrounds = [
+    'Sun Kissed Smoothie',
+    'Biggies Burger',
+    'Truffles',
+    'Namaste- South Indian',
+    'Dolphins Bar & Kitchen',
+    'Samosa Party',
+    'Bawri'
+  ]
+  
+  // Logos with black borders/backgrounds
+  const logosWithBlackBackgrounds = [
+    'Sandowitch'
+  ]
+  
+  // Check if logo needs background removal
+  const needsBackgroundRemoval = (brandName: string) => {
+    return [...logosWithWhiteBackgrounds, ...logosWithBlackBackgrounds].some(name => 
+      brandName.toLowerCase().includes(name.toLowerCase()) || 
+      name.toLowerCase().includes(brandName.toLowerCase())
+    )
+  }
+  
+  // Check if logo has black background
+  const hasBlackBackground = (brandName: string) => {
+    return logosWithBlackBackgrounds.some(name => 
+      brandName.toLowerCase().includes(name.toLowerCase()) || 
+      name.toLowerCase().includes(brandName.toLowerCase())
+    )
+  }
 
   const [theme, setThemeState] = useState({ palette: 'cosmic-purple', background: 'floating-orbs' })
   
@@ -394,7 +838,12 @@ export default function Home() {
   const [heroMode, setHeroMode] = useState<HeroMode>('brand')
   const [barHeights, setBarHeights] = useState<number[]>([])
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false)
-
+  
+  // Featured brands state - fetched from database
+  const [featuredBrands, setFeaturedBrands] = useState<any[]>([])
+  const [brandsLoading, setBrandsLoading] = useState(true)
+  const [brandsError, setBrandsError] = useState<string | null>(null)
+  
   // Handle AI Search - Open modal with query
   const handleSearch = () => {
     if (!searchQuery.trim()) return
@@ -429,6 +878,81 @@ export default function Home() {
   // Generate bar heights for data visualization
   useEffect(() => {
     setBarHeights([1, 2, 3, 4, 5].map(() => Math.random() * 60 + 40))
+  }, [])
+
+  // Fetch featured brands from database
+  useEffect(() => {
+    const fetchFeaturedBrands = async () => {
+      try {
+        setBrandsLoading(true)
+        setBrandsError(null)
+        const response = await fetch('/api/brands')
+        if (!response.ok) {
+          throw new Error('Failed to fetch brands')
+        }
+        const data = await response.json()
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:731',message:'API response received',data:{totalBrands:data.brands?.length||0,brandIds:data.brands?.map((b:any)=>b.id)||[],hasError:!!data.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Filter brands - be lenient: just need a name (companyName or name)
+        // Brands are already sorted by API (displayOrder, then createdAt)
+        const brandsWithProfiles = (data.brands || []).filter((brand: any) => {
+          // Only filter out brands with no name at all
+          const hasName = brand && (brand.companyName || brand.name)
+          // #region agent log
+          if (!hasName) fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:737',message:'Brand filtered out - no name',data:{brandId:brand?.id,brand:brand},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          return hasName
+        })
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:742',message:'After filtering',data:{beforeFilter:data.brands?.length||0,afterFilter:brandsWithProfiles.length,filteredOut:(data.brands?.length||0)-brandsWithProfiles.length,remainingIds:brandsWithProfiles.map((b:any)=>b.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+        
+        // Limit to 6 featured brands (already sorted by API)
+        const featured = brandsWithProfiles.slice(0, 6)
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:752',message:'Featured brands selected',data:{totalAvailable:brandsWithProfiles.length,featuredCount:featured.length,limit:6,featuredIds:featured.map((b:any)=>b.id),featuredNames:featured.map((b:any)=>b.companyName||b.name)},timestamp:Date.now(),sessionId:'debug-session',runId:'final-fix',hypothesisId:'F'})}).catch(()=>{});
+        // #endregion
+        
+        setFeaturedBrands(featured)
+        
+        // Log DOM visibility after state update - check multiple times to catch animation completion
+        setTimeout(() => {
+          const brandCards = document.querySelectorAll('[data-brand-card]')
+          const visibleCards = Array.from(brandCards).filter((el: any) => {
+            const style = getComputedStyle(el)
+            return style.opacity !== '0' && style.display !== 'none' && style.visibility !== 'hidden'
+          })
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:760',message:'DOM cards count after render',data:{domCardCount:brandCards.length,expectedCount:featured.length,visibleCards:visibleCards.length,opacities:Array.from(brandCards).map((el:any)=>getComputedStyle(el).opacity)},timestamp:Date.now(),sessionId:'debug-session',runId:'final-fix',hypothesisId:'G'})}).catch(()=>{});
+          // #endregion
+        }, 3000) // Increased to 3s to allow animation to complete
+        
+        // Log for debugging
+        console.log('[Homepage] Loaded brands:', {
+          total: brandsWithProfiles.length,
+          featured: featured.length,
+          brands: featured.map((b: any) => ({
+            id: b.id,
+            name: b.companyName || b.name,
+            displayOrder: b.displayOrder,
+            hasProfile: !!b.brandProfile
+          }))
+        })
+      } catch (error: any) {
+        console.error('Error fetching featured brands:', error)
+        setBrandsError(error.message || 'Failed to load brands')
+        setFeaturedBrands([])
+      } finally {
+        setBrandsLoading(false)
+      }
+    }
+    
+    fetchFeaturedBrands()
   }, [])
 
   // Predefined particle positions to avoid hydration mismatch
@@ -720,9 +1244,9 @@ export default function Home() {
             AI-powered matching in 48 hours.
           </p>
           
-          <div className="mt-3 sm:mt-4 md:mt-5 mb-2 sm:mb-3 md:mb-4 w-full px-2 sm:px-0">
-            <HeroSearch onModeChange={setHeroMode} />
-                    </div>
+           <div className="mt-3 sm:mt-4 md:mt-5 mb-2 sm:mb-3 md:mb-4 w-full px-2 sm:px-0">
+             <HeroSearch onModeChange={setHeroMode} />
+           </div>
                   </div>
                   
         {/* Section Break Line */}
@@ -739,19 +1263,17 @@ export default function Home() {
         </div>
         
         
-        {/* First Row - Simple horizontal scroll */}
-        <div className="relative mb-5 w-full overflow-x-auto overflow-y-visible scrollbar-hide" style={{ touchAction: 'pan-y pan-x', WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex gap-5 md:gap-6 w-max snap-x snap-mandatory scroll-smooth">
+        {/* First Row - Cinematic infinite scroll LEFT → RIGHT */}
+        <div className="relative mb-5 w-full overflow-hidden">
+          <div className="flex gap-5 md:gap-6 w-max animate-scroll-left-fast">
             {[
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
               'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports'
             ].map((brand, idx) => {
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
+                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
                 >
                 <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap">
                   {brand}
@@ -762,33 +1284,33 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Second Row - Logo Images */}
-        <div className="relative mb-5 w-full overflow-x-auto overflow-y-visible scrollbar-hide" style={{ touchAction: 'pan-y pan-x', WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex gap-6 md:gap-8 w-max snap-x snap-mandatory scroll-smooth items-center">
+        {/* Second Row - Logo Images - Cinematic infinite scroll RIGHT → LEFT */}
+        <div className="relative mb-5 w-full overflow-hidden">
+          <div className="flex gap-6 md:gap-8 w-max items-center animate-scroll-right-fast">
             {[
-              ...uniqueLogos,
               ...uniqueLogos,
               ...uniqueLogos
             ].map((logoItem, idx) => {
               const logoPath = logoItem.logoPath as string
-              const isLarge = logoItem.isLarge
+              const brandName = logoItem.brand
+              const shouldRemoveBg = needsBackgroundRemoval(brandName)
               
               return (
               <div
                 key={`logo-${idx}-${logoPath}`}
-                className={`relative flex-shrink-0 snap-start w-auto flex items-center justify-center ${
-                  isLarge ? 'h-24 md:h-28' : 'h-20 md:h-24'
-                }`}
+                className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
               >
                 <div className="relative h-full flex items-center justify-center">
-                  {/* Logo image with rounded corners - different sizing for large vs regular */}
+                  {/* Logo image with consistent sizing and background removal */}
                   <img
                     src={logoPath}
                     alt={`Brand logo ${idx + 1}`}
-                    className={`relative h-full w-auto object-contain rounded-2xl ${
-                      isLarge 
-                        ? 'max-w-[240px] md:max-w-[280px]' 
-                        : 'max-w-[180px] md:max-w-[220px]'
+                    className={`relative h-full w-auto object-contain rounded-2xl max-w-[150px] md:max-w-[180px] ${
+                      shouldRemoveBg 
+                        ? hasBlackBackground(brandName) 
+                          ? 'logo-no-bg-black' 
+                          : 'logo-no-bg'
+                        : ''
                     }`}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
@@ -801,19 +1323,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Third Row - Simple horizontal scroll */}
-        <div className="relative mb-5 w-full overflow-x-auto overflow-y-visible scrollbar-hide" style={{ touchAction: 'pan-y pan-x', WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex gap-5 md:gap-6 w-max snap-x snap-mandatory scroll-smooth">
+        {/* Third Row - Cinematic infinite scroll LEFT → RIGHT */}
+        <div className="relative mb-5 w-full overflow-hidden">
+          <div className="flex gap-5 md:gap-6 w-max animate-scroll-left-fast">
             {[
-              'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
-              'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
               'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
               'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee'
             ].map((brand, idx) => {
               return (
               <div 
                 key={idx}
-                  className="relative flex-shrink-0 snap-start h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
+                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
                 >
                 <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap">
                   {brand}
@@ -844,7 +1364,50 @@ export default function Home() {
           </div>
 
           {/* Brand Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-stretch">
+            {brandsLoading ? (
+              <div className="col-span-full flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>
+              </div>
+            ) : brandsError ? (
+              <div className="col-span-full text-center py-12 text-gray-500">
+                <p>Unable to load featured brands. Please try again later.</p>
+              </div>
+            ) : featuredBrands.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-gray-500">
+                <p>No featured brands available at the moment.</p>
+              </div>
+            ) : (
+              featuredBrands
+                .filter((brand) => {
+                  const isValid = brand && (brand.id || brand.companyName || brand.name)
+                  // #region agent log
+                  if (!isValid) fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:1190',message:'Invalid brand filtered in render',data:{brand},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                  // #endregion
+                  return isValid
+                })
+                .map((brand, index) => {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:1195',message:'Rendering brand card',data:{index,brandId:brand.id,brandName:brand.companyName||brand.name,hasProfile:!!brand.brandProfile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                  // #endregion
+                  try {
+                    return (
+                      <DynamicBrandCard key={brand.id || `brand-${index}`} brand={brand} index={index} />
+                    )
+                  } catch (error: any) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:1200',message:'Error rendering brand card',data:{index,brandId:brand.id,error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                    // #endregion
+                    console.error('[Homepage] Error rendering brand card:', error, brand)
+                    return null
+                  }
+                })
+                .filter(Boolean)
+            )}
+            
+            {/* Fallback: Show hardcoded cards if no brands from API (for backwards compatibility) */}
+            {!brandsLoading && featuredBrands.length === 0 && (
+              <>
             {/* Brand Card 1 - Truffles with Brand Colors */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
               <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-teal-400 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-teal-500/30 group-hover:-translate-y-2">
@@ -1095,7 +1658,7 @@ export default function Home() {
                     <div className="flex items-center gap-3">
                       <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-blue-700/50 overflow-hidden bg-white p-1.5">
                         <img 
-                          src="/logos/MPC.jpg" 
+                          src="/logos/Mumbai Pav Co.jpg" 
                           alt="Mumbai Pav Co. Logo" 
                           className="w-full h-full object-contain"
                         />
@@ -1302,6 +1865,8 @@ export default function Home() {
                 <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-600/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
               </div>
             </div>
+              </>
+            )}
           </div>
 
           {/* Action Buttons */}

@@ -24,21 +24,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build database query filters - make them more flexible
+    // Build database query filters - optimized for performance
     // We'll use BFI scoring for matching, so we don't need strict filters
     const where: any = {
-      OR: [
-        { availability: true },
-        { isFeatured: true }
-      ]
+      availability: true // Only get available properties
     }
 
-    // Don't apply strict location filter - let BFI scoring handle location matching
-    // This allows properties in nearby areas to still show up
-    
-    // Size filter - make it more flexible (allow ±50% range)
-    if (sizeRange) {
-      const sizeMinExpanded = sizeRange.min ? Math.max(0, Math.floor(sizeRange.min * 0.5)) : 0
+    // Size filter - make it more flexible (allow ±50% range) but still filter
+    if (sizeRange && sizeRange.min > 0) {
+      const sizeMinExpanded = Math.max(0, Math.floor(sizeRange.min * 0.5))
       const sizeMaxExpanded = sizeRange.max ? Math.ceil(sizeRange.max * 1.5) : 1000000
       
       where.size = {
@@ -47,8 +41,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Budget filter - strict filtering within range (allow small buffer for flexibility)
-    if (budgetRange) {
+    // Budget filter - filter within range (allow small buffer for flexibility)
+    if (budgetRange && budgetRange.min > 0) {
       const minBudget = budgetRange.min || 0
       const maxBudget = budgetRange.max || 20000000
       // Allow small buffer: 10% under min and 20% over max for flexibility
@@ -87,6 +81,7 @@ export async function POST(request: NextRequest) {
         isFeatured: true,
         createdAt: true,
         updatedAt: true,
+        ownerId: true, // Include ownerId for property mapping
         owner: {
           select: {
             id: true,
@@ -96,35 +91,69 @@ export async function POST(request: NextRequest) {
           }
         }
       },
-      take: 50 // Reduced from 500 to minimize egress
+      take: 30, // Reduced to 30 for faster queries
+      orderBy: {
+        isFeatured: 'desc' // Prioritize featured properties
+      }
     })
 
     // Convert Prisma properties to Property type
     // Be defensive about null/undefined fields so matching engine doesn't crash
-    const typedProperties: Property[] = properties.map((p: any) => ({
-      id: p.id,
-      title: p.title || 'Property',
-      description: p.description || '',
-      address: p.address || '',
-      city: p.city || '',
-      state: p.state || '',
-      zipCode: p.zipCode || '',
-      price: Number(p.price) || 0,
-      priceType: p.priceType || 'monthly',
-      size: Number(p.size) || 0,
-      propertyType: p.propertyType || '',
-      condition: (p.condition as any) || 'good',
-      amenities: Array.isArray(p.amenities) ? p.amenities : [],
-      accessibility: Boolean(p.accessibility),
-      parking: Boolean(p.parking),
-      publicTransport: Boolean(p.publicTransport),
-      ownerId: p.ownerId,
-      createdAt: new Date(p.createdAt),
-      updatedAt: new Date(p.updatedAt || p.createdAt),
-      isAvailable: p.availability !== false,
-      isFeatured: Boolean(p.isFeatured),
-      images: Array.isArray(p.images) ? p.images : []
-    }))
+    const typedProperties: Property[] = properties.map((p: any) => {
+      try {
+        return {
+          id: p.id || '',
+          title: p.title || 'Property',
+          description: p.description || '',
+          address: p.address || '',
+          city: p.city || '',
+          state: p.state || '',
+          zipCode: p.zipCode || '',
+          price: Number(p.price) || 0,
+          priceType: (p.priceType as 'monthly' | 'yearly' | 'sqft') || 'monthly',
+          size: Number(p.size) || 0,
+          propertyType: (p.propertyType as string) || 'other',
+          condition: 'good' as const,
+          amenities: Array.isArray(p.amenities) ? p.amenities : [],
+          accessibility: false,
+          parking: false,
+          publicTransport: false,
+          ownerId: p.ownerId || '',
+          createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
+          updatedAt: p.updatedAt ? new Date(p.updatedAt) : (p.createdAt ? new Date(p.createdAt) : new Date()),
+          isAvailable: p.availability !== false,
+          isFeatured: Boolean(p.isFeatured),
+          images: Array.isArray(p.images) ? p.images : []
+        }
+      } catch (error: any) {
+        console.error('[API Match] Error mapping property:', p.id, error.message)
+        // Return a minimal valid property object
+        return {
+          id: p.id || '',
+          title: 'Property',
+          description: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          price: 0,
+          priceType: 'monthly',
+          size: 0,
+          propertyType: 'other',
+          condition: 'good',
+          amenities: [],
+          accessibility: false,
+          parking: false,
+          publicTransport: false,
+          ownerId: p.ownerId || '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isAvailable: false,
+          isFeatured: false,
+          images: []
+        }
+      }
+    })
 
     // Prepare brand requirements for BFI calculation
     const brandRequirements = {
@@ -242,9 +271,18 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(responseData, { headers })
   } catch (error: any) {
-    console.error('Property matching error:', error)
+    console.error('[API Match] Property matching error:', error)
+    console.error('[API Match] Error stack:', error.stack)
+    console.error('[API Match] Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    })
     return NextResponse.json(
-      { error: error.message || 'Failed to find matches' },
+      { 
+        error: error.message || 'Failed to find matches',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

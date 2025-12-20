@@ -76,6 +76,18 @@ select {
     display: none;
   }
 
+  /* Logo background removal utility - removes white and black backgrounds */
+  .logo-no-bg {
+    mix-blend-mode: multiply;
+    filter: brightness(1.05) contrast(1.1);
+  }
+
+  /* For logos with black borders/backgrounds */
+  .logo-no-bg-black {
+    mix-blend-mode: screen;
+    filter: brightness(1.1) contrast(1.05);
+  }
+
   /* Comprehensive Text Optimization Utilities */
   .text-optimize {
     word-wrap: break-word;
@@ -349,6 +361,27 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
 
 @keyframes scrollReverse {
   0% { transform: translateX(calc(-100% / 3)); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes scroll-right {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+/* Cinematic infinite scroll - fast and smooth */
+@keyframes scroll-left-fast {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes scroll-right-fast {
+  0% { transform: translateX(-50%); }
   100% { transform: translateX(0); }
 }
 

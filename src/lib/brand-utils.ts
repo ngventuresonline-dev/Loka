@@ -3,7 +3,7 @@ export const getBrandLogo = (brandName: string): string | null => {
   const logoMap: Record<string, string> = {
     'Truffles': '/logos/truffles logo.jpg',
     'Original Burger Co.': '/logos/Original_Burger_Co_Logo.png',
-    'Mumbai Pav Co.': '/logos/MPC.jpg',
+    'Mumbai Pav Co.': '/logos/Mumbai Pav Co.jpg',
     'Blr Brewing Co.': '/logos/blr brewing co logo.png',
     'Blue Tokai': '/logos/Blue Tokai.jpg',
     'Namaste- South Indian': '/logos/Namaste logo.jpg',
@@ -70,6 +70,62 @@ export const getBrandColor = (brandName: string, businessType: string): {
       iconColor: 'orange-600',
       shadowColor: 'orange-600/30',
       glowColor: 'orange-600/20'
+    },
+    'Dolphins Bar & Kitchen': {
+      borderColor: 'green-500',
+      iconBg: 'green-50',
+      iconColor: 'green-600',
+      shadowColor: 'green-500/30',
+      glowColor: 'green-500/20'
+    },
+    'Dolphins': {
+      borderColor: 'green-500',
+      iconBg: 'green-50',
+      iconColor: 'green-600',
+      shadowColor: 'green-500/30',
+      glowColor: 'green-500/20'
+    },
+    'Samosa Party': {
+      borderColor: 'yellow-500',
+      iconBg: 'yellow-50',
+      iconColor: 'yellow-600',
+      shadowColor: 'yellow-500/30',
+      glowColor: 'yellow-500/20'
+    },
+    'Burger Seigneur': {
+      borderColor: 'purple-500',
+      iconBg: 'purple-50',
+      iconColor: 'purple-600',
+      shadowColor: 'purple-500/30',
+      glowColor: 'purple-500/20'
+    },
+    'Biggies Burger': {
+      borderColor: 'red-500',
+      iconBg: 'red-50',
+      iconColor: 'red-600',
+      shadowColor: 'red-500/30',
+      glowColor: 'red-500/20'
+    },
+    'Biggies': {
+      borderColor: 'red-500',
+      iconBg: 'red-50',
+      iconColor: 'red-600',
+      shadowColor: 'red-500/30',
+      glowColor: 'red-500/20'
+    },
+    'Kried Ko- Burger': {
+      borderColor: 'indigo-500',
+      iconBg: 'indigo-50',
+      iconColor: 'indigo-600',
+      shadowColor: 'indigo-500/30',
+      glowColor: 'indigo-500/20'
+    },
+    'Kried': {
+      borderColor: 'indigo-500',
+      iconBg: 'indigo-50',
+      iconColor: 'indigo-600',
+      shadowColor: 'indigo-500/30',
+      glowColor: 'indigo-500/20'
     }
   }
 

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import GoogleMapsErrorHandler from '@/components/GoogleMapsErrorHandler'
@@ -51,12 +51,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -66,6 +67,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Preload critical resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://api.lokazen.in" />
+        {/* Preload critical API endpoints */}
+        <link rel="prefetch" href="/api/brands" as="fetch" crossOrigin="anonymous" />
+        <link rel="prefetch" href="/api/properties?limit=20" as="fetch" crossOrigin="anonymous" />
+      </head>
       <body className="font-sans antialiased text-gray-900">
         <GoogleMapsErrorHandler />
         <AuthProvider>

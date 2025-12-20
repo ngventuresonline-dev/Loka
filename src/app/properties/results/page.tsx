@@ -119,26 +119,22 @@ function PropertiesResultsContent() {
     }
   }, [showRequirementsModal])
 
+  // Helper function to create a fetch - no timeout, let it complete naturally
+  const fetchWithTimeout = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    // No timeout - just fetch normally and let it complete
+    return fetch(url, options)
+  }
+
   const fetchMatches = async () => {
     try {
       setLoading(true)
       setAiMatching(true)
       setMatchingStep(0)
       
-      // Show AI matching steps
-      const steps = [
-        'Analyzing your requirements...',
-        'Scanning property database...',
-        'Calculating Brand Fit Index (BFI)...',
-        'Ranking matches by AI score...',
-        'Finalizing results...'
-      ]
-      
-      // Simulate AI matching steps
-      for (let i = 0; i < steps.length; i++) {
-        setMatchingStep(i)
-        await new Promise(resolve => setTimeout(resolve, 250))
-      }
+      // Reduced AI matching steps delay - only show 2 steps quickly
+      setMatchingStep(1) // "Scanning property database..."
+      await new Promise(resolve => setTimeout(resolve, 300))
+      setMatchingStep(2) // "Calculating Brand Fit Index (BFI)..."
       
       // Check if user is logged in as a brand - if yes, use brand profile automatically
       let response
@@ -153,11 +149,14 @@ function PropertiesResultsContent() {
               userId: session.userId,
               userEmail: session.email
             })
-            response = await fetch(`/api/brands/matches?${authParams.toString()}`, {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include'
-            })
+            response = await fetchWithTimeout(
+              `/api/brands/matches?${authParams.toString()}`,
+              {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+              }
+            )
             
             if (response.ok) {
               const data = await response.json()
@@ -178,12 +177,14 @@ function PropertiesResultsContent() {
             }
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         // If brand profile fetch fails, fall through to manual search
-        console.log('Not logged in as brand or profile not found, using manual search:', e)
+        console.log('Not logged in as brand or profile not found, using manual search:', e.message)
       }
       
       // Fallback: Use manual search with query params (for non-logged-in users or if brand profile fails)
+      setMatchingStep(3) // "Ranking matches by AI score..."
+      
       // Parse size range from URL or use defaults
       const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
         ? { min: filters.sizeMin, max: filters.sizeMax }
@@ -193,18 +194,21 @@ function PropertiesResultsContent() {
         ? { min: filters.budgetMin, max: filters.budgetMax }
         : undefined
 
-      response = await fetch('/api/properties/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessType: filters.businessType,
-          sizeRange,
-          locations: filters.locations,
-          budgetRange,
-          timeline: filters.timeline,
-          propertyType: filters.propertyType
-        })
-      })
+      response = await fetchWithTimeout(
+        '/api/properties/match',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessType: filters.businessType,
+            sizeRange,
+            locations: filters.locations,
+            budgetRange,
+            timeline: filters.timeline,
+            propertyType: filters.propertyType
+          })
+        }
+      )
 
       if (!response.ok) {
         // Log detailed error information but don't throw to avoid noisy console errors
@@ -226,6 +230,7 @@ function PropertiesResultsContent() {
         setMatches([])
         setTotalMatches(0)
         setAiMatching(false)
+        setLoading(false)
         return
       }
 
@@ -244,9 +249,12 @@ function PropertiesResultsContent() {
         console.warn('[Results] No matches found. Filters:', filters)
       }
       
+      setMatchingStep(4) // "Finalizing results..."
+      await new Promise(resolve => setTimeout(resolve, 200))
       setAiMatching(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching matches:', error)
+      // Don't show alerts - just show empty state gracefully
       setMatches([])
       setTotalMatches(0)
       setAiMatching(false)

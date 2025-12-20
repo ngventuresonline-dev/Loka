@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
@@ -12,7 +13,7 @@ const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500
 
 const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
 const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
-const locations = [
+const allLocations = [
   'Koramangala',
   'Indiranagar',
   'Whitefield',
@@ -54,7 +55,284 @@ const locations = [
   'KR Puram',
   'Others'
 ]
+
+// Popular locations (first 8)
+const popularLocations = allLocations.slice(0, 8)
+// Other locations (remaining)
+const otherLocations = allLocations.slice(8)
 const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
+
+// Custom Location Selector Component with Popular Areas + Dropdown
+function LocationSelector({
+  title,
+  popularLocations,
+  otherLocations,
+  index = 0,
+  required = false,
+  initialSelected,
+  onSelectionChange
+}: {
+  title: string
+  popularLocations: string[]
+  otherLocations: string[]
+  index?: number
+  required?: boolean
+  initialSelected?: Set<string>
+  onSelectionChange?: (selected: Set<string>) => void
+}) {
+  const [selected, setSelected] = useState<Set<string>>(initialSelected || new Set())
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const dropdownContentRef = useRef<HTMLDivElement>(null)
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (dropdownRef.current && !dropdownRef.current.contains(target) &&
+          dropdownContentRef.current && !dropdownContentRef.current.contains(target)) {
+        setShowDropdown(false)
+      }
+    }
+    
+    if (showDropdown) {
+      // Use setTimeout to avoid immediate closure
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside)
+      }, 100)
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showDropdown])
+  
+  // Sync with parent state
+  const initialSelectedStr = useMemo(() => {
+    return initialSelected ? Array.from(initialSelected).sort().join(',') : ''
+  }, [initialSelected])
+  
+  useEffect(() => {
+    if (initialSelected && initialSelected.size > 0) {
+      const currentArray = Array.from(selected).sort().join(',')
+      const newArray = Array.from(initialSelected).sort().join(',')
+      if (currentArray !== newArray) {
+        setSelected(new Set(initialSelected))
+      }
+    } else if (!initialSelected || initialSelected.size === 0) {
+      if (selected.size > 0 && initialSelectedStr === '') {
+        setSelected(new Set())
+      }
+    }
+  }, [initialSelectedStr, initialSelected, selected])
+  
+  const toggle = (item: string) => {
+    const next = new Set(selected)
+    next.has(item) ? next.delete(item) : next.add(item)
+    setSelected(next)
+    
+    if (onSelectionChange) {
+      onSelectionChange(next)
+    }
+  }
+  
+  const count = selected.size
+  const colorIndex = index % 5
+  const hasError = required && selected.size === 0
+  
+  const borderColors = [
+    'border-[#FF5200]/30 hover:border-[#FF5200]',
+    'border-[#E4002B]/30 hover:border-[#E4002B]',
+    'border-[#FF6B35]/30 hover:border-[#FF6B35]',
+    'border-[#FF5200]/30 hover:border-[#FF5200]',
+    'border-[#E4002B]/30 hover:border-[#E4002B]',
+  ]
+  const shadowColors = [
+    'hover:shadow-[#FF5200]/50',
+    'hover:shadow-[#E4002B]/50',
+    'hover:shadow-[#FF6B35]/50',
+    'hover:shadow-[#FF5200]/50',
+    'hover:shadow-[#E4002B]/50',
+  ]
+  const gradientColors = [
+    'from-[#FF5200]/20 via-[#E4002B]/10',
+    'from-[#E4002B]/20 via-[#FF5200]/10',
+    'from-[#FF6B35]/20 via-[#FF5200]/10',
+    'from-[#FF5200]/20 via-[#E4002B]/10',
+    'from-[#E4002B]/20 via-[#FF5200]/10',
+  ]
+  const accentColors = [
+    'from-[#FF5200]/40',
+    'from-[#E4002B]/40',
+    'from-[#FF6B35]/40',
+    'from-[#FF5200]/40',
+    'from-[#E4002B]/40',
+  ]
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
+      className={`relative group ${showDropdown ? 'z-50' : ''}`}
+    >
+      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-visible shadow-2xl ${shadowColors[colorIndex]} ${showDropdown ? '' : 'group-hover:-translate-y-2'}`}>
+        {/* Animated Glow Effect */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
+        
+        {/* Animated Corner Accent */}
+        <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${accentColors[colorIndex]} to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500`}></div>
+        
+        {/* Particle Effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+        </div>
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h3
+                className="text-lg sm:text-xl md:text-2xl font-bold text-white"
+                style={{ fontFamily: fraunces.style.fontFamily }}
+              >
+                {title}
+              </h3>
+              {required && (
+                <span className="text-red-500 text-base sm:text-lg font-bold">*</span>
+              )}
+            </div>
+            {count > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-lg shadow-[#FF5200]/50"
+              >
+                {count}
+              </motion.div>
+            )}
+          </div>
+          
+          {/* Subtext */}
+          <p className="text-xs sm:text-sm text-gray-400 mb-4">
+            Choose at least 3 locations to get better matches
+          </p>
+          
+          {hasError && (
+            <div className="mb-4 text-sm text-red-400 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              This field is required
+            </div>
+          )}
+          
+          {/* Popular Locations Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
+            {popularLocations.map((item) => {
+              const active = selected.has(item)
+              return (
+                <motion.button
+                  key={item}
+                  onClick={() => toggle(item)}
+                  className={`relative px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium transition-all duration-300 border-2 ${
+                    active
+                      ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-lg shadow-[#FF5200]/50'
+                      : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
+                  }`}
+                  style={{ fontFamily: plusJakarta.style.fontFamily }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={false}
+                >
+                  {item}
+                  {active && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md"
+                    >
+                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </motion.div>
+                  )}
+                </motion.button>
+              )
+            })}
+          </div>
+          
+          {/* Dropdown for Other Locations */}
+          <div className="relative z-[60]" ref={dropdownRef}>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="w-full px-4 py-3 bg-gray-800/40 border-2 border-gray-700/50 hover:border-[#FF5200]/50 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium text-gray-200 hover:text-white hover:bg-gray-800/60 transition-all duration-300 flex items-center justify-between"
+              style={{ fontFamily: plusJakarta.style.fontFamily }}
+            >
+              <span>Select from other areas</span>
+              <svg
+                className={`w-4 h-4 transition-transform duration-300 ${showDropdown ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            <AnimatePresence>
+              {showDropdown && (
+                <motion.div
+                  ref={dropdownContentRef}
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute z-[9999] w-full mt-2 bg-gray-900 border-2 border-gray-700 rounded-lg sm:rounded-xl shadow-2xl max-h-96 overflow-y-auto"
+                  style={{ top: '100%', left: 0 }}
+                >
+                  <div className="p-2 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+                    {otherLocations.map((item) => {
+                      const active = selected.has(item)
+                      return (
+                        <button
+                          key={item}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggle(item)
+                          }}
+                          className={`relative px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-300 border ${
+                            active
+                              ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-md shadow-[#FF5200]/50'
+                              : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
+                          }`}
+                          style={{ fontFamily: plusJakarta.style.fontFamily }}
+                        >
+                          <span className="truncate block text-center">{item}</span>
+                          {active && (
+                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-white rounded-full flex items-center justify-center shadow-md">
+                              <svg className="w-1.5 h-1.5 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Enhanced Pulse Ring */}
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+      </div>
+    </motion.section>
+  )
+}
 
 function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?: number; required?: boolean; onBudgetChange?: (budget: { min: number; max: number }) => void }) {
   // Hybrid scale:
@@ -450,6 +728,8 @@ function FilterCard({
   multi = false,
   index = 0,
   required = false,
+  initialSelected,
+  initialOtherValue,
   onSelectionChange
 }: { 
   title: string
@@ -457,10 +737,64 @@ function FilterCard({
   multi?: boolean
   index?: number
   required?: boolean
+  initialSelected?: Set<string>
+  initialOtherValue?: string
   onSelectionChange?: (selected: Set<string>) => void
 }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [otherValue, setOtherValue] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(initialSelected || new Set())
+  const [otherValue, setOtherValue] = useState(initialOtherValue || '')
+  
+  // Sync with parent state when initialSelected changes
+  // Convert Set to string for stable dependency comparison
+  const initialSelectedStr = useMemo(() => {
+    return initialSelected ? Array.from(initialSelected).sort().join(',') : ''
+  }, [initialSelected])
+  
+  // Handle initialOtherValue - if provided, select "Others" and set the value
+  useEffect(() => {
+    if (initialOtherValue && initialOtherValue.trim()) {
+      if (otherValue !== initialOtherValue.trim()) {
+        setOtherValue(initialOtherValue.trim())
+      }
+      // Select "Others" if not already selected
+      const hasOthers = selected.has('Others') || selected.has('Other')
+      if (!hasOthers) {
+        const next = new Set(selected)
+        if (multi) {
+          next.add('Others')
+        } else {
+          next.clear()
+          next.add('Others')
+        }
+        setSelected(next)
+        // Trigger callback with custom value
+        if (onSelectionChange) {
+          const finalSelected = new Set(next)
+          finalSelected.delete('Others')
+          finalSelected.delete('Other')
+          finalSelected.add(initialOtherValue.trim())
+          onSelectionChange(finalSelected)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOtherValue])
+  
+  useEffect(() => {
+    if (initialSelected && initialSelected.size > 0) {
+      // Compare sets by converting to sorted arrays
+      const currentArray = Array.from(selected).sort().join(',')
+      const newArray = Array.from(initialSelected).sort().join(',')
+      if (currentArray !== newArray) {
+        setSelected(new Set(initialSelected))
+      }
+    } else if (!initialSelected || initialSelected.size === 0) {
+      // Only clear if we have selections but initialSelected is empty
+      if (selected.size > 0 && initialSelectedStr === '') {
+        setSelected(new Set())
+      }
+    }
+  }, [initialSelectedStr, initialSelected, selected])
   
   const toggle = (item: string) => {
     const next = new Set(selected)
@@ -648,7 +982,40 @@ function FilterCard({
   )
 }
 
-export default function BrandFilterPage() {
+// Helper function to map size value to size range label
+function getSizeRangeLabel(sizeMin: number, sizeMax: number): string | null {
+  // Check if it matches any predefined range
+  for (const range of sizeRanges) {
+    if (range === 'Custom') continue
+    
+    if (range.includes('-')) {
+      const [minStr, maxStr] = range.split('-').map(v => v.trim())
+      const min = parseInt(minStr.replace(/[^0-9]/g, '')) || 0
+      const max = parseInt(maxStr.replace(/[^0-9]/g, '')) || 0
+      
+      // Check if the provided range overlaps with this predefined range
+      if (sizeMin <= max && sizeMax >= min) {
+        return range
+      }
+    } else if (range.includes('+')) {
+      const min = parseInt(range.replace(/[^0-9]/g, '')) || 0
+      if (sizeMin >= min) {
+        return range
+      }
+    }
+  }
+  
+  // If no exact match, find the closest range
+  if (sizeMin <= 500) return '100-500 sqft'
+  if (sizeMin <= 1000) return '500-1,000 sqft'
+  if (sizeMin <= 2000) return '1,000-2,000 sqft'
+  if (sizeMin <= 5000) return '2,000-5,000 sqft'
+  if (sizeMin <= 10000) return '5,000-10,000 sqft'
+  return '10,000+ sqft'
+}
+
+function BrandFilterPageContent() {
+  const searchParams = useSearchParams()
   const [showApplyButton, setShowApplyButton] = useState(false)
   const [aiInsight, setAiInsight] = useState<string>('')
   const [showAiInsight, setShowAiInsight] = useState(false)
@@ -656,11 +1023,13 @@ export default function BrandFilterPage() {
   
   // Track selections for validation
   const [businessTypeSelected, setBusinessTypeSelected] = useState<Set<string>>(new Set())
+  const [businessTypeOtherValue, setBusinessTypeOtherValue] = useState<string>('')
   const [sizeRangeSelected, setSizeRangeSelected] = useState<Set<string>>(new Set())
   const [locationSelected, setLocationSelected] = useState<Set<string>>(new Set())
   const [timelineSelected, setTimelineSelected] = useState<Set<string>>(new Set())
   const [budgetRange, setBudgetRange] = useState<{ min: number; max: number }>({ min: 50000, max: 200000 })
   const brandLogTimeoutRef = useRef<number | null>(null)
+  const [urlParamsProcessed, setUrlParamsProcessed] = useState(false)
 
   const buildFilterStepPayload = () => {
     // Derive a combined size range from all selected ranges
@@ -759,9 +1128,94 @@ export default function BrandFilterPage() {
     budgetRange.min >= 50000 &&
     budgetRange.max > budgetRange.min
 
+  // Prefill from URL parameters (from hero search)
+  // This MUST run first and take precedence over localStorage
+  useEffect(() => {
+    if (urlParamsProcessed || typeof window === 'undefined') return
+    
+    const type = searchParams.get('type')
+    const otherType = searchParams.get('otherType')
+    const sizeMin = searchParams.get('sizeMin')
+    const sizeMax = searchParams.get('sizeMax')
+    const location = searchParams.get('location')
+    const budgetMin = searchParams.get('budgetMin')
+    const budgetMax = searchParams.get('budgetMax')
+    
+    let hasUrlParams = false
+    
+    // Pre-fill business type (support multiple types separated by comma)
+    if (type) {
+      // Decode URL-encoded values (e.g., Café%2FQSR becomes Café/QSR)
+      const decodedType = decodeURIComponent(type)
+      const types = decodedType.split(',').map(t => t.trim()).filter(t => businessTypes.includes(t))
+      if (types.length > 0) {
+        // Clear any existing selections first
+        setBusinessTypeSelected(new Set(types))
+        setBusinessTypeOtherValue('') // Clear other value when URL has explicit type
+        hasUrlParams = true
+      }
+    }
+    
+    // Pre-fill custom property type (for "Others" option)
+    if (otherType) {
+      const decodedOtherType = decodeURIComponent(otherType)
+      setBusinessTypeOtherValue(decodedOtherType)
+      // Select "Others" if not already selected
+      const currentTypes = new Set(businessTypeSelected)
+      if (!currentTypes.has('Others')) {
+        currentTypes.add('Others')
+        setBusinessTypeSelected(currentTypes)
+      }
+      hasUrlParams = true
+    }
+    
+    // Pre-fill size range
+    if (sizeMin || sizeMax) {
+      const min = sizeMin ? parseInt(sizeMin) : null
+      const max = sizeMax ? parseInt(sizeMax) : null
+      if (min !== null || max !== null) {
+        const rangeLabel = getSizeRangeLabel(min || 0, max || 100000)
+        if (rangeLabel) {
+          setSizeRangeSelected(new Set([rangeLabel]))
+          hasUrlParams = true
+        }
+      }
+    }
+    
+    // Pre-fill location (support multiple locations separated by comma)
+    if (location) {
+      const decodedLocation = decodeURIComponent(location)
+      const locs = decodedLocation.split(',').map(l => l.trim()).filter(l => allLocations.includes(l))
+      if (locs.length > 0) {
+        setLocationSelected(new Set(locs))
+        hasUrlParams = true
+      }
+    }
+    
+    // Pre-fill budget
+    if (budgetMin || budgetMax) {
+      const min = budgetMin ? parseInt(budgetMin) : 50000
+      const max = budgetMax ? parseInt(budgetMax) : 200000
+      if (min > 0 && max > min) {
+        setBudgetRange({ min, max })
+        hasUrlParams = true
+      }
+    }
+    
+    if (hasUrlParams) {
+      setUrlParamsProcessed(true)
+      // Clear localStorage when URL params are present to avoid conflicts
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('brandSessionData')
+        window.localStorage.removeItem('editingFilters')
+        window.localStorage.removeItem('brandFilterData')
+      }
+    }
+  }, [searchParams, urlParamsProcessed])
+
   // Prefill filters when coming back from results via "Edit Filters" or when session data exists
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || urlParamsProcessed) return
 
     const editingFlag = window.localStorage.getItem('editingFilters')
     const isEditing = editingFlag === 'true'
@@ -834,7 +1288,7 @@ export default function BrandFilterPage() {
     } catch (e) {
       console.error('[BrandFilter] Failed to prefill from session/filter data', e)
     }
-  }, [])
+  }, [urlParamsProcessed])
 
   // Generate contextual AI insights based on selections
   useEffect(() => {
@@ -990,6 +1444,8 @@ export default function BrandFilterPage() {
             items={businessTypes} 
             index={0} 
             required 
+            initialSelected={businessTypeSelected}
+            initialOtherValue={businessTypeOtherValue}
             onSelectionChange={(set) => {
               setBusinessTypeSelected(set)
               scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
@@ -1001,22 +1457,25 @@ export default function BrandFilterPage() {
           index={1} 
           required
           multi
+          initialSelected={sizeRangeSelected}
           onSelectionChange={(set) => {
             setSizeRangeSelected(set)
             scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
           }}
           />
-          <FilterCard 
-            title="Location (Popular Areas)" 
-            items={locations} 
-            multi 
-            index={2} 
+          <LocationSelector
+            title="Location (Popular Areas)"
+            popularLocations={popularLocations}
+            otherLocations={otherLocations}
+            index={2}
             required
+            initialSelected={locationSelected}
             onSelectionChange={(set) => {
               setLocationSelected(set)
               scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
             }}
           />
+          {/* Old FilterCard removed - using LocationSelector above */}
           <BudgetSlider 
             index={3} 
             required
@@ -1030,6 +1489,7 @@ export default function BrandFilterPage() {
             items={timelines} 
             index={4} 
             required
+            initialSelected={timelineSelected}
             onSelectionChange={(set) => {
               setTimelineSelected(set)
               scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
@@ -1143,6 +1603,18 @@ export default function BrandFilterPage() {
       <div className="relative z-10 mt-16 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
 
     </div>
+  )
+}
+
+export default function BrandFilterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>
+      </div>
+    }>
+      <BrandFilterPageContent />
+    </Suspense>
   )
 }
 

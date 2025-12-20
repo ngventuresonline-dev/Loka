@@ -47,6 +47,16 @@ export const CACHE_CONFIGS = {
     maxAge: 60, // 1 minute
     staleWhileRevalidate: 120, // 2 minutes
   },
+  // Brand requirements - cache for 3 minutes
+  BRAND_REQUIREMENTS: {
+    maxAge: 180, // 3 minutes
+    staleWhileRevalidate: 360, // 6 minutes
+  },
+  // Homepage data - cache for 5 minutes
+  HOMEPAGE: {
+    maxAge: 300, // 5 minutes
+    staleWhileRevalidate: 600, // 10 minutes
+  },
 } as const
 
 /**

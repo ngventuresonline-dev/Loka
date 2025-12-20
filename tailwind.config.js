@@ -22,7 +22,11 @@ module.exports = {
         'slideGrid': 'slideGrid 20s linear infinite',
         'scan': 'scan 4s linear infinite',
         'fadeInUp': 'fadeInUp 0.6s ease-out forwards',
+        'fadeIn': 'fadeIn 0.3s ease-out forwards',
         'gradientShift': 'gradientShift 4s ease infinite',
+        'scroll-left': 'scroll-left 35s linear infinite',
+        'scroll-left-fast': 'scroll-left-fast 50s linear infinite',
+        'scroll-right-fast': 'scroll-right-fast 50s linear infinite',
       },
       keyframes: {
         'gradient-xy': {
@@ -68,9 +72,25 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translateY(30px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' }
         },
+        'fadeIn': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' }
+        },
         'gradientShift': {
           '0%, 100%': { 'background-position': '0% 50%' },
           '50%': { 'background-position': '100% 50%' }
+        },
+        'scroll-left': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }
+        },
+        'scroll-left-fast': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }
+        },
+        'scroll-right-fast': {
+          '0%': { transform: 'translateX(-50%)' },
+          '100%': { transform: 'translateX(0)' }
         }
       }
     },
