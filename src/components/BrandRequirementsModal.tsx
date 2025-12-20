@@ -70,11 +70,11 @@ function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo }: { brand
         </div>
         
         <div className="relative z-10 flex-1 flex flex-col">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <div className="mb-4">
+            <div className="flex items-start gap-3 mb-3">
               {/* Brand Logo */}
               {brandLogo ? (
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg overflow-hidden bg-white p-1.5`}
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg overflow-hidden bg-white p-1.5 flex-shrink-0`}
                   style={{
                     boxShadow: `0 10px 15px -3px ${colorClasses.glowFrom.replace('0.2', '0.4')}, 0 4px 6px -2px ${colorClasses.glowVia.replace('0.1', '0.2')}`
                   }}
@@ -86,7 +86,7 @@ function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo }: { brand
                   />
                 </div>
               ) : (
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colorClasses.iconBg} border`}
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colorClasses.iconBg} border flex-shrink-0`}
                   style={{
                     borderColor: `${colorClasses.glowFrom.replace('0.2', '0.3')}`,
                     boxShadow: `0 10px 15px -3px ${colorClasses.glowFrom.replace('0.2', '0.4')}`
@@ -97,12 +97,16 @@ function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo }: { brand
                   </span>
                 </div>
               )}
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg mb-1">{brand.brandName}</h3>
-                <p className="text-sm text-gray-600">{brand.businessType}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">{brand.brandName}</h3>
+                <p className="text-sm text-gray-600 truncate">{brand.businessType}</p>
               </div>
             </div>
-            <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0">Active</span>
+            {/* Badges Stacked Vertically */}
+            <div className="flex flex-col gap-1.5">
+              <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-full whitespace-nowrap w-fit">Very Active</span>
+              <span className="px-3 py-1 bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold rounded-full whitespace-nowrap w-fit">Multiple Properties Matched</span>
+            </div>
           </div>
           
           {/* Always visible: Size */}
@@ -517,3 +521,4 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
     </div>
   )
 }
+
