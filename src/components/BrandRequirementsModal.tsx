@@ -26,12 +26,24 @@ interface DatabaseBrand {
     storeType: string | null
     targetAudience: string | null
     additionalRequirements: string | null
+    badges?: string[]
   } | null
 }
 
 // Expandable Brand Card Component for Modal
-function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo }: { brand: BrandRequirement, colors: any, colorClasses: any, brandLogo: string | null }) {
+function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo, badges }: { brand: BrandRequirement, colors: any, colorClasses: any, brandLogo: string | null, badges?: string[] }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  
+  // Badge color mapping
+  const getBadgeColors = (badge: string) => {
+    const badgeColors: Record<string, { bg: string; border: string; text: string }> = {
+      'Active': { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
+      'Very Active': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+      'Multiple Properties Matched': { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
+      'Property Matched': { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
+    }
+    return badgeColors[badge] || { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700' }
+  }
   
   return (
     <div
@@ -104,8 +116,21 @@ function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo }: { brand
             </div>
             {/* Badges Stacked Vertically */}
             <div className="flex flex-col gap-1.5">
-              <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-full whitespace-nowrap w-fit">Very Active</span>
-              <span className="px-3 py-1 bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold rounded-full whitespace-nowrap w-fit">Multiple Properties Matched</span>
+              {badges && Array.isArray(badges) && badges.length > 0 ? (
+                badges.map((badge: string) => {
+                  const badgeColors = getBadgeColors(badge)
+                  return (
+                    <span 
+                      key={badge}
+                      className={`px-3 py-1 ${badgeColors.bg} border ${badgeColors.border} ${badgeColors.text} text-xs font-semibold rounded-full whitespace-nowrap w-fit`}
+                    >
+                      {badge}
+                    </span>
+                  )
+                })
+              ) : (
+                <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap w-fit">Active</span>
+              )}
             </div>
           </div>
           
@@ -253,7 +278,7 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
           : 'Not specified'
         
         return {
-          brandName: brand.name,
+          brandName: brand.name || brand.companyName,
           businessType: brand.industry || 'Other' as any,
           sizeRequirement: {
             category: 'Medium' as any,
@@ -276,8 +301,9 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
             budget: 25,
             size: 25,
             features: 20
-          }
-        }
+          },
+          badges: profile?.badges || []
+        } as any
       })
     }
 
@@ -511,6 +537,7 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
                   colors={colors}
                   colorClasses={colorClasses}
                   brandLogo={brandLogo}
+                  badges={(brand as any).badges}
                 />
               )
             })}

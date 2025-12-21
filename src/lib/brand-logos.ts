@@ -10,6 +10,7 @@ const brandLogoMap: Record<string, string | null> = {
   // Coffee & Beverages
   'Blue Tokai': '/logos/Blue Tokai.jpg',
   'TAN Coffee': '/logos/TAN logo.jpg',
+  'Tan Coffee': '/logos/TAN logo.jpg',
   'TAN': '/logos/TAN logo.jpg',
   'Blr Brewing Co.': '/logos/blr brewing co logo.png',
   'Blr Brewing Co': '/logos/blr brewing co logo.png',
@@ -73,6 +74,7 @@ const brandLogoMap: Record<string, string | null> = {
   'Go Rally': '/logos/GoRally Logo.png',
   'GoRally': '/logos/GoRally Logo.png',
   'Klutch- Sports': null, // No logo available
+  'Klutch Sports': null, // No logo available
 }
 
 /**

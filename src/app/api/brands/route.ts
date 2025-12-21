@@ -45,10 +45,6 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/brands/route.ts:46',message:'Brands fetched from DB',data:{total:brands.length,brandIds:brands.map(b=>b.id),hasDisplayOrder:brands.filter(b=>b.displayOrder!=null).length,hasProfile:brands.filter(b=>b.brandProfiles!=null).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-
     const formattedBrands = brands.map(brand => {
       const requirements = brand.brandProfiles?.must_have_amenities as any
       const formatted = {
@@ -72,9 +68,6 @@ export async function GET(request: NextRequest) {
           badges: Array.isArray(requirements?.badges) ? requirements.badges : []
         } : null
       }
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/brands/route.ts:69',message:'Brand formatted',data:{id:formatted.id,hasName:!!(formatted.companyName||formatted.name),hasProfile:!!formatted.brandProfile,displayOrder:formatted.displayOrder},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       return formatted
     })
 
@@ -96,10 +89,6 @@ export async function GET(request: NextRequest) {
       // If neither has displayOrder, maintain original order (already sorted by createdAt desc)
       return 0
     })
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/brands/route.ts:85',message:'Brands sorted and ready to return',data:{total:sortedBrands.length,first5Ids:sortedBrands.slice(0,5).map(b=>b.id),first5Names:sortedBrands.slice(0,5).map(b=>b.companyName||b.name),first5DisplayOrder:sortedBrands.slice(0,5).map(b=>b.displayOrder)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
 
     // Add aggressive caching headers (10 minutes for performance)
     const headers = getCacheHeaders({

@@ -8,6 +8,10 @@ import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 import NetworkMapBackground from '@/components/NetworkMapBackground'
 import HeroSearch, { type Mode as HeroMode } from '@/components/HeroSearch'
+// Lazy load map components for better performance
+const BangaloreMapIllustration = lazy(() => import('@/components/BangaloreMapIllustration').then(mod => ({ default: mod.default })))
+const BrandPlacementPin = lazy(() => import('@/components/BrandPlacementPin').then(mod => ({ default: mod.default })))
+import { brandPlacements, getPlacementCoordinates } from '@/lib/brand-placements'
 
 // Lazy load heavy components below the fold
 const BrandOnboardingForm = lazy(() => import('@/components/onboarding/BrandOnboardingForm'))
@@ -653,8 +657,8 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
                 <p className="text-xs sm:text-sm text-gray-600 truncate">{industry}</p>
               </div>
             </div>
-            {/* Multiple Badges */}
-            <div className="flex flex-wrap gap-1 sm:gap-1.5 justify-end flex-shrink-0">
+            {/* Multiple Badges - Stacked vertically when 2 or more */}
+            <div className={`flex flex-col gap-1 sm:gap-1.5 justify-end flex-shrink-0 ${(profile.badges && Array.isArray(profile.badges) && profile.badges.length > 1) ? 'items-end' : 'items-end'}`}>
               {(profile.badges && Array.isArray(profile.badges) && profile.badges.length > 0) ? (
                 profile.badges.map((badge: string) => {
                   const badgeColors: Record<string, { bg: string; border: string; text: string }> = {
@@ -671,7 +675,7 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
                   return (
                     <span 
                       key={badge} 
-                      className={`px-2 sm:px-2.5 py-0.5 sm:py-1 ${colors.bg} border ${colors.border} ${colors.text} text-[10px] sm:text-xs font-semibold rounded-full leading-tight`}
+                      className={`px-2 sm:px-2.5 py-0.5 sm:py-1 ${colors.bg} border ${colors.border} ${colors.text} text-[10px] sm:text-xs font-semibold rounded-full leading-tight whitespace-nowrap`}
                       title={badge}
                     >
                       <span className="hidden sm:inline">{badge}</span>
@@ -790,7 +794,8 @@ export default function Home() {
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
-  
+  const [isClient, setIsClient] = useState(false)
+
   // Get brand logos using the brand-logos utility, filtering out null values
   const allBrands = [
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 
@@ -882,6 +887,10 @@ export default function Home() {
   }
 
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
     // Only run once on mount (client-side only)
     if (typeof window === 'undefined') return
     
@@ -923,31 +932,16 @@ export default function Home() {
         }
         const data = await response.json()
         
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:731',message:'API response received',data:{totalBrands:data.brands?.length||0,brandIds:data.brands?.map((b:any)=>b.id)||[],hasError:!!data.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        
         // Filter brands - be lenient: just need a name (companyName or name)
         // Brands are already sorted by API (displayOrder, then createdAt)
         const brandsWithProfiles = (data.brands || []).filter((brand: any) => {
           // Only filter out brands with no name at all
           const hasName = brand && (brand.companyName || brand.name)
-          // #region agent log
-          if (!hasName) fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:737',message:'Brand filtered out - no name',data:{brandId:brand?.id,brand:brand},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           return hasName
         })
         
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:742',message:'After filtering',data:{beforeFilter:data.brands?.length||0,afterFilter:brandsWithProfiles.length,filteredOut:(data.brands?.length||0)-brandsWithProfiles.length,remainingIds:brandsWithProfiles.map((b:any)=>b.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-        
         // Limit to 6 featured brands (already sorted by API)
         const featured = brandsWithProfiles.slice(0, 6)
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:752',message:'Featured brands selected',data:{totalAvailable:brandsWithProfiles.length,featuredCount:featured.length,limit:6,featuredIds:featured.map((b:any)=>b.id),featuredNames:featured.map((b:any)=>b.companyName||b.name)},timestamp:Date.now(),sessionId:'debug-session',runId:'final-fix',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
         
         setFeaturedBrands(featured)
         
@@ -958,9 +952,6 @@ export default function Home() {
             const style = getComputedStyle(el)
             return style.opacity !== '0' && style.display !== 'none' && style.visibility !== 'hidden'
           })
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:760',message:'DOM cards count after render',data:{domCardCount:brandCards.length,expectedCount:featured.length,visibleCards:visibleCards.length,opacities:Array.from(brandCards).map((el:any)=>getComputedStyle(el).opacity)},timestamp:Date.now(),sessionId:'debug-session',runId:'final-fix',hypothesisId:'G'})}).catch(()=>{});
-          // #endregion
         }, 3000) // Increased to 3s to allow animation to complete
         
         // Log for debugging
@@ -1415,15 +1406,9 @@ export default function Home() {
               featuredBrands
                 .filter((brand) => {
                   const isValid = brand && (brand.id || brand.companyName || brand.name)
-                  // #region agent log
-                  if (!isValid) fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:1190',message:'Invalid brand filtered in render',data:{brand},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                  // #endregion
                   return isValid
                 })
                 .map((brand, index) => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:1195',message:'Rendering brand card',data:{index,brandId:brand.id,brandName:brand.companyName||brand.name,hasProfile:!!brand.brandProfile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                  // #endregion
                   try {
                     const brandId = brand.id || `brand-${index}`
                     return (
@@ -1438,9 +1423,6 @@ export default function Home() {
                       />
                     )
                   } catch (error: any) {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:1200',message:'Error rendering brand card',data:{index,brandId:brand.id,error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                    // #endregion
                     console.error('[Homepage] Error rendering brand card:', error, brand)
                     return null
                   }
@@ -1971,6 +1953,99 @@ export default function Home() {
               </svg>
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* Our Brand Placements - Bangalore Map Illustration Section */}
+      <section id="brand-placements" className="relative z-10 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 py-12 md:py-16 overflow-hidden">
+        {/* Platform Performance Style Background */}
+        {/* Dark Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950"></div>
+        
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 pointer-events-none opacity-50" style={{
+          backgroundImage: `
+            linear-gradient(rgba(228, 0, 43, 0.25) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(228, 0, 43, 0.25) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }}></div>
+        
+        {/* Floating Gradient Orbs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-[#E4002B]/20 to-[#FF5200]/20 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite]"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-[#FF5200]/20 to-[#FF6B35]/20 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite_5s]"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Section Header */}
+          <div className="text-center mb-6 sm:mb-8 md:mb-10">
+            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-white/10 backdrop-blur-xl rounded-full mb-3 sm:mb-4 md:mb-5 border border-[#E4002B]/30">
+              <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5"></span>
+              <span className="text-xs sm:text-sm font-medium text-white">Recent Matches</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 px-4">
+              Our Brand <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Placements</span>
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-2xl mx-auto">
+              Check out some of our Premium Brand Placements across Bangalore
+            </p>
+          </div>
+
+                    {/* Bangalore Map Illustration */}
+                    <div className="relative w-full rounded-2xl overflow-hidden bg-gray-950/60 backdrop-blur-xl border border-[#FF5200]/20 shadow-2xl" style={{ contain: 'layout style paint' }}>
+            <div className="absolute inset-0 pointer-events-none opacity-20" style={{
+              backgroundImage: `
+                linear-gradient(rgba(255, 82, 0, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 82, 0, 0.15) 1px, transparent 1px)
+              `,
+              backgroundSize: '60px 60px',
+            }}></div>
+            {/* Map Container - Responsive Height with mobile zoom and centering */}
+            <div className="relative w-full h-[450px] sm:h-[500px] md:h-[550px] lg:h-[600px] overflow-hidden flex items-center justify-center">
+              <div className="bangalore-map-mobile-container w-full h-full origin-center" style={{ willChange: 'transform' }}>
+                <Suspense fallback={
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="animate-pulse text-gray-400">Loading map...</div>
+            </div>
+                }>
+                  <BangaloreMapIllustration 
+                    width="100%"
+                    height="100%"
+                    backgroundColor="transparent"
+                    showLabels={true}
+                    showOutline={false}
+                    animationSpeed={1.2}
+                    className="w-full h-full"
+                  >
+                    {/* Brand Placement Pins - Client-side only */}
+                    {isClient && brandPlacements.map((placement, index) => {
+                      try {
+                        const coords = getPlacementCoordinates(placement, index, brandPlacements);
+                        if (!coords) return null;
+                        
+                        return (
+                          <Suspense key={`suspense-${index}`} fallback={null}>
+                            <BrandPlacementPin
+                              key={`${placement.brand}-${placement.location}-${index}`}
+                              placement={placement}
+                              x={coords.x}
+                              y={coords.y}
+                              index={index}
+                            />
+                          </Suspense>
+                        );
+                      } catch (error) {
+                        console.error('Error rendering pin:', error);
+                        return null;
+                      }
+                    })}
+                  </BangaloreMapIllustration>
+                </Suspense>
+            </div>
+            </div>
+          </div>
+          
         </div>
       </section>
 
@@ -3334,7 +3409,7 @@ export default function Home() {
                 Lokazen
               </h3>
               <p className="text-gray-400 mb-6 leading-relaxed">
-                AI-powered commercial real estate matchmaking platform connecting brands with perfect properties using location intelligence.
+              AI Powered Commercial Real Estate Matchmaking Platform
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-[#FF5200] hover:to-[#E4002B] transition-all">
@@ -3359,10 +3434,8 @@ export default function Home() {
             <div>
               <h4 className="font-bold mb-4 text-lg">Quick Links</h4>
               <ul className="space-y-3">
-                <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">About Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">How It Works</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Pricing</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Success Stories</a></li>
+                <li><Link href="/about" className="text-gray-400 hover:text-[#FF5200] transition-colors">How It Works</Link></li>
+                <li><Link href="/#brand-placements" className="text-gray-400 hover:text-[#FF5200] transition-colors">Success Stories</Link></li>
                 <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Blog</a></li>
               </ul>
             </div>
@@ -3371,36 +3444,30 @@ export default function Home() {
             <div>
               <h4 className="font-bold mb-4 text-lg">For Users</h4>
               <ul className="space-y-3">
-                <li><a href="/onboarding/brand" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Onboarding</a></li>
-                <li><a href="/onboarding/owner" className="text-gray-400 hover:text-[#FF5200] transition-colors">List Property</a></li>
-                <li><a href="/properties" className="text-gray-400 hover:text-[#FF5200] transition-colors">Browse Properties</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Dashboard</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Support</a></li>
+                <li><Link href="/filter/brand" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Onboarding</Link></li>
+                <li><Link href="/filter/owner" className="text-gray-400 hover:text-[#FF5200] transition-colors">List Property</Link></li>
+                <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Login</Link></li>
+                <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Property Listing Login</Link></li>
               </ul>
             </div>
 
             {/* Contact */}
             <div>
               <h4 className="font-bold mb-4 text-lg">Contact Us</h4>
+              <p className="text-gray-400 mb-4 text-sm">Unit of N & G Ventures</p>
               <ul className="space-y-3 text-gray-400">
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span>support@gvsplatform.com</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <span>+91 98765 43210</span>
+                  <span>support@lokazen.in</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>Bangalore, India</span>
+                  <span>Kokarya Business Synergy Centre, Jayanagar, Bengaluru 560041</span>
                 </li>
               </ul>
             </div>

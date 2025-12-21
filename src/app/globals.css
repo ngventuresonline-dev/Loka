@@ -142,6 +142,45 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   min-width: 0;
 }
 
+/* Bangalore Map Mobile Centering - Optimized for visibility and centering */
+.bangalore-map-mobile-container {
+  transform: scale(1.2);
+}
+
+@media (min-width: 640px) {
+  .bangalore-map-mobile-container {
+    transform: scale(1.1);
+  }
+}
+
+@media (min-width: 768px) {
+  .bangalore-map-mobile-container {
+    transform: scale(1.05);
+  }
+}
+
+@media (min-width: 1024px) {
+  .bangalore-map-mobile-container {
+    transform: scale(1);
+  }
+}
+
+/* Brand Placement Pin Animations */
+@keyframes popupSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pin-popup-container {
+  animation: popupSlideUp 0.3s ease-out;
+}
+
 /* Custom Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }

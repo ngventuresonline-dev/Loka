@@ -14,7 +14,7 @@ export default function Footer() {
               <Logo size="md" showText={true} href="/" variant="dark" />
             </div>
             <p className="text-gray-400 mb-6 leading-relaxed">
-              AI-powered commercial real estate matchmaking platform connecting brands with perfect properties using location intelligence.
+              AI Powered Commercial Real Estate Matchmaking Platform
             </p>
             <div className="flex gap-4">
               <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-[#FF5200] hover:to-[#E4002B] transition-all">
@@ -39,10 +39,8 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-lg">Quick Links</h4>
             <ul className="space-y-3">
-              <li><Link href="/about" className="text-gray-400 hover:text-[#FF5200] transition-colors">About Us</Link></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">How It Works</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Pricing</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Success Stories</a></li>
+              <li><Link href="/about" className="text-gray-400 hover:text-[#FF5200] transition-colors">How It Works</Link></li>
+              <li><Link href="/#brand-placements" className="text-gray-400 hover:text-[#FF5200] transition-colors">Success Stories</Link></li>
               <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Blog</a></li>
             </ul>
           </div>
@@ -51,36 +49,30 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-lg">For Users</h4>
             <ul className="space-y-3">
-              <li><Link href="/onboarding/brand" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Onboarding</Link></li>
-              <li><Link href="/onboarding/owner" className="text-gray-400 hover:text-[#FF5200] transition-colors">List Property</Link></li>
-              <li><Link href="/properties" className="text-gray-400 hover:text-[#FF5200] transition-colors">Browse Properties</Link></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Dashboard</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Support</a></li>
+              <li><Link href="/filter/brand" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Onboarding</Link></li>
+              <li><Link href="/filter/owner" className="text-gray-400 hover:text-[#FF5200] transition-colors">List Property</Link></li>
+              <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Login</Link></li>
+              <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Property Listing Login</Link></li>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
             <h4 className="font-bold mb-4 text-lg">Contact Us</h4>
+            <p className="text-gray-400 mb-4 text-sm">Unit of N & G Ventures</p>
             <ul className="space-y-3 text-gray-400">
               <li className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span>support@gvsplatform.com</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-                <span>+91 98765 43210</span>
+                <span>support@lokazen.in</span>
               </li>
               <li className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span>Bangalore, India</span>
+                <span>Kokarya Business Synergy Centre, Jayanagar, Bengaluru 560041</span>
               </li>
             </ul>
           </div>
@@ -92,9 +84,9 @@ export default function Footer() {
             © {new Date().getFullYear()} Lokazen. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
-            <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Privacy Policy</a>
-            <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Terms of Service</a>
-            <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Cookie Policy</a>
+            <Link href="/privacy" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Privacy Policy</Link>
+            <Link href="/terms" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Terms & Conditions</Link>
+            <Link href="/cookies" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Cookies Policy</Link>
           </div>
         </div>
       </div>

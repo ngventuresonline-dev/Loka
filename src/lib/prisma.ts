@@ -23,7 +23,7 @@ const createPrismaClient = () => {
     console.error('[Prisma] Invalid DATABASE_URL format. Must start with postgresql:// or postgres://')
     throw new Error('Invalid DATABASE_URL format')
   }
-  
+
   // For Supabase connections, ensure proper SSL and connection settings
   if (databaseUrl.includes('supabase.com') || databaseUrl.includes('supabase.co')) {
     const urlParts = databaseUrl.split('?')
@@ -109,8 +109,35 @@ if (globalForPrisma.prisma) {
   }
 }
 
-// Always create a new client instance
-prisma = createPrismaClient()
+// Always create a new client instance - wrap in try-catch to prevent module load failures
+try {
+  prisma = createPrismaClient()
+} catch (error: any) {
+  console.error('[Prisma] Failed to create Prisma client:', error?.message || error)
+  // Create a minimal client that will fail gracefully on queries
+  // This prevents the module from failing to load entirely
+  try {
+    prisma = new PrismaClient({
+      datasources: { db: { url: 'postgresql://user:pass@localhost:5432/db' } },
+      log: ['error'],
+    }) as any
+  } catch (fallbackError: any) {
+    console.error('[Prisma] Even fallback client creation failed:', fallbackError?.message || fallbackError)
+    // Last resort: create a minimal object that matches Prisma interface
+    prisma = {
+      $connect: async () => {},
+      $disconnect: async () => {},
+      $on: () => {},
+      $use: () => {},
+      $transaction: async () => {},
+      $queryRaw: async () => [],
+      $executeRaw: async () => 0,
+      user: { findMany: async () => [], findUnique: async () => null, count: async () => 0 },
+      property: { findMany: async () => [], findUnique: async () => null, count: async () => 0 },
+      brand_profiles: { findMany: async () => [], findUnique: async () => null, count: async () => 0 },
+    } as any
+  }
+}
 
 // Cache in development only
 if (process.env.NODE_ENV !== 'production') {
