@@ -1261,9 +1261,9 @@ export default function Home() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Prime Properties</span>
           </h1>
           
-          {/* AI-powered matching subtitle */}
+          {/* Commercial Real Estate | Rental subtitle */}
           <p className={`text-sm sm:text-base md:text-lg lg:text-xl xl:text-xl mb-3 sm:mb-4 md:mb-5 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] transition-colors duration-700 px-3 sm:px-4 ${heroMode === 'owner' ? 'text-gray-300' : 'text-gray-600'}`}>
-            AI-powered matching in 48 hours.
+            Commercial Real Estate | Rental
           </p>
           
           <div className="mt-3 sm:mt-4 md:mt-5 mb-2 sm:mb-3 md:mb-4 w-full px-2 sm:px-0">
@@ -3446,8 +3446,6 @@ export default function Home() {
               <ul className="space-y-3">
                 <li><Link href="/filter/brand" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Onboarding</Link></li>
                 <li><Link href="/filter/owner" className="text-gray-400 hover:text-[#FF5200] transition-colors">List Property</Link></li>
-                <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Login</Link></li>
-                <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Property Listing Login</Link></li>
               </ul>
             </div>
 
@@ -3479,9 +3477,9 @@ export default function Home() {
               © 2025 Lokazen. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
-              <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Privacy Policy</a>
-              <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Terms of Service</a>
-              <a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Cookie Policy</a>
+              <Link href="/privacy" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Privacy Policy</Link>
+              <Link href="/terms" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Terms & Conditions</Link>
+              <Link href="/cookies" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Cookies Policy</Link>
             </div>
           </div>
         </div>

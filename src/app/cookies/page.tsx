@@ -8,7 +8,7 @@ export default function CookiesPolicyPage() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      <main className="max-w-4xl mx-auto px-6 py-16">
+      <main className="max-w-4xl mx-auto px-6 pt-24 sm:pt-28 lg:pt-32 pb-16">
         <div className="prose prose-lg max-w-none">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Cookies Policy</h1>
           <p className="text-gray-600 mb-8">Last updated: {new Date().toLocaleDateString()}</p>

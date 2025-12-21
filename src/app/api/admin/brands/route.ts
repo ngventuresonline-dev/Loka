@@ -1,23 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
+import { requireAdminAuth, logAdminAction } from '@/lib/admin-security'
 import { getPrisma } from '@/lib/get-prisma'
 import { generateBrandId } from '@/lib/brand-id-generator'
 import bcrypt from 'bcryptjs'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[Admin Brands API] GET request received')
-    
-    try {
-      await requireUserType(request, ['admin'])
-      console.log('[Admin Brands API] Auth check passed')
-    } catch (authError: any) {
-      console.error('[Admin Brands API] Auth error:', authError)
+    // Enhanced admin security check
+    const securityCheck = await requireAdminAuth(request, {
+      checkRateLimit: true
+    })
+
+    if (!securityCheck.authorized) {
+      await logAdminAction(request, 'UNAUTHORIZED_BRANDS_ACCESS_ATTEMPT', {
+        error: securityCheck.error
+      })
+      
       return NextResponse.json(
-        { error: authError.message || 'Authentication failed' },
-        { status: 401 }
+        { error: securityCheck.error || 'Admin authentication required' },
+        { status: securityCheck.statusCode || 401 }
       )
     }
+
+    await logAdminAction(request, 'ADMIN_BRANDS_LIST_VIEW')
 
     const prisma = await getPrisma()
     if (!prisma) {

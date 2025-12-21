@@ -113,15 +113,27 @@ export default function Logo({ showText = true, size = 'md', className = '', hre
         />
       </div>
 
-      {/* Text with "Lo" accent - Hidden on very small screens if needed */}
+      {/* Text with "Loka" accent and quantum node "O" - Hidden on very small screens if needed */}
       {showText && (
         <div className="flex flex-col min-w-0">
-          <h1 className={`${textSize.main} font-black ${textColor} leading-tight`}>
-            <span className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">Lo</span>
-            <span className={textColor}>kazen</span>
+          <h1 className={`${textSize.main} font-black ${textColor} leading-tight flex items-center`}>
+            <span className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">L</span>
+            {/* Quantum Node as "O" - Single animated node */}
+            <span className="relative inline-flex items-center justify-center" style={{ width: '0.7em', height: '1em', marginLeft: '0.05em', marginRight: '0.05em' }}>
+              <div 
+                className={`absolute ${size === 'sm' ? 'w-2.5 h-2.5 sm:w-3 sm:h-3' : size === 'md' ? 'w-3 h-3 sm:w-3.5 sm:h-3.5' : 'w-3.5 h-3.5 sm:w-4 sm:h-4'} bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full shadow-sm sm:shadow-md shadow-[#FF5200]/40 top-1/2 left-1/2`}
+                style={{ 
+                  animation: 'quantumFloatO 3s ease-in-out infinite',
+                  animationDelay: '0s',
+                  willChange: 'transform'
+                }}
+              />
+            </span>
+            <span className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">ka</span>
+            <span className={textColor}>zen</span>
           </h1>
           <div className={`${textSize.domain} ${domainColor} font-medium leading-tight`}>
-            lokazen.in
+            Powered By Ai
           </div>
         </div>
       )}

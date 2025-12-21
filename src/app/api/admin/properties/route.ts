@@ -1,37 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
+import { requireAdminAuth, logAdminAction } from '@/lib/admin-security'
 import { getPrisma } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const userEmailParam = searchParams.get('userEmail')
-  
-  // ULTRA SIMPLE: If admin email provided, proceed immediately (NO AUTH CHECKS)
-  const isAdminEmail = userEmailParam && decodeURIComponent(userEmailParam).toLowerCase() === 'admin@ngventures.com'
-  
-  if (!isAdminEmail) {
-    // Only check Supabase auth if no admin email
-    try {
-      await requireUserType(request, ['admin'])
-    } catch (authError: any) {
-      // Return valid JSON error
-      return NextResponse.json({
-        success: false,
-        error: 'Admin authentication required',
-        properties: [],
-        total: 0,
-        page: 1,
-        limit: 50,
-        totalPages: 0
-      }, { status: 401 })
-    }
-    }
+  // Enhanced admin security check
+  const securityCheck = await requireAdminAuth(request, {
+    checkRateLimit: true
+  })
 
-  console.log('[Admin properties] ✅ Admin access granted')
+  if (!securityCheck.authorized) {
+    await logAdminAction(request, 'UNAUTHORIZED_ACCESS_ATTEMPT', {
+      error: securityCheck.error
+    })
+    
+    return NextResponse.json({
+      success: false,
+      error: securityCheck.error || 'Admin authentication required',
+      properties: [],
+      total: 0,
+      page: 1,
+      limit: 50,
+      totalPages: 0
+    }, { status: securityCheck.statusCode || 401 })
+  }
+
+  await logAdminAction(request, 'ADMIN_PROPERTIES_LIST_VIEW')
   
   try {
+    const { searchParams } = new URL(request.url)
 
     // Parse query params
     const page = parseInt(searchParams.get('page') || '1')

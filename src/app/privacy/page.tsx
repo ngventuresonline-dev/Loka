@@ -8,7 +8,7 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      <main className="max-w-4xl mx-auto px-6 py-16">
+      <main className="max-w-4xl mx-auto px-6 pt-24 sm:pt-28 lg:pt-32 pb-16">
         <div className="prose prose-lg max-w-none">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
           <p className="text-gray-600 mb-8">Last updated: {new Date().toLocaleDateString()}</p>
@@ -17,12 +17,36 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Information Collection Practices</h2>
             <p className="text-gray-700 mb-4">
               Lokazen collects information necessary to provide our commercial real estate matchmaking services. 
-              This includes information you provide when creating an account, searching for properties, or listing properties.
+              This includes information you provide when creating an account, searching for properties, listing properties, 
+              making payments, or using our services.
             </p>
-            <p className="text-gray-700 mb-4">
-              We collect personal information such as name, email address, phone number, company details, 
-              and property requirements to facilitate matches between brands and property owners.
-            </p>
+            
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Personal Information We Collect</h3>
+              <ul className="list-disc pl-6 text-gray-700 mb-4">
+                <li><strong>Account Information:</strong> Name, email address, phone number, company name, business registration details, tax identification numbers</li>
+                <li><strong>Property Information:</strong> Property details, location, size, amenities, rental rates, availability, property documents</li>
+                <li><strong>Brand Requirements:</strong> Space requirements, location preferences, budget, business type, operational needs</li>
+                <li><strong>Financial Information:</strong> Payment card details (processed securely through third-party processors), billing addresses, transaction history, invoice records</li>
+                <li><strong>Usage Data:</strong> Platform activity, search history, property views, interactions with other users, communication logs</li>
+                <li><strong>Technical Information:</strong> IP address, device information, browser type, operating system, cookies and tracking technologies</li>
+                <li><strong>Communication Data:</strong> Messages exchanged through our platform, feedback, support requests</li>
+              </ul>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Information from Third Parties</h3>
+              <p className="text-gray-700 mb-4">
+                We may receive information about you from third-party sources, including:
+              </p>
+              <ul className="list-disc pl-6 text-gray-700 mb-4">
+                <li>Payment processors and financial institutions</li>
+                <li>Credit bureaus and verification services</li>
+                <li>Social media platforms (if you connect your account)</li>
+                <li>Public records and government databases</li>
+                <li>Business partners and referral sources</li>
+              </ul>
+            </div>
           </section>
 
           <section className="mb-8">

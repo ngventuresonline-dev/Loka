@@ -24,6 +24,28 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
   },
+  // Security headers (additional ones in middleware)
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
+          },
+          {
+            key: 'X-Download-Options',
+            value: 'noopen'
+          },
+        ],
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
