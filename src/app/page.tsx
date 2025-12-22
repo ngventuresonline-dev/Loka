@@ -27,6 +27,7 @@ import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
 import { getTheme, getPaletteColors } from '@/lib/theme'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
+import LogoImage from '@/components/LogoImage'
 
 type AppStep = 'home' | 'brand-onboarding' | 'owner-onboarding' | 'brand-dashboard' | 'owner-dashboard'
 
@@ -965,18 +966,32 @@ export default function Home() {
     setIsClient(true)
   }, [])
 
-  // Preload logo images to prevent missing logos on navigation
+  // Preload ALL logo images to prevent missing logos on navigation - PERMANENT FIX
   useEffect(() => {
-    if (uniqueLogos.length > 0) {
-      // Preload first 12 logos (most visible ones)
-      const logosToPreload = uniqueLogos.slice(0, 12)
-      logosToPreload.forEach((logoItem) => {
+    if (uniqueLogos.length > 0 && typeof window !== 'undefined') {
+      // Preload ALL logos with dual method for maximum reliability
+      uniqueLogos.forEach((logoItem) => {
         if (logoItem.logoPath) {
+          // Method 1: Preload link (browser cache)
           const link = document.createElement('link')
           link.rel = 'preload'
           link.as = 'image'
           link.href = logoItem.logoPath as string
+          link.crossOrigin = 'anonymous'
           document.head.appendChild(link)
+          
+          // Method 2: Preload via Image object (more reliable, forces cache)
+          const img = new window.Image()
+          img.src = logoItem.logoPath as string
+          img.onload = () => {
+            // Image successfully cached
+          }
+          img.onerror = () => {
+            // Log but don't fail - LogoImage component will handle fallback
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`Failed to preload logo: ${logoItem.logoPath}`)
+            }
+          }
         }
       })
     }
@@ -1416,34 +1431,17 @@ export default function Home() {
                 key={`logo-container-${logoPath}-${brandName}-${idx % uniqueLogos.length}`}
                 className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
               >
-                <div className="relative h-full flex items-center justify-center">
-                  {/* Logo image with consistent sizing and background removal - optimized */}
-                  <img
+                <div className="relative h-full flex items-center justify-center w-full">
+                  {/* Robust Logo Image Component - NEVER disappears, always shows fallback */}
+                  <LogoImage
                     src={logoPath}
                     alt={`${brandName} logo`}
+                    brandName={brandName}
                     loading={idx < 6 ? 'eager' : 'lazy'}
                     fetchPriority={idx < 6 ? 'high' : 'low'}
-                    className={`relative h-full w-auto object-contain rounded-2xl max-w-[150px] md:max-w-[180px] ${
-                      shouldRemoveBg 
-                        ? hasBlackBackground(brandName) 
-                          ? 'logo-no-bg-black' 
-                          : 'logo-no-bg'
-                        : ''
-                    }`}
+                    shouldRemoveBg={shouldRemoveBg}
+                    hasBlackBackground={hasBlackBackground(brandName)}
                     style={{ height: '64px', minHeight: '64px' }}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      // Hide broken images gracefully but keep container
-                      target.style.opacity = '0'
-                      target.style.visibility = 'hidden'
-                    }}
-                    onLoad={(e) => {
-                      // Ensure image is visible when loaded successfully
-                      const target = e.target as HTMLImageElement
-                      target.style.opacity = '1'
-                      target.style.visibility = 'visible'
-                    }}
-                    key={`logo-img-${logoPath}-${idx}`}
                   />
               </div>
               </div>
