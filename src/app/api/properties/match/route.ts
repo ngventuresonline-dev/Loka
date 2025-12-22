@@ -6,7 +6,17 @@ import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError: any) {
+      console.error('[API Match] JSON parse error:', parseError)
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    }
+
     const {
       businessType,
       sizeRange,
@@ -14,13 +24,22 @@ export async function POST(request: NextRequest) {
       budgetRange,
       timeline,
       propertyType
-    } = body
+    } = body || {}
 
     const prisma = await getPrisma()
     if (!prisma) {
+      console.error('[API Match] Prisma client not available')
       return NextResponse.json(
         { error: 'Database not available' },
         { status: 503 }
+      )
+    }
+
+    // Validate request body
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
       )
     }
 
@@ -175,7 +194,9 @@ export async function POST(request: NextRequest) {
     console.log(`[API Match] Total matches found: ${matchResults.length}`)
     if (matchResults.length > 0) {
       const scores = matchResults.map(m => m.bfiScore.score)
-      console.log(`[API Match] Score range: ${Math.min(...scores)}% - ${Math.max(...scores)}%`)
+      if (scores.length > 0) {
+        console.log(`[API Match] Score range: ${Math.min(...scores)}% - ${Math.max(...scores)}%`)
+      }
     }
 
     // Filter matches with >= 60% score (but show lower scores if no matches found)
@@ -278,8 +299,32 @@ export async function POST(request: NextRequest) {
     console.error('[API Match] Error details:', {
       message: error.message,
       name: error.name,
-      code: error.code
+      code: error.code,
+      body: error.body
     })
+
+    // Handle Prisma errors
+    if (error.code === 'P1001' || error.message?.includes('connect') || error.message?.includes('ECONNREFUSED')) {
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        },
+        { status: 503 }
+      )
+    }
+
+    // Handle Prisma schema errors
+    if (error.code === 'P2001' || error.message?.includes('model') || error.message?.includes('does not exist')) {
+      return NextResponse.json(
+        { 
+          error: 'Database schema error. Please run: npx prisma generate && npx prisma migrate dev',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
       { 
         error: error.message || 'Failed to find matches',

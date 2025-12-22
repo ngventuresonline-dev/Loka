@@ -31,7 +31,16 @@ export default function NewBrandPage() {
     additionalRequirements: '',
   })
 
-  const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
+  const businessTypes = [
+    'Café/QSR',
+    'Restaurant',
+    'Bar/Brewery',
+    'Retail',
+    'Gym',
+    'Sports Facility',
+    'Entertainment',
+    'Others',
+  ]
   const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
   const locations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR', 'Jayanagar', 'BTM', 'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Others']
   const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']

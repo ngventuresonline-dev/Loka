@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 import NetworkMapBackground from '@/components/NetworkMapBackground'
 import HeroSearch, { type Mode as HeroMode } from '@/components/HeroSearch'
+import Footer from '@/components/Footer'
 // Lazy load map components for better performance
 const BangaloreMapIllustration = lazy(() => import('@/components/BangaloreMapIllustration').then(mod => ({ default: mod.default })))
 const BrandPlacementPin = lazy(() => import('@/components/BrandPlacementPin').then(mod => ({ default: mod.default })))
@@ -373,6 +374,38 @@ function formatLocations(locations: string[] | null | undefined): string {
   return locations.slice(0, 2).join(', ') + '...'
 }
 
+// Remove repeated tag prefixes and dedupe comma-separated audience tags
+function sanitizeTargetAudience(text: string | null | undefined): string | null {
+  if (!text) return null
+  const parts = text.split('-').map(p => p.trim()).filter(Boolean)
+  const uniqueParts: string[] = []
+  parts.forEach(part => {
+    if (!uniqueParts.some(p => p.toLowerCase() === part.toLowerCase())) {
+      uniqueParts.push(part)
+    }
+  })
+
+  const dedupeTags = (chunk: string) => {
+    const tags = chunk.split(',').map(t => t.trim()).filter(Boolean)
+    const seen = new Set<string>()
+    const deduped: string[] = []
+    tags.forEach(tag => {
+      const lower = tag.toLowerCase()
+      if (!seen.has(lower)) {
+        seen.add(lower)
+        deduped.push(tag)
+      }
+    })
+    return deduped.join(', ')
+  }
+
+  if (uniqueParts.length > 0) {
+    uniqueParts[0] = dedupeTags(uniqueParts[0])
+  }
+
+  return uniqueParts.join(' - ')
+}
+
 // Helper function to get brand color scheme classes
 function getBrandColorScheme(brandName: string): {
   borderHover: string
@@ -447,6 +480,18 @@ function getBrandColorScheme(brandName: string): {
       ringColor: 'ring-sky-500/50',
       particleColor: 'bg-sky-400'
     },
+    'Boba Bhai': {
+      borderHover: 'hover:border-purple-500',
+      iconBg: 'bg-purple-50',
+      iconColor: 'text-purple-600',
+      shadowHover: 'hover:shadow-purple-500/30',
+      shadow: 'shadow-purple-500/50',
+      glowFrom: 'from-purple-500/20',
+      glowVia: 'via-purple-400/10',
+      pulseBorder: 'border-purple-500',
+      ringColor: 'ring-purple-500/50',
+      particleColor: 'bg-purple-400'
+    },
     'Namaste': { 
       borderHover: 'hover:border-orange-500', 
       iconBg: 'bg-orange-50', 
@@ -470,6 +515,18 @@ function getBrandColorScheme(brandName: string): {
       pulseBorder: 'border-orange-600',
       ringColor: 'ring-orange-600/50',
       particleColor: 'bg-orange-500'
+    },
+    'Sandowitch': {
+      borderHover: 'hover:border-red-500',
+      iconBg: 'bg-red-50',
+      iconColor: 'text-red-600',
+      shadowHover: 'hover:shadow-red-500/30',
+      shadow: 'shadow-red-500/50',
+      glowFrom: 'from-red-500/20',
+      glowVia: 'via-red-400/10',
+      pulseBorder: 'border-red-500',
+      ringColor: 'ring-red-500/50',
+      particleColor: 'bg-red-400'
     },
     'Dolphins Bar & Kitchen': {
       borderHover: 'hover:border-green-500',
@@ -600,7 +657,7 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
   const locations = profile.preferredLocations || []
   const timeline = profile.timeline || null
   const storeType = (profile as any)?.storeType || null
-  const targetAudience = (profile as any)?.targetAudience || null
+  const targetAudience = sanitizeTargetAudience((profile as any)?.targetAudience)
   const additionalRequirements = (profile as any)?.additionalRequirements || null
   
   const sizeRange = formatSize(minSize, maxSize)
@@ -720,7 +777,7 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <span><span className="font-semibold text-gray-900">Budget:</span> {budgetRange}</span>
+                <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">{budgetRange}</span></span>
               </div>
             )}
             {timeline && timeline !== 'Flexible' && (
@@ -805,6 +862,19 @@ export default function Home() {
     'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 
     'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 
     'TAN Coffee', 'Block Two Coffee'
+  ]
+
+  // Trusted brands row label arrays (text-only rows)
+  const trustedRow1Brands = [
+    'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
+    'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri',
+    'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
+  ]
+
+  const trustedRow3Brands = [
+    'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch',
+    'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian',
+    'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
   ]
   
   // Create array of brand logo data (logo path or null, with brand name and initial)
@@ -1287,10 +1357,11 @@ export default function Home() {
         
         {/* First Row - Cinematic infinite scroll LEFT → RIGHT */}
         <div className="relative mb-5 w-full overflow-hidden">
-          <div className="flex gap-5 md:gap-6 w-max animate-scroll-left-fast">
+          <div className="flex gap-5 md:gap-6 w-max animate-[scroll_35s_linear_infinite]">
             {[
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
-              'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports'
+              ...trustedRow1Brands,
+              ...trustedRow1Brands,
+              ...trustedRow1Brands,
             ].map((brand, idx) => {
               return (
               <div 
@@ -1308,8 +1379,9 @@ export default function Home() {
 
         {/* Second Row - Logo Images - Cinematic infinite scroll RIGHT → LEFT */}
         <div className="relative mb-5 w-full overflow-hidden">
-          <div className="flex gap-6 md:gap-8 w-max items-center animate-scroll-right-fast">
+          <div className="flex gap-6 md:gap-8 w-max items-center animate-[scrollReverse_40s_linear_infinite]">
             {[
+              ...uniqueLogos,
               ...uniqueLogos,
               ...uniqueLogos
             ].map((logoItem, idx) => {
@@ -1350,10 +1422,11 @@ export default function Home() {
 
         {/* Third Row - Cinematic infinite scroll LEFT → RIGHT */}
         <div className="relative mb-5 w-full overflow-hidden">
-          <div className="flex gap-5 md:gap-6 w-max animate-scroll-left-fast">
+          <div className="flex gap-5 md:gap-6 w-max animate-[scroll_38s_linear_infinite]">
             {[
-              'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
-              'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee'
+              ...trustedRow3Brands,
+              ...trustedRow3Brands,
+              ...trustedRow3Brands,
             ].map((brand, idx) => {
               return (
               <div 
@@ -1491,7 +1564,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹1.2L-2L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1.2L-2L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
@@ -1567,7 +1640,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹80K-1.2L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹80K-1.2L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -1643,7 +1716,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹2L-3.5L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹2L-3.5L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
@@ -1720,7 +1793,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹60K-90K/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹60K-90K/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -1796,7 +1869,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹1L-1.5L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1L-1.5L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
@@ -1872,7 +1945,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> ₹1.5L-2.5L/month</span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1.5L-2.5L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
@@ -2746,7 +2819,7 @@ export default function Home() {
                       <div className="text-xs text-gray-300">Match Success</div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards]">
-                      <div className="text-2xl font-bold text-white">48hrs</div>
+                      <div className="text-2xl font-bold text-white">Instant</div>
                       <div className="text-xs text-gray-300">Avg Response</div>
                     </div>
                   </div>
@@ -2757,26 +2830,21 @@ export default function Home() {
                       <div className="text-xs text-gray-300">Properties</div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 animate-[fadeInUp_0.8s_ease-out_0.6s_forwards]">
-                      <div className="text-2xl font-bold text-white">15+</div>
-                      <div className="text-xs text-gray-300">Cities</div>
+                      <div className="text-2xl font-bold text-white">20+</div>
+                      <div className="text-xs text-gray-300">Areas</div>
                     </div>
                   </div>
                 </div>
 
-                {/* Video Controls Bar */}
-                <div className="bg-black/50 backdrop-blur-md px-6 py-4">
-                  <div className="flex items-center gap-4">
-                    <button className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </button>
-                    
-                    <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full w-1/3 bg-gradient-to-r from-[#FF5200] to-[#E4002B]"></div>
-                    </div>
-                    
-                    <span className="text-white text-sm font-mono">1:24 / 3:45</span>
+                {/* Communication Bar */}
+                <div className="bg-black/60 backdrop-blur-md px-6 py-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <p className="text-xs sm:text-sm text-gray-200 max-w-xl">
+                      From first brief to shortlisted spaces in a single guided flow – no spreadsheets, no broker spam, just signal from brands and locations that actually fit.
+                    </p>
+                    <span className="text-[11px] sm:text-xs text-gray-400">
+                      Built for brands expanding across Bangalore&apos;s 20+ high-intent micro-markets.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -3074,10 +3142,10 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {/* Stat 1 */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-4 sm:p-6 md:p-8 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50 group-hover:-translate-y-2">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50 group-hover:-translate-y-1 sm:group-hover:-translate-y-2">
                 {/* Animated Glow Effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
@@ -3091,18 +3159,18 @@ export default function Home() {
                 </div>
                 
                 <div className="relative z-10 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl mb-3 sm:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#FF5200]/50">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg sm:rounded-xl mb-2 sm:mb-3 md:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#FF5200]/50">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,82,0,0.5)]">
+                  <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,82,0,0.5)] whitespace-nowrap">
                     500+
                   </div>
-                  <div className="text-xs sm:text-sm md:text-base text-gray-200 font-semibold">
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-200 font-semibold leading-tight">
                     Properties Listed
                   </div>
-                  <div className="mt-2 sm:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#FF5200]/20 border border-[#FF5200]/40 rounded-full text-[10px] sm:text-xs text-[#FF5200] font-bold inline-block">↑ 23% this month</div>
+                  <div className="mt-1.5 sm:mt-2 md:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#FF5200]/20 border border-[#FF5200]/40 rounded-full text-[9px] sm:text-[10px] md:text-xs text-[#FF5200] font-bold inline-block">↑ 23% this month</div>
                 </div>
 
                 {/* Enhanced Pulse Ring */}
@@ -3125,18 +3193,18 @@ export default function Home() {
                 </div>
                 
                 <div className="relative z-10 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#E4002B] to-[#FF5200] rounded-xl mb-3 sm:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#E4002B]/50">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#E4002B] to-[#FF5200] rounded-lg sm:rounded-xl mb-2 sm:mb-3 md:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#E4002B]/50">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] via-[#FF5200] to-[#FF6B35] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(228,0,43,0.5)]">
-                    300+
+                  <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] via-[#FF5200] to-[#FF6B35] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(228,0,43,0.5)] whitespace-nowrap">
+                    100+
                   </div>
-                  <div className="text-xs sm:text-sm md:text-base text-gray-200 font-semibold">
-                    Successful Matches
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-200 font-semibold leading-tight">
+                    Brands
                   </div>
-                  <div className="mt-2 sm:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#E4002B]/20 border border-[#E4002B]/40 rounded-full text-[10px] sm:text-xs text-[#E4002B] font-bold inline-block">↑ 95% success rate</div>
+                  <div className="mt-1.5 sm:mt-2 md:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#E4002B]/20 border border-[#E4002B]/40 rounded-full text-[9px] sm:text-[10px] md:text-xs text-[#E4002B] font-bold inline-block">↑ Growing fast</div>
                 </div>
 
                 <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
@@ -3158,18 +3226,18 @@ export default function Home() {
                 </div>
                 
                 <div className="relative z-10 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#FF6B35] to-[#E4002B] rounded-xl mb-3 sm:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#FF6B35]/50">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#FF6B35] to-[#E4002B] rounded-lg sm:rounded-xl mb-2 sm:mb-3 md:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#FF6B35]/50">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B35] via-yellow-400 to-[#FF5200] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,107,53,0.5)]">
-                    48hrs
+                  <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B35] via-yellow-400 to-[#FF5200] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,107,53,0.5)] whitespace-nowrap">
+                    Instant
                   </div>
-                  <div className="text-xs sm:text-sm md:text-base text-gray-200 font-semibold">
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-200 font-semibold leading-tight">
                     Avg. Match Time
                   </div>
-                  <div className="mt-2 sm:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#FF6B35]/20 border border-[#FF6B35]/40 rounded-full text-[10px] sm:text-xs text-[#FF6B35] font-bold inline-block">⚡ Lightning fast</div>
+                  <div className="mt-1.5 sm:mt-2 md:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#FF6B35]/20 border border-[#FF6B35]/40 rounded-full text-[9px] sm:text-[10px] md:text-xs text-[#FF6B35] font-bold inline-block">⚡ Lightning fast</div>
                 </div>
 
                 <div className="absolute inset-0 rounded-2xl border-2 border-[#FF6B35] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
@@ -3179,7 +3247,7 @@ export default function Home() {
 
             {/* Stat 4 */}
             <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards]">
-              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-4 sm:p-6 md:p-8 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50 group-hover:-translate-y-2">
+              <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50 group-hover:-translate-y-1 sm:group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500"></div>
@@ -3192,18 +3260,18 @@ export default function Home() {
                 </div>
                 
                 <div className="relative z-10 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl mb-3 sm:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#FF5200]/50">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg sm:rounded-xl mb-2 sm:mb-3 md:mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#FF5200]/50">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,82,0,0.5)]">
-                    15+
+                  <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B] mb-2 sm:mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,82,0,0.5)] whitespace-nowrap">
+                    20+
                   </div>
-                  <div className="text-xs sm:text-sm md:text-base text-gray-200 font-semibold">
-                    Cities Covered
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-200 font-semibold leading-tight">
+                    Areas Covered
                   </div>
-                  <div className="mt-2 sm:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#FF5200]/20 border border-[#FF5200]/40 rounded-full text-[10px] sm:text-xs text-[#FF5200] font-bold inline-block">🌍 Expanding fast</div>
+                  <div className="mt-1.5 sm:mt-2 md:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-[#FF5200]/20 border border-[#FF5200]/40 rounded-full text-[9px] sm:text-[10px] md:text-xs text-[#FF5200] font-bold inline-block">📍 Bangalore</div>
                 </div>
 
                 <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
@@ -3335,7 +3403,7 @@ export default function Home() {
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-bold text-gray-900 mb-1.5 group-hover:text-[#FF6B35] transition-colors">How fast are matches?</h3>
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500">
-                    <p className="text-sm text-gray-600 leading-relaxed pt-1">Get AI matches within 24-48 hours with instant WhatsApp notifications in real-time.</p>
+                    <p className="text-sm text-gray-600 leading-relaxed pt-1">Get AI matches instantly with real-time WhatsApp notifications.</p>
                   </div>
                 </div>
               </div>
@@ -3352,9 +3420,9 @@ export default function Home() {
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 mb-1.5 group-hover:text-[#FF5200] transition-colors">Which cities covered?</h3>
+                  <h3 className="text-base font-bold text-gray-900 mb-1.5 group-hover:text-[#FF5200] transition-colors">Which areas covered?</h3>
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500">
-                    <p className="text-sm text-gray-600 leading-relaxed pt-1">15+ metros: Bangalore, Mumbai, Delhi, Hyderabad, Chennai, Pune & expanding.</p>
+                    <p className="text-sm text-gray-600 leading-relaxed pt-1">20+ areas in Bangalore: MG Road, Indiranagar, Koramangala, HSR Layout, Whitefield, Marathahalli, Bellandur, Sarjapur Road, Jayanagar, JP Nagar, Electronic City & more.</p>
                   </div>
                 </div>
               </div>
@@ -3400,90 +3468,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 py-16 md:py-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
-            {/* Company Info */}
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">
-                Lokazen
-              </h3>
-              <p className="text-gray-400 mb-6 leading-relaxed">
-              AI Powered Commercial Real Estate Matchmaking Platform
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-[#FF5200] hover:to-[#E4002B] transition-all">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                </a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-[#FF5200] hover:to-[#E4002B] transition-all">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                  </svg>
-                </a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-[#FF5200] hover:to-[#E4002B] transition-all">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h4 className="font-bold mb-4 text-lg">Quick Links</h4>
-              <ul className="space-y-3">
-                <li><Link href="/about" className="text-gray-400 hover:text-[#FF5200] transition-colors">How It Works</Link></li>
-                <li><Link href="/#brand-placements" className="text-gray-400 hover:text-[#FF5200] transition-colors">Success Stories</Link></li>
-                <li><a href="#" className="text-gray-400 hover:text-[#FF5200] transition-colors">Blog</a></li>
-              </ul>
-            </div>
-
-            {/* For Users */}
-            <div>
-              <h4 className="font-bold mb-4 text-lg">For Users</h4>
-              <ul className="space-y-3">
-                <li><Link href="/filter/brand" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Onboarding</Link></li>
-                <li><Link href="/filter/owner" className="text-gray-400 hover:text-[#FF5200] transition-colors">List Property</Link></li>
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-bold mb-4 text-lg">Contact Us</h4>
-              <p className="text-gray-400 mb-4 text-sm">Unit of N & G Ventures</p>
-              <ul className="space-y-3 text-gray-400">
-                <li className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span>support@lokazen.in</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-[#FF5200] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>Kokarya Business Synergy Centre, Jayanagar, Bengaluru 560041</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-400 text-sm">
-              © 2025 Lokazen. All rights reserved.
-            </p>
-            <div className="flex gap-6 text-sm">
-              <Link href="/privacy" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Privacy Policy</Link>
-              <Link href="/terms" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Terms & Conditions</Link>
-              <Link href="/cookies" className="text-gray-400 hover:text-[#FF5200] transition-colors" prefetch={true}>Cookies Policy</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* AI Search Modal */}
       <AiSearchModal 

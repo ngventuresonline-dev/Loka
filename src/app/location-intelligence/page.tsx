@@ -54,10 +54,13 @@ export default function LocationIntelligencePage() {
 
       <Navbar />
 
-      <div className="relative z-10 pt-32 sm:pt-36 md:pt-40 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Main content is blurred and dimmed; overlay explains the current status */}
+      <div className="relative z-10 min-h-screen">
+        {/* Blurred background content */}
+        <div className="pt-32 sm:pt-36 md:pt-40 pb-20 pointer-events-none blur-sm opacity-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Hero Section */}
+            {/* Hero Section */}
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#FF5200]/10 to-[#E4002B]/10 border border-[#FF5200]/30 rounded-full mb-6 backdrop-blur-xl">
               <span className="w-2 h-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-3 animate-pulse shadow-[0_0_10px_rgba(255,82,0,1)]"></span>
@@ -92,7 +95,7 @@ export default function LocationIntelligencePage() {
             </div>
           </div>
 
-          {/* Search Interface */}
+            {/* Search Interface */}
           <div className="max-w-4xl mx-auto mb-20">
             <div className="relative group">
               {/* Animated Border */}
@@ -153,242 +156,42 @@ export default function LocationIntelligencePage() {
               </div>
             </div>
           </div>
+        </div>
+        </div>
 
-          {/* What You Get Section */}
-          <div className="mb-20">
-            <div className="text-center mb-16">
-              <h2 className="text-5xl md:text-6xl font-bold mb-4">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] animate-gradient">
-                  Intelligence
-                </span> You Receive
-              </h2>
-              <p className="text-gray-400 text-lg max-w-3xl mx-auto">
-                Comprehensive location insights powered by AI and real-time data sources
-              </p>
+        {/* Overlay communication card */}
+        <div className="absolute inset-0 flex items-center justify-center px-4 py-20">
+          <div className="max-w-xl w-full bg-black/85 border border-[#FF5200]/40 rounded-2xl p-6 sm:p-8 shadow-[0_0_40px_rgba(255,82,0,0.5)] text-center space-y-4 sm:space-y-6">
+            <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-gradient-to-r from-[#FF5200]/20 to-[#E4002B]/20 border border-[#FF5200]/40 text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-[#FFEDD5]">
+              Location Intelligence • Private Beta
             </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                {
-                  title: 'Foot Traffic Analysis',
-                  desc: 'Daily patterns, peak hours, weekend vs weekday traffic',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#FF5200] to-[#E4002B]'
-                },
-                {
-                  title: 'Demographics Data',
-                  desc: 'Age, income levels, spending habits within radius',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#E4002B] to-[#FF6B35]'
-                },
-                {
-                  title: 'Competition Mapping',
-                  desc: 'Direct & indirect competitors with revenue estimates',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#FF6B35] to-[#FF5200]'
-                },
-                {
-                  title: 'Catchment Analysis',
-                  desc: '5/10/15 min walk & drive time zones',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#FF5200] to-[#FF6B35]'
-                },
-                {
-                  title: 'Market Demand Score',
-                  desc: 'AI-calculated demand for your business category',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#E4002B] to-[#FF5200]'
-                },
-                {
-                  title: 'Rent Benchmarking',
-                  desc: 'Compare prices vs area average with justification',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#FF6B35] to-[#E4002B]'
-                },
-                {
-                  title: 'Growth Trends',
-                  desc: 'Historical data + projected growth indicators',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#FF5200] to-[#E4002B]'
-                },
-                {
-                  title: 'Traffic Drivers',
-                  desc: 'Anchor stores & major businesses generating footfall',
-                  icon: (
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  ),
-                  gradient: 'from-[#E4002B] to-[#FF6B35]'
-                }
-              ].map((item, i) => (
-                <div key={i} className="relative group">
-                  {/* Animated Border Glow */}
-                  <div className={'absolute -inset-[2px] bg-gradient-to-r ' + item.gradient + ' rounded-2xl opacity-0 group-hover:opacity-100 blur-md transition-all duration-700'}></div>
-                  
-                  {/* Card */}
-                  <div className="relative h-full bg-gradient-to-br from-black/90 via-gray-900/90 to-black/90 backdrop-blur-xl border border-[#FF5200]/20 rounded-2xl p-6 hover:border-[#FF5200]/60 transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-[0_0_40px_rgba(255,82,0,0.3)]">
-                    {/* Icon Container with Gradient Background */}
-                    <div className={'relative mb-5 w-16 h-16 rounded-xl bg-gradient-to-br ' + item.gradient + ' p-[2px] group-hover:scale-110 transition-transform duration-500'}>
-                      <div className="w-full h-full bg-black/80 rounded-xl flex items-center justify-center text-white">
-                        {item.icon}
-                      </div>
-                    </div>
-                    
-                    {/* Title with Gradient on Hover */}
-                    <h3 className={'text-xl font-bold mb-3 transition-all duration-500 text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r ' + item.gradient}>
-                      {item.title}
-                    </h3>
-                    
-                    {/* Description */}
-                    <p className="text-sm text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-500">
-                      {item.desc}
-                    </p>
-
-                    {/* Bottom Accent Line */}
-                    <div className={'absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ' + item.gradient + ' opacity-0 group-hover:opacity-100 rounded-b-2xl transition-opacity duration-500'}></div>
-                  </div>
-                </div>
-              ))}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug">
+              We&apos;re currently running<br className="hidden sm:block" />{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35]">
+                guided location studies
+              </span>
+            </h1>
+            <p className="text-sm sm:text-base text-gray-300">
+              Instead of a self-serve dashboard, our team builds a custom intelligence report for your brand in Bangalore.
+              Share your requirements and we&apos;ll send you a curated PDF with the top micro-markets, footfall, and rent benchmarks.
+            </p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
+              <Link
+                href="/onboarding/brand"
+                className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-sm sm:text-base font-semibold shadow-[0_0_25px_rgba(255,82,0,0.6)] hover:shadow-[0_0_35px_rgba(255,82,0,0.8)] transition-all"
+              >
+                Share my requirements
+              </Link>
+              <a
+                href="mailto:support@lokazen.in?subject=Location%20Intelligence%20Report%20Request"
+                className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl border border-[#FF5200]/60 text-sm sm:text-base font-semibold text-[#FFEDD5] bg-black/40 hover:bg-black/60 transition-all"
+              >
+                Talk to our team
+              </a>
             </div>
-          </div>
-
-          {/* Pricing Section */}
-          <div className="mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
-              Choose Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Plan</span>
-            </h2>
-            <p className="text-gray-400 text-center mb-12">Transparent pricing for every business size</p>
-
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {/* Starter */}
-              <div className="relative group">
-                <div className="absolute -inset-[1px] bg-gradient-to-r from-[#FF5200]/50 to-[#E4002B]/50 rounded-3xl opacity-50 group-hover:opacity-100 blur transition-all duration-500"></div>
-                <div className="relative bg-gradient-to-br from-gray-900 to-black border border-[#FF5200]/30 rounded-3xl p-8">
-                  <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
-                  <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] mb-6">
-                    ₹4,999
-                  </div>
-                  <ul className="space-y-4 mb-8">
-                    {['1 Location Report', 'Full Analysis', 'PDF Export', 'Valid for 30 days'].map((item) => (
-                      <li key={item} className="flex items-center text-gray-300">
-                        <svg className="w-5 h-5 text-[#FF5200] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="w-full py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-[0_0_30px_rgba(255,82,0,0.5)] transition-all duration-300">
-                    Get Started
-                  </button>
-                </div>
-              </div>
-
-              {/* Growth - Popular */}
-              <div className="relative group scale-105 mt-12">
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-6 py-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-sm font-bold rounded-full shadow-[0_0_20px_rgba(255,82,0,0.8)] z-10">
-                  MOST POPULAR
-                </div>
-                <div className="absolute -inset-[2px] bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-3xl blur-lg opacity-75"></div>
-                <div className="relative bg-gradient-to-br from-gray-900 to-black border-2 border-[#FF5200] rounded-3xl p-8">
-                  <h3 className="text-2xl font-bold text-white mb-2">Growth</h3>
-                  <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] mb-6">
-                    ₹14,999
-                  </div>
-                  <ul className="space-y-4 mb-8">
-                    {['5 Location Reports', 'Comparison Analysis', 'Priority Support', '3 Revisions', 'Valid for 90 days'].map((item) => (
-                      <li key={item} className="flex items-center text-gray-300">
-                        <svg className="w-5 h-5 text-[#FF5200] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="w-full py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-[0_0_30px_rgba(255,82,0,0.8)] transition-all duration-300">
-                    Choose Growth
-                  </button>
-                </div>
-              </div>
-
-              {/* Enterprise */}
-              <div className="relative group">
-                <div className="absolute -inset-[1px] bg-gradient-to-r from-[#FF5200]/50 to-[#E4002B]/50 rounded-3xl opacity-50 group-hover:opacity-100 blur transition-all duration-500"></div>
-                <div className="relative bg-gradient-to-br from-gray-900 to-black border border-[#FF5200]/30 rounded-3xl p-8">
-                  <h3 className="text-2xl font-bold text-white mb-2">Enterprise</h3>
-                  <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] mb-6">
-                    Custom
-                  </div>
-                  <ul className="space-y-4 mb-8">
-                    {['Unlimited Reports', 'API Access', 'Dedicated Manager', 'Custom Integrations', '24/7 Support'].map((item) => (
-                      <li key={item} className="flex items-center text-gray-300">
-                        <svg className="w-5 h-5 text-[#FF5200] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="w-full py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-[0_0_30px_rgba(255,82,0,0.5)] transition-all duration-300">
-                    Contact Sales
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust Section */}
-          <div className="text-center">
-            <div className="inline-flex items-center gap-8 text-sm text-gray-400">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <span>Data from trusted sources</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Money-back guarantee</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Instant delivery</span>
-              </div>
-            </div>
+            <p className="text-[11px] sm:text-xs text-gray-400">
+              100+ brands already use Lokazen reports to shortlist locations before site visits.
+            </p>
           </div>
         </div>
       </div>

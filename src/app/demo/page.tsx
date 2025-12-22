@@ -222,15 +222,15 @@ export default function DemoPage() {
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent mb-2">
-              48hrs
+              Instant
             </div>
             <div className="text-gray-400">Average Match Time</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-clip-text text-transparent mb-2">
-              10,000+
+              100+
             </div>
-            <div className="text-gray-400">Successful Matches</div>
+            <div className="text-gray-400">Brands</div>
           </div>
         </div>
       </div>

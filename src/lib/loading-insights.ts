@@ -108,7 +108,7 @@ export const insights = {
 
   general: [
     '💡 Our AI analyzes 15+ factors to find your perfect match',
-    '⚡ 48-hour match promise - we find spaces fast',
+    '⚡ Instant match promise - we find spaces instantly',
     '🎯 Zero listing fees - completely free for property owners',
     '📊 We track demographics, footfall, and competition for every area',
     '🏆 500+ verified F&B brands actively searching on our platform',

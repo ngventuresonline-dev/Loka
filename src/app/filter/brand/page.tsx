@@ -11,7 +11,16 @@ import { getContextualInsight } from '@/lib/loading-insights'
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
-const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
+const businessTypes = [
+  'Café/QSR',
+  'Restaurant',
+  'Bar/Brewery',
+  'Retail',
+  'Gym',
+  'Sports Facility',
+  'Entertainment',
+  'Others',
+]
 const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
 const allLocations = [
   'Koramangala',
@@ -183,10 +192,10 @@ function LocationSelector({
         {/* Animated Corner Accent */}
         <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${accentColors[colorIndex]} to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500`}></div>
         
-        {/* Particle Effect */}
+        {/* Particle Effect (static, no pulse animation for better focus) */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping"></div>
-          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full" style={{animationDelay: '0.5s'}}></div>
         </div>
 
         <div className="relative z-10">
@@ -326,8 +335,8 @@ function LocationSelector({
           </div>
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        {/* Subtle hover ring without pulse animation */}
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
         <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
     </motion.section>
@@ -554,10 +563,10 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
         {/* Animated Corner Accent */}
         <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${accentColors[colorIndex]} to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500`}></div>
         
-        {/* Particle Effect */}
+        {/* Particle Effect (static, no pulse animation) */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping"></div>
-          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full" style={{animationDelay: '0.5s'}}></div>
         </div>
 
         <div className="relative z-10">
@@ -652,8 +661,8 @@ function BudgetSlider({ index = 0, required = false, onBudgetChange }: { index?:
           </div>
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        {/* Subtle hover ring without pulse animation */}
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
         <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
 
@@ -882,10 +891,10 @@ function FilterCard({
         {/* Animated Corner Accent */}
         <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${accentColors[colorIndex]} to-transparent rounded-bl-full group-hover:w-32 group-hover:h-32 transition-all duration-500`}></div>
         
-        {/* Particle Effect */}
+        {/* Particle Effect (static, no pulse animation) */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping"></div>
-          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#FF5200] rounded-full"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#E4002B] rounded-full" style={{animationDelay: '0.5s'}}></div>
         </div>
 
         <div className="relative z-10">
@@ -951,8 +960,7 @@ function FilterCard({
                   )}
                   {active && (
                     <motion.div
-                      className="absolute inset-0 rounded-xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 animate-ping"
-                      style={{ animationDuration: '2s' }}
+                      className="absolute inset-0 rounded-xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"
                     />
                   )}
                 </motion.button>
@@ -974,8 +982,8 @@ function FilterCard({
           )}
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        {/* Subtle hover ring without pulse animation */}
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
         <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
     </motion.section>
@@ -1398,7 +1406,7 @@ function BrandFilterPageContent() {
                 <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
-                <span className="text-[11px] font-medium text-[#FF5200]">48hr</span>
+                <span className="text-[11px] font-medium text-[#FF5200]">Instant</span>
               </div>
             </div>
           </div>
@@ -1416,7 +1424,7 @@ function BrandFilterPageContent() {
               <div className="bg-gradient-to-r from-[#FF5200]/20 via-[#E4002B]/20 to-[#FF5200]/20 backdrop-blur-xl border border-[#FF5200]/40 rounded-lg sm:rounded-xl px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-4 shadow-lg shadow-[#FF5200]/20">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>

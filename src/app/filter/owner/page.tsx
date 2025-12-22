@@ -86,6 +86,57 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
   const [size, setSize] = useState(1000)
   const [exactSize, setExactSize] = useState('1000')
   
+  // Slider range: 0-100 (linear slider position)
+  const SLIDER_MAX = 100
+  const LINEAR_RANGE_END = 4000 // 3000-4000 sqft should be at 50-60% (55%)
+  const LINEAR_PERCENT = 55 // 55% of slider for linear range
+  
+  // Convert slider value (0-100) to actual size (0-50000)
+  const sliderToSize = (sliderValue: number): number => {
+    const linearEnd = (LINEAR_PERCENT / 100) * SLIDER_MAX
+    
+    if (sliderValue <= linearEnd) {
+      // Linear mapping: 0 to LINEAR_RANGE_END
+      return Math.round((sliderValue / linearEnd) * LINEAR_RANGE_END)
+    } else {
+      // Exponential mapping: LINEAR_RANGE_END to 50000
+      const remainingSlider = sliderValue - linearEnd
+      const remainingRange = SLIDER_MAX - linearEnd
+      const sizeRange = 50000 - LINEAR_RANGE_END
+      
+      // Exponential curve: y = a * (b^x - 1)
+      const normalized = remainingSlider / remainingRange
+      const exponential = Math.pow(2, normalized * 4) - 1 // Scale factor 4 for curve steepness
+      const maxExponential = Math.pow(2, 4) - 1
+      
+      return Math.round(LINEAR_RANGE_END + (exponential / maxExponential) * sizeRange)
+    }
+  }
+  
+  // Convert actual size to slider value (0-100)
+  const sizeToSlider = (sizeValue: number): number => {
+    if (sizeValue <= 0) return 0
+    if (sizeValue <= LINEAR_RANGE_END) {
+      // Linear mapping
+      const linearEnd = (LINEAR_PERCENT / 100) * SLIDER_MAX
+      return (sizeValue / LINEAR_RANGE_END) * linearEnd
+    } else {
+      // Exponential mapping
+      const linearEnd = (LINEAR_PERCENT / 100) * SLIDER_MAX
+      const remainingRange = SLIDER_MAX - linearEnd
+      const sizeRange = 50000 - LINEAR_RANGE_END
+      const sizeInRange = sizeValue - LINEAR_RANGE_END
+      
+      // Inverse exponential: x = log2((y/a) + 1) / scale
+      const maxExponential = Math.pow(2, 4) - 1
+      const normalized = sizeInRange / sizeRange
+      const exponential = normalized * maxExponential
+      const logValue = Math.log2(exponential + 1) / 4
+      
+      return linearEnd + (logValue * remainingRange)
+    }
+  }
+  
   const formatSize = (value: number) => {
     if (value >= 1000) {
       return `${(value / 1000).toFixed(1)}K sqft`
@@ -98,7 +149,7 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
     setExactSize(value)
     if (value) {
       const numValue = parseInt(value)
-      if (numValue >= 100 && numValue <= 50000) {
+      if (numValue >= 0 && numValue <= 50000) {
         setSize(numValue)
         if (onSizeChange) {
           onSizeChange(numValue)
@@ -109,22 +160,23 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
         if (onSizeChange) {
           onSizeChange(50000)
         }
-      } else if (numValue < 100 && numValue > 0) {
-        setSize(100)
-        setExactSize('100')
-        if (onSizeChange) {
-          onSizeChange(100)
-        }
+      }
+    } else {
+      // Allow empty input for typing
+      setSize(0)
+      if (onSizeChange) {
+        onSizeChange(0)
       }
     }
   }
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value)
-    setSize(value)
-    setExactSize(value.toString())
+    const sliderValue = parseFloat(e.target.value)
+    const actualSize = sliderToSize(sliderValue)
+    setSize(actualSize)
+    setExactSize(actualSize.toString())
     if (onSizeChange) {
-      onSizeChange(value)
+      onSizeChange(actualSize)
     }
   }
   
@@ -182,8 +234,8 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
         
         {/* Particle Effect */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping"></div>
-          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full"></div>
         </div>
 
         <div className="relative z-10">
@@ -213,10 +265,10 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
               <div className="relative">
                 <input
                   type="range"
-                  min="100"
-                  max="50000"
-                  step="100"
-                  value={size}
+                  min="0"
+                  max={SLIDER_MAX}
+                  step="0.1"
+                  value={sizeToSlider(size)}
                   onChange={handleSliderChange}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider slider-size"
                 />
@@ -232,7 +284,7 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
                 type="text"
                 value={exactSize}
                 onChange={handleExactSizeChange}
-                placeholder="e.g., 1500"
+                placeholder="e.g., 1150"
                 className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
                 style={{ fontFamily: plusJakarta.style.fontFamily }}
               />
@@ -253,7 +305,7 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
         </div>
 
         {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
         <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
 
@@ -296,6 +348,62 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
 
 function RentSlider({ index = 0, required = false, onRentChange, error }: { index?: number; required?: boolean; onRentChange?: (rent: number) => void; error?: boolean }) {
   const [rent, setRent] = useState(100000)
+  
+  // Slider range: 0-100 (linear slider position)
+  const SLIDER_MAX = 100
+  const LINEAR_RANGE_END = 300000 // 2-3 lakhs (200000-300000) should be at 50-60% (55%)
+  const LINEAR_PERCENT = 55 // 55% of slider for linear range
+  
+  // Convert slider value (0-100) to actual rent (50000-2000000)
+  const sliderToRent = (sliderValue: number): number => {
+    const linearEnd = (LINEAR_PERCENT / 100) * SLIDER_MAX
+    const minRent = 50000
+    
+    if (sliderValue <= linearEnd) {
+      // Linear mapping: 50000 to LINEAR_RANGE_END
+      const linearRange = LINEAR_RANGE_END - minRent
+      return Math.round(minRent + (sliderValue / linearEnd) * linearRange)
+    } else {
+      // Exponential mapping: LINEAR_RANGE_END to 2000000
+      const remainingSlider = sliderValue - linearEnd
+      const remainingRange = SLIDER_MAX - linearEnd
+      const rentRange = 2000000 - LINEAR_RANGE_END
+      
+      // Exponential curve: y = a * (b^x - 1)
+      const normalized = remainingSlider / remainingRange
+      const exponential = Math.pow(2, normalized * 4) - 1
+      const maxExponential = Math.pow(2, 4) - 1
+      
+      return Math.round(LINEAR_RANGE_END + (exponential / maxExponential) * rentRange)
+    }
+  }
+  
+  // Convert actual rent to slider value (0-100)
+  const rentToSlider = (rentValue: number): number => {
+    const minRent = 50000
+    if (rentValue <= minRent) return 0
+    
+    if (rentValue <= LINEAR_RANGE_END) {
+      // Linear mapping
+      const linearEnd = (LINEAR_PERCENT / 100) * SLIDER_MAX
+      const linearRange = LINEAR_RANGE_END - minRent
+      return ((rentValue - minRent) / linearRange) * linearEnd
+    } else {
+      // Exponential mapping
+      const linearEnd = (LINEAR_PERCENT / 100) * SLIDER_MAX
+      const remainingRange = SLIDER_MAX - linearEnd
+      const rentRange = 2000000 - LINEAR_RANGE_END
+      const rentInRange = rentValue - LINEAR_RANGE_END
+      
+      // Inverse exponential: x = log2((y/a) + 1) / scale
+      const maxExponential = Math.pow(2, 4) - 1
+      const normalized = rentInRange / rentRange
+      const exponential = normalized * maxExponential
+      const logValue = Math.log2(exponential + 1) / 4
+      
+      return linearEnd + (logValue * remainingRange)
+    }
+  }
   
   const formatCurrency = (value: number) => {
     if (value >= 100000) {
@@ -351,8 +459,8 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
         
         {/* Particle Effect */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping"></div>
-          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full"></div>
         </div>
 
         <div className="relative z-10">
@@ -382,15 +490,16 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
               <div className="relative">
                 <input
                   type="range"
-                  min="50000"
-                  max="2000000"
-                  step="50000"
-                  value={rent}
+                  min="0"
+                  max={SLIDER_MAX}
+                  step="0.1"
+                  value={rentToSlider(rent)}
                   onChange={(e) => {
-                    const value = parseInt(e.target.value)
-                    setRent(value)
+                    const sliderValue = parseFloat(e.target.value)
+                    const actualRent = sliderToRent(sliderValue)
+                    setRent(actualRent)
                     if (onRentChange) {
-                      onRentChange(value)
+                      onRentChange(actualRent)
                     }
                   }}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider slider-rent"
@@ -413,7 +522,7 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
         </div>
 
         {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
         <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
 
@@ -516,8 +625,8 @@ function SecurityDepositInput({ index = 0, required = false, onDepositChange, er
         
         {/* Particle Effect */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping"></div>
-          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full"></div>
         </div>
 
         <div className="relative z-10">
@@ -554,7 +663,7 @@ function SecurityDepositInput({ index = 0, required = false, onDepositChange, er
         </div>
 
         {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
         <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
     </motion.section>
@@ -727,8 +836,8 @@ function FilterCard({
         
         {/* Particle Effect */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full animate-ping"></div>
-          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#E4002B] rounded-full"></div>
+          <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-[#FF5200] rounded-full"></div>
         </div>
 
         <div className="relative z-10">
@@ -940,7 +1049,7 @@ function FilterCard({
                                     )}
                                     {active && (
                                       <motion.div
-                                        className="absolute inset-0 rounded-xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 animate-ping"
+                                        className="absolute inset-0 rounded-xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"
                                         style={{ animationDuration: '2s' }}
                                       />
                                     )}
@@ -993,8 +1102,7 @@ function FilterCard({
                               )}
                               {active && (
                                 <motion.div
-                                  className="absolute inset-0 rounded-xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 animate-ping"
-                                  style={{ animationDuration: '2s' }}
+                                  className="absolute inset-0 rounded-xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"
                                 />
                               )}
                             </motion.button>
@@ -1083,7 +1191,7 @@ function FilterCard({
         </div>
 
         {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
         <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
     </motion.section>
@@ -1092,7 +1200,6 @@ function FilterCard({
 
 export default function OwnerFilterPage() {
   const router = useRouter()
-  const [showApplyButton, setShowApplyButton] = useState(false)
   
   // Track all selections
   const [propertyTypeSelected, setPropertyTypeSelected] = useState<Set<string>>(new Set())
@@ -1115,14 +1222,6 @@ export default function OwnerFilterPage() {
     availability: false
   })
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowApplyButton(window.scrollY > 200)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-  
   // Check if form is valid
   const isFormValid = 
     propertyTypeSelected.size > 0 &&
@@ -1295,7 +1394,7 @@ export default function OwnerFilterPage() {
               
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#E4002B] flex-shrink-0 animate-pulse"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#E4002B] flex-shrink-0"></div>
                   <span className="text-[9px] sm:text-[10px] font-medium text-[#E4002B] uppercase tracking-wider">For Property Owners</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-0.5">List Your Property</h3>
@@ -1353,6 +1452,7 @@ export default function OwnerFilterPage() {
               useDropdown={true}
               visibleCount={6}
               compactCapsules
+              instructionText="Select the primary location of your property"
               moreLabel="Choose more areas across the city"
               onSelectionChange={(set) => {
                 setLocationSelected(set)
@@ -1415,41 +1515,36 @@ export default function OwnerFilterPage() {
             />
           </div>
         </div>
-      </div>
 
-      {/* Floating Apply Button - Futuristic */}
-      <AnimatePresence>
-        {showApplyButton && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50"
-          >
-            <motion.button
-              disabled={!isFormValid}
-              onClick={handleSubmit}
-              className={`group relative px-5 py-3 sm:px-8 sm:py-4 rounded-lg sm:rounded-xl text-sm sm:text-base font-semibold overflow-hidden ${
-                isFormValid
-                  ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white shadow-[0_8px_24px_rgba(228,0,43,0.4)] cursor-pointer'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              style={{ fontFamily: plusJakarta.style.fontFamily }}
-              whileHover={isFormValid ? { scale: 1.05, y: -2 } : {}}
-              whileTap={isFormValid ? { scale: 0.95 } : {}}
+        {/* Apply Button - Centered, only visible when form is valid */}
+        <AnimatePresence>
+          {isFormValid && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              className="flex justify-center mt-8 sm:mt-10 md:mt-12 mb-6 sm:mb-8"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200] to-[#E4002B] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
-                Apply Filters
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
-              <div className="absolute inset-0 rounded-xl border-2 border-white/30 opacity-0 group-hover:opacity-100 animate-ping"></div>
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <motion.button
+                onClick={handleSubmit}
+                className="group relative px-8 py-4 sm:px-12 sm:py-5 rounded-xl sm:rounded-2xl text-base sm:text-lg font-semibold overflow-hidden bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white shadow-[0_8px_24px_rgba(228,0,43,0.4)] cursor-pointer"
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200] to-[#E4002B] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10 flex items-center gap-2">
+                  Apply Filters
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+                <div className="absolute inset-0 rounded-xl border-2 border-white/30 opacity-0 group-hover:opacity-100"></div>
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Footer Note */}
       <div className="relative z-0 mt-8 sm:mt-10 md:mt-12 mb-6 sm:mb-8 flex justify-center px-4">

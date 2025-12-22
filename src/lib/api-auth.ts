@@ -34,18 +34,13 @@ export async function getAuthenticatedUser(
     // This is critical for localStorage-based auth where userIds don't match
     if (userEmailParam) {
       const decodedEmail = decodeURIComponent(userEmailParam).toLowerCase()
-      console.log('[API Auth] 🔍 PRIORITY: Looking up user by email:', decodedEmail)
-      
       try {
         const prisma = await getPrisma()
         if (!prisma) {
-          console.error('[API Auth] ❌ Prisma client not available for email lookup')
+          console.error('[API Auth] Prisma client not available')
         } else {
-          console.log('[API Auth] ✅ Prisma client available')
-          
           let user: any = null
           try {
-            console.log('[API Auth] Executing database query...')
             user = await prisma.user.findUnique({
               where: { email: decodedEmail },
               select: {
@@ -56,18 +51,13 @@ export async function getAuthenticatedUser(
                 phone: true,
               },
             })
-            console.log('[API Auth] Query result:', user ? `✅ Found - ${user.email} (${user.userType})` : '❌ Not found')
           } catch (dbError: any) {
-            console.error('[API Auth] ❌ Database query error:', dbError?.message || dbError)
-            console.error('[API Auth] Error code:', dbError?.code)
-            console.error('[API Auth] Error name:', dbError?.name)
-            // Continue to try creating user if admin
+            console.error('[API Auth] Database query error:', dbError?.message || dbError)
           }
           
           // If user doesn't exist but it's the admin email, create them
           if (!user && decodedEmail === 'admin@ngventures.com') {
             try {
-              console.log('[API Auth] Creating admin user in database...')
               user = await prisma.user.upsert({
                 where: { email: 'admin@ngventures.com' },
                 update: {
@@ -88,14 +78,8 @@ export async function getAuthenticatedUser(
                   phone: true,
                 },
               })
-              console.log('[API Auth] ✅ Admin user created/updated:', user?.id)
             } catch (error: any) {
-              console.error('[API Auth] ❌ Error creating admin user:', error?.message || error)
-              console.error('[API Auth] Error details:', {
-                code: error?.code,
-                name: error?.name,
-                meta: error?.meta,
-              })
+              console.error('[API Auth] Error creating admin user:', error?.message || error)
               // Try to fetch again
               try {
                 user = await prisma.user.findUnique({
@@ -108,17 +92,13 @@ export async function getAuthenticatedUser(
                     phone: true,
                   },
                 })
-                if (user) {
-                  console.log('[API Auth] ✅ Admin user found after creation attempt')
-                }
               } catch (fetchError: any) {
-                console.error('[API Auth] ❌ Error fetching admin user:', fetchError?.message || fetchError)
+                console.error('[API Auth] Error fetching admin user:', fetchError?.message || fetchError)
               }
             }
           }
           
           if (user) {
-            console.log('[API Auth] ✅✅✅ SUCCESS: User authenticated by email:', user.email, 'Type:', user.userType)
             return {
               id: user.id,
               email: user.email,
@@ -126,12 +106,10 @@ export async function getAuthenticatedUser(
               userType: user.userType as 'brand' | 'owner' | 'admin',
               phone: user.phone,
             }
-          } else {
-            console.log('[API Auth] ❌ User not found by email after all attempts:', decodedEmail)
           }
         }
       } catch (error: any) {
-        console.error('[API Auth] ❌❌❌ FATAL ERROR in email-based authentication:', error?.message || error)
+        console.error('[API Auth] Error in email-based authentication:', error?.message || error)
         console.error('[API Auth] Error stack:', error?.stack)
       }
     }
@@ -272,7 +250,7 @@ export async function getAuthenticatedUser(
         })
         if (user) {
           if (process.env.NODE_ENV === 'development') {
-            console.log('[API Auth] User authenticated by userId:', user.email, 'Type:', user.userType)
+            // User authenticated by userId
           }
           return {
             id: user.id,
@@ -288,7 +266,7 @@ export async function getAuthenticatedUser(
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('[API Auth] No authentication method succeeded')
+      // No authentication method succeeded
     }
     return null
   } catch (error: any) {

@@ -87,7 +87,7 @@ export default function AboutPage() {
               { number: '500+', label: 'Properties Listed', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', trend: '↑ 23%' },
               { number: '200+', label: 'Active Brands', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', trend: '↑ 18%' },
               { number: '95%', label: 'Match Success', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', trend: '↑ 5%' },
-              { number: '48hrs', label: 'Avg Match Time', icon: 'M13 10V3L4 14h7v7l9-11h-7z', trend: 'Fast' }
+              { number: 'Instant', label: 'Avg Match Time', icon: 'M13 10V3L4 14h7v7l9-11h-7z', trend: 'Fast' }
             ].map((stat, idx) => (
               <div key={idx} className="group relative" style={{animationDelay: `${0.4 + idx * 0.1}s`}}>
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] rounded-2xl opacity-0 group-hover:opacity-100 blur transition-all duration-700 animate-gradientShift bg-[length:200%_200%]"></div>

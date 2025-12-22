@@ -136,6 +136,12 @@ export function getPlacementCoordinates(
   if (placement.location.includes('Indiranagar 100ft')) {
     offsetX += -40; // Left side of Indiranagar
     offsetY += -15;
+
+    // Fine-tune specific brand pins
+    if (placement.brand === 'Eleven Bakehouse') {
+      // Move Eleven Bakehouse pin slightly higher
+      offsetY += -10;
+    }
   } else if (placement.location.includes('Indiranagar 80ft')) {
     offsetX += 20; // Right side
     offsetY += 10;

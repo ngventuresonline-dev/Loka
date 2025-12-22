@@ -70,6 +70,8 @@ export default function AdminPage() {
   const [propertiesLoading, setPropertiesLoading] = useState(false)
   const [brands, setBrands] = useState<any[]>([])
   const [brandsLoading, setBrandsLoading] = useState(false)
+  const [expertRequests, setExpertRequests] = useState<any[]>([])
+  const [expertRequestsLoading, setExpertRequestsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('30d')
@@ -81,8 +83,26 @@ export default function AdminPage() {
         return
       }
       fetchData()
+      fetchExpertRequests()
     }
   }, [isLoggedIn, user, authLoading, router, dateRange])
+
+  const fetchExpertRequests = async () => {
+    if (!user?.id || !user?.email) return
+    
+    try {
+      setExpertRequestsLoading(true)
+      const response = await fetch(`/api/admin/expert-requests?limit=10`)
+      if (response.ok) {
+        const data = await response.json()
+        setExpertRequests(data.expertRequests || [])
+      }
+    } catch (error) {
+      console.error('Error fetching expert requests:', error)
+    } finally {
+      setExpertRequestsLoading(false)
+    }
+  }
 
   const fetchAllBrands = async () => {
     if (!user?.id || !user?.email) return
@@ -479,6 +499,63 @@ export default function AdminPage() {
                     : 0} industries
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Expert Requests Summary */}
+        <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Expert Requests</h2>
+              <p className="text-gray-400">Recent expert connection requests from brands</p>
+            </div>
+            <button
+              onClick={() => router.push('/admin/expert-requests')}
+              className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors text-sm font-medium"
+            >
+              View All Requests
+            </button>
+          </div>
+
+          {expertRequestsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>
+            </div>
+          ) : expertRequests.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p>No expert requests yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {expertRequests.slice(0, 5).map((request: any) => (
+                <div key={request.id} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-white">{request.brandName}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          request.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          request.status === 'contacted' ? 'bg-blue-500/20 text-blue-400' :
+                          request.status === 'scheduled' ? 'bg-green-500/20 text-green-400' :
+                          request.status === 'completed' ? 'bg-gray-500/20 text-gray-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>
+                          {request.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400 mb-1">{request.property?.title || 'Property'}</p>
+                      <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                        {request.phone && <span>📞 {request.phone}</span>}
+                        {request.email && <span>✉️ {request.email}</span>}
+                        {request.scheduleDateTime && (
+                          <span>📅 {new Date(request.scheduleDateTime).toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

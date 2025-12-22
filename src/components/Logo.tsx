@@ -4,13 +4,14 @@ import Link from 'next/link'
 
 interface LogoProps {
   showText?: boolean
+  showPoweredBy?: boolean
   size?: 'sm' | 'md' | 'lg'
   className?: string
   href?: string
   variant?: 'light' | 'dark' // For background-aware text colors
 }
 
-export default function Logo({ showText = true, size = 'md', className = '', href = '/', variant = 'light' }: LogoProps) {
+export default function Logo({ showText = true, showPoweredBy = true, size = 'md', className = '', href = '/', variant = 'light' }: LogoProps) {
   // Mobile-optimized sizes with responsive breakpoints
   const sizeClasses = {
     sm: { 
@@ -132,9 +133,11 @@ export default function Logo({ showText = true, size = 'md', className = '', hre
             <span className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">ka</span>
             <span className={textColor}>zen</span>
           </h1>
-          <div className={`${textSize.domain} ${domainColor} font-medium leading-tight`}>
-            Powered By Ai
-          </div>
+          {showPoweredBy && (
+            <div className={`${textSize.domain} ${domainColor} font-medium leading-tight`}>
+              Powered By Ai
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1106,16 +1106,25 @@ function OwnerOnboardingContent() {
                   </div>
                       )}
                       {mapLoadError && (
-                        <div className="flex flex-col items-center justify-center h-full text-sm text-gray-500 px-4 text-center">
-                          <div className="mb-2">Map could not be loaded.</div>
-                          {!getGoogleMapsApiKey() && (
-                            <div className="text-[#FF5200] font-semibold text-xs">
-                              Google Maps API key is missing. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.
+                        <div className="relative flex items-center justify-center h-full px-4 text-center overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/10 via-[#E4002B]/5 to-[#FFB199]/15 blur-sm" />
+                          <div className="absolute inset-4 rounded-2xl border border-white/60 bg-white/60 backdrop-blur-xl shadow-[0_18px_45px_rgba(15,23,42,0.22)]" />
+                          <div className="relative z-10 max-w-sm mx-auto">
+                            <div className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#FF5200] via-[#FF6B35] to-[#E4002B] text-white text-sm font-semibold mb-3 shadow-[0_12px_30px_rgba(249,115,22,0.55)]">
+                              Map
                             </div>
-                          )}
-                          {getGoogleMapsApiKey() && (
-                            <div className="text-xs">Please check your Google Maps API key configuration and billing settings.</div>
-                          )}
+                            <div className="text-sm font-semibold text-gray-900 mb-1">
+                              Interactive map coming soon
+                            </div>
+                            <div className="text-xs text-gray-600 mb-3">
+                              We&apos;ll still use your pinned location and address to power brand matches. The live map
+                              view will be unlocked for you shortly.
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-[10px] sm:text-xs text-gray-100 shadow-[0_10px_25px_rgba(15,23,42,0.45)]">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>Location data saved securely</span>
+                            </div>
+                          </div>
                         </div>
                       )}
                       {isMapLoaded && !mapLoadError && (

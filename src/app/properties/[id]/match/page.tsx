@@ -15,6 +15,14 @@ import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 
+const LOADING_PHRASES = [
+  'Mapping your perfect location fit...',
+  'Scoring budget, size, and footfall signals...',
+  'Curating spaces brands actually want to visit...',
+  'Running brand–property compatibility checks...',
+  'Finalizing your tailored match shortlist...'
+]
+
 const getPrimaryImageSrc = (property: Property): string | null => {
   if (property.images && property.images.length > 0) {
     const src = property.images[0]
@@ -48,19 +56,18 @@ function MatchDetailsContent() {
   const [loading, setLoading] = useState(true)
   const [matchDetails, setMatchDetails] = useState<MatchDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'location'>('overview')
-  const [showVisitModal, setShowVisitModal] = useState(false)
-  const [visitDateTime, setVisitDateTime] = useState('')
-  const [visitNote, setVisitNote] = useState('')
-  const [visitorName, setVisitorName] = useState('')
-  const [visitorEmail, setVisitorEmail] = useState('')
-  const [visitorPhone, setVisitorPhone] = useState('')
-  const [companyName, setCompanyName] = useState('')
-  const [paywallAccepted, setPaywallAccepted] = useState(false)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [visitSubmitting, setVisitSubmitting] = useState(false)
+  const [showExpertModal, setShowExpertModal] = useState(false)
+  const [expertBrandName, setExpertBrandName] = useState('')
+  const [expertEmail, setExpertEmail] = useState('')
+  const [expertPhone, setExpertPhone] = useState('')
+  const [expertDateTime, setExpertDateTime] = useState('')
+  const [expertNotes, setExpertNotes] = useState('')
+  const [expertSubmitting, setExpertSubmitting] = useState(false)
+  const [expertFeeAcknowledged, setExpertFeeAcknowledged] = useState(false)
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0)
 
   useEffect(() => {
-    // Prefill visitor details from brand onboarding/filter data in localStorage
+    // Prefill expert contact details from brand onboarding/filter data in localStorage
     try {
       const detailsRaw = localStorage.getItem('brandOnboardingDetails')
       const submissionRaw = localStorage.getItem('brandOnboardingSubmission')
@@ -70,24 +77,20 @@ function MatchDetailsContent() {
       const submission = submissionRaw ? JSON.parse(submissionRaw) : null
       const filter = filterRaw ? JSON.parse(filterRaw) : null
 
-      const name =
-        details?.contactPerson ||
+      const brandName =
+        details?.companyName ||
         submission?.brandName ||
+        details?.contactPerson ||
+        filter?.businessType?.[0] ||
         ''
       const email = details?.email || ''
       const phone = details?.phone || ''
-      const company =
-        details?.companyName ||
-        submission?.brandName ||
-        filter?.businessType?.[0] ||
-        ''
 
-      if (name) setVisitorName(name)
-      if (email) setVisitorEmail(email)
-      if (phone) setVisitorPhone(phone)
-      if (company) setCompanyName(company)
+      if (brandName) setExpertBrandName(brandName)
+      if (email) setExpertEmail(email)
+      if (phone) setExpertPhone(phone)
     } catch (err) {
-      console.error('Prefill visit form failed:', err)
+      console.error('Prefill expert form failed:', err)
     }
   }, [])
 
@@ -106,15 +109,25 @@ function MatchDetailsContent() {
     })
   }, [propertyId])
 
+  useEffect(() => {
+    if (!loading) return
+
+    const interval = setInterval(() => {
+      setLoadingPhraseIndex((prev) => (prev + 1) % LOADING_PHRASES.length)
+    }, 1800)
+
+    return () => clearInterval(interval)
+  }, [loading])
+
   // Prefill notes using AI-ish template based on property and prefilled data
   useEffect(() => {
-    if (showVisitModal && matchDetails && !visitNote) {
+    if (showExpertModal && matchDetails && !expertNotes) {
       const propTitle = matchDetails.property?.title || 'this property'
       const city = matchDetails.property?.city ? ` in ${matchDetails.property.city}` : ''
-      const defaultNote = `Interested in ${propTitle}${city}. Please schedule a visit at your earliest convenience. Also looking for support with brand requirements and CRE services.`
-      setVisitNote(defaultNote)
+      const defaultNotes = `I'm interested in ${propTitle}${city} and would like expert guidance on brand requirements, CRE services, and property evaluation.`
+      setExpertNotes(defaultNotes)
     }
-  }, [showVisitModal, matchDetails, visitNote])
+  }, [showExpertModal, matchDetails, expertNotes])
 
   const fetchMatchDetails = async () => {
     try {
@@ -219,47 +232,44 @@ function MatchDetailsContent() {
     }
   }
 
-  const handleVisitSubmit = async (e: React.FormEvent) => {
+  const handleExpertSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!visitDateTime) {
-      alert('Please pick a date and time.')
+    if (!expertBrandName || !expertPhone || !expertDateTime || !expertNotes) {
+      alert('Please fill in all required fields: Brand Name, Phone, Schedule Date & Time, and Notes.')
       return
     }
-    if (!visitorName || !visitorEmail || !visitorPhone) {
-      alert('Please fill your contact details.')
-      return
-    }
-    if (!paywallAccepted) {
-      alert('Please complete the payment to schedule the visit.')
+    if (!expertFeeAcknowledged) {
+      alert('Please acknowledge that you may have to pay a brand onboarding/registration fee to avail our services.')
       return
     }
     try {
-      setVisitSubmitting(true)
-      const response = await fetch('/api/visits/schedule', {
+      setExpertSubmitting(true)
+      const response = await fetch('/api/expert/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           propertyId,
-          dateTime: visitDateTime,
-          note: visitNote,
-          name: visitorName,
-          email: visitorEmail,
-          phone: visitorPhone,
-          company: companyName
+          brandName: expertBrandName,
+          email: expertEmail || null,
+          phone: expertPhone,
+          scheduleDateTime: expertDateTime,
+          notes: expertNotes
         })
       })
       if (!response.ok) {
-        throw new Error('Failed to schedule visit')
+        const errorData = await response.json().catch(() => ({ error: 'Failed to connect with expert' }))
+        throw new Error(errorData.error || 'Failed to connect with expert')
       }
-      alert('Visit request submitted. We will confirm via email/WhatsApp.')
-      setShowVisitModal(false)
-      setVisitNote('')
-      setVisitDateTime('')
-    } catch (err) {
+      alert('Request submitted! Our expert will reach out to you shortly via email/WhatsApp.')
+      setShowExpertModal(false)
+      setExpertNotes('')
+      setExpertDateTime('')
+      setExpertFeeAcknowledged(false)
+    } catch (err: any) {
       console.error(err)
-      alert('Could not schedule the visit. Please try again.')
+      alert(err.message || 'Could not submit your request. Please try again.')
     } finally {
-      setVisitSubmitting(false)
+      setExpertSubmitting(false)
     }
   }
 
@@ -303,7 +313,9 @@ function MatchDetailsContent() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <LokazenNodesLoader size="lg" className="mb-4" />
-            <p className="text-gray-600">Loading match details...</p>
+            <p className="text-gray-700 font-semibold tracking-tight">
+              {LOADING_PHRASES[loadingPhraseIndex]}
+            </p>
           </div>
         </div>
         <Footer />
@@ -408,24 +420,24 @@ function MatchDetailsContent() {
               </div>
 
               {/* Key Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200">
-                <div className="flex flex-col min-w-0">
-                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold leading-tight bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200">
+                <div className="flex flex-col items-center min-w-0 text-center">
+                  <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold leading-tight bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">
                     <span className="whitespace-nowrap">{formatPrice(property.price, property.priceType)}</span>
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-600 mt-1 whitespace-nowrap">Rent</div>
+                  <div className="text-[10px] sm:text-xs text-gray-600 mt-1 whitespace-nowrap">Rent</div>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+                <div className="flex flex-col items-center min-w-0 text-center">
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-gray-900 leading-tight">
                     <span className="whitespace-nowrap">{property.size.toLocaleString()} sqft</span>
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-600 mt-1 whitespace-nowrap">Size</div>
+                  <div className="text-[10px] sm:text-xs text-gray-600 mt-1 whitespace-nowrap">Size</div>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 capitalize leading-tight break-words">
+                <div className="flex flex-col items-center min-w-0 text-center">
+                  <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900 capitalize leading-tight break-words">
                     {getPropertyTypeLabel(property.propertyType, property.title, property.description)}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-600 mt-1 whitespace-nowrap">Type</div>
+                  <div className="text-[10px] sm:text-xs text-gray-600 mt-1 whitespace-nowrap">Type</div>
                 </div>
               </div>
 
@@ -509,18 +521,9 @@ function MatchDetailsContent() {
             {/* Action Buttons */}
             <div className="space-y-2 sm:space-y-3">
               <button
-                onClick={() => setShowVisitModal(true)}
-                className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity"
+                onClick={() => setShowExpertModal(true)}
+                className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl"
               >
-                Schedule Visit
-              </button>
-              <button
-                onClick={() => setShowPaymentModal(true)}
-                className="w-full border-2 border-[#FF5200] text-[#FF5200] py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-[#FF5200] hover:text-white transition-colors"
-              >
-                Get Exact Location
-              </button>
-              <button className="w-full border border-gray-300 text-gray-700 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-50 transition-colors">
                 Connect with an Expert
               </button>
             </div>
@@ -530,182 +533,130 @@ function MatchDetailsContent() {
 
       {/* Mobile Sticky Action Bar */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-lg safe-area-bottom">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex gap-2 sm:gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
           <button
-            onClick={() => setShowVisitModal(true)}
-            className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm hover:opacity-90 transition-opacity"
+            onClick={() => setShowExpertModal(true)}
+            className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm hover:opacity-90 transition-opacity shadow-lg"
           >
-            Schedule Visit
-          </button>
-          <button
-            onClick={() => setShowPaymentModal(true)}
-            className="flex-1 border-2 border-[#FF5200] text-[#FF5200] py-2.5 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm hover:bg-[#FF5200] hover:text-white transition-colors"
-          >
-            Get Exact Location
+            Connect with an Expert
           </button>
         </div>
       </div>
 
-      {/* Payment Modal for Exact Location */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-3 sm:px-4 py-4 overflow-y-auto">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl p-4 sm:p-6 relative my-auto max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setShowPaymentModal(false)}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl leading-none w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center"
-              aria-label="Close"
-            >
-              ×
-            </button>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 pr-6 sm:pr-8 break-words">Get Exact Location Pin</h3>
-            <p className="text-sm sm:text-base text-gray-700 mb-4 break-words">
-              Unlock the exact location pin and priority support with our Brand Onboarding / Listing package.
-            </p>
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 sm:p-4 space-y-2 mb-4">
-              <h4 className="text-xs sm:text-sm font-semibold text-orange-800">What&apos;s included:</h4>
-              <ul className="text-xs sm:text-sm text-orange-900 list-disc list-inside space-y-1 break-words">
-                <li>Exact location pin & visit coordination</li>
-                <li>Brand requirements capture & CRE advisory</li>
-                <li>Shortlisted matches & expert guidance</li>
-                <li>Owner negotiation and paperwork assistance</li>
-              </ul>
-              <div className="pt-2">
-                <p className="text-xs sm:text-sm font-semibold text-orange-900">Listing / Onboarding Fee:</p>
-                <p className="text-xs sm:text-sm text-orange-900 break-words">Contact us for tailored pricing. Payment processed via Cashfree.</p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-              <button
-                onClick={() => router.push('/payments/brand-onboarding')}
-                className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity"
-              >
-                Proceed to Payment (Cashfree)
-              </button>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg font-semibold text-sm sm:text-base text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-3 break-words">
-              After payment, we'll send the pin and notify you and admin via email/WhatsApp.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Schedule Visit Modal */}
-      {showVisitModal && (
+      {/* Connect with Expert Modal */}
+      {showExpertModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-3 sm:px-4 py-4 overflow-y-auto">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 relative my-auto max-h-[90vh] overflow-y-auto">
             <button
-              onClick={() => setShowVisitModal(false)}
+              onClick={() => setShowExpertModal(false)}
               className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl leading-none w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center"
               aria-label="Close"
             >
               ×
             </button>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 pr-6 sm:pr-8">Schedule a Visit</h3>
-            <form className="space-y-3 sm:space-y-4" onSubmit={handleVisitSubmit}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Your Name</label>
-                  <input
-                    type="text"
-                    value={visitorName}
-                    onChange={(e) => setVisitorName(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Company (optional)</label>
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
-                    placeholder="Brand / Business name"
-                  />
-                </div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 pr-6 sm:pr-8">Connect with an Expert</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-4 break-words">
+              Get personalized guidance on brand requirements, CRE services, property evaluation, and more from our real estate experts.
+            </p>
+            <form className="space-y-3 sm:space-y-4" onSubmit={handleExpertSubmit}>
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                  Brand Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={expertBrandName}
+                  onChange={(e) => setExpertBrandName(e.target.value)}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                  required
+                  placeholder="Enter your brand/business name"
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Email</label>
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                    Email <span className="text-gray-400 text-xs">(optional)</span>
+                  </label>
                   <input
                     type="email"
-                    value={visitorEmail}
-                    onChange={(e) => setVisitorEmail(e.target.value)}
+                    value={expertEmail}
+                    onChange={(e) => setExpertEmail(e.target.value)}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
-                    required
+                    placeholder="your@email.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Phone</label>
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                    Phone <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="tel"
-                    value={visitorPhone}
-                    onChange={(e) => setVisitorPhone(e.target.value)}
+                    value={expertPhone}
+                    onChange={(e) => setExpertPhone(e.target.value)}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                     required
+                    placeholder="+91 98765 43210"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Date & Time</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                  Schedule Date & Time <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="datetime-local"
                   min={new Date().toISOString().slice(0,16)}
-                  value={visitDateTime}
-                  onChange={(e) => setVisitDateTime(e.target.value)}
+                  value={expertDateTime}
+                  onChange={(e) => setExpertDateTime(e.target.value)}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Notes (optional)</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                  Notes <span className="text-red-500">*</span>
+                </label>
                 <textarea
-                  value={visitNote}
-                  onChange={(e) => setVisitNote(e.target.value)}
-                  rows={3}
+                  value={expertNotes}
+                  onChange={(e) => setExpertNotes(e.target.value)}
+                  rows={4}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200] resize-y"
-                  placeholder="Any preferences or questions"
+                  placeholder="Tell us what you need help with..."
+                  required
                 />
+              </div>
+              <div className="flex items-start gap-2 sm:gap-3">
+                <input
+                  type="checkbox"
+                  id="feeAcknowledgment"
+                  checked={expertFeeAcknowledged}
+                  onChange={(e) => setExpertFeeAcknowledged(e.target.checked)}
+                  className="mt-1 w-4 h-4 sm:w-5 sm:h-5 text-[#FF5200] border-gray-300 rounded focus:ring-[#FF5200] focus:ring-2 cursor-pointer flex-shrink-0"
+                  required
+                />
+                <label htmlFor="feeAcknowledgment" className="text-xs sm:text-sm text-gray-700 cursor-pointer break-words">
+                  You may have to pay brand onboarding/registration fee to avail our services. <span className="text-red-500">*</span>
+                </label>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="submit"
-                  disabled={visitSubmitting}
+                  disabled={expertSubmitting}
                   className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity disabled:opacity-60"
                 >
-                  {visitSubmitting ? 'Scheduling...' : 'Confirm Visit'}
+                  {expertSubmitting ? 'Submitting...' : 'Connect with Expert'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowVisitModal(false)}
+                  onClick={() => setShowExpertModal(false)}
                   className="w-full sm:w-auto px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg font-semibold text-sm sm:text-base text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
               </div>
-              {/* Paywall placeholder */}
-              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg text-xs sm:text-sm text-orange-800">
-                <p className="break-words">To secure the visit, please complete payment via Cashfree. (Integration placeholder)</p>
-                <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPaywallAccepted(true)}
-                    className="w-full sm:w-auto px-4 py-2 bg-[#FF5200] text-white rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity"
-                  >
-                    Pay & Confirm
-                  </button>
-                  {paywallAccepted && <span className="text-green-700 font-semibold text-xs sm:text-sm self-center">Payment confirmed</span>}
-                </div>
-              </div>
             </form>
             <p className="text-xs text-gray-500 mt-3 break-words">
-              We'll notify you and the admin via email/WhatsApp once the visit is scheduled and payment is confirmed.
+              Our expert will reach out to you within 24 hours via email or WhatsApp to discuss your requirements.
             </p>
           </div>
         </div>

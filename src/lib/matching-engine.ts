@@ -238,6 +238,8 @@ function calculatePropertyTypeScore(property: Property, businessType: string): n
     'boutique': ['retail'],
     'gym': ['office', 'retail'],
     'fitness': ['office', 'retail'],
+    'sports': ['office', 'retail'],
+    'sports facility': ['office', 'retail'],
     'office': ['office'],
     'warehouse': ['warehouse']
   }

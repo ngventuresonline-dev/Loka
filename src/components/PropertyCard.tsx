@@ -57,6 +57,20 @@ function PropertyCard({
     return 'Fair Match'
   }
 
+  const getBFIBadgeClasses = (score?: number) => {
+    const color = getBFIColor(score)
+    const base =
+      'relative inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white rounded-full leading-tight ring-2 ring-white/70 border border-white/30 shadow-[0_10px_25px_rgba(0,0,0,0.35)] shadow-inner backdrop-blur-md'
+
+    if (color === 'green')
+      return `${base} bg-gradient-to-r from-emerald-500 to-lime-400 shadow-[0_12px_30px_rgba(16,185,129,0.45)]`
+    if (color === 'yellow')
+      return `${base} bg-gradient-to-r from-amber-500 to-yellow-400 shadow-[0_12px_30px_rgba(245,158,11,0.45)]`
+    if (color === 'orange')
+      return `${base} bg-gradient-to-r from-orange-500 to-red-400 shadow-[0_12px_30px_rgba(249,115,22,0.45)]`
+    return `${base} bg-gray-500/95`
+  }
+
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -145,13 +159,13 @@ function PropertyCard({
 
         {/* BFI Score Badge */}
         {bfiScore !== undefined && (
-          <div className="absolute bottom-4 right-4">
-            <div className={`px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-lg ${
-              getBFIColor(bfiScore) === 'green' ? 'bg-green-500' :
-              getBFIColor(bfiScore) === 'yellow' ? 'bg-yellow-500' :
-              'bg-orange-500'
-            }`}>
-              {bfiScore}% Match
+          <div className="absolute top-3 right-3 z-20">
+            <div
+              className={`${getBFIBadgeClasses(bfiScore)} transition-transform duration-200 group-hover:scale-105 group-hover:-translate-y-0.5`}
+            >
+              <span className="relative z-10">{bfiScore}% Match</span>
+              <span className="pointer-events-none absolute inset-x-1 top-1 h-1.5 rounded-full bg-white/45 blur-[2px] opacity-80"></span>
+              <span className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_2px_6px_rgba(255,255,255,0.35)]"></span>
             </div>
           </div>
         )}

@@ -32,6 +32,7 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
   const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     // Get brand logo - only on client side
@@ -40,6 +41,15 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
       if (logo && typeof logo === 'string') {
         setLogoPath(logo);
       }
+      
+      // Detect mobile screen size
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
     }
   }, [placement.brand]);
 
@@ -73,8 +83,8 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
     };
   }, [index, isClicked]);
 
-  // Pin size and animations
-  const baseSize = 32;
+  // Pin size and animations (slightly larger on mobile for readability)
+  const baseSize = isMobile ? 36 : 32;
   const hoverScale = isHovered ? 1.15 : 1;
   const clickScale = isClicked ? 1.1 : 1;
   const finalScale = hoverScale * clickScale;
@@ -89,8 +99,9 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
   const viewBoxRight = viewBoxX + viewBoxWidth;
   const viewBoxBottom = viewBoxY + viewBoxHeight;
   
-  const popupWidth = 200;
-  const popupHeight = 90;
+  // Responsive popup size - larger for mobile readability
+  const popupWidth = isMobile ? 280 : 200;
+  const popupHeight = isMobile ? 130 : 90;
   const padding = 15;
   
   // Calculate X position - prefer right side, but flip to left if too close to right edge
@@ -249,24 +260,24 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
           {logoPath ? (
             <image
               href={logoPath}
-              x="10"
-              y="10"
-              width="40"
-              height="40"
+              x="12"
+              y="12"
+              width={isMobile ? "56" : "40"}
+              height={isMobile ? "56" : "40"}
               style={{
                 objectFit: 'contain',
               }}
             />
           ) : (
-            <circle cx="30" cy="30" r="20" fill="#FF5200" />
+            <circle cx={isMobile ? "40" : "30"} cy={isMobile ? "40" : "30"} r={isMobile ? "28" : "20"} fill="#FF5200" />
           )}
 
           {/* Brand name */}
           <text
-            x="60"
-            y="25"
+            x={isMobile ? "80" : "60"}
+            y={isMobile ? "32" : "25"}
             fill="#1F2937"
-            fontSize="14"
+            fontSize={isMobile ? "18" : "14"}
             fontWeight="bold"
             fontFamily="system-ui, sans-serif"
           >
@@ -275,10 +286,10 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
 
           {/* Location */}
           <text
-            x="60"
-            y="42"
+            x={isMobile ? "80" : "60"}
+            y={isMobile ? "54" : "42"}
             fill="#6B7280"
-            fontSize="11"
+            fontSize={isMobile ? "14" : "11"}
             fontFamily="system-ui, sans-serif"
           >
             {placement.location}
@@ -286,10 +297,10 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
 
           {/* Size badge */}
           <rect
-            x="60"
-            y="58"
-            width="70"
-            height="18"
+            x={isMobile ? "80" : "60"}
+            y={isMobile ? "72" : "58"}
+            width={isMobile ? "90" : "70"}
+            height={isMobile ? "24" : "18"}
             rx="4"
             fill="#FF5200"
             opacity="0.1"
@@ -297,11 +308,11 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
             strokeWidth="1"
           />
           <text
-            x="95"
-            y="69"
+            x={isMobile ? "125" : "95"}
+            y={isMobile ? "87" : "69"}
             textAnchor="middle"
             fill="#FF5200"
-            fontSize="10"
+            fontSize={isMobile ? "12" : "10"}
             fontWeight="600"
             fontFamily="system-ui, sans-serif"
           >

@@ -59,6 +59,7 @@ const RATE_LIMITS = {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const isDev = process.env.NODE_ENV !== 'production'
 
   // Security headers
   const response = NextResponse.next()
@@ -73,37 +74,39 @@ export function middleware(request: NextRequest) {
   // CSP header
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.vercel.app https://vercel.live; frame-src 'self' https://*.google.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com; frame-src 'self' https://*.google.com;"
   )
 
-  // Rate limiting based on route
-  let rateLimitConfig = RATE_LIMITS.public
+  // Rate limiting based on route (disabled in development for easier local testing)
+  if (!isDev) {
+    let rateLimitConfig = RATE_LIMITS.public
 
-  if (pathname.startsWith('/api/admin')) {
-    rateLimitConfig = RATE_LIMITS.admin
-  } else if (pathname.startsWith('/api/auth') || pathname.startsWith('/auth/')) {
-    rateLimitConfig = RATE_LIMITS.auth
-  } else if (pathname.startsWith('/api/')) {
-    rateLimitConfig = RATE_LIMITS.api
-  }
+    if (pathname.startsWith('/api/admin')) {
+      rateLimitConfig = RATE_LIMITS.admin
+    } else if (pathname.startsWith('/api/auth') || pathname.startsWith('/auth/')) {
+      rateLimitConfig = RATE_LIMITS.auth
+    } else if (pathname.startsWith('/api/')) {
+      rateLimitConfig = RATE_LIMITS.api
+    }
 
-  // Check rate limit
-  if (!checkRateLimit(request, rateLimitConfig.limit, rateLimitConfig.window)) {
-    return NextResponse.json(
-      { 
-        error: 'Too many requests', 
-        message: 'Rate limit exceeded. Please try again later.',
-        retryAfter: 60
-      },
-      { 
-        status: 429,
-        headers: {
-          'Retry-After': '60',
-          'X-RateLimit-Limit': rateLimitConfig.limit.toString(),
-          'X-RateLimit-Remaining': '0',
+    // Check rate limit
+    if (!checkRateLimit(request, rateLimitConfig.limit, rateLimitConfig.window)) {
+      return NextResponse.json(
+        { 
+          error: 'Too many requests', 
+          message: 'Rate limit exceeded. Please try again later.',
+          retryAfter: 60
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Limit': rateLimitConfig.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+          }
         }
-      }
-    )
+      )
+    }
   }
 
   // Additional security for admin routes

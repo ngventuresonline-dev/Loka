@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 export interface BangaloreMapIllustrationProps {
   /** Width of the SVG */
@@ -50,6 +50,20 @@ export default function BangaloreMapIllustration({
   animationSpeed = 1,
   children,
 }: BangaloreMapIllustrationProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
+
   // City outline path - stylized Bangalore shape
   const cityOutline = 'M180,120 L700,120 Q850,125 920,160 L980,210 L1020,300 L1040,420 L1030,580 L1000,680 L940,740 L750,770 L380,770 L200,740 L140,660 L110,520 L100,380 L120,240 L150,160 Z';
 
@@ -76,14 +90,13 @@ export default function BangaloreMapIllustration({
   // Area locations with accurate geographic coordinates
   const areas = [
     // Central Business District
-    { name: 'Brigade Road', x: 425, y: 310, labelX: 445, labelY: 295 },
-    { name: 'Residency Road', x: 405, y: 305, labelX: 400, labelY: 290 },
+    { name: 'Brigade Road', x: 425, y: 310, labelX: 445, labelY: 285 },
     // Eastern areas
     { name: 'Indiranagar', x: 580, y: 320, labelX: 600, labelY: 305 },
     // Northeast
-    { name: 'Whitefield', x: 950, y: 230, labelX: 940, labelY: 215 },
+    { name: 'Whitefield', x: 950, y: 230, labelX: 910, labelY: 215 },
     // East-central
-    { name: 'Marathahalli', x: 880, y: 420, labelX: 900, labelY: 405 },
+    { name: 'Marathahalli', x: 880, y: 420, labelX: 880, labelY: 405 },
     // Southeast cluster
     { name: 'Koramangala', x: 550, y: 480, labelX: 570, labelY: 465 },
     { name: 'HSR Layout', x: 660, y: 520, labelX: 640, labelY: 505 },
@@ -309,7 +322,7 @@ export default function BangaloreMapIllustration({
                 x={area.labelX}
                 y={area.labelY}
                 fill="rgba(0, 0, 0, 0.5)"
-                fontSize="12"
+                fontSize={isMobile ? "22" : "18"}
                 fontFamily="system-ui, -apple-system, sans-serif"
                 fontWeight="600"
                 textAnchor="start"
@@ -324,7 +337,7 @@ export default function BangaloreMapIllustration({
                 x={area.labelX}
                 y={area.labelY}
                 fill="#FFFFFF"
-                fontSize="12"
+                fontSize={isMobile ? "22" : "18"}
                 fontFamily="system-ui, -apple-system, sans-serif"
                 fontWeight="600"
                 textAnchor="start"
@@ -397,7 +410,6 @@ export default function BangaloreMapIllustration({
 export function getAreaCoordinates(areaName: string): { x: number; y: number } | null {
   const areas: Record<string, { x: number; y: number }> = {
     'Brigade Road': { x: 425, y: 310 },
-    'Residency Road': { x: 405, y: 305 },
     'Indiranagar': { x: 580, y: 320 },
     'Whitefield': { x: 950, y: 230 },
     'Marathahalli': { x: 880, y: 420 },
@@ -418,7 +430,6 @@ export function getAreaCoordinates(areaName: string): { x: number; y: number } |
  */
 export const BANGALORE_AREAS = [
   'Brigade Road',
-  'Residency Road',
   'Indiranagar',
   'Koramangala',
   'Whitefield',

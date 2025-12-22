@@ -5,6 +5,23 @@ import { useRouter, useParams } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { useAuth } from '@/contexts/AuthContext'
 
+// Remove duplicated tag prefixes from a stored target audience string
+function sanitizeTargetAudience(text: string, tags: string[]) {
+  const tagPrefix = tags.length ? tags.join(', ') : ''
+  let clean = text?.trim() || ''
+
+  if (tagPrefix) {
+    const lowerPrefix = tagPrefix.toLowerCase()
+    if (clean.toLowerCase().startsWith(lowerPrefix)) {
+      clean = clean.slice(tagPrefix.length).trim()
+      if (clean.startsWith('-')) clean = clean.slice(1).trim()
+      if (clean.startsWith(',')) clean = clean.slice(1).trim()
+    }
+  }
+
+  return clean
+}
+
 export default function EditBrandPage() {
   const router = useRouter()
   const params = useParams()
@@ -60,7 +77,16 @@ export default function EditBrandPage() {
   ]
 
   // Business types from brand filter page
-  const businessTypes = ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Retail', 'Gym', 'Entertainment', 'Others']
+  const businessTypes = [
+    'Café/QSR',
+    'Restaurant',
+    'Bar/Brewery',
+    'Retail',
+    'Gym',
+    'Sports Facility',
+    'Entertainment',
+    'Others',
+  ]
   
   // All locations sorted alphabetically + new areas
   const locations = [
@@ -176,7 +202,10 @@ export default function EditBrandPage() {
               timeline: profile?.timeline || '',
               storeType: profile?.storeType || '',
               storeTypeOther: '',
-              targetAudience: profile?.targetAudience || '',
+              targetAudience: sanitizeTargetAudience(
+                profile?.targetAudience || '',
+                Array.isArray(profile?.targetAudienceTags) ? profile.targetAudienceTags : []
+              ),
               targetAudienceTags: Array.isArray(profile?.targetAudienceTags) 
                 ? profile.targetAudienceTags 
                 : [],
@@ -238,10 +267,9 @@ export default function EditBrandPage() {
         : formData.preferredLocations
       
       // Combine audience tags with custom text
-      const targetAudienceText = formData.targetAudience.trim()
-      const targetAudienceFinal = formData.targetAudienceTags.length > 0
-        ? `${formData.targetAudienceTags.join(', ')}${targetAudienceText ? ` - ${targetAudienceText}` : ''}`
-        : targetAudienceText
+      const tagText = formData.targetAudienceTags.join(', ')
+      const customText = sanitizeTargetAudience(formData.targetAudience, formData.targetAudienceTags)
+      const targetAudienceFinal = [tagText, customText].filter(Boolean).join(tagText && customText ? ' - ' : '')
 
       const response = await fetch(`/api/admin/brands/${id}?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, {
         method: 'PATCH',

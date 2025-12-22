@@ -85,26 +85,6 @@ export default function MatchBreakdownChart({ breakdown, overallScore }: MatchBr
         })}
       </div>
 
-      {/* Weighted Contribution */}
-      <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
-        <div className="text-xs text-gray-600 mb-2 sm:mb-3 break-words leading-tight">Weighted Contribution to Overall Score:</div>
-        <div className="space-y-1.5 sm:space-y-2">
-          {breakdownItems.map((item) => {
-            const score = breakdown[item.key as keyof MatchBreakdown]
-            const contribution = (score * item.weight) / 100
-            return (
-              <div key={item.key} className="flex items-center justify-between text-xs min-w-0">
-                <span className="text-gray-600 break-words pr-2 flex-1 min-w-0">{item.label}:</span>
-                <span className="font-medium text-gray-900 flex-shrink-0 whitespace-nowrap">{contribution.toFixed(1)} points</span>
-              </div>
-            )
-          })}
-        </div>
-        <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 flex items-center justify-between">
-          <span className="text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">Total:</span>
-          <span className="text-xs sm:text-sm font-bold text-[#FF5200] whitespace-nowrap">{overallScore}%</span>
-        </div>
-      </div>
     </div>
   )
 }

@@ -48,27 +48,82 @@ function PropertiesResultsContent() {
     requirements: ''
   })
   const [submittingRequirements, setSubmittingRequirements] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const itemsPerPage = 12
 
-  // Extract filters from URL
-  const filters = {
-    businessType: searchParams.get('businessType') || '',
-    sizeMin: parseInt(searchParams.get('sizeMin') || '0'),
-    sizeMax: parseInt(searchParams.get('sizeMax') || '100000'),
-    locations: searchParams.get('locations')?.split(',').filter(l => l.trim()) || [],
-    budgetMin: parseInt(searchParams.get('budgetMin') || '0'),
-    budgetMax: parseInt(searchParams.get('budgetMax') || '10000000'),
-    timeline: searchParams.get('timeline') || '',
-    propertyType: searchParams.get('propertyType') || ''
+  // Ensure component is mounted before accessing searchParams
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Extract filters from URL with error handling
+  const getFilters = () => {
+    if (!mounted || !searchParams) {
+      return {
+        businessType: '',
+        sizeMin: 0,
+        sizeMax: 100000,
+        locations: [],
+        budgetMin: 0,
+        budgetMax: 10000000,
+        timeline: '',
+        propertyType: ''
+      }
+    }
+
+    try {
+      const businessType = searchParams.get('businessType') || ''
+      const locations = searchParams.get('locations') || ''
+      const timeline = searchParams.get('timeline') || ''
+      const propertyType = searchParams.get('propertyType') || ''
+      
+      return {
+        businessType: businessType ? decodeURIComponent(businessType) : '',
+        sizeMin: parseInt(searchParams.get('sizeMin') || '0') || 0,
+        sizeMax: parseInt(searchParams.get('sizeMax') || '100000') || 100000,
+        locations: locations ? locations.split(',').filter(l => l.trim()).map(l => decodeURIComponent(l.trim())) : [],
+        budgetMin: parseInt(searchParams.get('budgetMin') || '0') || 0,
+        budgetMax: parseInt(searchParams.get('budgetMax') || '10000000') || 10000000,
+        timeline: timeline ? decodeURIComponent(timeline) : '',
+        propertyType: propertyType ? decodeURIComponent(propertyType) : ''
+      }
+    } catch (error) {
+      console.error('[Results Page] Error parsing filters:', error)
+      // Fallback to default filters
+      return {
+        businessType: '',
+        sizeMin: 0,
+        sizeMax: 100000,
+        locations: [],
+        budgetMin: 0,
+        budgetMax: 10000000,
+        timeline: '',
+        propertyType: ''
+      }
+    }
   }
+
+  const filters = getFilters()
   
   // Log filters for debugging
   console.log('[Results Page] Filters applied:', filters)
 
   useEffect(() => {
-    fetchMatches()
-  }, [searchParams])
+    // Only fetch if component is mounted
+    if (!mounted) return
+    
+    // Only fetch if we have valid search params or if component is mounted
+    try {
+      fetchMatches()
+    } catch (error) {
+      console.error('[Results Page] Error in fetchMatches:', error)
+      setLoading(false)
+      setAiMatching(false)
+      setMatches([])
+      setTotalMatches(0)
+    }
+  }, [mounted, searchParams])
 
   // Prefill requirements from filters
   useEffect(() => {
@@ -830,6 +885,27 @@ function PropertiesResultsContent() {
   )
 }
 
+function ClientOnlyWrapper({ children }: { children: React.ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+
+  if (!hasMounted) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <LokazenNodesLoader size="lg" className="mb-4" />
+          <p className="text-gray-600">Loading results...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
+}
+
 export default function PropertiesResultsPage() {
   return (
     <Suspense fallback={
@@ -840,7 +916,9 @@ export default function PropertiesResultsPage() {
         </div>
       </div>
     }>
-      <PropertiesResultsContent />
+      <ClientOnlyWrapper>
+        <PropertiesResultsContent />
+      </ClientOnlyWrapper>
     </Suspense>
   )
 }

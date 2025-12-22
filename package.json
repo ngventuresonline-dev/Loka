@@ -17,7 +17,8 @@
     "db:import-featured-brands": "tsx scripts/import-featured-brands.ts",
     "db:update-property-ids": "tsx scripts/update-property-ids.ts",
     "db:update-brand-ids": "tsx scripts/update-brand-ids.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "favicon:convert": "tsx scripts/convert-favicon-to-png.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",

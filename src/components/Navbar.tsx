@@ -33,6 +33,10 @@ export default function Navbar() {
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
+            <Link href="/about" className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200 relative group">
+              <span>About</span>
+              <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] group-hover:w-full transition-all duration-300"></div>
+            </Link>
             <Link href="/location-intelligence" className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200 relative group">
               <span>Location Intel</span>
               <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] group-hover:w-full transition-all duration-300"></div>

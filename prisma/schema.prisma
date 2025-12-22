@@ -122,6 +122,7 @@ model Property {
   owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   propertyViews        property_views[]
   savedBy              SavedProperty[]
+  expertRequests       ExpertRequest[]
 
   @@map("properties")
   @@index([city], map: "idx_properties_city")
@@ -223,4 +224,31 @@ enum property_status_enum {
   pending
   approved
   rejected
+}
+
+model ExpertRequest {
+  id              String    @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  propertyId      String    @map("property_id") @db.VarChar(36)
+  brandName       String    @map("brand_name") @db.VarChar(255)
+  email           String?   @db.VarChar(255)
+  phone           String    @db.VarChar(20)
+  scheduleDateTime DateTime @map("schedule_date_time") @db.Timestamp(6)
+  notes           String    @db.Text
+  status          expert_request_status_enum @default(pending)
+  createdAt       DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime? @map("updated_at") @default(now()) @db.Timestamp(6)
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("expert_requests")
+  @@index([propertyId], map: "idx_expert_requests_property_id")
+  @@index([status], map: "idx_expert_requests_status")
+  @@index([createdAt], map: "idx_expert_requests_created_at")
+}
+
+enum expert_request_status_enum {
+  pending
+  contacted
+  scheduled
+  completed
+  cancelled
 }
