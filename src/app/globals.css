@@ -393,6 +393,7 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
 }
 
+/* Seamless infinite scroll animations - FIXED for mobile */
 @keyframes scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(calc(-100% / 3)); }
@@ -401,6 +402,66 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
 @keyframes scrollReverse {
   0% { transform: translateX(calc(-100% / 3)); }
   100% { transform: translateX(0); }
+}
+
+/* Mobile-optimized scroll animations with hardware acceleration */
+@media (max-width: 768px) {
+  @keyframes scroll {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(calc(-100% / 3), 0, 0); }
+  }
+  
+  @keyframes scrollReverse {
+    0% { transform: translate3d(calc(-100% / 3), 0, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+}
+
+/* Prevent layout shifts and distortion on mobile */
+@media (max-width: 768px) {
+  /* Fix logo scroll containers */
+  .logo-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+  }
+  
+  /* Prevent sections from breaking on scroll */
+  section {
+    contain: layout style paint;
+    will-change: auto;
+  }
+  
+  /* Fix animation performance */
+  [class*="animate-"] {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Prevent text overflow on mobile */
+  h1, h2, h3, h4, h5, h6, p, span {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+  
+  /* Fix grid layouts on mobile */
+  .grid {
+    min-width: 0;
+    width: 100%;
+  }
+  
+  .grid > * {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 @keyframes scroll-left {

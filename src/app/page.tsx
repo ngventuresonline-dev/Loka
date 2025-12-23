@@ -1392,9 +1392,17 @@ export default function Home() {
         </div>
         
         
-        {/* First Row - Cinematic infinite scroll LEFT → RIGHT */}
-        <div className="relative mb-5 w-full overflow-hidden">
-          <div className="flex gap-5 md:gap-6 w-max animate-[scroll_35s_linear_infinite]">
+        {/* First Row - Cinematic infinite scroll LEFT → RIGHT - FIXED */}
+        <div className="relative mb-5 w-full overflow-hidden" style={{ willChange: 'contents' }}>
+          <div 
+            className="flex gap-4 sm:gap-5 md:gap-6 w-max animate-[scroll_35s_linear_infinite]"
+            style={{ 
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'translateZ(0)'
+            }}
+          >
             {[
               ...trustedRow1Brands,
               ...trustedRow1Brands,
@@ -1402,10 +1410,11 @@ export default function Home() {
             ].map((brand, idx) => {
               return (
               <div 
-                key={idx}
-                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
-                >
-                <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap">
+                key={`row1-${brand}-${idx}`}
+                className="relative flex-shrink-0 h-14 sm:h-16 md:h-18 px-4 sm:px-6 md:px-7 lg:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
+                style={{ willChange: 'auto' }}
+              >
+                <span className="relative text-gray-700 font-semibold text-xs sm:text-sm md:text-base whitespace-nowrap">
                   {brand}
                 </span>
               </div>
@@ -1414,9 +1423,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Second Row - Logo Images - Cinematic infinite scroll RIGHT → LEFT */}
-        <div className="relative mb-5 w-full overflow-hidden">
-          <div className="flex gap-6 md:gap-8 w-max items-center animate-[scrollReverse_40s_linear_infinite]">
+        {/* Second Row - Logo Images - Cinematic infinite scroll RIGHT → LEFT - FIXED */}
+        <div className="relative mb-5 w-full overflow-hidden" style={{ willChange: 'contents' }}>
+          <div 
+            className="flex gap-4 sm:gap-6 md:gap-8 w-max items-center animate-[scrollReverse_40s_linear_infinite]"
+            style={{ 
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'translateZ(0)'
+            }}
+          >
             {[
               ...uniqueLogos,
               ...uniqueLogos,
@@ -1425,11 +1442,13 @@ export default function Home() {
               const logoPath = logoItem.logoPath as string
               const brandName = logoItem.brand
               const shouldRemoveBg = needsBackgroundRemoval(brandName)
+              const uniqueKey = idx % uniqueLogos.length
               
               return (
               <div
-                key={`logo-container-${logoPath}-${brandName}-${idx % uniqueLogos.length}`}
-                className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
+                key={`logo-row2-${uniqueKey}-${logoPath}-${idx}`}
+                className="relative flex-shrink-0 w-auto flex items-center justify-center h-14 sm:h-16 md:h-20"
+                style={{ willChange: 'auto' }}
               >
                 <div className="relative h-full flex items-center justify-center w-full">
                   {/* Robust Logo Image Component - NEVER disappears, always shows fallback */}
@@ -1441,7 +1460,8 @@ export default function Home() {
                     fetchPriority={idx < 6 ? 'high' : 'low'}
                     shouldRemoveBg={shouldRemoveBg}
                     hasBlackBackground={hasBlackBackground(brandName)}
-                    style={{ height: '64px', minHeight: '64px' }}
+                    style={{ height: '56px', minHeight: '56px' }}
+                    className="sm:h-16 md:h-20"
                   />
               </div>
               </div>
@@ -1449,9 +1469,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Third Row - Cinematic infinite scroll LEFT → RIGHT */}
-        <div className="relative mb-5 w-full overflow-hidden">
-          <div className="flex gap-5 md:gap-6 w-max animate-[scroll_38s_linear_infinite]">
+        {/* Third Row - Cinematic infinite scroll LEFT → RIGHT - FIXED */}
+        <div className="relative mb-5 w-full overflow-hidden" style={{ willChange: 'contents' }}>
+          <div 
+            className="flex gap-4 sm:gap-5 md:gap-6 w-max animate-[scroll_38s_linear_infinite]"
+            style={{ 
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'translateZ(0)'
+            }}
+          >
             {[
               ...trustedRow3Brands,
               ...trustedRow3Brands,
@@ -1459,10 +1487,11 @@ export default function Home() {
             ].map((brand, idx) => {
               return (
               <div 
-                key={idx}
-                  className="relative flex-shrink-0 h-16 md:h-18 px-7 md:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
-                >
-                <span className="relative text-gray-700 font-semibold text-sm md:text-base whitespace-nowrap">
+                key={`row3-${brand}-${idx}`}
+                className="relative flex-shrink-0 h-14 sm:h-16 md:h-18 px-4 sm:px-6 md:px-7 lg:px-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center select-none"
+                style={{ willChange: 'auto' }}
+              >
+                <span className="relative text-gray-700 font-semibold text-xs sm:text-sm md:text-base whitespace-nowrap">
                   {brand}
                 </span>
               </div>
@@ -1473,25 +1502,25 @@ export default function Home() {
 
       </div>
 
-      {/* Featured Brand Requirements Section */}
-      <section className="relative z-10 bg-white py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
+      {/* Featured Brand Requirements Section - MOBILE FIXED */}
+      <section className="relative z-10 bg-white py-8 sm:py-12 md:py-16 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-6 sm:mb-8 md:mb-10">
             <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-gray-50 rounded-full mb-3 sm:mb-4 md:mb-5 border border-gray-200">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5"></span>
               <span className="text-xs sm:text-sm font-medium text-gray-700">Active Brand Searches</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 px-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 px-2 sm:px-4">
               Featured Brand <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Requirements</span>
             </h2>
-            <p className="text-base sm:text-lg text-gray-600">
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 px-2 sm:px-4">
               F&B brands actively searching for commercial spaces
             </p>
           </div>
 
-          {/* Brand Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-stretch">
+          {/* Brand Cards Grid - MOBILE FIXED */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-stretch" style={{ willChange: 'auto' }}>
             {brandsLoading ? (
               <div className="col-span-full flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5200]"></div>

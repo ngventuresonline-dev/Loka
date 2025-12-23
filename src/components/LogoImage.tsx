@@ -96,7 +96,15 @@ export default function LogoImage({
 
   // Use Next.js Image for better optimization, but fallback to regular img if needed
   return (
-    <div className="relative w-full h-full flex items-center justify-center" style={style}>
+    <div 
+      className="relative w-full h-full flex items-center justify-center" 
+      style={{
+        ...style,
+        willChange: 'auto',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden'
+      }}
+    >
       {/* Loading placeholder */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-xl animate-pulse">
@@ -111,7 +119,7 @@ export default function LogoImage({
         alt={alt}
         loading={loading}
         fetchPriority={fetchPriority}
-        className={`relative h-full w-auto object-contain rounded-2xl max-w-[150px] md:max-w-[180px] transition-opacity duration-300 ${
+        className={`relative h-full w-auto object-contain rounded-2xl max-w-[120px] sm:max-w-[150px] md:max-w-[180px] transition-opacity duration-300 ${
           isLoading ? 'opacity-0' : 'opacity-100'
         } ${
           shouldRemoveBg 
@@ -123,6 +131,10 @@ export default function LogoImage({
         style={{ 
           height: style.height || '64px', 
           minHeight: style.minHeight || '64px',
+          maxWidth: '100%',
+          willChange: 'auto',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
           ...style 
         }}
         onError={(e) => {
