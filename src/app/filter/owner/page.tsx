@@ -35,56 +35,63 @@ const propertyTypes = [
   'Kiosk',
   'Other'
 ]
-// Alphabetical list of locations (matching brand filter page)
-const locations = [
-  'Banashankari',
-  'Bannerghatta Road',
-  'Basavanagudi',
-  'Bellandur',
-  'Brigade Road',
-  'BTM Layout',
-  'Church Street',
-  'Commercial Street',
-  'Devanahalli',
-  'Electronic City',
-  'Frazer Town',
-  'Hebbal',
-  'Hennur',
-  'HSR Layout',
-  'Indiranagar',
-  'Jayanagar',
-  'JP Nagar',
-  'Kalyan Nagar',
-  'Kamanahalli',
-  'Kanakapura Road',
-  'Kengeri',
+// Popular areas shown first, then alphabetical
+const popularAreas = [
   'Koramangala',
-  'KR Puram',
-  'Lavelle Road',
-  'Magadi Road',
-  'Malleshwaram',
-  'Manyata Tech Park',
-  'Marathahalli',
-  'MG Road',
-  'Mysore Road',
-  'New Bel Road',
-  'Old Madras Road',
-  'Peenya',
-  'Rajajinagar',
-  'Richmond Town',
-  'RR Nagar',
-  'RT Nagar',
-  'Sadashivanagar',
-  'Sahakar Nagar',
-  'Sarjapur Road',
-  'UB City',
-  'Ulsoor',
-  'Vijayanagar',
+  'Indiranagar',
   'Whitefield',
+  'HSR Layout',
+  'Jayanagar',
+  'BTM Layout',
+  'MG Road',
+  'Brigade Road',
+  'Marathahalli',
+  'Hebbal',
+  'Banashankari',
+  'Electronic City'
+]
+
+const allLocations = [
+  'Koramangala',
+  'Indiranagar',
+  'Whitefield',
+  'HSR Layout',
+  'Jayanagar',
+  'BTM Layout',
+  'MG Road',
+  'Brigade Road',
+  'Marathahalli',
+  'Hebbal',
+  'Banashankari',
+  'Sarjapur Road',
+  'Electronic City',
+  'Bellandur',
+  'Bannerghatta Road',
+  'Rajajinagar',
+  'Malleshwaram',
+  'Basavanagudi',
+  'Vijayanagar',
   'Yelahanka',
   'Yeshwanthpur',
+  'RT Nagar',
+  'Frazer Town',
+  'Richmond Town',
+  'Ulsoor',
+  'Kanakapura Road',
+  'New Bel Road',
+  'Kalyan Nagar',
+  'Kamanahalli',
+  'Sahakar Nagar',
   'Other'
 ]
+
+// Sort all locations alphabetically (excluding popular ones and "Other")
+const otherLocations = allLocations
+  .filter(loc => !popularAreas.includes(loc) && loc !== 'Other')
+  .sort((a, b) => a.localeCompare(b))
+
+// Combine: popular first, then alphabetical, then "Other"
+const locations = [...popularAreas, ...otherLocations, 'Other']
 const featuresCategories = {
   'Floor': ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor+', 'Basement', 'Mezzanine'],
   'Location & Visibility': ['Corner Unit', 'Main Road', 'Street Facing', 'High Visibility'],
@@ -365,6 +372,7 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
 
 function RentSlider({ index = 0, required = false, onRentChange, error }: { index?: number; required?: boolean; onRentChange?: (rent: number) => void; error?: boolean }) {
   const [rent, setRent] = useState(100000)
+  const [rentText, setRentText] = useState('100000')
   
   // Slider range: 0-100 (linear slider position)
   const SLIDER_MAX = 100
@@ -515,6 +523,7 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
                     const sliderValue = parseFloat(e.target.value)
                     const actualRent = sliderToRent(sliderValue)
                     setRent(actualRent)
+                    setRentText(actualRent.toString())
                     if (onRentChange) {
                       onRentChange(actualRent)
                     }
@@ -522,6 +531,33 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider slider-rent"
                 />
               </div>
+            </div>
+
+            {/* Rent Text Input */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                Or enter rent amount directly
+              </label>
+              <input
+                type="text"
+                value={rentText}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '')
+                  setRentText(value)
+                  if (value) {
+                    const numValue = parseInt(value)
+                    if (numValue >= 50000 && numValue <= 2000000) {
+                      setRent(numValue)
+                      if (onRentChange) {
+                        onRentChange(numValue)
+                      }
+                    }
+                  }
+                }}
+                placeholder="e.g., 150000"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
+              />
             </div>
 
             {/* Rent Display */}
@@ -890,7 +926,7 @@ function FilterCard({
               <button
                 ref={buttonRef}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`w-full px-4 py-3 bg-white border-2 rounded-lg sm:rounded-xl text-left flex items-center justify-between transition-all duration-200 ${
+                className={`w-full px-4 py-3 bg-white border rounded-lg sm:rounded-xl text-left flex items-center justify-between transition-all duration-200 ${
                   error && required && selected.size === 0
                     ? 'border-red-300 focus:border-red-500'
                     : isDropdownOpen
@@ -996,9 +1032,10 @@ function FilterCard({
                     exit={{ opacity: 0, y: openUpward ? 10 : -10 }}
                     transition={{ duration: 0.2 }}
                     // Scrollable dropdown body - smart positioning (upward or downward), attached to input
-                    className="absolute z-[9999] w-full bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto"
+                    className="absolute z-[99999] w-full bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto"
                     style={{ 
                       position: 'absolute', 
+                      zIndex: 99999,
                       ...(openUpward 
                         ? { bottom: '100%', marginBottom: 0 }
                         : { top: '100%', marginTop: 0 }
@@ -1467,9 +1504,9 @@ export default function OwnerFilterPage() {
               index={2} 
               required
               useDropdown={true}
-              visibleCount={6}
+              visibleCount={popularAreas.length}
               compactCapsules
-              instructionText="Select the primary location of your property"
+              instructionText="Popular areas shown first, then alphabetical order"
               moreLabel="Choose more areas across the city"
               onSelectionChange={(set) => {
                 setLocationSelected(set)

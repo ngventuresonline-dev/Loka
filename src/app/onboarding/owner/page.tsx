@@ -171,7 +171,8 @@ function OwnerOnboardingContent() {
     ownerEmail: '',
     ownerPhone: '',
     photos: [] as File[],
-    videos: [] as File[]
+    videos: [] as File[],
+    googleMapLink: ''
   })
 
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null)
@@ -314,7 +315,8 @@ function OwnerOnboardingContent() {
             ownerEmail: property.owner?.email || '',
             ownerPhone: property.owner?.phone || '',
             photos: [],
-            videos: []
+            videos: [],
+            googleMapLink: ''
           })
 
           // Set marker position if coordinates exist
@@ -947,7 +949,7 @@ function OwnerOnboardingContent() {
           </div>
 
           {/* Form Container */}
-          <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 border border-gray-200">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12">
             <div className="mb-6 sm:mb-8">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
                 {isEditMode ? 'Edit Property' : 'Property Owner Onboarding'}
@@ -1025,14 +1027,45 @@ function OwnerOnboardingContent() {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Pin Exact Location <span className="text-red-500">*</span>
+                      Property Location <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-xs text-gray-500 mb-3">(Share google map location here)</p>
+                    <p className="text-xs text-gray-500 mb-3">Pin location on map OR paste Google Maps link</p>
+                    
+                    {/* Google Maps Link Input */}
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        placeholder="Paste Google Maps link (e.g., https://maps.google.com/...)"
+                        value={formData.googleMapLink || ''}
+                        onChange={(e) => {
+                          const link = e.target.value
+                          setFormData(prev => ({ ...prev, googleMapLink: link }))
+                          
+                          // Try to extract coordinates from Google Maps link
+                          if (link) {
+                            const match = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+                            if (match) {
+                              const lat = parseFloat(match[1])
+                              const lng = parseFloat(match[2])
+                              setFormData(prev => ({
+                                ...prev,
+                                latitude: lat.toString(),
+                                longitude: lng.toString(),
+                                googleMapLink: link
+                              }))
+                              setMarkerPosition({ lat, lng })
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
+                      />
+                    </div>
+                    
                     <div className="flex gap-3">
                       <button
                         type="button"
                         onClick={handlePinLocation}
-                        className="relative flex-1 px-4 py-4 text-white rounded-xl font-bold hover:shadow-2xl transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98] border-2 border-transparent hover:border-white/30 overflow-hidden group"
+                        className="relative flex-1 px-4 py-4 text-white rounded-xl font-bold hover:shadow-2xl transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98] border border-transparent hover:border-white/30 overflow-hidden group"
                         style={{
                           boxShadow: '0 4px 15px rgba(228, 0, 43, 0.4), 0 0 20px rgba(255, 82, 0, 0.2)',
                         }}
@@ -1291,6 +1324,30 @@ function OwnerOnboardingContent() {
                         </div>
                       </label>
                     </div>
+                    
+                    {/* Photo Previews */}
+                    {formData.photos.length > 0 && (
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {formData.photos.map((photo, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={URL.createObjectURL(photo)}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(index)}
+                              className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     
                     {formData.videos.length > 0 && (
                       <div className="mt-4 space-y-2">
