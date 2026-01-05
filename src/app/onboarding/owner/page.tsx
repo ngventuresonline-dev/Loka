@@ -544,19 +544,57 @@ function OwnerOnboardingContent() {
     }
   }
 
+  const isValidGoogleMapsLink = (link: string): boolean => {
+    if (!link || typeof link !== 'string') return false
+    const trimmed = link.trim().toLowerCase()
+    return (
+      trimmed.includes('maps.google.com') ||
+      trimmed.includes('google.com/maps') ||
+      trimmed.includes('goo.gl/maps') ||
+      trimmed.includes('maps.app.goo.gl')
+    )
+  }
+
   const extractLatLngFromLink = (link: string) => {
     if (!link) return null
 
+    // Pattern 1: @lat,lng (most common in Google Maps URLs)
     const atMatch = link.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
     if (atMatch) {
       return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
     }
 
+    // Pattern 2: ?q=lat,lng or &q=lat,lng
     const queryMatch = link.match(/[?&]q=(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
     if (queryMatch) {
       return { lat: parseFloat(queryMatch[1]), lng: parseFloat(queryMatch[2]) }
     }
 
+    // Pattern 3: /place/.../@lat,lng
+    const placeMatch = link.match(/\/place\/[^/]+\/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+    if (placeMatch) {
+      return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) }
+    }
+
+    // Pattern 4: /@lat,lng (without place)
+    const directAtMatch = link.match(/\/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+    if (directAtMatch) {
+      return { lat: parseFloat(directAtMatch[1]), lng: parseFloat(directAtMatch[2]) }
+    }
+
+    // Pattern 5: /dir/.../@lat,lng
+    const dirMatch = link.match(/\/dir\/[^/]+\/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+    if (dirMatch) {
+      return { lat: parseFloat(dirMatch[1]), lng: parseFloat(dirMatch[2]) }
+    }
+
+    // Pattern 6: Coordinates in URL path like /maps/place/.../12.9716,77.5946
+    const pathCoordMatch = link.match(/\/(\d+\.?\d*),(\d+\.?\d*)(?:\/|$|\?)/)
+    if (pathCoordMatch) {
+      return { lat: parseFloat(pathCoordMatch[1]), lng: parseFloat(pathCoordMatch[2]) }
+    }
+
+    // Pattern 7: Last resort - any lat,lng pattern
     const coordMatch = link.match(/(-?\d+\.?\d*)[, ]\s*(-?\d+\.?\d*)/)
     if (coordMatch) {
       return { lat: parseFloat(coordMatch[1]), lng: parseFloat(coordMatch[2]) }
@@ -698,15 +736,23 @@ function OwnerOnboardingContent() {
 
   const handleNext = () => {
     if (step === 1) {
+      const mapLink = formData.mapLink.trim() || formData.googleMapLink.trim()
+      
       // Check if coordinates exist (from pasted link or map click)
       if (!formData.latitude || !formData.longitude) {
-        // Only show alert if no coordinates AND no map link was provided
-        if (!formData.mapLink.trim() && !formData.googleMapLink.trim()) {
+        // If a valid Google Maps link is provided, accept it even without coordinates
+        if (mapLink && isValidGoogleMapsLink(mapLink)) {
+          // Valid Google Maps link - allow proceeding
+          // Coordinates will be extracted server-side or user can click on map
+        } else if (!mapLink) {
+          // No link provided at all
           alert('Please add your Google Maps link or click on the map to place the pin before continuing.')
+          return
         } else {
-          alert('We could not read coordinates from the link. Please paste a valid Google Maps link or click on the map to place the pin.')
+          // Link provided but not a valid Google Maps link
+          alert('Please paste a valid Google Maps link (e.g., https://maps.google.com/...) or click on the map to place the pin.')
+          return
         }
-        return
       }
     }
 
@@ -1181,6 +1227,18 @@ function OwnerOnboardingContent() {
                                 mapLink: link
                               }))
                               setMarkerPosition({ lat: coords.lat, lng: coords.lng })
+                            } else if (isValidGoogleMapsLink(link)) {
+                              // Valid Google Maps link but coordinates couldn't be extracted
+                              // Keep the link - it will be accepted during validation
+                              // User can still click on map to set coordinates
+                            } else {
+                              // Invalid link - clear coordinates but keep the link for user to fix
+                              setFormData(prev => ({
+                                ...prev,
+                                latitude: '',
+                                longitude: ''
+                              }))
+                              setMarkerPosition(null)
                             }
                           } else {
                             // Clear coordinates if link is empty
@@ -1206,6 +1264,17 @@ function OwnerOnboardingContent() {
                           <span className="text-xs">
                             {formData.latitude.substring(0, 8)}, {formData.longitude.substring(0, 8)}
                           </span>
+                        </div>
+                      </div>
+                    )}
+                    {!formData.latitude && !formData.longitude && (formData.mapLink.trim() || formData.googleMapLink.trim()) && isValidGoogleMapsLink(formData.mapLink.trim() || formData.googleMapLink.trim()) && (
+                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm text-blue-800">
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-medium">Valid Google Maps link detected.</span>
+                          <span className="text-xs">You can proceed or click on the map to set exact coordinates.</span>
                         </div>
                       </div>
                     )}

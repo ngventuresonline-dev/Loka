@@ -767,7 +767,7 @@ export default function Home() {
           link.rel = 'preload'
           link.as = 'image'
           link.href = logoItem.logoPath as string
-          link.crossOrigin = 'anonymous'
+          // No crossOrigin needed for same-origin resources
           document.head.appendChild(link)
           
           // Method 2: Preload via Image object (more reliable, forces cache)
@@ -1235,7 +1235,7 @@ export default function Home() {
               
               return (
               <div
-                key={`logo-container-${logoPath}-${brandName}-${idx % uniqueLogos.length}`}
+                key={`logo-container-${logoPath}-${brandName}-${idx}`}
                 className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
               >
                 <div className="relative h-full flex items-center justify-center w-full">

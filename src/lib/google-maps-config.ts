@@ -15,12 +15,16 @@ export const DEFAULT_MAP_OPTIONS = {
   fullscreenControl: false,
 }
 
+// Cache to prevent multiple warnings
+let hasWarnedAboutApiKey = false
+
 // Get Google Maps API key with better error handling
 export function getGoogleMapsApiKey(): string {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   
   if (!apiKey) {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && !hasWarnedAboutApiKey) {
+      hasWarnedAboutApiKey = true
       console.warn(
         '[Google Maps] API key not found. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env.local file.\n' +
         'Get your API key from: https://console.cloud.google.com/google/maps-apis'
