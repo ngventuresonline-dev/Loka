@@ -6,24 +6,39 @@ import { useEffect, useState } from 'react'
 export default function FuturisticBackground() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [scrollY, setScrollY] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    // Detect mobile device
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
+      if (!isMobile) {
+        setMousePosition({ x: e.clientX, y: e.clientY })
+      }
     }
 
     const handleScroll = () => {
-      setScrollY(window.scrollY)
+      if (!isMobile) {
+        setScrollY(window.scrollY)
+      }
     }
 
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('scroll', handleScroll)
+    if (!isMobile) {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('scroll', handleScroll, { passive: true })
+    }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', checkMobile)
     }
-  }, [])
+  }, [isMobile])
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-white">
@@ -78,8 +93,8 @@ export default function FuturisticBackground() {
         }}
       />
 
-      {/* Floating particles */}
-      {[...Array(20)].map((_, i) => (
+      {/* Floating particles - reduced on mobile for performance */}
+      {[...Array(isMobile ? 5 : 20)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-1 h-1 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"
@@ -87,13 +102,15 @@ export default function FuturisticBackground() {
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
           }}
-          animate={{
+          animate={isMobile ? {
+            opacity: [0.2, 0.4, 0.2],
+          } : {
             y: [0, -30, 0],
             opacity: [0.2, 0.5, 0.2],
             scale: [1, 1.5, 1],
           }}
           transition={{
-            duration: 3 + Math.random() * 4,
+            duration: isMobile ? 4 : 3 + Math.random() * 4,
             repeat: Infinity,
             delay: Math.random() * 2,
             ease: "easeInOut"

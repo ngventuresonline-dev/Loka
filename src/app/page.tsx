@@ -24,6 +24,7 @@ const PropertyDetailsModal = lazy(() => import('@/components/PropertyDetailsModa
 import { type FeaturedProperty } from '@/data/featured-properties'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
 import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
+import { useAuth } from '@/contexts/AuthContext'
 import { getTheme, getPaletteColors } from '@/lib/theme'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
@@ -82,12 +83,15 @@ function PropertyImage({ property, className = '' }: { property: FeaturedPropert
   return (
     <div className={`relative w-full h-full ${className}`}>
       {imageUrl && !imageError ? (
-        <img
+        <Image
           src={imageUrl}
           alt={property.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover group-hover:scale-110 transition-transform duration-500"
           loading="lazy"
           onError={() => setImageError(true)}
+          unoptimized={imageUrl.startsWith('http') && !imageUrl.includes('lokazen.in')}
         />
       ) : (
         <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
@@ -419,224 +423,18 @@ function getBrandColorScheme(brandName: string): {
   ringColor: string
   particleColor: string
 } {
-  const brandColors: Record<string, any> = {
-    'Truffles': { 
-      borderHover: 'hover:border-teal-400', 
-      iconBg: 'bg-teal-50', 
-      iconColor: 'text-teal-600', 
-      shadowHover: 'hover:shadow-teal-500/30', 
-      shadow: 'shadow-teal-500/50',
-      glowFrom: 'from-teal-500/20',
-      glowVia: 'via-teal-400/10',
-      pulseBorder: 'border-teal-500',
-      ringColor: 'ring-teal-500/50',
-      particleColor: 'bg-teal-400'
-    },
-    'Original Burger Co.': { 
-      borderHover: 'hover:border-blue-400', 
-      iconBg: 'bg-blue-50', 
-      iconColor: 'text-blue-600', 
-      shadowHover: 'hover:shadow-blue-500/30', 
-      shadow: 'shadow-blue-500/50',
-      glowFrom: 'from-blue-500/20',
-      glowVia: 'via-blue-400/10',
-      pulseBorder: 'border-blue-500',
-      ringColor: 'ring-blue-500/50',
-      particleColor: 'bg-blue-400'
-    },
-    'Blr Brewing Co.': { 
-      borderHover: 'hover:border-amber-500', 
-      iconBg: 'bg-amber-50', 
-      iconColor: 'text-amber-600', 
-      shadowHover: 'hover:shadow-amber-600/30', 
-      shadow: 'shadow-amber-600/50',
-      glowFrom: 'from-amber-600/20',
-      glowVia: 'via-amber-500/10',
-      pulseBorder: 'border-amber-600',
-      ringColor: 'ring-amber-600/50',
-      particleColor: 'bg-amber-500'
-    },
-    'Mumbai Pav Co.': { 
-      borderHover: 'hover:border-blue-600', 
-      iconBg: 'bg-blue-50', 
-      iconColor: 'text-blue-600', 
-      shadowHover: 'hover:shadow-blue-700/30', 
-      shadow: 'shadow-blue-700/50',
-      glowFrom: 'from-blue-700/20',
-      glowVia: 'via-blue-600/10',
-      pulseBorder: 'border-blue-700',
-      ringColor: 'ring-blue-700/50',
-      particleColor: 'bg-blue-600'
-    },
-    'Blue Tokai': { 
-      borderHover: 'hover:border-sky-400', 
-      iconBg: 'bg-sky-50', 
-      iconColor: 'text-sky-600', 
-      shadowHover: 'hover:shadow-sky-500/30', 
-      shadow: 'shadow-sky-500/50',
-      glowFrom: 'from-sky-500/20',
-      glowVia: 'via-sky-400/10',
-      pulseBorder: 'border-sky-500',
-      ringColor: 'ring-sky-500/50',
-      particleColor: 'bg-sky-400'
-    },
-    'Boba Bhai': {
-      borderHover: 'hover:border-purple-500',
-      iconBg: 'bg-purple-50',
-      iconColor: 'text-purple-600',
-      shadowHover: 'hover:shadow-purple-500/30',
-      shadow: 'shadow-purple-500/50',
-      glowFrom: 'from-purple-500/20',
-      glowVia: 'via-purple-400/10',
-      pulseBorder: 'border-purple-500',
-      ringColor: 'ring-purple-500/50',
-      particleColor: 'bg-purple-400'
-    },
-    'Namaste': { 
-      borderHover: 'hover:border-orange-500', 
-      iconBg: 'bg-orange-50', 
-      iconColor: 'text-orange-600', 
-      shadowHover: 'hover:shadow-orange-600/30', 
-      shadow: 'shadow-orange-600/50',
-      glowFrom: 'from-orange-600/20',
-      glowVia: 'via-orange-500/10',
-      pulseBorder: 'border-orange-600',
-      ringColor: 'ring-orange-600/50',
-      particleColor: 'bg-orange-500'
-    },
-    'Namaste- South Indian': { 
-      borderHover: 'hover:border-orange-500', 
-      iconBg: 'bg-orange-50', 
-      iconColor: 'text-orange-600', 
-      shadowHover: 'hover:shadow-orange-600/30', 
-      shadow: 'shadow-orange-600/50',
-      glowFrom: 'from-orange-600/20',
-      glowVia: 'via-orange-500/10',
-      pulseBorder: 'border-orange-600',
-      ringColor: 'ring-orange-600/50',
-      particleColor: 'bg-orange-500'
-    },
-    'Sandowitch': {
-      borderHover: 'hover:border-red-500',
-      iconBg: 'bg-red-50',
-      iconColor: 'text-red-600',
-      shadowHover: 'hover:shadow-red-500/30',
-      shadow: 'shadow-red-500/50',
-      glowFrom: 'from-red-500/20',
-      glowVia: 'via-red-400/10',
-      pulseBorder: 'border-red-500',
-      ringColor: 'ring-red-500/50',
-      particleColor: 'bg-red-400'
-    },
-    'Dolphins Bar & Kitchen': {
-      borderHover: 'hover:border-green-500',
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-600',
-      shadowHover: 'hover:shadow-green-500/30',
-      shadow: 'shadow-green-500/50',
-      glowFrom: 'from-green-500/20',
-      glowVia: 'via-green-400/10',
-      pulseBorder: 'border-green-500',
-      ringColor: 'ring-green-500/50',
-      particleColor: 'bg-green-400'
-    },
-    'Dolphins': {
-      borderHover: 'hover:border-green-500',
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-600',
-      shadowHover: 'hover:shadow-green-500/30',
-      shadow: 'shadow-green-500/50',
-      glowFrom: 'from-green-500/20',
-      glowVia: 'via-green-400/10',
-      pulseBorder: 'border-green-500',
-      ringColor: 'ring-green-500/50',
-      particleColor: 'bg-green-400'
-    },
-    'Samosa Party': {
-      borderHover: 'hover:border-yellow-500',
-      iconBg: 'bg-yellow-50',
-      iconColor: 'text-yellow-600',
-      shadowHover: 'hover:shadow-yellow-500/30',
-      shadow: 'shadow-yellow-500/50',
-      glowFrom: 'from-yellow-500/20',
-      glowVia: 'via-yellow-400/10',
-      pulseBorder: 'border-yellow-500',
-      ringColor: 'ring-yellow-500/50',
-      particleColor: 'bg-yellow-400'
-    },
-    'Burger Seigneur': {
-      borderHover: 'hover:border-purple-500',
-      iconBg: 'bg-purple-50',
-      iconColor: 'text-purple-600',
-      shadowHover: 'hover:shadow-purple-500/30',
-      shadow: 'shadow-purple-500/50',
-      glowFrom: 'from-purple-500/20',
-      glowVia: 'via-purple-400/10',
-      pulseBorder: 'border-purple-500',
-      ringColor: 'ring-purple-500/50',
-      particleColor: 'bg-purple-400'
-    },
-    'Biggies Burger': {
-      borderHover: 'hover:border-red-500',
-      iconBg: 'bg-red-50',
-      iconColor: 'text-red-600',
-      shadowHover: 'hover:shadow-red-500/30',
-      shadow: 'shadow-red-500/50',
-      glowFrom: 'from-red-500/20',
-      glowVia: 'via-red-400/10',
-      pulseBorder: 'border-red-500',
-      ringColor: 'ring-red-500/50',
-      particleColor: 'bg-red-400'
-    },
-    'Biggies': {
-      borderHover: 'hover:border-red-500',
-      iconBg: 'bg-red-50',
-      iconColor: 'text-red-600',
-      shadowHover: 'hover:shadow-red-500/30',
-      shadow: 'shadow-red-500/50',
-      glowFrom: 'from-red-500/20',
-      glowVia: 'via-red-400/10',
-      pulseBorder: 'border-red-500',
-      ringColor: 'ring-red-500/50',
-      particleColor: 'bg-red-400'
-    },
-    'Kried Ko- Burger': {
-      borderHover: 'hover:border-indigo-500',
-      iconBg: 'bg-indigo-50',
-      iconColor: 'text-indigo-600',
-      shadowHover: 'hover:shadow-indigo-500/30',
-      shadow: 'shadow-indigo-500/50',
-      glowFrom: 'from-indigo-500/20',
-      glowVia: 'via-indigo-400/10',
-      pulseBorder: 'border-indigo-500',
-      ringColor: 'ring-indigo-500/50',
-      particleColor: 'bg-indigo-400'
-    },
-    'Kried': {
-      borderHover: 'hover:border-indigo-500',
-      iconBg: 'bg-indigo-50',
-      iconColor: 'text-indigo-600',
-      shadowHover: 'hover:shadow-indigo-500/30',
-      shadow: 'shadow-indigo-500/50',
-      glowFrom: 'from-indigo-500/20',
-      glowVia: 'via-indigo-400/10',
-      pulseBorder: 'border-indigo-500',
-      ringColor: 'ring-indigo-500/50',
-      particleColor: 'bg-indigo-400'
-    },
-  }
-  
-  return brandColors[brandName] || { 
-    borderHover: 'hover:border-gray-400', 
-    iconBg: 'bg-gray-50', 
-    iconColor: 'text-gray-600', 
-    shadowHover: 'hover:shadow-gray-500/30', 
-    shadow: 'shadow-gray-500/50',
-    glowFrom: 'from-gray-500/20',
-    glowVia: 'via-gray-400/10',
-    pulseBorder: 'border-gray-500',
-    ringColor: 'ring-gray-500/50',
-    particleColor: 'bg-gray-400'
+  // Platform colors for all brands
+  return { 
+    borderHover: 'hover:border-[#FF5200]', 
+    iconBg: 'bg-[#FF5200]/10', 
+    iconColor: 'text-[#FF5200]', 
+    shadowHover: 'hover:shadow-[#FF5200]/30', 
+    shadow: 'shadow-[#FF5200]/20',
+    glowFrom: 'from-[#FF5200]/20',
+    glowVia: 'via-[#E4002B]/10',
+    pulseBorder: 'border-[#FF5200]',
+    ringColor: 'ring-[#FF5200]/50',
+    particleColor: 'bg-[#FF5200]'
   }
 }
 
@@ -670,33 +468,23 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
     <div 
       data-brand-card 
       className="relative group cursor-pointer"
-      style={{ 
-        opacity: 0,
-        animation: `fadeInUp 0.8s ease-out ${delay}s forwards`
-      }}
       onClick={onToggleExpand}
     >
-      <div className={`relative bg-white backdrop-blur-xl rounded-2xl p-4 sm:p-6 border-2 ${isExpanded ? colors.borderHover.replace('hover:', '') : 'border-gray-200'} ${colors.borderHover} transition-all duration-500 overflow-hidden shadow-lg ${colors.shadowHover} group-hover:-translate-y-2 flex flex-col`}>
+      <div className={`relative bg-white backdrop-blur-xl rounded-2xl p-4 sm:p-6 border-2 ${isExpanded ? colors.borderHover.replace('hover:', '') : 'border-gray-200'} ${colors.borderHover} overflow-hidden shadow-lg ${colors.shadowHover} flex flex-col`}>
         {/* Top Accent Bar - Brand Color */}
         <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl ${colors.glowFrom.replace('from-', 'bg-').replace('/20', '')}`}></div>
         
-        {/* Animated Glow Effect */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${colors.glowFrom} ${colors.glowVia} to-transparent ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 transition-all duration-500`}></div>
+        {/* Glow Effect */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${colors.glowFrom} ${colors.glowVia} to-transparent ${isExpanded ? 'opacity-100' : 'opacity-0'}`}></div>
         
-        {/* Animated Corner Accent */}
-        <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${colors.glowFrom.replace('/20', '/40')} to-transparent rounded-bl-full ${isExpanded ? 'w-28 h-28' : ''} group-hover:w-28 group-hover:h-28 transition-all duration-500`}></div>
-        
-        {/* Particle Effect */}
-        <div className={`absolute inset-0 ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 transition-opacity duration-500`}>
-          <div className={`absolute top-1/4 left-1/4 w-2 h-2 ${colors.particleColor} rounded-full animate-ping`}></div>
-          <div className={`absolute top-3/4 right-1/4 w-2 h-2 ${colors.particleColor} rounded-full animate-ping`} style={{animationDelay: '0.5s'}}></div>
-        </div>
+        {/* Corner Accent */}
+        <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${colors.glowFrom.replace('/20', '/40')} to-transparent rounded-bl-full ${isExpanded ? 'w-28 h-28' : ''}`}></div>
         
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="flex items-start justify-between gap-2 sm:gap-3 mb-4">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
               {/* Brand Logo */}
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${colors.shadow} overflow-hidden bg-white p-1.5 flex-shrink-0`}>
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shadow-lg ${colors.shadow} overflow-hidden bg-white p-1.5 flex-shrink-0`}>
                 {logoPath ? (
                   <img 
                     src={logoPath} 
@@ -758,7 +546,7 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
 
           {/* Expandable Details */}
           {isExpanded && (
-          <div className="space-y-3 mt-3 animate-in slide-in-from-top-2 duration-300">
+          <div className="space-y-3 mt-3">
             {locationText && (
               <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
                 <div className={`w-7 h-7 sm:w-8 sm:h-8 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
@@ -825,7 +613,7 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
 
           {/* Expand/Collapse Indicator */}
           <div className="mt-auto pt-3 flex items-center justify-center">
-            <div className={`flex items-center gap-1 text-xs sm:text-sm ${colors.iconColor} transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+            <div className={`flex items-center gap-1 text-xs sm:text-sm ${colors.iconColor} ${isExpanded ? 'rotate-180' : ''}`}>
               <span className="font-medium">{isExpanded ? 'Show Less' : 'Click for Details'}</span>
               <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -834,9 +622,9 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
           </div>
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className={`absolute inset-0 rounded-2xl border-2 ${colors.pulseBorder} ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500`}></div>
-        <div className={`absolute inset-0 rounded-2xl ring-2 ${colors.ringColor} ${isExpanded ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 blur-sm transition-opacity duration-500`}></div>
+        {/* Pulse Ring */}
+        <div className={`absolute inset-0 rounded-2xl border-2 ${colors.pulseBorder} ${isExpanded ? 'opacity-100' : 'opacity-0'}`}></div>
+        <div className={`absolute inset-0 rounded-2xl ring-2 ${colors.ringColor} ${isExpanded ? 'opacity-100' : 'opacity-0'} blur-sm`}></div>
       </div>
     </div>
   )
@@ -845,6 +633,7 @@ function DynamicBrandCard({ brand, index, isExpanded, onToggleExpand }: { brand:
 export default function Home() {
   // Featured properties removed - will be managed from backend/admin panel
   const router = useRouter()
+  const { user } = useAuth()
   
   const [currentStep, setCurrentStep] = useState<AppStep>('home')
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null)
@@ -949,6 +738,7 @@ export default function Home() {
   const [brandsLoading, setBrandsLoading] = useState(true)
   const [brandsError, setBrandsError] = useState<string | null>(null)
   const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null)
+  const [showMobileNav, setShowMobileNav] = useState(false)
 
   // Handle AI Search - Open modal with query
   const handleSearch = () => {
@@ -988,6 +778,23 @@ export default function Home() {
   // Generate bar heights for data visualization
   useEffect(() => {
     setBarHeights([1, 2, 3, 4, 5].map(() => Math.random() * 60 + 40))
+  }, [])
+
+  // Handle scroll to show/hide mobile bottom nav after hero section
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const handleScroll = () => {
+      // Hero section ends around viewport height, show nav after scrolling past it
+      const scrollY = window.scrollY || window.pageYOffset
+      const viewportHeight = window.innerHeight
+      setShowMobileNav(scrollY > viewportHeight * 0.8)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // Check on mount
+    
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Fetch featured brands from database
@@ -1325,10 +1132,10 @@ export default function Home() {
           
           {/* Focused Hero Heading */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-7xl font-bold mb-2 sm:mb-2.5 md:mb-3 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2 sm:px-4">
-            <span className={`transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}>Connecting</span>{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Brands</span>
-            <span className={`transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}> &</span><br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Prime Properties</span>
+            <span className={`whitespace-nowrap transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}>Connecting</span>{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift whitespace-nowrap">Brands</span>
+            <span className={`whitespace-nowrap transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}> &</span><br className="hidden sm:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift whitespace-nowrap">Prime&nbsp;Properties</span>
           </h1>
           
           {/* Commercial Real Estate | Rental subtitle */}
@@ -1453,8 +1260,9 @@ export default function Home() {
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5"></span>
               <span className="text-xs sm:text-sm font-medium text-gray-700">Active Brand Searches</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 px-4">
-              Featured Brand <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Requirements</span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 px-4" style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+              <span className="whitespace-nowrap">Featured Brand</span>{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] whitespace-nowrap">Requirements</span>
             </h2>
             <p className="text-base sm:text-lg text-gray-600">
               F&B brands actively searching for commercial spaces
@@ -1506,26 +1314,20 @@ export default function Home() {
             {/* Fallback: Show hardcoded cards if no brands from API (for backwards compatibility) */}
             {!brandsLoading && featuredBrands.length === 0 && (
               <>
-            {/* Brand Card 1 - Truffles with Brand Colors */}
-            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
-              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-teal-400 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-teal-500/30 group-hover:-translate-y-2">
-                {/* Animated Glow Effect - Teal */}
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-teal-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            {/* Brand Card 1 - Truffles with Platform Colors */}
+            <div className="relative group">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
+                {/* Glow Effect - Platform Colors */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100"></div>
                 
-                {/* Animated Corner Accent - Teal */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-500/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
-                
-                {/* Particle Effect - Teal */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-teal-400 rounded-full animate-ping"></div>
-                  <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-teal-500 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
-                </div>
+                {/* Corner Accent - Platform Colors */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full"></div>
                 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       {/* Truffles Logo */}
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-teal-500/50 overflow-hidden bg-white p-1.5">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
                         <img 
                           src="/logos/truffles logo.jpg" 
                           alt="Truffles Logo" 
@@ -1542,16 +1344,16 @@ export default function Home() {
                   
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Size:</span> 1,200-1,800 sqft</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -1559,16 +1361,16 @@ export default function Home() {
                       <span><span className="font-semibold text-gray-900">Location:</span> Indiranagar, Koramangala</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1.2L-2L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
@@ -1577,31 +1379,25 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Pulse Ring - Teal */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-teal-500 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-teal-500/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+                {/* Pulse Ring - Platform Colors */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
               </div>
             </div>
 
-            {/* Brand Card 2 - Original Burger Co. with Brand Colors */}
-            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards]">
-              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-blue-400 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-blue-500/30 group-hover:-translate-y-2">
-                {/* Animated Glow Effect - Blue */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-blue-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            {/* Brand Card 2 - Original Burger Co. with Platform Colors */}
+            <div className="relative group">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
+                {/* Glow Effect - Platform Colors */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100"></div>
                 
-                {/* Animated Corner Accent - Blue */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
-                
-                {/* Particle Effect - Blue */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute top-1/3 left-1/3 w-2 h-2 bg-blue-400 rounded-full animate-ping"></div>
-                  <div className="absolute bottom-1/3 right-1/3 w-2 h-2 bg-blue-500 rounded-full animate-ping" style={{animationDelay: '0.3s'}}></div>
-                </div>
+                {/* Corner Accent - Platform Colors */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full"></div>
                 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-blue-500/50 overflow-hidden bg-white p-1.5">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
                         <img 
                           src="/logos/Original_Burger_Co_Logo.png" 
                           alt="Original Burger Co. Logo" 
@@ -1618,16 +1414,16 @@ export default function Home() {
                   
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Size:</span> 800-1,200 sqft</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -1635,16 +1431,16 @@ export default function Home() {
                       <span><span className="font-semibold text-gray-900">Location:</span> Whitefield, Marathahalli</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹80K-1.2L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
@@ -1653,31 +1449,25 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Pulse Ring - Blue */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-blue-500 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-blue-500/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+                {/* Pulse Ring - Platform Colors */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
               </div>
             </div>
 
-            {/* Brand Card 3 - Blr Brewing Co. with Brand Colors */}
-            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards]">
-              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-amber-500 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-amber-600/30 group-hover:-translate-y-2">
-                {/* Animated Glow Effect - Amber/Brown (Brewery colors) */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-600/20 via-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            {/* Brand Card 3 - Blr Brewing Co. with Platform Colors */}
+            <div className="relative group">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
+                {/* Glow Effect - Platform Colors */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100"></div>
                 
-                {/* Animated Corner Accent - Amber */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-600/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
-                
-                {/* Particle Effect - Amber/Brown */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute top-1/4 right-1/4 w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
-                  <div className="absolute bottom-1/4 left-1/4 w-2 h-2 bg-amber-600 rounded-full animate-ping" style={{animationDelay: '0.4s'}}></div>
-                </div>
+                {/* Corner Accent - Platform Colors */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full"></div>
                 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-amber-600/50 overflow-hidden bg-white p-1.5">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
                         <img 
                           src="/logos/blr brewing co logo.png" 
                           alt="Blr Brewing Co. Logo" 
@@ -1694,16 +1484,16 @@ export default function Home() {
                   
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Size:</span> 2,000-3,000 sqft</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -1711,16 +1501,16 @@ export default function Home() {
                       <span><span className="font-semibold text-gray-900">Location:</span> MG Road, Brigade Road</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹2L-3.5L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
@@ -1729,32 +1519,25 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Pulse Ring - Amber */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-amber-600 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-amber-600/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+                {/* Pulse Ring - Platform Colors */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
               </div>
             </div>
 
-            {/* Brand Card 4 - Mumbai Pav Co. with Brand Colors */}
-            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards]">
-              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-blue-600 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-blue-700/30 group-hover:-translate-y-2">
-                {/* Animated Glow Effect - Navy Blue with Orange/Green accents */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-700/20 via-orange-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            {/* Brand Card 4 - Mumbai Pav Co. with Platform Colors */}
+            <div className="relative group">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
+                {/* Glow Effect - Platform Colors */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100"></div>
                 
-                {/* Animated Corner Accent - Navy Blue */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-700/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
-                
-                {/* Particle Effect - Navy Blue, Orange, Green */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-600 rounded-full animate-ping"></div>
-                  <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-orange-500 rounded-full animate-ping" style={{animationDelay: '0.3s'}}></div>
-                  <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-green-500 rounded-full animate-ping" style={{animationDelay: '0.6s'}}></div>
-                </div>
+                {/* Corner Accent - Platform Colors */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full"></div>
                 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-blue-700/50 overflow-hidden bg-white p-1.5">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
                         <img 
                           src="/logos/Mumbai Pav Co.jpg" 
                           alt="Mumbai Pav Co. Logo" 
@@ -1771,16 +1554,16 @@ export default function Home() {
               
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Size:</span> 600-1,000 sqft</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -1788,16 +1571,16 @@ export default function Home() {
                       <span><span className="font-semibold text-gray-900">Location:</span> HSR Layout, Bellandur</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹60K-90K/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
@@ -1806,31 +1589,25 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Pulse Ring - Navy Blue */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-blue-700 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-blue-700/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+                {/* Pulse Ring - Platform Colors */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
               </div>
             </div>
 
-            {/* Brand Card 5 - Blue Tokai with Brand Colors */}
-            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
-              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-sky-400 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-sky-500/30 group-hover:-translate-y-2">
-                {/* Animated Glow Effect - Sky Blue */}
-                <div className="absolute inset-0 bg-gradient-to-br from-sky-500/20 via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            {/* Brand Card 5 - Blue Tokai with Platform Colors */}
+            <div className="relative group">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
+                {/* Glow Effect - Platform Colors */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100"></div>
                 
-                {/* Animated Corner Accent - Sky Blue */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-sky-500/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
-                
-                {/* Particle Effect - Sky Blue */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute top-1/3 left-1/3 w-2 h-2 bg-sky-400 rounded-full animate-ping"></div>
-                  <div className="absolute bottom-1/3 right-1/3 w-2 h-2 bg-blue-500 rounded-full animate-ping" style={{animationDelay: '0.3s'}}></div>
-                </div>
+                {/* Corner Accent - Platform Colors */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full"></div>
                 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-sky-500/50 overflow-hidden bg-white p-1.5">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
                         <img 
                           src="/logos/Blue Tokai.jpg" 
                           alt="Blue Tokai Logo" 
@@ -1847,16 +1624,16 @@ export default function Home() {
               
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Size:</span> 1,000-1,500 sqft</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -1864,16 +1641,16 @@ export default function Home() {
                       <span><span className="font-semibold text-gray-900">Location:</span> Indiranagar, Koramangala</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1L-1.5L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
@@ -1882,31 +1659,25 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Pulse Ring - Sky Blue */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-sky-500 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-sky-500/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+                {/* Pulse Ring - Platform Colors */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
               </div>
             </div>
 
-            {/* Brand Card 6 - Namaste- South Indian Restaurant with Brand Colors */}
-            <div className="relative group opacity-0 animate-[fadeInUp_0.8s_ease-out_0.6s_forwards]">
-              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-orange-500 transition-all duration-500 overflow-hidden shadow-lg hover:shadow-orange-600/30 group-hover:-translate-y-2">
-                {/* Animated Glow Effect - Saffron/Orange (Indian restaurant colors) */}
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            {/* Brand Card 6 - Namaste- South Indian Restaurant with Platform Colors */}
+            <div className="relative group">
+              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
+                {/* Glow Effect - Platform Colors */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100"></div>
                 
-                {/* Animated Corner Accent - Orange */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-600/40 to-transparent rounded-bl-full group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
-                
-                {/* Particle Effect - Orange/Saffron */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
-                  <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-orange-600 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
-                </div>
+                {/* Corner Accent - Platform Colors */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full"></div>
                 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-orange-600/50 overflow-hidden bg-white p-1.5">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
                         <img 
                           src="/logos/Namaste logo.jpg" 
                           alt="Namaste- South Indian Restaurant Logo" 
@@ -1923,16 +1694,16 @@ export default function Home() {
               
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Size:</span> 2,000-3,000 sqft</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -1940,16 +1711,16 @@ export default function Home() {
                       <span><span className="font-semibold text-gray-900">Location:</span> Across Bangalore</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1.5L-2.5L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
@@ -1958,9 +1729,9 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Pulse Ring - Orange */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-orange-600 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-600/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
+                {/* Pulse Ring - Platform Colors */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
               </div>
             </div>
               </>
@@ -1971,24 +1742,9 @@ export default function Home() {
           <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 mt-6 md:mt-8">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
               <button
-                onClick={() => router.push('/filter/brand')}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white font-semibold rounded-xl min-w-[180px] sm:min-w-[200px]"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                  </svg>
-                  Feature Brand
-                </span>
-              </button>
-              
-              <button
                 onClick={() => router.push('/filter/owner')}
                 className="px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-xl min-w-[180px] sm:min-w-[200px] flex items-center justify-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
                 <span>List Property</span>
                 <span 
                   className="px-2 py-0.5 relative overflow-hidden text-white text-[10px] font-bold rounded-full border border-red-500/70 flex items-center gap-1 flex-shrink-0"
@@ -2141,7 +1897,8 @@ export default function Home() {
             </div>
             
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight tracking-tight px-4">
-              How It <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] animate-gradientShift bg-[length:400%_400%]">Works</span>
+              <span className="whitespace-nowrap">How&nbsp;It</span>{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] animate-gradientShift bg-[length:400%_400%] whitespace-nowrap">Works</span>
             </h2>
             
             <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-3xl mx-auto px-4">
@@ -3301,22 +3058,23 @@ export default function Home() {
         
         <div className="max-w-4xl mx-auto px-6 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Ready to Find Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Perfect Match?</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              <span className="inline-block whitespace-nowrap">Ready to Find Your</span>{' '}
+              <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] whitespace-nowrap">Perfect Match?</span>
             </h2>
             
             <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
               Join hundreds of brands and property owners already using our AI-powered platform
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0">
               <button 
-                onClick={() => router.push('/onboarding/brand')}
-                className="group relative px-10 py-5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden"
+                onClick={() => router.push('/filter/brand')}
+                className="group relative px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-full text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden min-h-[48px] sm:min-h-[56px]"
               >
-                <span className="relative z-10 flex items-center justify-center">
-                  I&apos;m a Brand
-                  <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="relative z-10 flex items-center justify-center whitespace-nowrap">
+                  Brand - Looking For Space
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </span>
@@ -3324,12 +3082,34 @@ export default function Home() {
               </button>
               
               <button 
-                onClick={() => router.push('/onboarding/owner')}
-                className="group relative px-10 py-5 bg-white border-2 border-gray-300 text-gray-900 rounded-full text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-[#FF5200] overflow-hidden"
+                onClick={() => router.push('/filter/owner')}
+                className="group relative px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-white border-2 border-gray-300 text-gray-900 rounded-full text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-[#FF5200] overflow-hidden min-h-[48px] sm:min-h-[56px]"
               >
-                <span className="relative z-10 flex items-center justify-center group-hover:text-[#FF5200] transition-colors">
-                  I&apos;m a Property Owner
-                  <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="relative z-10 flex items-center justify-center group-hover:text-[#FF5200] transition-colors whitespace-nowrap gap-2">
+                  List Property
+                  <span 
+                    className="px-2 py-0.5 relative overflow-hidden text-white text-[10px] font-bold rounded-full border border-red-500/70 flex items-center gap-1 flex-shrink-0"
+                    style={{
+                      background: 'linear-gradient(90deg, rgba(244, 114, 182, 1), rgba(236, 72, 153, 1), rgba(244, 114, 182, 1), rgba(251, 113, 133, 1), rgba(244, 114, 182, 1))',
+                      backgroundSize: '300% 100%',
+                      animation: 'gradientShift 2s ease-in-out infinite',
+                      boxShadow: '0 0 8px rgba(236, 72, 153, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2)'
+                    }}
+                  >
+                    <span className="w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                      <svg className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                    <span className="whitespace-nowrap z-10">Instant</span>
+                    <span 
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full pointer-events-none"
+                      style={{
+                        animation: 'shine 2.5s ease-in-out infinite',
+                      }}
+                    />
+                  </span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </span>
@@ -3482,6 +3262,219 @@ export default function Home() {
         isOpen={isBrandModalOpen} 
         onClose={() => setIsBrandModalOpen(false)} 
       />
+
+      {/* Mobile Bottom Navigation - Only visible on mobile after scrolling past hero */}
+      {showMobileNav && (
+        <div className="md:hidden fixed bottom-2 left-2 right-2 z-50">
+          {/* Glass morphism background with dark accent - matching navbar style */}
+          <div className="relative bg-gradient-to-t from-[#1a0a0a]/95 via-[#2d0f0f]/95 to-[#1a0a0a]/90 backdrop-blur-xl rounded-2xl border border-[#FF5200]/20 shadow-lg">
+            {/* Gradient overlay for glass effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200]/5 via-transparent to-[#E4002B]/5 rounded-2xl"></div>
+            
+            {/* Navigation Items Container */}
+            <div className="relative z-10 grid grid-cols-5 gap-0 px-2 py-2.5">
+              {/* Search */}
+              <button
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl transition-all relative group"
+              >
+                {/* Active background */}
+                <div className="absolute inset-0 bg-[#FF5200]/20 rounded-xl opacity-100"></div>
+                <div className="relative z-10 flex flex-col items-center gap-1">
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <span className="text-[10px] font-medium text-[#FF5200]">Search</span>
+                </div>
+              </button>
+
+              {/* For Brands */}
+              <button
+                onClick={async () => {
+                  // Load brand profile data if user is logged in as brand
+                  if (user?.userType === 'brand' && user?.email) {
+                    try {
+                      // Fetch all brands and find the current user's brand
+                      const response = await fetch('/api/brands')
+                      if (response.ok) {
+                        const data = await response.json()
+                        const userBrand = data.brands?.find((b: any) => b.email === user.email)
+                        if (userBrand?.brandProfile) {
+                          const profile = userBrand.brandProfile
+                          // Map brand profile to filter format
+                          const filterData: any = {}
+                          
+                          // Business type from industry
+                          if (profile.storeType) {
+                            filterData.businessType = [profile.storeType]
+                          } else if (userBrand.industry) {
+                            filterData.businessType = [userBrand.industry]
+                          }
+                          
+                          // Size ranges
+                          if (profile.minSize && profile.maxSize) {
+                            // Map to size range labels
+                            const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft']
+                            const matchingRanges = sizeRanges.filter(range => {
+                              const [min, max] = range.replace(' sqft', '').split('-').map(s => {
+                                if (s.includes('+')) return parseInt(s.replace('+', ''))
+                                return parseInt(s.replace(',', ''))
+                              })
+                              return profile.minSize >= min && profile.maxSize <= (max || Infinity)
+                            })
+                            if (matchingRanges.length > 0) {
+                              filterData.sizeRanges = matchingRanges
+                            }
+                          }
+                          
+                          // Locations
+                          if (profile.preferredLocations && profile.preferredLocations.length > 0) {
+                            filterData.locations = profile.preferredLocations
+                          }
+                          
+                          // Budget range
+                          if (profile.budgetMin || profile.budgetMax) {
+                            filterData.budgetRange = {
+                              min: profile.budgetMin || 50000,
+                              max: profile.budgetMax || 200000
+                            }
+                          }
+                          
+                          // Timeline
+                          if (profile.timeline) {
+                            filterData.timeline = profile.timeline
+                          }
+                          
+                          // Store in localStorage for filter page to load
+                          if (Object.keys(filterData).length > 0) {
+                            localStorage.setItem('brandFilterData', JSON.stringify(filterData))
+                          }
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error loading brand profile:', error)
+                    }
+                  }
+                  router.push('/filter/brand')
+                }}
+                className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl hover:bg-white/5 active:bg-white/10 transition-all relative group"
+              >
+                <div className="relative z-10 flex flex-col items-center gap-1">
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-[#FF5200] transition-colors" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="brandGradientNav" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#FF5200" />
+                          <stop offset="50%" stopColor="#E4002B" />
+                          <stop offset="100%" stopColor="#FF6B35" />
+                        </linearGradient>
+                      </defs>
+                      {/* Outer thick circle */}
+                      <circle cx="12" cy="12" r="10" stroke="url(#brandGradientNav)" strokeWidth="2" fill="none" className="group-hover:opacity-100 opacity-40" />
+                      {/* Dashed lines extending from top-left quadrant */}
+                      <line x1="5" y1="5" x2="3" y2="3" stroke="url(#brandGradientNav)" strokeWidth="1.2" strokeDasharray="1.5,1.5" className="group-hover:opacity-100 opacity-30" />
+                      <line x1="6" y1="4" x2="4" y2="2" stroke="url(#brandGradientNav)" strokeWidth="1.2" strokeDasharray="1.5,1.5" className="group-hover:opacity-100 opacity-30" />
+                      <line x1="7" y1="3" x2="5" y2="1" stroke="url(#brandGradientNav)" strokeWidth="1.2" strokeDasharray="1.5,1.5" className="group-hover:opacity-100 opacity-30" />
+                      {/* Lighter inner solid circle */}
+                      <circle cx="12" cy="12" r="8" fill="url(#brandGradientNav)" fillOpacity="0.2" className="group-hover:fill-opacity-30" />
+                      {/* Back layer stars (for depth) */}
+                      <g opacity="0.25" className="group-hover:opacity-40">
+                        <path d="M12 7 L13.2 9.5 L15.8 9.5 L13.8 11.2 L14.6 13.8 L12 12.3 L9.4 13.8 L10.2 11.2 L8.2 9.5 L10.8 9.5 Z" stroke="url(#brandGradientNav)" strokeWidth="0.6" fill="none" transform="translate(0.3, 0.3)" />
+                        <path d="M12 7 L13.2 9.5 L15.8 9.5 L13.8 11.2 L14.6 13.8 L12 12.3 L9.4 13.8 L10.2 11.2 L8.2 9.5 L10.8 9.5 Z" stroke="url(#brandGradientNav)" strokeWidth="0.6" fill="none" transform="translate(-0.2, -0.2) scale(0.85)" />
+                      </g>
+                      {/* Main eight-pointed star/badge */}
+                      <g>
+                        {/* Small circles at each point */}
+                        <circle cx="12" cy="6.5" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        <circle cx="15.8" cy="8.2" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        <circle cx="17.5" cy="12" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        <circle cx="15.8" cy="15.8" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        <circle cx="12" cy="17.5" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        <circle cx="8.2" cy="15.8" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        <circle cx="6.5" cy="12" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        <circle cx="8.2" cy="8.2" r="1.2" fill="url(#brandGradientNav)" className="group-hover:opacity-100 opacity-70" />
+                        {/* Star outline */}
+                        <path d="M12 6.5 L13.9 8.2 L15.8 8.2 L14.3 9.8 L15.1 11.6 L12 10.2 L8.9 11.6 L9.7 9.8 L8.2 8.2 L10.1 8.2 Z" 
+                              stroke="url(#brandGradientNav)" strokeWidth="1.3" fill="none" className="group-hover:opacity-100 opacity-80" />
+                        <path d="M12 6.5 L15.8 8.2 L17.5 12 L15.8 15.8 L12 17.5 L8.2 15.8 L6.5 12 L8.2 8.2 Z" 
+                              stroke="url(#brandGradientNav)" strokeWidth="1.3" fill="none" className="group-hover:opacity-100 opacity-80" />
+                      </g>
+                      {/* Hexagon in center */}
+                      <path d="M12 9.5 L13.5 10.2 L13.5 11.8 L12 12.5 L10.5 11.8 L10.5 10.2 Z" 
+                            stroke="url(#brandGradientNav)" strokeWidth="1.1" fill="url(#brandGradientNav)" fillOpacity="0.25" className="group-hover:opacity-100 opacity-70" />
+                      {/* BRAND text (simplified to "B" for small size) */}
+                      <text x="12" y="11.3" fontSize="3.5" fontWeight="700" fill="url(#brandGradientNav)" textAnchor="middle" className="group-hover:opacity-100 opacity-80" fontFamily="system-ui, -apple-system, sans-serif">B</text>
+                    </svg>
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-400 group-hover:text-[#FF5200] transition-colors">For Brands</span>
+                </div>
+              </button>
+
+              {/* Floating Action Button - List Property */}
+              <div className="flex flex-col items-center justify-center relative">
+                <button
+                  onClick={() => router.push('/filter/owner')}
+                  className="absolute -top-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] shadow-lg shadow-[#FF5200]/50 flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-20"
+                >
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                {/* List Property text below button - properly aligned */}
+                <div className="flex items-center justify-center pt-8">
+                  <span className="text-[9px] font-medium text-gray-400 whitespace-nowrap">List Property</span>
+                </div>
+              </div>
+
+              {/* Loka.ai - Location Intelligence */}
+              <button
+                onClick={() => router.push('/location-intelligence')}
+                className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl hover:bg-white/5 active:bg-white/10 transition-all relative group"
+              >
+                <div className="relative z-10 flex flex-col items-center gap-1">
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <img 
+                      src="/lokazen-favicon.svg" 
+                      alt="Loka.ai" 
+                      className="w-5 h-5 opacity-60 group-hover:opacity-80 transition-opacity"
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-400 group-hover:text-gray-300">Loka.ai</span>
+                </div>
+              </button>
+
+              {/* Profile */}
+              <button
+                onClick={() => {
+                  if (user?.userType === 'owner') {
+                    router.push('/dashboard/owner')
+                  } else if (user?.userType === 'brand') {
+                    // For brands, route to home with dashboard view or create brand dashboard
+                    router.push('/')
+                  } else {
+                    // Default to about page if not logged in
+                    router.push('/about')
+                  }
+                }}
+                className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl hover:bg-white/5 active:bg-white/10 transition-all relative group"
+              >
+                <div className="relative z-10 flex flex-col items-center gap-1">
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-400 group-hover:text-gray-300">Profile</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
