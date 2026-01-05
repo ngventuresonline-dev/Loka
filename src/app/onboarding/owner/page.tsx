@@ -767,9 +767,34 @@ function OwnerOnboardingContent() {
     e.preventDefault()
     setSubmitError(null)
     
-    if (!formData.mapLink.trim() || !formData.latitude || !formData.longitude) {
+    const mapLink = formData.mapLink.trim() || formData.googleMapLink.trim()
+    
+    // Accept valid Google Maps link even if coordinates aren't extracted
+    // Coordinates can be extracted server-side or user can click on map
+    if (!mapLink) {
       alert('Please add a valid Google Maps link so we can pin the exact property location before submitting.')
       return
+    }
+    
+    if (!isValidGoogleMapsLink(mapLink)) {
+      alert('Please paste a valid Google Maps link (e.g., https://maps.google.com/...) before submitting.')
+      return
+    }
+    
+    // If no coordinates, try to extract them one more time from the link
+    if (!formData.latitude || !formData.longitude) {
+      const coords = extractLatLngFromLink(mapLink)
+      if (coords) {
+        setFormData(prev => ({
+          ...prev,
+          latitude: coords.lat.toString(),
+          longitude: coords.lng.toString()
+        }))
+      } else {
+        // Valid Google Maps link but no coordinates - allow submission anyway
+        // Server can extract coordinates or use the link directly
+        console.warn('No coordinates extracted from Google Maps link, but link is valid. Proceeding with submission.')
+      }
     }
 
     // Only require contact info if owner doesn't exist
@@ -814,6 +839,13 @@ function OwnerOnboardingContent() {
         : '/api/owner/property'
       const method = isUpdate ? 'PUT' : 'POST'
 
+      // Get the map link from either field
+      const finalMapLink = (formData.mapLink.trim() || formData.googleMapLink.trim()) || undefined
+      
+      // Parse coordinates if they exist, otherwise use undefined
+      const latitude = formData.latitude ? parseFloat(formData.latitude) : undefined
+      const longitude = formData.longitude ? parseFloat(formData.longitude) : undefined
+
       const requestBody = isUpdate
         ? {
             // Update format - include ownerId for verification
@@ -826,11 +858,11 @@ function OwnerOnboardingContent() {
             price: rentNum,
             securityDeposit: depositAmount > 0 ? depositAmount : null,
             propertyType: formData.propertyType,
-            latitude: parseFloat(formData.latitude),
-            longitude: parseFloat(formData.longitude),
+            latitude: latitude,
+            longitude: longitude,
             amenities: amenitiesArray,
             images: mediaUrls,
-            mapLink: formData.mapLink.trim() || undefined,
+            mapLink: finalMapLink,
           }
         : {
             // Create format - original structure
@@ -843,9 +875,9 @@ function OwnerOnboardingContent() {
           property: {
             propertyType: formData.propertyType,
             location: formData.location,
-              mapLink: formData.mapLink.trim() || undefined,
-            latitude: parseFloat(formData.latitude),
-            longitude: parseFloat(formData.longitude),
+            mapLink: finalMapLink,
+            latitude: latitude,
+            longitude: longitude,
             size: sizeNum,
             rent: rentNum,
             deposit: depositAmount, // Now correctly calculated as amount (rent * months)
