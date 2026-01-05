@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getTheme, getPaletteColors } from '@/lib/theme'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
+import LogoImage from '@/components/LogoImage'
 
 type AppStep = 'home' | 'brand-onboarding' | 'owner-onboarding' | 'brand-dashboard' | 'owner-dashboard'
 
@@ -643,7 +644,8 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false)
 
   // Get brand logos using the brand-logos utility, filtering out null values
-  const allBrands = [
+  // Memoize to prevent recomputation on every render
+  const allBrands = useMemo(() => [
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 
     'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 
     'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 
@@ -651,46 +653,50 @@ export default function Home() {
     'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 
     'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 
     'TAN Coffee', 'Block Two Coffee'
-  ]
+  ], [])
 
-  // Trusted brands row label arrays (text-only rows)
-  const trustedRow1Brands = [
+  // Trusted brands row label arrays (text-only rows) - memoized
+  const trustedRow1Brands = useMemo(() => [
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
     'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri',
     'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
-  ]
+  ], [])
 
-  const trustedRow3Brands = [
+  const trustedRow3Brands = useMemo(() => [
     'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch',
     'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian',
     'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
-  ]
+  ], [])
   
-  // Create array of brand logo data (logo path or null, with brand name and initial)
-  const brandLogoData = allBrands.map(brand => ({
-    brand,
-    logoPath: getBrandLogo(brand),
-    initial: getBrandInitial(brand)
-  })).filter(item => item.logoPath !== null) // Only include brands with logos
-  
-  // Categorize logos by size - larger/wider logos need different sizing
-  const largerLogos = [
+  // Categorize logos by size - larger/wider logos need different sizing - memoized
+  const largerLogos = useMemo(() => [
     '/logos/Eleven-Bakehouse-Coloured-Logos-01.png',
     '/logos/Burger Seigneur Logo 1.png',
     '/logos/blr brewing co logo.png',
     '/logos/Original_Burger_Co_Logo.png',
     '/logos/Madam Chocolate Logo .png',
     '/logos/Sandowitch logo.jpg'
-  ]
+  ], [])
   
-  // Create logo data with size category
-  const logoDataWithSize = brandLogoData.map(item => ({
-    ...item,
-    isLarge: largerLogos.includes(item.logoPath as string)
-  }))
+  // Create array of brand logo data (logo path or null, with brand name and initial) - memoized
+  const brandLogoData = useMemo(() => {
+    return allBrands.map(brand => ({
+      brand,
+      logoPath: getBrandLogo(brand),
+      initial: getBrandInitial(brand)
+    })).filter(item => item.logoPath !== null) // Only include brands with logos
+  }, [allBrands])
   
-  // Use logo data for the scrolling row
-  const uniqueLogos = logoDataWithSize
+  // Create logo data with size category - memoized
+  const logoDataWithSize = useMemo(() => {
+    return brandLogoData.map(item => ({
+      ...item,
+      isLarge: largerLogos.includes(item.logoPath as string)
+    }))
+  }, [brandLogoData, largerLogos])
+  
+  // Use logo data for the scrolling row - memoized
+  const uniqueLogos = useMemo(() => logoDataWithSize, [logoDataWithSize])
   
   // Logos that need background removal
   const logosWithWhiteBackgrounds = [
@@ -749,6 +755,37 @@ export default function Home() {
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Preload ALL logo images to prevent missing logos on navigation - PERMANENT FIX
+  useEffect(() => {
+    if (uniqueLogos.length > 0 && typeof window !== 'undefined') {
+      // Preload ALL logos with dual method for maximum reliability
+      uniqueLogos.forEach((logoItem) => {
+        if (logoItem.logoPath) {
+          // Method 1: Preload link (browser cache)
+          const link = document.createElement('link')
+          link.rel = 'preload'
+          link.as = 'image'
+          link.href = logoItem.logoPath as string
+          link.crossOrigin = 'anonymous'
+          document.head.appendChild(link)
+          
+          // Method 2: Preload via Image object (more reliable, forces cache)
+          const img = new window.Image()
+          img.src = logoItem.logoPath as string
+          img.onload = () => {
+            // Image successfully cached
+          }
+          img.onerror = () => {
+            // Log but don't fail - LogoImage component will handle fallback
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`Failed to preload logo: ${logoItem.logoPath}`)
+            }
+          }
+        }
+      })
+    }
+  }, [uniqueLogos])
 
   useEffect(() => {
     // Only run once on mount (client-side only)
@@ -1198,28 +1235,20 @@ export default function Home() {
               
               return (
               <div
-                key={`logo-${idx}-${logoPath}`}
+                key={`logo-container-${logoPath}-${brandName}-${idx % uniqueLogos.length}`}
                 className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
               >
-                <div className="relative h-full flex items-center justify-center">
-                  {/* Logo image with consistent sizing and background removal - optimized */}
-                  <img
+                <div className="relative h-full flex items-center justify-center w-full">
+                  {/* Robust Logo Image Component - NEVER disappears, always shows fallback */}
+                  <LogoImage
                     src={logoPath}
                     alt={`${brandName} logo`}
+                    brandName={brandName}
                     loading={idx < 6 ? 'eager' : 'lazy'}
                     fetchPriority={idx < 6 ? 'high' : 'low'}
-                    className={`relative h-full w-auto object-contain rounded-2xl max-w-[150px] md:max-w-[180px] ${
-                      shouldRemoveBg 
-                        ? hasBlackBackground(brandName) 
-                          ? 'logo-no-bg-black' 
-                          : 'logo-no-bg'
-                        : ''
-                    }`}
+                    shouldRemoveBg={shouldRemoveBg}
+                    hasBlackBackground={hasBlackBackground(brandName)}
                     style={{ height: '64px', minHeight: '64px' }}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.style.display = 'none'
-                    }}
                   />
               </div>
               </div>

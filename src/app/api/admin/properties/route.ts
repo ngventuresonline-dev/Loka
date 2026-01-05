@@ -16,16 +16,16 @@ export async function GET(request: NextRequest) {
       error: securityCheck.error
     })
     
-    return NextResponse.json({
-      success: false,
+      return NextResponse.json({
+        success: false,
       error: securityCheck.error || 'Admin authentication required',
-      properties: [],
-      total: 0,
-      page: 1,
-      limit: 50,
-      totalPages: 0
+        properties: [],
+        total: 0,
+        page: 1,
+        limit: 50,
+        totalPages: 0
     }, { status: securityCheck.statusCode || 401 })
-  }
+    }
 
   await logAdminAction(request, 'ADMIN_PROPERTIES_LIST_VIEW')
   
