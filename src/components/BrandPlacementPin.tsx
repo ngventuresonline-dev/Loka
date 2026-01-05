@@ -33,6 +33,7 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
   const [isClicked, setIsClicked] = useState(false);
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [anyCardOpen, setAnyCardOpen] = useState(false);
 
   useEffect(() => {
     // Get brand logo - only on client side
@@ -61,6 +62,15 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
       // Close all other popups before opening this one
       const event = new CustomEvent('closeAllPinPopups', { detail: { excludeIndex: index } });
       window.dispatchEvent(event);
+      // Notify that a card is now open
+      const openEvent = new CustomEvent('pinCardOpened', { detail: { index } });
+      window.dispatchEvent(openEvent);
+      setAnyCardOpen(true);
+    } else {
+      // Closing this card
+      const closeEvent = new CustomEvent('pinCardClosed', { detail: { index } });
+      window.dispatchEvent(closeEvent);
+      setAnyCardOpen(false);
     }
     
     setIsClicked(!isClicked);
@@ -69,17 +79,51 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
     }
   };
 
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsClicked(false);
+    setAnyCardOpen(false);
+    const closeEvent = new CustomEvent('pinCardClosed', { detail: { index } });
+    window.dispatchEvent(closeEvent);
+  };
+
   // Listen for close events from other pins
   useEffect(() => {
     const handleClosePopups = (e: CustomEvent) => {
       if (e.detail?.excludeIndex !== index && isClicked) {
         setIsClicked(false);
+        setAnyCardOpen(false);
+      }
+    };
+
+    const handleCardOpened = (e: CustomEvent) => {
+      if (e.detail?.index !== index && !isClicked) {
+        setAnyCardOpen(true);
+      }
+    };
+
+    const handleCardClosed = (e: CustomEvent) => {
+      if (e.detail?.index !== index) {
+        // Check if any other card is still open
+        setTimeout(() => {
+          const openCards = document.querySelectorAll('.pin-popup-container');
+          if (openCards.length === 0) {
+            setAnyCardOpen(false);
+          }
+        }, 100);
+      } else {
+        setAnyCardOpen(false);
       }
     };
 
     window.addEventListener('closeAllPinPopups' as any, handleClosePopups as EventListener);
+    window.addEventListener('pinCardOpened' as any, handleCardOpened as EventListener);
+    window.addEventListener('pinCardClosed' as any, handleCardClosed as EventListener);
+    
     return () => {
       window.removeEventListener('closeAllPinPopups' as any, handleClosePopups as EventListener);
+      window.removeEventListener('pinCardOpened' as any, handleCardOpened as EventListener);
+      window.removeEventListener('pinCardClosed' as any, handleCardClosed as EventListener);
     };
   }, [index, isClicked]);
 
@@ -99,9 +143,9 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
   const viewBoxRight = viewBoxX + viewBoxWidth;
   const viewBoxBottom = viewBoxY + viewBoxHeight;
   
-  // Responsive popup size - larger for mobile readability
-  const popupWidth = isMobile ? 280 : 200;
-  const popupHeight = isMobile ? 130 : 90;
+  // Responsive popup size - larger cards as requested
+  const popupWidth = isMobile ? 320 : 240;
+  const popupHeight = isMobile ? 150 : 110;
   const padding = 15;
   
   // Calculate X position - prefer right side, but flip to left if too close to right edge
@@ -151,12 +195,20 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
     popupY = viewBoxBottom - popupHeight - padding;
   }
 
+  // Hide pin if another card is open (unless this is the open card)
+  const shouldHide = anyCardOpen && !isClicked;
+
   return (
     <g
       className="brand-placement-pin"
       transform={`translate(${x}, ${y})`}
-      style={{ cursor: 'pointer' }}
-      onMouseEnter={() => setIsHovered(true)}
+      style={{ 
+        cursor: 'pointer',
+        opacity: shouldHide ? 0.3 : 1,
+        pointerEvents: shouldHide ? 'none' : 'all',
+        transition: 'opacity 0.2s ease',
+      }}
+      onMouseEnter={() => !shouldHide && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
     >
@@ -237,6 +289,7 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
           style={{ 
             pointerEvents: 'all',
             isolation: 'isolate',
+            zIndex: 1000,
           }}
         >
           {/* Popup background with higher z-index effect */}
@@ -245,7 +298,7 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
             y="0"
             width={popupWidth}
             height={popupHeight}
-            rx="8"
+            rx="10"
             fill="white"
             stroke="#FF5200"
             strokeWidth="2"
@@ -256,28 +309,75 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
             onClick={(e) => e.stopPropagation()}
           />
 
+          {/* Close button */}
+          <g
+            onClick={handleClose}
+            style={{ cursor: 'pointer' }}
+            transform={`translate(${popupWidth - 28}, 8)`}
+          >
+            <circle
+              cx="10"
+              cy="10"
+              r="10"
+              fill="#F3F4F6"
+              stroke="#D1D5DB"
+              strokeWidth="1"
+              style={{
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.setAttribute('fill', '#EF4444');
+                e.currentTarget.setAttribute('stroke', '#DC2626');
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.setAttribute('fill', '#F3F4F6');
+                e.currentTarget.setAttribute('stroke', '#D1D5DB');
+              }}
+            />
+            <line
+              x1="6"
+              y1="6"
+              x2="14"
+              y2="14"
+              stroke="#6B7280"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              style={{ pointerEvents: 'none' }}
+            />
+            <line
+              x1="14"
+              y1="6"
+              x2="6"
+              y2="14"
+              stroke="#6B7280"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              style={{ pointerEvents: 'none' }}
+            />
+          </g>
+
           {/* Brand logo in popup */}
           {logoPath ? (
             <image
               href={logoPath}
-              x="12"
-              y="12"
-              width={isMobile ? "56" : "40"}
-              height={isMobile ? "56" : "40"}
+              x="14"
+              y="14"
+              width={isMobile ? "64" : "48"}
+              height={isMobile ? "64" : "48"}
               style={{
                 objectFit: 'contain',
               }}
             />
           ) : (
-            <circle cx={isMobile ? "40" : "30"} cy={isMobile ? "40" : "30"} r={isMobile ? "28" : "20"} fill="#FF5200" />
+            <circle cx={isMobile ? "46" : "38"} cy={isMobile ? "46" : "38"} r={isMobile ? "32" : "24"} fill="#FF5200" />
           )}
 
           {/* Brand name */}
           <text
-            x={isMobile ? "80" : "60"}
-            y={isMobile ? "32" : "25"}
+            x={isMobile ? "90" : "70"}
+            y={isMobile ? "36" : "28"}
             fill="#1F2937"
-            fontSize={isMobile ? "18" : "14"}
+            fontSize={isMobile ? "20" : "16"}
             fontWeight="bold"
             fontFamily="system-ui, sans-serif"
           >
@@ -286,10 +386,10 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
 
           {/* Location */}
           <text
-            x={isMobile ? "80" : "60"}
-            y={isMobile ? "54" : "42"}
+            x={isMobile ? "90" : "70"}
+            y={isMobile ? "60" : "50"}
             fill="#6B7280"
-            fontSize={isMobile ? "14" : "11"}
+            fontSize={isMobile ? "15" : "12"}
             fontFamily="system-ui, sans-serif"
           >
             {placement.location}
@@ -297,22 +397,22 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
 
           {/* Size badge */}
           <rect
-            x={isMobile ? "80" : "60"}
-            y={isMobile ? "72" : "58"}
-            width={isMobile ? "90" : "70"}
-            height={isMobile ? "24" : "18"}
-            rx="4"
+            x={isMobile ? "90" : "70"}
+            y={isMobile ? "80" : "68"}
+            width={isMobile ? "100" : "80"}
+            height={isMobile ? "28" : "22"}
+            rx="5"
             fill="#FF5200"
             opacity="0.1"
             stroke="#FF5200"
             strokeWidth="1"
           />
           <text
-            x={isMobile ? "125" : "95"}
-            y={isMobile ? "87" : "69"}
+            x={isMobile ? "140" : "110"}
+            y={isMobile ? "97" : "82"}
             textAnchor="middle"
             fill="#FF5200"
-            fontSize={isMobile ? "12" : "10"}
+            fontSize={isMobile ? "13" : "11"}
             fontWeight="600"
             fontFamily="system-ui, sans-serif"
           >

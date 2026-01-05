@@ -113,6 +113,27 @@ function PropertiesResultsContent() {
     // Only fetch if component is mounted
     if (!mounted) return
     
+    // Check cache first
+    const cacheKey = `results_${searchParams.toString()}`
+    const cached = sessionStorage.getItem(cacheKey)
+    
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached)
+        // Use cached data if it's less than 2 minutes old
+        const cacheAge = Date.now() - (cachedData.timestamp || 0)
+        if (cacheAge < 2 * 60 * 1000) {
+          setMatches(cachedData.matches || [])
+          setTotalMatches(cachedData.totalMatches || 0)
+          setLoading(false)
+          setAiMatching(false)
+          return
+        }
+      } catch (e) {
+        // If cache is invalid, fetch fresh data
+      }
+    }
+    
     // Only fetch if we have valid search params or if component is mounted
     try {
       fetchMatches()
@@ -225,6 +246,13 @@ function PropertiesResultsContent() {
                 }))
                 setMatches(formattedMatches)
                 setTotalMatches(formattedMatches.length)
+                // Cache the results
+                const cacheKey = `results_${searchParams.toString()}`
+                sessionStorage.setItem(cacheKey, JSON.stringify({
+                  matches: formattedMatches,
+                  totalMatches: formattedMatches.length,
+                  timestamp: Date.now()
+                }))
                 setAiMatching(false)
                 setLoading(false)
                 return
@@ -296,11 +324,22 @@ function PropertiesResultsContent() {
         minScore: data.minMatchScore || 60
       })
       
-      setMatches(data.matches || [])
-      setTotalMatches(data.totalMatches || 0)
+      const matches = data.matches || []
+      const totalMatches = data.totalMatches || 0
+      
+      setMatches(matches)
+      setTotalMatches(totalMatches)
+      
+      // Cache the results
+      const cacheKey = `results_${searchParams.toString()}`
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        matches,
+        totalMatches,
+        timestamp: Date.now()
+      }))
       
       // If no matches, log for debugging
-      if (!data.matches || data.matches.length === 0) {
+      if (!matches || matches.length === 0) {
         console.warn('[Results] No matches found. Filters:', filters)
       }
       

@@ -1,7 +1,7 @@
 # BUILD TRUTH - Lokazen Commercial Real Estate Platform
 
-**Version:** 0.2.1  
-**Last Updated:** 2025-01-XX  
+**Version:** 0.1.1  
+**Last Updated:** 2025-01-23  
 **Platform:** Next.js 16 AI‑Matched Commercial Real Estate Platform
 
 ---
@@ -99,9 +99,24 @@ Loka/
 │   ├── app/                          # Next.js App Router
 │   │   ├── api/                      # API Routes
 │   │   │   ├── ai-search/            # AI search endpoint
-│   │   │   │   └── route.ts
+│   │   │   ├── admin/                # Admin API routes
+│   │   │   │   ├── analytics/        # Analytics endpoint
+│   │   │   │   ├── brands/           # Brand management
+│   │   │   │   ├── inquiries/        # Inquiry management
+│   │   │   │   ├── properties/       # Property management
+│   │   │   │   ├── stats/            # Statistics
+│   │   │   │   └── users/            # User management
+│   │   │   ├── brands/               # Brand endpoints
+│   │   │   │   ├── match/            # Brand matching
+│   │   │   │   └── matches/          # Match results
+│   │   │   ├── health/               # Health check
+│   │   │   ├── leads/                # Lead management
+│   │   │   ├── location-intelligence/ # Location intel
+│   │   │   ├── owner/                # Owner endpoints
+│   │   │   ├── platform-status/      # Platform status
+│   │   │   ├── properties/           # Property endpoints
+│   │   │   ├── sessions/             # Session logging
 │   │   │   └── status/               # Status endpoint
-│   │   │       └── route.ts
 │   │   ├── about/                    # About page
 │   │   │   └── page.tsx
 │   │   ├── admin/                    # Admin dashboard
@@ -438,33 +453,71 @@ Component Update
 6. Availability
 7. Confirmation
 
-### API Endpoint
+### API Endpoints
+
+#### Core Endpoints
 
 **Route**: `/api/ai-search`  
 **Method**: POST  
-**Request Body**:
-```typescript
-{
-  query: string
-  conversationHistory: Message[]
-  entityType?: 'brand' | 'owner'
-}
-```
+**Description**: AI-powered search endpoint using Claude 3.5 Sonnet
 
-**Response**:
-```typescript
-{
-  message: string
-  entityType?: 'brand' | 'owner'
-  extractedDetails?: {
-    businessType?: string
-    sizeRange?: { min: number, max: number }
-    locations?: string[]
-    budget?: { min: number, max: number }
-    // ... more fields
-  }
-}
-```
+**Route**: `/api/properties`  
+**Method**: GET, POST  
+**Description**: List and create properties with filtering and pagination
+
+**Route**: `/api/properties/[id]`  
+**Method**: GET  
+**Description**: Get individual property details
+
+**Route**: `/api/brands`  
+**Method**: GET, POST  
+**Description**: Brand management endpoints
+
+**Route**: `/api/brands/match`  
+**Method**: POST  
+**Description**: Brand matching algorithm
+
+**Route**: `/api/owner/properties`  
+**Method**: GET, POST  
+**Description**: Owner property management
+
+**Route**: `/api/inquiries`  
+**Method**: POST  
+**Description**: Create property inquiries
+
+**Route**: `/api/platform-status`  
+**Method**: GET  
+**Description**: Comprehensive platform health and status
+
+**Route**: `/api/status`  
+**Method**: GET  
+**Description**: System status check
+
+**Route**: `/api/health`  
+**Method**: GET  
+**Description**: Health check endpoint
+
+#### Admin Endpoints
+
+**Route**: `/api/admin/properties`  
+**Method**: GET, POST, PATCH, DELETE  
+**Description**: Admin property management with approval workflow
+
+**Route**: `/api/admin/brands`  
+**Method**: GET, POST, PATCH  
+**Description**: Admin brand management
+
+**Route**: `/api/admin/users`  
+**Method**: GET, PATCH  
+**Description**: User management
+
+**Route**: `/api/admin/analytics`  
+**Method**: GET  
+**Description**: Platform analytics
+
+**Route**: `/api/admin/stats`  
+**Method**: GET  
+**Description**: Platform statistics
 
 ---
 
@@ -648,7 +701,9 @@ npm run lint            # Run ESLint
 2. **Next.js Build**
    - Page optimization
    - Static generation
-   - Image optimization (disabled: `unoptimized: true`)
+   - Image optimization (enabled: AVIF/WebP formats, responsive sizes)
+   - Webpack bundle splitting for optimal performance
+   - CSS optimization with experimental `optimizeCss`
 
 3. **CSS Processing**
    - Tailwind compilation
@@ -656,9 +711,9 @@ npm run lint            # Run ESLint
    - Autoprefixing
 
 4. **Output**
-   - Static files in `out/`
-   - Optimized bundles
+   - Optimized bundles with code splitting
    - Asset optimization
+   - Security headers configured
 
 ### Deployment
 
@@ -667,8 +722,8 @@ npm run lint            # Run ESLint
 **Build Settings**:
 - Framework: Next.js
 - Build Command: `npm run build`
-- Output Directory: `out`
 - Install Command: `npm install --legacy-peer-deps`
+- Post-install: `prisma generate` (automatic)
 
 **Environment Variables Required**:
 - `ANTHROPIC_API_KEY` - Anthropic Claude API key
@@ -717,24 +772,32 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    ```bash
    npm install --legacy-peer-deps
    ```
+   Note: Prisma Client is automatically generated via `postinstall` script
 
 3. **Setup Environment**
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your values
    ```
+   Required variables:
+   - `ANTHROPIC_API_KEY` - For AI search
+   - `DATABASE_URL` - PostgreSQL connection string
+   - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+   - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
 
 4. **Setup Database**
    ```bash
-   npm run db:generate
-   npm run db:push
-   npm run db:seed
+   npm run db:generate  # Generate Prisma Client
+   npm run db:push      # Push schema to database
+   npm run db:seed      # Seed database with initial data
    ```
 
 5. **Start Development Server**
    ```bash
    npm run dev
    ```
+   Note: Development server runs with `--webpack` flag and TLS rejection disabled for local development
 
 6. **Open Browser**
    ```
@@ -984,21 +1047,17 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 ## 🐛 Known Issues & Limitations
 
-1. **Image Optimization Disabled**
-   - Currently `unoptimized: true` in Next.js config
-   - May impact performance on large images
-
-2. **No Rate Limiting**
+1. **No Rate Limiting**
    - API endpoints lack rate limiting
-   - Recommended for production
+   - Recommended for production deployment
 
-3. **Mock Data Usage**
-   - Some features use mock data
-   - Needs full database integration
-
-4. **3D Graphics Optional**
+2. **3D Graphics Optional**
    - Three.js components may not be used
    - Can be removed if not needed
+
+3. **Development Dependencies**
+   - Some debug endpoints exist (`/api/admin/debug`)
+   - Should be disabled in production
 
 ---
 
@@ -1043,8 +1102,8 @@ For issues, questions, or contributions, contact the development team.
 
 ---
 
-**Document Version**: 1.1  
-**Last Updated**: 2025-01  
+**Document Version**: 1.2  
+**Last Updated**: 2025-01-23  
 **Maintained By**: Lokazen Development Team
 
 ---

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/get-prisma'
+import { getPrisma, executePrismaQuery } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
+import bcrypt from 'bcryptjs'
+import { generateSecurePassword, sendOwnerWelcomeEmail } from '@/lib/email-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,9 +23,10 @@ export async function POST(request: NextRequest) {
     }: {
       ownerId?: string
       owner?: { name?: string; email?: string; phone?: string }
-      property?: {
+        property?: {
         propertyType?: string
         location?: string
+          mapLink?: string
         latitude?: number
         longitude?: number
         size?: number
@@ -64,10 +67,13 @@ export async function POST(request: NextRequest) {
 
     if (providedOwnerId) {
       // Use provided ownerId - verify it exists
-      const existingOwner = await prisma.user.findUnique({
-        where: { id: providedOwnerId },
-        select: { id: true, userType: true },
-      })
+      // Use executePrismaQuery to handle connection pool timeouts with retry
+      const existingOwner = await executePrismaQuery(async (p) => 
+        p.user.findUnique({
+          where: { id: providedOwnerId },
+          select: { id: true, userType: true },
+        })
+      )
 
       if (!existingOwner || existingOwner.userType !== 'owner') {
         return NextResponse.json(
@@ -85,13 +91,16 @@ export async function POST(request: NextRequest) {
       const phone = (owner.phone || '').trim()
 
       // Try to find existing owner by phone first (most reliable)
-      const existingOwnerByPhone = await prisma.user.findFirst({
-        where: {
-          phone,
-          userType: 'owner',
-        },
-        select: { id: true },
-      })
+      // Use executePrismaQuery to handle connection pool timeouts with retry
+      const existingOwnerByPhone = await executePrismaQuery(async (p) =>
+        p.user.findFirst({
+          where: {
+            phone,
+            userType: 'owner',
+          },
+          select: { id: true },
+        })
+      )
 
       if (existingOwnerByPhone) {
         ownerId = existingOwnerByPhone.id
@@ -99,13 +108,15 @@ export async function POST(request: NextRequest) {
       } else {
         // Try by email if provided and not placeholder
         if (email && !email.includes('@placeholder.email')) {
-          const existingOwnerByEmail = await prisma.user.findFirst({
-            where: {
-              email,
-              userType: 'owner',
-            },
-            select: { id: true },
-          })
+          const existingOwnerByEmail = await executePrismaQuery(async (p) =>
+            p.user.findFirst({
+              where: {
+                email,
+                userType: 'owner',
+              },
+              select: { id: true },
+            })
+          )
 
           if (existingOwnerByEmail) {
             ownerId = existingOwnerByEmail.id
@@ -115,31 +126,72 @@ export async function POST(request: NextRequest) {
 
         // If no existing owner found, create new one
         if (!ownerId) {
-          const placeholderPassword = '$2b$10$placeholder_hash_change_in_production'
+          // Generate secure password for new owner
+          const plainPassword = generateSecurePassword(12)
+          const hashedPassword = await bcrypt.hash(plainPassword, 10)
 
-          const ownerUser = await prisma.user.create({
-            data: {
-              email,
-              name,
-              password: placeholderPassword,
-              phone,
-              userType: 'owner',
-            },
-            select: { id: true },
-          })
+          const ownerUser = await executePrismaQuery(async (p) =>
+            p.user.create({
+              data: {
+                email,
+                name,
+                password: hashedPassword,
+                phone,
+                userType: 'owner',
+              },
+              select: { id: true, email: true, name: true },
+            })
+          )
 
           ownerId = ownerUser.id
 
           // Optional: create an owner profile shell
-          try {
-            await prisma.owner_profiles.create({
-              data: {
-                user_id: ownerId,
-              },
-            })
-          } catch (profileError: any) {
-            // Don't fail the request if profile creation fails
-            console.warn('[Owner Property API] Failed to create owner profile:', profileError?.message || profileError)
+          if (ownerId) {
+            try {
+              await prisma.owner_profiles.create({
+                data: {
+                  user_id: ownerId,
+                },
+              })
+            } catch (profileError: any) {
+              // Don't fail the request if profile creation fails
+              console.warn('[Owner Property API] Failed to create owner profile:', profileError?.message || profileError)
+            }
+          }
+
+          // Send welcome email with login credentials (only if real email provided)
+          if (email && !email.includes('@placeholder.email')) {
+            try {
+              const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://lokazen.com'}/dashboard/owner`
+              const emailResult = await sendOwnerWelcomeEmail(
+                email,
+                ownerUser.name || 'Property Owner',
+                ownerId!,
+                plainPassword,
+                dashboardUrl
+              )
+              
+              if (emailResult.success) {
+                console.log('[Owner Property API] Welcome email sent successfully to:', email)
+              } else {
+                console.warn('[Owner Property API] Failed to send welcome email:', emailResult.error)
+                // Don't fail the request if email fails
+              }
+            } catch (emailError: any) {
+              console.error('[Owner Property API] Error sending welcome email:', emailError)
+              // Don't fail the request if email fails
+            }
+          } else {
+            console.log('[Owner Property API] Skipping email - placeholder email provided')
+            // Log credentials for development/testing when no email
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[Owner Property API] Generated credentials for owner:', {
+                userId: ownerId,
+                email,
+                password: plainPassword,
+                note: 'Email not sent - placeholder email provided'
+              })
+            }
           }
         }
       }
@@ -170,8 +222,18 @@ export async function POST(request: NextRequest) {
 
     const size = property.size && property.size > 0 ? property.size : 0
     const rent = property.rent && property.rent > 0 ? property.rent : 0
-    const securityDeposit =
-      property.deposit && property.deposit > 0 ? property.deposit : null
+    // Deposit is now sent as amount (already calculated from months * rent in frontend)
+    // But handle legacy case where it might still be in months
+    let securityDeposit: number | null = null
+    if (property.deposit && property.deposit > 0) {
+      // If deposit is less than rent, it's likely in months - convert it
+      if (property.deposit < rent && rent > 0) {
+        securityDeposit = rent * property.deposit
+      } else {
+        // Otherwise, it's already the amount
+        securityDeposit = property.deposit
+      }
+    }
 
     const rawType = (property.propertyType || '').toLowerCase()
     const validTypes = ['office', 'retail', 'warehouse', 'restaurant', 'other'] as const
@@ -210,35 +272,79 @@ export async function POST(request: NextRequest) {
 
     const propertyId = await generatePropertyId()
 
-    const propertyRow = await prisma.property.create({
-      data: {
-        id: propertyId,
-        title,
-        description,
-        address: property.location || 'Bangalore',
-        city: property.location || 'Bangalore',
-        state: 'Karnataka',
-        zipCode: '560001',
-        price: rent,
-        priceType: 'monthly',
-        securityDeposit,
-        rentEscalation: null,
-        size,
-        propertyType: normalizedType,
-        storePowerCapacity: null,
-        powerBackup: false,
-        waterFacility: false,
-        amenities,
-        images,
-        ownerId,
-        status: 'pending', // New properties start as pending
-        availability: false, // Set to false for pending approval - admin will approve and set to true
-        isFeatured: false,
-        views: 0,
-        displayOrder: null,
-      },
-      select: { id: true },
-    })
+    // Prepare property data
+    const propertyData: any = {
+      id: propertyId,
+      title,
+      description,
+      address: property.location || 'Bangalore',
+      city: property.location || 'Bangalore',
+      state: 'Karnataka',
+      zipCode: '560001',
+      price: rent,
+      priceType: 'monthly',
+      securityDeposit,
+      rentEscalation: null,
+      size,
+      propertyType: normalizedType,
+      storePowerCapacity: null,
+      powerBackup: false,
+      waterFacility: false,
+      amenities,
+      images,
+      ownerId,
+      status: 'pending', // New properties start as pending
+      availability: false, // Set to false for pending approval - admin will approve and set to true
+      isFeatured: false,
+      views: 0,
+      displayOrder: null,
+    }
+
+    // Include mapLink if provided
+    // Note: If map_link column doesn't exist in database, run the migration:
+    // ALTER TABLE properties ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000);
+    if (property.mapLink) {
+      propertyData.mapLink = property.mapLink
+    }
+
+    // Use executePrismaQuery to handle connection pool timeouts with retry
+    let propertyRow
+    try {
+      propertyRow = await executePrismaQuery(async (p) =>
+        p.property.create({
+          data: propertyData,
+          select: { id: true },
+        })
+      )
+    } catch (error: any) {
+      // If error is about map_link column not existing, try without it
+      const errorMessage = error?.message || error?.toString() || ''
+      const errorCode = error?.code || ''
+      
+      if (
+        errorMessage.includes('map_link') || 
+        errorMessage.includes('mapLink') ||
+        errorMessage.includes('does not exist') ||
+        errorCode === 'P2011' // Prisma error for missing column
+      ) {
+        console.warn('[Owner Property API] map_link column not found, creating property without it. Run migration: ALTER TABLE properties ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000);')
+        delete propertyData.mapLink
+        try {
+          propertyRow = await executePrismaQuery(async (p) =>
+            p.property.create({
+              data: propertyData,
+              select: { id: true },
+            })
+          )
+        } catch (retryError: any) {
+          console.error('[Owner Property API] Error creating property even without mapLink:', retryError)
+          throw new Error(`Failed to create property: ${retryError?.message || retryError?.toString() || 'Unknown error'}`)
+        }
+      } else {
+        console.error('[Owner Property API] Error creating property:', error)
+        throw new Error(`Failed to create property: ${errorMessage}`)
+      }
+    }
 
     return NextResponse.json(
       {
@@ -250,10 +356,15 @@ export async function POST(request: NextRequest) {
     )
   } catch (error: any) {
     console.error('[Owner Property API] Unexpected error:', error)
+    const errorMessage = error?.message || error?.toString() || 'Unexpected error while creating property'
+    
+    // Return detailed error for debugging (in development)
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Unexpected error while creating property',
+        error: errorMessage,
+        // Include error code if available for better debugging
+        ...(error?.code && { code: error.code }),
       },
       { status: 500 }
     )

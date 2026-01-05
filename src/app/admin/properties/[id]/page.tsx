@@ -26,6 +26,7 @@ export default function EditPropertyPage() {
     zipCode: '',
     latitude: '',
     longitude: '',
+    mapLink: '',
     price: '',
     priceType: 'monthly',
     securityDeposit: '',
@@ -357,6 +358,7 @@ export default function EditPropertyPage() {
         zipCode: prop.zipCode || '',
         latitude: prop.latitude?.toString() || '',
         longitude: prop.longitude?.toString() || '',
+        mapLink: prop.mapLink || '',
         price: prop.price ? Number(prop.price).toString() : '',
         priceType: prop.priceType || 'monthly',
         securityDeposit: prop.securityDeposit ? Number(prop.securityDeposit).toString() : '',
@@ -429,6 +431,7 @@ export default function EditPropertyPage() {
           size: parseInt(formData.size || '0'),
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+          mapLink: formData.mapLink || null,
           displayOrder: parseInt(String(formData.displayOrder)) || null,
           images,
         }),
@@ -647,6 +650,16 @@ export default function EditPropertyPage() {
                   type="text"
                   value={formData.longitude}
                   onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Google Maps Link</label>
+                <input
+                  type="url"
+                  value={formData.mapLink}
+                  onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
+                  placeholder="https://maps.app.goo.gl/..."
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 />
               </div>

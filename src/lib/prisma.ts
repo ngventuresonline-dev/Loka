@@ -24,12 +24,13 @@ const createPrismaClient = () => {
     throw new Error('Invalid DATABASE_URL format')
   }
 
+  // Add connection pool parameters to ALL database URLs to prevent timeout issues
+  const urlParts = databaseUrl.split('?')
+  const baseUrl = urlParts[0]
+  const existingParams = urlParts[1] ? new URLSearchParams(urlParts[1]) : new URLSearchParams()
+  
   // For Supabase connections, ensure proper SSL and connection settings
   if (databaseUrl.includes('supabase.com') || databaseUrl.includes('supabase.co')) {
-    const urlParts = databaseUrl.split('?')
-    const baseUrl = urlParts[0]
-    const existingParams = urlParts[1] ? new URLSearchParams(urlParts[1]) : new URLSearchParams()
-    
     // Add SSL requirement if not present
     if (!existingParams.has('sslmode')) {
       existingParams.set('sslmode', 'require')
@@ -41,28 +42,45 @@ const createPrismaClient = () => {
       if (!existingParams.has('pgbouncer')) {
         existingParams.set('pgbouncer', 'true')
       }
-      // Increase connection limit to prevent pool exhaustion
-      // Remove connection_limit=1 if present (too restrictive)
-      if (existingParams.has('connection_limit') && existingParams.get('connection_limit') === '1') {
-        existingParams.delete('connection_limit')
-      }
-      // Set reasonable connection limit (5-10 for development, higher for production)
-      if (!existingParams.has('connection_limit')) {
-        existingParams.set('connection_limit', process.env.NODE_ENV === 'production' ? '10' : '5')
-      }
-      // Increase pool timeout
-      if (!existingParams.has('connect_timeout')) {
-        existingParams.set('connect_timeout', '30')
-      }
     }
     
     // If using direct connection (port 5432), suggest switching to pooler
     if (databaseUrl.includes(':5432') && !databaseUrl.includes('pooler')) {
       console.warn('[Prisma] Using direct connection. Consider switching to pooler (port 6543) for better Prisma compatibility.')
     }
-    
-    databaseUrl = `${baseUrl}?${existingParams.toString()}`
   }
+  
+  // CRITICAL: Configure connection pool settings for ALL database connections
+  // This prevents "Timed out fetching a new connection from the connection pool" errors
+  
+  // Remove overly restrictive connection limits
+  if (existingParams.has('connection_limit')) {
+    const currentLimit = parseInt(existingParams.get('connection_limit') || '1', 10)
+    if (currentLimit < 5) {
+      existingParams.delete('connection_limit')
+    }
+  }
+  
+  // Set appropriate connection limit based on environment
+  // Higher limit reduces pool exhaustion but uses more database connections
+  if (!existingParams.has('connection_limit')) {
+    const connectionLimit = process.env.NODE_ENV === 'production' ? '20' : '10'
+    existingParams.set('connection_limit', connectionLimit)
+  }
+  
+  // Increase connection timeout (time to establish a new connection)
+  if (!existingParams.has('connect_timeout')) {
+    existingParams.set('connect_timeout', '30')
+  }
+  
+  // Note: Prisma's connection pool timeout (10 seconds) cannot be configured via connection string
+  // The solution is to:
+  // 1. Increase connection_limit (done above) to reduce pool contention
+  // 2. Use executePrismaQuery helper for automatic retry on pool timeout errors
+  // 3. Ensure proper connection management and avoid connection leaks
+  
+  // Reconstruct URL with all parameters
+  databaseUrl = `${baseUrl}?${existingParams.toString()}`
   
   // Final cleanup - ensure no trailing characters
   databaseUrl = databaseUrl.trim()

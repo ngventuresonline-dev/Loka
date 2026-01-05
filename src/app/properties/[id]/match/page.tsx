@@ -14,6 +14,7 @@ import LocationIntelligence from '@/components/LocationIntelligence'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import SchedulePicker from '@/components/SchedulePicker'
 
 const LOADING_PHRASES = [
   'Mapping your perfect location fit...',
@@ -95,6 +96,25 @@ function MatchDetailsContent() {
   }, [])
 
   useEffect(() => {
+    // Check if we have cached match details for this property
+    const cacheKey = `match_${propertyId}`
+    const cached = sessionStorage.getItem(cacheKey)
+    
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached)
+        // Use cached data if it's less than 5 minutes old
+        const cacheAge = Date.now() - (cachedData.timestamp || 0)
+        if (cacheAge < 5 * 60 * 1000) {
+          setMatchDetails(cachedData.data)
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        // If cache is invalid, fetch fresh data
+      }
+    }
+    
     fetchMatchDetails()
   }, [propertyId])
 
@@ -182,16 +202,23 @@ function MatchDetailsContent() {
         const match = matchData.matches.find((m: any) => m.property.id === propertyId)
         
         if (match) {
-          setMatchDetails({
+          const matchData = {
             property: match.property,
             bfiScore: match.bfiScore,
             matchReasons: match.matchReasons,
             breakdown: match.breakdown
-          })
+          }
+          setMatchDetails(matchData)
+          // Cache the match data
+          const cacheKey = `match_${propertyId}`
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            data: matchData,
+            timestamp: Date.now()
+          }))
         } else {
           // If not in matches, but property data exists, create a basic match object
           if (property) {
-            setMatchDetails({
+            const matchData = {
               property,
               bfiScore: 75, // Default score
               matchReasons: ['Property available in your preferred location', 'Size matches your requirements'],
@@ -201,7 +228,14 @@ function MatchDetailsContent() {
                 budgetScore: 70,
                 typeScore: 80
               }
-            })
+            }
+            setMatchDetails(matchData)
+            // Cache the match data
+            const cacheKey = `match_${propertyId}`
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+              data: matchData,
+              timestamp: Date.now()
+            }))
           } else {
             setMatchDetails(null)
           }
@@ -209,7 +243,7 @@ function MatchDetailsContent() {
       } else {
         // Fallback if match API fails
         if (property) {
-          setMatchDetails({
+          const matchData = {
             property,
             bfiScore: 75,
             matchReasons: ['Property available in your preferred location'],
@@ -219,7 +253,14 @@ function MatchDetailsContent() {
               budgetScore: 70,
               typeScore: 80
             }
-          })
+          }
+          setMatchDetails(matchData)
+          // Cache the match data
+          const cacheKey = `match_${propertyId}`
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            data: matchData,
+            timestamp: Date.now()
+          }))
         } else {
           setMatchDetails(null)
         }
@@ -368,9 +409,9 @@ function MatchDetailsContent() {
           <span className="truncate">Back to Results</span>
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Property Details */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-1">
             {/* Property Images */}
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="relative h-48 sm:h-64 md:h-80 lg:h-96 w-full">
@@ -465,16 +506,54 @@ function MatchDetailsContent() {
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* AI Location Intelligence */}
+            {/* AI Location Intelligence - Hidden on mobile, shown on desktop */}
+            <div className="hidden lg:block">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+                <LocationIntelligence property={property} />
+              </div>
+            </div>
+          </div>
+
+          {/* Brand Fit Index - Mobile: appears after Property Info, Desktop: in right column */}
+          <div className="order-2 lg:hidden">
+            <div className="bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl p-4 sm:p-6 text-white">
+              <div className="text-center mb-3 sm:mb-4">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-black mb-1 sm:mb-2 leading-none">{bfiScore}%</div>
+                <div className="text-base sm:text-lg font-semibold break-words leading-tight">Brand Fit Index</div>
+                <div className="text-xs sm:text-sm opacity-90 mt-1 whitespace-nowrap">{getScoreLabel(bfiScore)} Match</div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-white/20 rounded-full h-2 sm:h-3 mb-3 sm:mb-4">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${bfiScore}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  className="bg-white h-2 sm:h-3 rounded-full"
+                />
+              </div>
+
+              <div className="text-center">
+                <p className="text-xs sm:text-sm opacity-90 break-words px-2 leading-relaxed">
+                  This property matches {bfiScore}% of your requirements
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Location Intelligence - Mobile: appears after Brand Fit Index */}
+          <div className="lg:hidden order-3">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
               <LocationIntelligence property={property} />
             </div>
           </div>
 
           {/* Right Column - Match Analysis */}
-          <div className="space-y-4 sm:space-y-6">
-            {/* Match Score Card */}
-            <div className="bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl p-4 sm:p-6 text-white">
+          <div className="space-y-4 sm:space-y-6 order-4 lg:order-2">
+            {/* Match Score Card - Desktop only */}
+            <div className="hidden lg:block bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl p-4 sm:p-6 text-white">
               <div className="text-center mb-3 sm:mb-4">
                 <div className="text-3xl sm:text-4xl md:text-5xl font-black mb-1 sm:mb-2 leading-none">{bfiScore}%</div>
                 <div className="text-base sm:text-lg font-semibold break-words leading-tight">Brand Fit Index</div>
@@ -603,13 +682,11 @@ function MatchDetailsContent() {
                 <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
                   Schedule Date & Time <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="datetime-local"
-                  min={new Date().toISOString().slice(0,16)}
+                <SchedulePicker
                   value={expertDateTime}
-                  onChange={(e) => setExpertDateTime(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
-                  required
+                  onChange={setExpertDateTime}
+                  minDate={new Date()}
+                  className="w-full"
                 />
               </div>
               <div>

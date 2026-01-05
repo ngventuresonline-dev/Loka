@@ -1,0 +1,4 @@
+ALTER TABLE properties
+ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000);
+
+

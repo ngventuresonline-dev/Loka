@@ -58,17 +58,19 @@ export default function AboutPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative z-10 pt-32 pb-24 md:pb-32">
-        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
+      <section className="relative z-10 pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 md:pb-24 lg:pb-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-18 md:mb-20">
             <div className="inline-flex items-center px-5 py-2 bg-white/80 backdrop-blur-xl border border-[#FF5200]/20 rounded-full mb-8 shadow-[0_0_20px_rgba(255,82,0,0.1)] opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2.5 animate-pulse shadow-[0_0_5px_rgba(255,82,0,0.8)]"></span>
               <span className="text-sm font-medium text-gray-700">About Our Platform</span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] relative">
-              Revolutionizing <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] relative">
-                Commercial Real Estate
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] relative px-4 sm:px-0">
+              <span className="whitespace-nowrap">Revolutionizing</span>
+              {' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] relative">
+                <span className="whitespace-nowrap">Commercial&nbsp;Real&nbsp;Estate</span>
                 <div className="absolute inset-0 blur-md opacity-[0.08]" style={{
                   background: 'radial-gradient(circle, rgba(255,107,53,0.4) 0%, rgba(255,82,0,0.3) 50%, transparent 70%)',
                   animation: 'pulse 2s ease-in-out infinite'
@@ -76,7 +78,7 @@ export default function AboutPage() {
               </span>
             </h1>
 
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards]">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards] px-4 sm:px-0">
               We&apos;re building the future of property-brand matching using AI, location intelligence, and data-driven insights
             </p>
           </div>
@@ -142,9 +144,10 @@ export default function AboutPage() {
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2.5 animate-pulse shadow-[0_0_5px_rgba(255,82,0,0.8)]"></span>
               <span className="text-sm font-medium text-white">For Brands</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Find Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] relative">
-                Perfect Location
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+              <span className="whitespace-nowrap">Find&nbsp;Your</span>{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] relative">
+                <span className="whitespace-nowrap">Perfect&nbsp;Location</span>
                 <div className="absolute inset-0 blur-md opacity-[0.15]" style={{
                   background: 'radial-gradient(circle, rgba(255,107,53,0.6) 0%, rgba(255,82,0,0.4) 50%, transparent 70%)',
                   animation: 'pulse 2s ease-in-out infinite'
@@ -231,9 +234,10 @@ export default function AboutPage() {
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#E4002B] to-[#FF6B35] rounded-full mr-2.5 animate-pulse shadow-[0_0_5px_rgba(228,0,43,0.8)]"></span>
               <span className="text-sm font-medium text-gray-700">For Property Owners</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              List Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] to-[#FF6B35] relative">
-                Prime Properties
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              <span className="inline-block whitespace-nowrap">List Your</span>{' '}
+              <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#E4002B] to-[#FF6B35] relative">
+                <span className="inline-block whitespace-nowrap">Prime Properties</span>
                 <div className="absolute inset-0 blur-md opacity-[0.08]" style={{
                   background: 'radial-gradient(circle, rgba(228,0,43,0.4) 0%, rgba(255,107,53,0.3) 50%, transparent 70%)',
                   animation: 'pulse 2s ease-in-out infinite'
@@ -296,9 +300,10 @@ export default function AboutPage() {
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF6B35] to-[#FF5200] rounded-full mr-2.5 animate-pulse shadow-[0_0_5px_rgba(255,107,53,0.8)]"></span>
               <span className="text-sm font-medium text-gray-700">For Partners</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Partner <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B35] to-[#FF5200] relative">
-                With Us
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              <span className="whitespace-nowrap">Partner</span>{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B35] to-[#FF5200] relative">
+                <span className="whitespace-nowrap">With&nbsp;Us</span>
                 <div className="absolute inset-0 blur-md opacity-[0.08]" style={{
                   background: 'radial-gradient(circle, rgba(255,107,53,0.4) 0%, rgba(255,82,0,0.3) 50%, transparent 70%)',
                   animation: 'pulse 2s ease-in-out infinite'
@@ -388,9 +393,10 @@ export default function AboutPage() {
             <span className="text-sm font-medium text-gray-700">Join Our Platform</span>
           </div>
 
-          <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Ready to Get <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] relative">
-              Started?
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            <span className="inline-block whitespace-nowrap">Ready to Get</span>{' '}
+            <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] relative">
+              <span className="inline-block whitespace-nowrap">Started?</span>
               <div className="absolute inset-0 blur-md opacity-[0.08]" style={{
                 background: 'radial-gradient(circle, rgba(255,107,53,0.4) 0%, rgba(255,82,0,0.3) 50%, transparent 70%)',
                 animation: 'pulse 2s ease-in-out infinite'

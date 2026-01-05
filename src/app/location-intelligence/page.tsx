@@ -57,7 +57,7 @@ export default function LocationIntelligencePage() {
       {/* Main content is blurred and dimmed; overlay explains the current status */}
       <div className="relative z-10 min-h-screen">
         {/* Blurred background content */}
-        <div className="pt-32 sm:pt-36 md:pt-40 pb-20 pointer-events-none blur-sm opacity-40">
+        <div className="pt-24 sm:pt-28 md:pt-32 lg:pt-36 xl:pt-40 pb-16 sm:pb-20 pointer-events-none blur-sm opacity-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
             {/* Hero Section */}
@@ -67,15 +67,15 @@ export default function LocationIntelligencePage() {
               <span className="text-sm font-semibold bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">First Search FREE</span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="text-white">Make</span>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+              <span className="text-white whitespace-nowrap">Make</span>
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] animate-gradientShift bg-[length:200%_200%]">Data-Driven</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] animate-gradientShift bg-[length:200%_200%] whitespace-nowrap">Data-Driven</span>
               <br />
-              <span className="text-white">Location Decisions</span>
+              <span className="text-white whitespace-nowrap">Location&nbsp;Decisions</span>
             </h1>
 
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-6 sm:mb-8 px-4 sm:px-0">
               Access real-time market intelligence, foot traffic patterns, and competitive analysis before you commit to any location
             </p>
 

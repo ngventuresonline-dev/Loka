@@ -13,7 +13,6 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,
-  swcMinify: true,
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],
@@ -28,7 +27,9 @@ const nextConfig = {
     optimizeCss: true,
     optimizePackageImports: ['framer-motion', 'recharts', '@react-google-maps/api'],
   },
-  // Webpack optimizations for bundle splitting
+  // Turbopack configuration (Next.js 16+)
+  turbopack: {},
+  // Webpack optimizations for bundle splitting (when using --webpack flag)
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.optimization = {
@@ -46,11 +47,11 @@ const nextConfig = {
               enforce: true,
             },
             lib: {
-              test(module: any) {
+              test(module) {
                 return module.size() > 160000 &&
                   /node_modules[/\\]/.test(module.identifier())
               },
-              name(module: any) {
+              name(module) {
                 const hash = require('crypto').createHash('sha1')
                 hash.update(module.identifier())
                 return hash.digest('hex').substring(0, 8)
@@ -65,10 +66,10 @@ const nextConfig = {
               priority: 20,
             },
             shared: {
-              name(module: any, chunks: any) {
+              name(module, chunks) {
                 return require('crypto')
                   .createHash('sha1')
-                  .update(chunks.reduce((acc: string, chunk: any) => acc + chunk.name, ''))
+                  .update(chunks.reduce((acc, chunk) => acc + chunk.name, ''))
                   .digest('hex')
                   .substring(0, 8)
               },

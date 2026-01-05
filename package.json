@@ -6,7 +6,7 @@
     "vercel-install": "npm install --legacy-peer-deps",
     "postinstall": "prisma generate",
     "dev": "SET NODE_TLS_REJECT_UNAUTHORIZED=0 && next dev --webpack",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "test:performance": "node scripts/performance-test.js",

@@ -160,6 +160,7 @@ function OwnerOnboardingContent() {
   const [formData, setFormData] = useState({
     propertyType: '',
     location: '',
+    mapLink: '',
     latitude: '',
     longitude: '',
     size: '',
@@ -176,11 +177,14 @@ function OwnerOnboardingContent() {
   })
 
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
 
   const { isLoaded: isMapLoaded, loadError: mapLoadError } = useLoadScript({
     googleMapsApiKey: getGoogleMapsApiKey(),
     libraries: GOOGLE_MAPS_LIBRARIES,
   })
+
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
 
   const totalSteps = 3
 
@@ -206,6 +210,15 @@ function OwnerOnboardingContent() {
       setMarkerPosition(mapCenter)
     }
   }, [mapCenter, markerPosition])
+
+  useEffect(() => {
+    const urls = formData.photos.map(file => URL.createObjectURL(file))
+    setPhotoPreviews(urls)
+
+    return () => {
+      urls.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [formData.photos])
 
 
   // Map display names from filter page to internal property type values
@@ -302,6 +315,7 @@ function OwnerOnboardingContent() {
           setFormData({
             propertyType: property.propertyType || '',
             location: property.address || property.city || '',
+            mapLink: property.mapLink || '',
             latitude: property.latitude?.toString() || '',
             longitude: property.longitude?.toString() || '',
             size: property.size ? `${property.size} sq ft` : '',
@@ -530,26 +544,57 @@ function OwnerOnboardingContent() {
     }
   }
 
-  const handlePinLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude
-          const lng = position.coords.longitude
+  const extractLatLngFromLink = (link: string) => {
+    if (!link) return null
+
+    const atMatch = link.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+    if (atMatch) {
+      return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
+    }
+
+    const queryMatch = link.match(/[?&]q=(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+    if (queryMatch) {
+      return { lat: parseFloat(queryMatch[1]), lng: parseFloat(queryMatch[2]) }
+    }
+
+    const coordMatch = link.match(/(-?\d+\.?\d*)[, ]\s*(-?\d+\.?\d*)/)
+    if (coordMatch) {
+      return { lat: parseFloat(coordMatch[1]), lng: parseFloat(coordMatch[2]) }
+    }
+
+    return null
+  }
+
+  const handleMapLinkInput = (value: string) => {
+    const coords = extractLatLngFromLink(value)
+
           setFormData(prev => ({
             ...prev,
-            latitude: lat.toString(),
-            longitude: lng.toString(),
-          }))
-          setMarkerPosition({ lat, lng })
-          alert(`Location pinned! Lat: ${lat}, Long: ${lng}`)
-        },
-        () => {
-          alert('Unable to get location. Please ensure location permissions are enabled.')
-        }
-      )
-    } else {
-      alert('Geolocation is not supported by your browser.')
+      mapLink: value,
+      ...(coords
+        ? { latitude: coords.lat.toString(), longitude: coords.lng.toString() }
+        : value.trim() === ''
+          ? { latitude: '', longitude: '' }
+          : {})
+    }))
+
+    if (coords) {
+      setMarkerPosition({ lat: coords.lat, lng: coords.lng })
+    } else if (value.trim() === '') {
+      setMarkerPosition(null)
+    }
+
+    logOwnerOnboarding('form_change', { changedField: 'mapLink' })
+  }
+
+  const handlePinLocation = () => {
+    if (mapCenter) {
+      setMarkerPosition(mapCenter)
+      setFormData(prev => ({
+        ...prev,
+        latitude: mapCenter.lat.toString(),
+        longitude: mapCenter.lng.toString(),
+      }))
     }
   }
 
@@ -578,26 +623,48 @@ function OwnerOnboardingContent() {
   }
 
   const openGoogleMaps = () => {
+    if (formData.mapLink.trim()) {
+      window.open(formData.mapLink.trim(), '_blank')
+      return
+    }
+
     if (formData.latitude && formData.longitude) {
       window.open(`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`, '_blank')
     }
   }
 
   const removePhoto = (index: number) => {
-    setFormData({
-      ...formData,
-      photos: formData.photos.filter((_, i) => i !== index)
-    })
+    setFormData(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index)
+    }))
   }
 
   const removeVideo = (index: number) => {
-    setFormData({
-      ...formData,
-      videos: formData.videos.filter((_, i) => i !== index)
-    })
+    setFormData(prev => ({
+      ...prev,
+      videos: prev.videos.filter((_, i) => i !== index)
+    }))
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    if (e.target.name === 'ownerPhone') {
+      const digitsOnly = e.target.value.replace(/\D/g, '')
+      const limited = digitsOnly.slice(0, 10)
+      const nextPhone = limited
+      const next = {
+        ...formData,
+        ownerPhone: nextPhone,
+      }
+      setFormData(next)
+      if (nextPhone.length > 0 && nextPhone.length !== 10) {
+        setPhoneError('Please enter a valid 10-digit mobile number')
+      } else {
+        setPhoneError(null)
+      }
+      logOwnerOnboarding('form_change', { changedField: e.target.name })
+      return
+    }
     const next = {
       ...formData,
       [e.target.name]: e.target.value
@@ -630,6 +697,18 @@ function OwnerOnboardingContent() {
   }, [formData.propertyType, formData.location, formData.size, formData.rent])
 
   const handleNext = () => {
+    if (step === 1) {
+      if (!formData.mapLink.trim()) {
+        alert('Please add your Google Maps link before continuing.')
+        return
+      }
+
+      if (!formData.latitude || !formData.longitude) {
+        alert('We could not read coordinates from the link. Please paste a valid Google Maps link or click on the map to place the pin.')
+        return
+      }
+    }
+
     if (step < totalSteps) setStep(step + 1)
   }
 
@@ -641,8 +720,8 @@ function OwnerOnboardingContent() {
     e.preventDefault()
     setSubmitError(null)
     
-    if (!formData.latitude || !formData.longitude) {
-      alert('Please pin your property location before submitting.')
+    if (!formData.mapLink.trim() || !formData.latitude || !formData.longitude) {
+      alert('Please add a valid Google Maps link so we can pin the exact property location before submitting.')
       return
     }
 
@@ -651,8 +730,8 @@ function OwnerOnboardingContent() {
       ? window.localStorage.getItem('ownerId')
       : null
     
-    if (!existingOwnerId && (!formData.ownerName || !formData.ownerPhone)) {
-      alert('Please add your name and contact number before listing your property.')
+    if (!existingOwnerId && (!formData.ownerName || !formData.ownerPhone || formData.ownerPhone.replace(/\D/g, '').length !== 10)) {
+      alert('Please add your name and a valid 10-digit contact number before listing your property.')
       return
     }
 
@@ -665,7 +744,13 @@ function OwnerOnboardingContent() {
 
       const sizeNum = parseInt(formData.size?.replace(/[^0-9]/g, '') || '0')
       const rentNum = parseInt(formData.rent?.replace(/[^0-9]/g, '') || '0')
-      const depositNum = parseInt(formData.deposit?.replace(/[^0-9]/g, '') || '0')
+      
+      // Parse deposit - user enters in months, convert to amount
+      const depositInput = formData.deposit || ''
+      const depositMonths = parseInt(depositInput.replace(/[^0-9]/g, '') || '0')
+      // Calculate security deposit amount: monthly rent * number of months
+      const depositAmount = depositMonths > 0 && rentNum > 0 ? rentNum * depositMonths : 0
+      
       const amenitiesArray = formData.amenities
         ? formData.amenities.split(',').map((f: string) => f.trim()).filter(Boolean)
         : []
@@ -692,12 +777,13 @@ function OwnerOnboardingContent() {
             city: formData.location.split(',')[0] || formData.location,
             size: sizeNum,
             price: rentNum,
-            securityDeposit: depositNum > 0 ? depositNum : null,
+            securityDeposit: depositAmount > 0 ? depositAmount : null,
             propertyType: formData.propertyType,
             latitude: parseFloat(formData.latitude),
             longitude: parseFloat(formData.longitude),
             amenities: amenitiesArray,
             images: mediaUrls,
+            mapLink: formData.mapLink.trim() || undefined,
           }
         : {
             // Create format - original structure
@@ -710,11 +796,12 @@ function OwnerOnboardingContent() {
           property: {
             propertyType: formData.propertyType,
             location: formData.location,
+              mapLink: formData.mapLink.trim() || undefined,
             latitude: parseFloat(formData.latitude),
             longitude: parseFloat(formData.longitude),
             size: sizeNum,
             rent: rentNum,
-            deposit: depositNum,
+            deposit: depositAmount, // Now correctly calculated as amount (rent * months)
             amenities: amenitiesArray,
             description: formData.description,
             images: mediaUrls,
@@ -729,7 +816,14 @@ function OwnerOnboardingContent() {
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null)
-        throw new Error(errorBody?.error || `Failed to ${isUpdate ? 'update' : 'save'} property. Please try again.`)
+        const errorMessage = errorBody?.error || errorBody?.message || `Failed to ${isUpdate ? 'update' : 'save'} property. Please try again.`
+        console.error('[Property Submit] API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorBody,
+          requestBody: requestBody
+        })
+        throw new Error(errorMessage)
       }
 
       const result = await response.json()
@@ -791,7 +885,7 @@ function OwnerOnboardingContent() {
             location: formData.location,
             size: sizeNum,
             rent: rentNum,
-            deposit: depositNum,
+            deposit: depositAmount,
             amenities: amenitiesArray,
             description: formData.description,
           },
@@ -807,7 +901,13 @@ function OwnerOnboardingContent() {
       }
     } catch (error: any) {
       console.error('Error listing property:', error)
-      setSubmitError(error.message || 'Something went wrong while listing your property.')
+      const errorMessage = error?.message || error?.toString() || 'Something went wrong while listing your property.'
+      setSubmitError(errorMessage)
+      
+      // Log detailed error for debugging
+      if (error?.stack) {
+        console.error('Error stack:', error.stack)
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -816,6 +916,15 @@ function OwnerOnboardingContent() {
   const renderPropertySummary = () => {
     const photosCount = formData.photos.length
     const videosCount = formData.videos.length
+
+    // Calculate security deposit for display (convert months to amount)
+    const rentNum = parseInt(formData.rent?.replace(/[^0-9]/g, '') || '0')
+    const depositInput = formData.deposit || ''
+    const depositMonths = parseInt(depositInput.replace(/[^0-9]/g, '') || '0')
+    const depositAmount = depositMonths > 0 && rentNum > 0 ? rentNum * depositMonths : 0
+    const depositDisplay = depositAmount > 0 
+      ? `₹${depositAmount.toLocaleString('en-IN')}` 
+      : (formData.deposit || 'Not specified')
 
     return (
       <div className="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 space-y-4">
@@ -843,6 +952,10 @@ function OwnerOnboardingContent() {
             <div className="font-semibold text-gray-900">{formData.location || 'Not specified'}</div>
           </div>
           <div className="space-y-1.5">
+            <div className="text-xs font-medium text-gray-500 uppercase">Google Maps Link</div>
+            <div className="font-semibold text-gray-900 break-words">{formData.mapLink || 'Not added'}</div>
+          </div>
+          <div className="space-y-1.5">
             <div className="text-xs font-medium text-gray-500 uppercase">Space Size</div>
             <div className="font-semibold text-gray-900">{formData.size || 'Not specified'}</div>
           </div>
@@ -852,7 +965,7 @@ function OwnerOnboardingContent() {
           </div>
           <div className="space-y-1.5">
             <div className="text-xs font-medium text-gray-500 uppercase">Security Deposit</div>
-            <div className="font-semibold text-gray-900">{formData.deposit || 'Not specified'}</div>
+            <div className="font-semibold text-gray-900">{depositDisplay}</div>
           </div>
           <div className="space-y-1.5">
             <div className="text-xs font-medium text-gray-500 uppercase">Amenities</div>
@@ -1009,18 +1122,27 @@ function OwnerOnboardingContent() {
                           type="tel"
                           name="ownerPhone"
                           value={formData.ownerPhone}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
+                          onChange={handleChange}
+                          required
+                          pattern="\d{10}"
+                          maxLength={10}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
+                            phoneError
+                              ? 'border-red-400 focus:border-red-500'
+                              : 'border-gray-300 focus:border-[#FF5200]'
+                          }`}
                           placeholder="Your mobile number"
-                    />
+                        />
+                        {phoneError && (
+                          <p className="mt-1 text-xs text-red-600">{phoneError}</p>
+                        )}
                   </div>
                     </div>
                   )}
                   {hasExistingOwner && (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                       <p className="text-sm text-blue-800">
-                        Welcome back! Your contact information is already saved. Just pin your property location below.
+                        Welcome back! Your contact information is already saved. Just add your Google Maps link below.
                       </p>
                     </div>
                   )}
@@ -1105,32 +1227,19 @@ function OwnerOnboardingContent() {
                       </button>
                       
                       {formData.latitude && formData.longitude && (
-                        <button
-                          type="button"
-                          onClick={openGoogleMaps}
-                          className="px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:border-[#FF5200] transition-all flex items-center justify-center gap-2"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                          </svg>
-                          View
-                        </button>
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm text-green-800">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="font-medium">Pin set at:</span>
+                            <span className="text-xs">
+                              {formData.latitude.substring(0, 8)}, {formData.longitude.substring(0, 8)}
+                            </span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    
-                    {formData.latitude && formData.longitude && (
-                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center gap-2 text-sm text-green-800">
-                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="font-medium">Location Pinned:</span>
-                          <span className="text-xs">
-                            {formData.latitude.substring(0, 8)}, {formData.longitude.substring(0, 8)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="mt-4 h-64 rounded-xl border border-gray-200 overflow-hidden">
                       {!isMapLoaded && !mapLoadError && (
@@ -1286,17 +1395,25 @@ function OwnerOnboardingContent() {
                             const images = files.filter(f => f.type.startsWith('image/'))
                             const videos = files.filter(f => f.type.startsWith('video/'))
                             
-                            if (formData.photos.length + images.length <= 10) {
-                              setFormData({ ...formData, photos: [...formData.photos, ...images] })
-                            } else {
+                            setFormData(prev => {
+                              const maxPhotoSlots = Math.max(0, 10 - prev.photos.length)
+                              const photosToAdd = images.slice(0, maxPhotoSlots)
+                              if (images.length > photosToAdd.length) {
                               alert('Maximum 10 photos allowed')
                             }
                             
-                            if (formData.videos.length + videos.length <= 3) {
-                              setFormData({ ...formData, videos: [...formData.videos, ...videos] })
-                            } else {
+                              const maxVideoSlots = Math.max(0, 3 - prev.videos.length)
+                              const videosToAdd = videos.slice(0, maxVideoSlots)
+                              if (videos.length > videosToAdd.length) {
                               alert('Maximum 3 videos allowed')
                             }
+
+                              return {
+                                ...prev,
+                                photos: [...prev.photos, ...photosToAdd],
+                                videos: [...prev.videos, ...videosToAdd],
+                              }
+                            })
                           }
                         }}
                         className="hidden"
@@ -1368,7 +1485,7 @@ function OwnerOnboardingContent() {
                             <button
                               type="button"
                               onClick={() => removeVideo(index)}
-                              className="w-8 h-8 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                              className="w-8 h-8 bg-red-500 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

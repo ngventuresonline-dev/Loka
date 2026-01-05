@@ -10,14 +10,19 @@ import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
-const propertyTypes = [
-  'Office',
-  'Retail Space',
+// FnB property types (shown in quick options)
+const fnbPropertyTypes = [
   'Restaurant',
   'Food Court',
   'Café / Coffee Shop',
   'QSR (Quick Service Restaurant)',
-  'Dessert / Bakery',
+  'Dessert / Bakery'
+]
+
+// Other property types (in dropdown only)
+const otherPropertyTypes = [
+  'Office',
+  'Retail Space',
   'Warehouse',
   'Mall Space',
   'Standalone Building',
@@ -35,6 +40,10 @@ const propertyTypes = [
   'Kiosk',
   'Other'
 ]
+
+// Combined list for backward compatibility
+const propertyTypes = [...fnbPropertyTypes, ...otherPropertyTypes]
+
 // Popular areas shown first, then alphabetical
 const popularAreas = [
   'Koramangala',
@@ -112,6 +121,7 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
   
   // Slider range: 0-100 (linear slider position)
   const SLIDER_MAX = 100
+  const SIZE_STEP = 50
   const LINEAR_RANGE_END = 4000 // 3000-4000 sqft should be at 50-60% (55%)
   const LINEAR_PERCENT = 55 // 55% of slider for linear range
   
@@ -173,17 +183,12 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
     setExactSize(value)
     if (value) {
       const numValue = parseInt(value)
-      if (numValue >= 0 && numValue <= 50000) {
-        setSize(numValue)
-        if (onSizeChange) {
-          onSizeChange(numValue)
-        }
-      } else if (numValue > 50000) {
-        setSize(50000)
-        setExactSize('50000')
-        if (onSizeChange) {
-          onSizeChange(50000)
-        }
+      const bounded = Math.min(Math.max(numValue, 0), 50000)
+      const rounded = Math.round(bounded / SIZE_STEP) * SIZE_STEP
+      setSize(rounded)
+      setExactSize(rounded.toString())
+      if (onSizeChange) {
+        onSizeChange(rounded)
       }
     } else {
       // Allow empty input for typing
@@ -197,10 +202,11 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const sliderValue = parseFloat(e.target.value)
     const actualSize = sliderToSize(sliderValue)
-    setSize(actualSize)
-    setExactSize(actualSize.toString())
+    const roundedSize = Math.round(actualSize / SIZE_STEP) * SIZE_STEP
+    setSize(roundedSize)
+    setExactSize(roundedSize.toString())
     if (onSizeChange) {
-      onSizeChange(actualSize)
+      onSizeChange(roundedSize)
     }
   }
   
@@ -376,6 +382,8 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
   
   // Slider range: 0-100 (linear slider position)
   const SLIDER_MAX = 100
+  const RENT_STEP = 5000
+  const MIN_RENT = 50000
   const LINEAR_RANGE_END = 300000 // 2-3 lakhs (200000-300000) should be at 50-60% (55%)
   const LINEAR_PERCENT = 55 // 55% of slider for linear range
   
@@ -387,7 +395,19 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
     if (sliderValue <= linearEnd) {
       // Linear mapping: 50000 to LINEAR_RANGE_END
       const linearRange = LINEAR_RANGE_END - minRent
-      return Math.round(minRent + (sliderValue / linearEnd) * linearRange)
+      const calculatedRent = minRent + (sliderValue / linearEnd) * linearRange
+      
+      // Round to nearest 5000 for cleaner values
+      const rounded = Math.round(calculatedRent / 5000) * 5000
+      
+      // Ensure common values like 3 lakhs (300000) are exact
+      const commonValues = [100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000]
+      const closestCommon = commonValues.reduce((prev, curr) => 
+        Math.abs(curr - rounded) < Math.abs(prev - rounded) ? curr : prev
+      )
+      
+      // Use common value if within 5000, otherwise use rounded value
+      return Math.abs(closestCommon - rounded) <= 5000 ? closestCommon : rounded
     } else {
       // Exponential mapping: LINEAR_RANGE_END to 2000000
       const remainingSlider = sliderValue - linearEnd
@@ -399,7 +419,10 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
       const exponential = Math.pow(2, normalized * 4) - 1
       const maxExponential = Math.pow(2, 4) - 1
       
-      return Math.round(LINEAR_RANGE_END + (exponential / maxExponential) * rentRange)
+      const calculatedRent = LINEAR_RANGE_END + (exponential / maxExponential) * rentRange
+      
+      // Round to nearest 10000 for higher values
+      return Math.round(calculatedRent / 10000) * 10000
     }
   }
   
@@ -522,10 +545,11 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
                   onChange={(e) => {
                     const sliderValue = parseFloat(e.target.value)
                     const actualRent = sliderToRent(sliderValue)
-                    setRent(actualRent)
-                    setRentText(actualRent.toString())
+                    const roundedRent = Math.max(MIN_RENT, Math.round(actualRent / RENT_STEP) * RENT_STEP)
+                    setRent(roundedRent)
+                    setRentText(roundedRent.toString())
                     if (onRentChange) {
-                      onRentChange(actualRent)
+                      onRentChange(roundedRent)
                     }
                   }}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider slider-rent"
@@ -620,16 +644,17 @@ function SecurityDepositInput({ index = 0, required = false, onDepositChange, er
   const [deposit, setDeposit] = useState('')
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove all non-numeric characters including currency symbols
-    const rawValue = e.target.value.replace(/[^0-9]/g, '')
-    setDeposit(rawValue)
-    if (onDepositChange) {
-      onDepositChange(rawValue)
+    // Remove all non-numeric characters, allow decimals for fractional months
+    const rawValue = e.target.value.replace(/[^0-9.]/g, '')
+    // Limit to reasonable range (0-12 months)
+    const numValue = parseFloat(rawValue)
+    if (rawValue === '' || (!isNaN(numValue) && numValue >= 0 && numValue <= 12)) {
+      setDeposit(rawValue)
+      if (onDepositChange) {
+        onDepositChange(rawValue)
+      }
     }
   }
-  
-  // Format display value with currency symbol and commas
-  const displayValue = deposit ? `₹${parseInt(deposit || '0').toLocaleString('en-IN')}` : ''
 
   const borderColors = [
     'border-[#E4002B]/30 hover:border-[#E4002B]',
@@ -691,25 +716,28 @@ function SecurityDepositInput({ index = 0, required = false, onDepositChange, er
           </h3>
           {error && required && (
             <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-xs sm:text-sm text-red-600">Please enter security deposit amount</p>
+              <p className="text-xs sm:text-sm text-red-600">Please enter security deposit in months</p>
             </div>
           )}
 
           <div className="space-y-4 sm:space-y-6">
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                Security Deposit Amount (₹)
+                Security Deposit (Months)
               </label>
               <input
-                type="text"
-                value={displayValue}
+                type="number"
+                min="0"
+                max="12"
+                step="0.5"
+                value={deposit}
                 onChange={handleChange}
-                placeholder="e.g., 2,25,000 (3 months)"
+                placeholder="e.g., 2 or 3"
                 className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
                 style={{ fontFamily: plusJakarta.style.fontFamily }}
               />
               <p className="mt-2 text-[10px] sm:text-xs text-gray-500" style={{ fontFamily: plusJakarta.style.fontFamily }}>
-                Typically 2-3 months of rent
+                Number of months of rent (typically 2-3 months)
               </p>
             </div>
           </div>
@@ -758,6 +786,7 @@ function FilterCard({
   const [openUpward, setOpenUpward] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const [customLocation, setCustomLocation] = useState('')
   
   // Calculate if dropdown should open upward
   useEffect(() => {
@@ -1470,11 +1499,11 @@ export default function OwnerFilterPage() {
           <div data-field="propertyType" className="overflow-visible relative z-20">
             <FilterCard 
               title="Property Type" 
-              items={propertyTypes} 
+              items={propertyTypes}
               index={0} 
               required 
               useDropdown={true}
-              visibleCount={6}
+              visibleCount={fnbPropertyTypes.length}
               compactCapsules
               instructionText="Highest & Instant matches for FnB properties"
               moreLabel="Choose from more property types"

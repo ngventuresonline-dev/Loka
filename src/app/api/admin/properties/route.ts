@@ -410,6 +410,7 @@ export async function POST(request: NextRequest) {
     const waterFacility = Boolean(body.waterFacility)
     const amenities = Array.isArray(body.amenities) ? body.amenities : []
     const images = Array.isArray(body.images) ? body.images : []
+    const mapLink = body.mapLink ? String(body.mapLink).trim() : ''
     const ownerId = body.ownerId as string | undefined
     const availability = body.availability
     const isFeatured = body.isFeatured
@@ -519,6 +520,7 @@ export async function POST(request: NextRequest) {
         waterFacility,
         amenities,
         images,
+        mapLink: mapLink || null,
         ownerId: finalOwnerId!,
         availability: availability !== undefined ? Boolean(availability) : true,
         isFeatured: Boolean(isFeatured),
@@ -641,6 +643,7 @@ export async function PATCH(request: NextRequest) {
     if (updateData.city !== undefined) data.city = updateData.city
     if (updateData.state !== undefined) data.state = updateData.state
     if (updateData.zipCode !== undefined) data.zipCode = updateData.zipCode
+    if (updateData.mapLink !== undefined) data.mapLink = updateData.mapLink
     
     // Pricing
     if (updateData.price !== undefined) data.price = updateData.price
