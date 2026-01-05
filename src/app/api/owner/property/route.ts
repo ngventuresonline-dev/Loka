@@ -47,11 +47,55 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!property?.latitude || !property?.longitude) {
-      return NextResponse.json(
-        { success: false, error: 'Pinned latitude and longitude are required' },
-        { status: 400 }
-      )
+    // Extract coordinates from mapLink if not provided
+    let latitude = property?.latitude
+    let longitude = property?.longitude
+    
+    // If coordinates are missing but mapLink is provided, try to extract them
+    if ((!latitude || !longitude) && property?.mapLink) {
+      const mapLink = property.mapLink.trim()
+      
+      // Try to extract coordinates from Google Maps link
+      // Pattern 1: @lat,lng (most common)
+      const atMatch = mapLink.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+      if (atMatch) {
+        latitude = parseFloat(atMatch[1])
+        longitude = parseFloat(atMatch[2])
+      } else {
+        // Pattern 2: /place/.../@lat,lng
+        const placeMatch = mapLink.match(/\/place\/[^/]+\/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+        if (placeMatch) {
+          latitude = parseFloat(placeMatch[1])
+          longitude = parseFloat(placeMatch[2])
+        } else {
+          // Pattern 3: ?q=lat,lng or &q=lat,lng
+          const qMatch = mapLink.match(/[?&]q=(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+          if (qMatch) {
+            latitude = parseFloat(qMatch[1])
+            longitude = parseFloat(qMatch[2])
+          }
+        }
+      }
+    }
+    
+    // Require either coordinates OR a valid Google Maps link
+    const hasValidMapLink = property?.mapLink && (
+      property.mapLink.includes('maps.google.com') ||
+      property.mapLink.includes('google.com/maps') ||
+      property.mapLink.includes('goo.gl/maps') ||
+      property.mapLink.includes('maps.app.goo.gl')
+    )
+    
+    if (!latitude || !longitude) {
+      if (!hasValidMapLink) {
+        return NextResponse.json(
+          { success: false, error: 'Please provide either coordinates (latitude/longitude) or a valid Google Maps link' },
+          { status: 400 }
+        )
+      }
+      // Valid mapLink provided but coordinates couldn't be extracted - allow submission
+      // Coordinates can be extracted later or the link can be used directly
+      console.warn('[Owner Property API] No coordinates extracted from mapLink, but link is valid. Proceeding with submission.')
     }
 
     const prisma = await getPrisma()
@@ -205,6 +249,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 2) Create property record in Prisma
+    if (!property) {
+      return NextResponse.json(
+        { success: false, error: 'Property data is required' },
+        { status: 400 }
+      )
+    }
+    
     const title =
       `${property.propertyType ? property.propertyType.toString().replace(/_/g, ' ') : 'Property'} in ${property.location || 'Bangalore'}`.trim()
 
@@ -300,6 +351,12 @@ export async function POST(request: NextRequest) {
       displayOrder: null,
     }
 
+    // Include latitude and longitude (use extracted values if available)
+    if (latitude && longitude) {
+      propertyData.latitude = latitude
+      propertyData.longitude = longitude
+    }
+    
     // Include mapLink if provided
     // Note: If map_link column doesn't exist in database, run the migration:
     // ALTER TABLE properties ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000);
