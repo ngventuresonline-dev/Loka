@@ -698,13 +698,14 @@ function OwnerOnboardingContent() {
 
   const handleNext = () => {
     if (step === 1) {
-      if (!formData.mapLink.trim()) {
-        alert('Please add your Google Maps link before continuing.')
-        return
-      }
-
+      // Check if coordinates exist (from pasted link or map click)
       if (!formData.latitude || !formData.longitude) {
-        alert('We could not read coordinates from the link. Please paste a valid Google Maps link or click on the map to place the pin.')
+        // Only show alert if no coordinates AND no map link was provided
+        if (!formData.mapLink.trim() && !formData.googleMapLink.trim()) {
+          alert('Please add your Google Maps link or click on the map to place the pin before continuing.')
+        } else {
+          alert('We could not read coordinates from the link. Please paste a valid Google Maps link or click on the map to place the pin.')
+        }
         return
       }
     }
@@ -1158,88 +1159,56 @@ function OwnerOnboardingContent() {
                       <input
                         type="text"
                         placeholder="Paste Google Maps link (e.g., https://maps.google.com/...)"
-                        value={formData.googleMapLink || ''}
+                        value={formData.googleMapLink || formData.mapLink || ''}
                         onChange={(e) => {
                           const link = e.target.value
-                          setFormData(prev => ({ ...prev, googleMapLink: link }))
+                          // Update both googleMapLink and mapLink for consistency
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            googleMapLink: link,
+                            mapLink: link
+                          }))
                           
                           // Try to extract coordinates from Google Maps link
                           if (link) {
-                            const match = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
-                            if (match) {
-                              const lat = parseFloat(match[1])
-                              const lng = parseFloat(match[2])
+                            const coords = extractLatLngFromLink(link)
+                            if (coords) {
                               setFormData(prev => ({
                                 ...prev,
-                                latitude: lat.toString(),
-                                longitude: lng.toString(),
-                                googleMapLink: link
+                                latitude: coords.lat.toString(),
+                                longitude: coords.lng.toString(),
+                                googleMapLink: link,
+                                mapLink: link
                               }))
-                              setMarkerPosition({ lat, lng })
+                              setMarkerPosition({ lat: coords.lat, lng: coords.lng })
                             }
+                          } else {
+                            // Clear coordinates if link is empty
+                            setFormData(prev => ({
+                              ...prev,
+                              latitude: '',
+                              longitude: ''
+                            }))
+                            setMarkerPosition(null)
                           }
                         }}
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
                       />
                     </div>
                     
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={handlePinLocation}
-                        className="relative flex-1 px-4 py-4 text-white rounded-xl font-bold hover:shadow-2xl transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98] border border-transparent hover:border-white/30 overflow-hidden group"
-                        style={{
-                          boxShadow: '0 4px 15px rgba(228, 0, 43, 0.4), 0 0 20px rgba(255, 82, 0, 0.2)',
-                        }}
-                      >
-                        {/* Animated moving gradient background */}
-                        <div 
-                          className="absolute inset-0 animate-gradient-shift"
-                          style={{
-                            background: 'linear-gradient(90deg, #FF5200 0%, #FF6B35 25%, #E4002B 50%, #FF5200 75%, #FF6B35 100%)',
-                            backgroundSize: '200% 100%',
-                          }}
-                        ></div>
-                        
-                        {/* Shiny overlay effect that moves across */}
-                        <div 
-                          className="absolute inset-0 animate-shine"
-                          style={{
-                            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
-                            width: '50%',
-                          }}
-                        ></div>
-                        
-                        {/* Additional shine layer for depth */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        
-                        <svg className="w-6 h-6 relative z-10 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span className="relative z-10 text-base drop-shadow-lg font-extrabold">Pin My Location</span>
-                        
-                        {/* Pulsing border effect */}
-                        <div className="absolute inset-0 rounded-xl border-2 border-white/40 animate-pulse"></div>
-                        
-                        {/* Glow effect on hover */}
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#E4002B]/20 via-[#FF5200]/20 to-[#FF6B35]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
-                      </button>
-                      
-                      {formData.latitude && formData.longitude && (
-                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <div className="flex items-center gap-2 text-sm text-green-800">
-                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span className="font-medium">Pin set at:</span>
-                            <span className="text-xs">
-                              {formData.latitude.substring(0, 8)}, {formData.longitude.substring(0, 8)}
-                            </span>
-                          </div>
+                    {formData.latitude && formData.longitude && (
+                      <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm text-green-800">
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="font-medium">Pin set at:</span>
+                          <span className="text-xs">
+                            {formData.latitude.substring(0, 8)}, {formData.longitude.substring(0, 8)}
+                          </span>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     <div className="mt-4 h-64 rounded-xl border border-gray-200 overflow-hidden">
                       {!isMapLoaded && !mapLoadError && (
