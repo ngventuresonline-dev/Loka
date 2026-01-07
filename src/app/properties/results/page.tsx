@@ -249,7 +249,9 @@ function PropertiesResultsContent() {
                   const cacheKey = `results_${paramsHash}`
                   
                   // Limit stored matches to prevent quota exceeded
-                  const matchesToStore = formattedMatches.slice(0, 20).map(match => ({
+                  const matchesToStore = formattedMatches
+                    .slice(0, 20)
+                    .map((match: MatchResult) => ({
                     id: match.property?.id,
                     bfiScore: match.bfiScore,
                     property: {
