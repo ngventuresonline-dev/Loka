@@ -1,20 +1,48 @@
-'use client'
+"use client"
 
 import { useState, useEffect, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import MatchBreakdownChart from '@/components/MatchBreakdownChart'
 import { Property } from '@/types/workflow'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
-import LocationIntelligence from '@/components/LocationIntelligence'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
-import SchedulePicker from '@/components/SchedulePicker'
+
+// Heavy components are dynamically loaded to improve performance
+const MatchBreakdownChart = dynamic(
+  () => import('@/components/MatchBreakdownChart'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-24 sm:h-32 flex items-center justify-center text-xs sm:text-sm text-gray-500">
+        Loading match breakdown...
+      </div>
+    ),
+  }
+)
+
+const LocationIntelligence = dynamic(
+  () => import('@/components/LocationIntelligence'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-24 sm:h-32 flex items-center justify-center text-xs sm:text-sm text-gray-500">
+        Loading location intelligence...
+      </div>
+    ),
+  }
+)
+
+const SchedulePicker = dynamic(
+  () => import('@/components/SchedulePicker'),
+  { ssr: false }
+)
 
 const LOADING_PHRASES = [
   'Mapping your perfect location fit...',
@@ -184,9 +212,10 @@ function MatchDetailsContent() {
           city: filters.locations[0] || '',
           state: '',
           zipCode: '',
-          price: budgetRange?.max || 0,
+          // Use raw filter ranges here to avoid referencing variables before declaration
+          price: filters.budgetMax || 0,
           priceType: 'monthly',
-          size: sizeRange?.max || 0,
+          size: filters.sizeMax || 0,
           propertyType: (filters.propertyType as Property['propertyType']) || 'other',
           amenities: [],
           ownerId: '',
@@ -440,7 +469,6 @@ function MatchDetailsContent() {
                     alt={property.title}
                     fill
                     className="object-cover"
-                    unoptimized
                     loading="lazy"
                     sizes="(min-width: 1024px) 66vw, 100vw"
                   />
@@ -459,7 +487,6 @@ function MatchDetailsContent() {
                         alt={`${property.title} ${idx + 2}`}
                         fill
                         className="object-cover"
-                        unoptimized
                         loading="lazy"
                       />
                     </div>
@@ -527,12 +554,6 @@ function MatchDetailsContent() {
               )}
             </div>
 
-            {/* AI Location Intelligence - Hidden on mobile, shown on desktop */}
-            <div className="hidden lg:block">
-              <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
-                <LocationIntelligence property={property} />
-              </div>
-            </div>
           </div>
 
           {/* Brand Fit Index - Mobile: appears after Property Info, Desktop: in right column */}
@@ -562,15 +583,8 @@ function MatchDetailsContent() {
             </div>
           </div>
 
-          {/* Location Intelligence - Mobile: appears after Brand Fit Index */}
-          <div className="lg:hidden order-3">
-            <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
-              <LocationIntelligence property={property} />
-            </div>
-          </div>
-
           {/* Right Column - Match Analysis */}
-          <div className="space-y-4 sm:space-y-6 order-4 lg:order-2">
+          <div className="space-y-4 sm:space-y-6 order-3 lg:order-2">
             {/* Match Score Card - Desktop only */}
             <div className="hidden lg:block bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl p-4 sm:p-6 text-white">
               <div className="text-center mb-3 sm:mb-4">
@@ -625,6 +639,13 @@ function MatchDetailsContent() {
                 Connect with an Expert
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Location Intelligence - Full width section after Brand Fit & breakdown */}
+        <div className="mt-6 sm:mt-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+            <LocationIntelligence property={property} />
           </div>
         </div>
       </div>
