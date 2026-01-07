@@ -334,9 +334,6 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
           </div>
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
-        <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
 
       <style jsx>{`
@@ -598,9 +595,6 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
           </div>
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
-        <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
 
       <style jsx>{`
@@ -743,9 +737,6 @@ function SecurityDepositInput({ index = 0, required = false, onDepositChange, er
           </div>
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
-        <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
     </motion.section>
   )
@@ -1273,9 +1264,6 @@ function FilterCard({
           )}
         </div>
 
-        {/* Enhanced Pulse Ring */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#E4002B] opacity-0 group-hover:opacity-100"></div>
-        <div className="absolute inset-0 rounded-2xl ring-2 ring-[#E4002B]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
     </motion.section>
   )

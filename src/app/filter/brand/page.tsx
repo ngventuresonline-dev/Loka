@@ -335,9 +335,6 @@ function LocationSelector({
           </div>
         </div>
 
-        {/* Subtle hover ring without pulse animation */}
-        <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
-        <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
       </div>
     </motion.section>
   )

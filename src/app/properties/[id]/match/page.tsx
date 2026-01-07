@@ -175,6 +175,28 @@ function MatchDetailsContent() {
         console.warn('Property not found for id:', propertyId)
       }
 
+      if (!property) {
+        property = {
+          id: propertyId,
+          title: 'Property',
+          description: 'Details coming soon',
+          address: '',
+          city: filters.locations[0] || '',
+          state: '',
+          zipCode: '',
+          price: budgetRange?.max || 0,
+          priceType: 'monthly',
+          size: sizeRange?.max || 0,
+          propertyType: (filters.propertyType as Property['propertyType']) || 'other',
+          amenities: [],
+          ownerId: '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isAvailable: true,
+          images: [],
+        }
+      }
+
       // Calculate match score
       const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
         ? { min: filters.sizeMin, max: filters.sizeMax }
@@ -198,8 +220,9 @@ function MatchDetailsContent() {
       })
 
       if (matchResponse.ok) {
-        const matchData = await matchResponse.json()
-        const match = matchData.matches.find((m: any) => m.property.id === propertyId)
+        const matchPayload = await matchResponse.json()
+        const matches = Array.isArray(matchPayload.matches) ? matchPayload.matches : []
+        const match = matches.find((m: any) => m.property?.id === propertyId)
         
         if (match) {
           const matchData = {
@@ -216,29 +239,25 @@ function MatchDetailsContent() {
             timestamp: Date.now()
           }))
         } else {
-          // If not in matches, but property data exists, create a basic match object
-          if (property) {
-            const matchData = {
-              property,
-              bfiScore: 75, // Default score
-              matchReasons: ['Property available in your preferred location', 'Size matches your requirements'],
-              breakdown: {
-                locationScore: 80,
-                sizeScore: 75,
-                budgetScore: 70,
-                typeScore: 80
-              }
+          // If not in matches, fall back to property data
+          const matchData = {
+            property,
+            bfiScore: 75, // Default score
+            matchReasons: ['Property available in your preferred location', 'Size matches your requirements'],
+            breakdown: {
+              locationScore: 80,
+              sizeScore: 75,
+              budgetScore: 70,
+              typeScore: 80
             }
-            setMatchDetails(matchData)
-            // Cache the match data
-            const cacheKey = `match_${propertyId}`
-            sessionStorage.setItem(cacheKey, JSON.stringify({
-              data: matchData,
-              timestamp: Date.now()
-            }))
-          } else {
-            setMatchDetails(null)
           }
+          setMatchDetails(matchData)
+          // Cache the match data
+          const cacheKey = `match_${propertyId}`
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            data: matchData,
+            timestamp: Date.now()
+          }))
         }
       } else {
         // Fallback if match API fails
