@@ -1169,10 +1169,11 @@ export default function Home() {
           
           {/* Focused Hero Heading */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-7xl font-bold mb-2 sm:mb-2.5 md:mb-3 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2 sm:px-4">
-            <span className={`whitespace-nowrap transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}>Connecting</span>{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift whitespace-nowrap">Brands</span>
-            <span className={`whitespace-nowrap transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}> &</span><br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift whitespace-nowrap">Prime&nbsp;Properties</span>
+            <span className={`transition-colors duration-700 ${heroMode === 'owner' ? 'text-white' : 'text-gray-900'}`}>Connecting</span>
+            <br className="block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Brands&nbsp;&</span>
+            <br className="block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Prime&nbsp;Properties</span>
           </h1>
           
           {/* Commercial Real Estate | Rental subtitle */}
