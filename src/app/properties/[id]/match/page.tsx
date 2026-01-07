@@ -178,6 +178,9 @@ function MatchDetailsContent() {
   }, [showExpertModal, matchDetails, expertNotes])
 
   const fetchMatchDetails = async () => {
+    // Keep a reference property we can use even if something fails midway
+    let fallbackProperty: Property | null = null
+
     try {
       setLoading(true)
       
@@ -226,6 +229,9 @@ function MatchDetailsContent() {
         }
       }
 
+      // Store for use in catch/fallbacks
+      fallbackProperty = property as Property
+
       // Calculate match score
       const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
         ? { min: filters.sizeMin, max: filters.sizeMax }
@@ -254,23 +260,31 @@ function MatchDetailsContent() {
         const match = matches.find((m: any) => m.property?.id === propertyId)
         
         if (match) {
-          const matchData = {
+          const matchData: MatchDetails = {
             property: match.property,
             bfiScore: match.bfiScore,
             matchReasons: match.matchReasons,
             breakdown: match.breakdown
           }
           setMatchDetails(matchData)
-          // Cache the match data
-          const cacheKey = `match_${propertyId}`
-          sessionStorage.setItem(cacheKey, JSON.stringify({
-            data: matchData,
-            timestamp: Date.now()
-          }))
+          // Cache the match data (ignore quota errors)
+          try {
+            const cacheKey = `match_${propertyId}`
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+              data: matchData,
+              timestamp: Date.now()
+            }))
+          } catch (storageError: any) {
+            if (storageError?.name === 'QuotaExceededError') {
+              console.warn('[Match Page] sessionStorage quota exceeded, skipping cache')
+            } else {
+              console.warn('[Match Page] Failed to cache match data:', storageError)
+            }
+          }
         } else {
           // If not in matches, fall back to property data
-          const matchData = {
-            property,
+          const matchData: MatchDetails = {
+            property: fallbackProperty!,
             bfiScore: 75, // Default score
             matchReasons: ['Property available in your preferred location', 'Size matches your requirements'],
             breakdown: {
@@ -281,18 +295,26 @@ function MatchDetailsContent() {
             }
           }
           setMatchDetails(matchData)
-          // Cache the match data
-          const cacheKey = `match_${propertyId}`
-          sessionStorage.setItem(cacheKey, JSON.stringify({
-            data: matchData,
-            timestamp: Date.now()
-          }))
+          // Cache the match data (ignore quota errors)
+          try {
+            const cacheKey = `match_${propertyId}`
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+              data: matchData,
+              timestamp: Date.now()
+            }))
+          } catch (storageError: any) {
+            if (storageError?.name === 'QuotaExceededError') {
+              console.warn('[Match Page] sessionStorage quota exceeded, skipping cache')
+            } else {
+              console.warn('[Match Page] Failed to cache match data:', storageError)
+            }
+          }
         }
       } else {
         // Fallback if match API fails
-        if (property) {
-          const matchData = {
-            property,
+        if (fallbackProperty) {
+          const matchData: MatchDetails = {
+            property: fallbackProperty,
             bfiScore: 75,
             matchReasons: ['Property available in your preferred location'],
             breakdown: {
@@ -303,19 +325,44 @@ function MatchDetailsContent() {
             }
           }
           setMatchDetails(matchData)
-          // Cache the match data
-          const cacheKey = `match_${propertyId}`
-          sessionStorage.setItem(cacheKey, JSON.stringify({
-            data: matchData,
-            timestamp: Date.now()
-          }))
+          // Cache the match data (ignore quota errors)
+          try {
+            const cacheKey = `match_${propertyId}`
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+              data: matchData,
+              timestamp: Date.now()
+            }))
+          } catch (storageError: any) {
+            if (storageError?.name === 'QuotaExceededError') {
+              console.warn('[Match Page] sessionStorage quota exceeded, skipping cache')
+            } else {
+              console.warn('[Match Page] Failed to cache match data:', storageError)
+            }
+          }
         } else {
           setMatchDetails(null)
         }
       }
     } catch (error) {
       console.error('Error fetching match details:', error)
-      setMatchDetails(null)
+
+      // As a last resort, still try to render with a generic fallback property
+      if (fallbackProperty) {
+        const matchData: MatchDetails = {
+          property: fallbackProperty,
+          bfiScore: 70,
+          matchReasons: ['Showing basic property details due to a temporary issue with match scoring'],
+          breakdown: {
+            locationScore: 70,
+            sizeScore: 70,
+            budgetScore: 70,
+            typeScore: 70
+          }
+        }
+        setMatchDetails(matchData)
+      } else {
+        setMatchDetails(null)
+      }
     } finally {
       setLoading(false)
     }
