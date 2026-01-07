@@ -340,7 +340,7 @@ function PropertiesResultsContent() {
 
       const data = await response.json()
       
-      const matches = data.matches || []
+      const matches = (data.matches || []) as MatchResult[]
       const totalMatches = data.totalMatches || 0
       
       setMatches(matches)
@@ -353,7 +353,7 @@ function PropertiesResultsContent() {
         const cacheKey = `results_${paramsHash}`
         
         // Limit stored matches to prevent quota exceeded (store max 20 matches)
-        const matchesToStore = matches.slice(0, 20).map(match => ({
+        const matchesToStore = matches.slice(0, 20).map((match: MatchResult) => ({
           id: match.property?.id,
           bfiScore: match.bfiScore,
           // Store minimal property data
