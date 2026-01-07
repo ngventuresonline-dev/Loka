@@ -106,9 +106,6 @@ function PropertiesResultsContent() {
 
   const filters = getFilters()
   
-  // Log filters for debugging
-  console.log('[Results Page] Filters applied:', filters)
-
   useEffect(() => {
     // Only fetch if component is mounted
     if (!mounted) return
@@ -246,13 +243,36 @@ function PropertiesResultsContent() {
                 }))
                 setMatches(formattedMatches)
                 setTotalMatches(formattedMatches.length)
-                // Cache the results
-                const cacheKey = `results_${searchParams.toString()}`
-                sessionStorage.setItem(cacheKey, JSON.stringify({
-                  matches: formattedMatches,
-                  totalMatches: formattedMatches.length,
-                  timestamp: Date.now()
-                }))
+                // Cache the results (with quota protection)
+                try {
+                  const paramsHash = btoa(searchParams.toString()).substring(0, 50)
+                  const cacheKey = `results_${paramsHash}`
+                  
+                  // Limit stored matches to prevent quota exceeded
+                  const matchesToStore = formattedMatches.slice(0, 20).map(match => ({
+                    id: match.property?.id,
+                    bfiScore: match.bfiScore,
+                    property: {
+                      id: match.property?.id,
+                      title: match.property?.title?.substring(0, 100),
+                      price: match.property?.price,
+                      city: match.property?.city,
+                      propertyType: match.property?.propertyType
+                    }
+                  }))
+                  
+                  const cacheData = {
+                    matches: matchesToStore,
+                    totalMatches: formattedMatches.length,
+                    timestamp: Date.now()
+                  }
+                  
+                  sessionStorage.setItem(cacheKey, JSON.stringify(cacheData))
+                } catch (storageError: any) {
+                  if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                    console.warn('[Results] Storage quota exceeded, skipping cache')
+                  }
+                }
                 setAiMatching(false)
                 setLoading(false)
                 return
@@ -262,7 +282,6 @@ function PropertiesResultsContent() {
         }
       } catch (e: any) {
         // If brand profile fetch fails, fall through to manual search
-        console.log('Not logged in as brand or profile not found, using manual search:', e.message)
       }
       
       // Fallback: Use manual search with query params (for non-logged-in users or if brand profile fails)
@@ -318,11 +337,6 @@ function PropertiesResultsContent() {
       }
 
       const data = await response.json()
-      console.log('[Results] API Response:', {
-        matchesCount: data.matches?.length || 0,
-        totalMatches: data.totalMatches || 0,
-        minScore: data.minMatchScore || 60
-      })
       
       const matches = data.matches || []
       const totalMatches = data.totalMatches || 0
@@ -330,13 +344,82 @@ function PropertiesResultsContent() {
       setMatches(matches)
       setTotalMatches(totalMatches)
       
-      // Cache the results
-      const cacheKey = `results_${searchParams.toString()}`
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        matches,
-        totalMatches,
-        timestamp: Date.now()
-      }))
+      // Cache the results (with quota protection)
+      try {
+        // Create a shorter hash-based cache key instead of full search params
+        const paramsHash = btoa(searchParams.toString()).substring(0, 50)
+        const cacheKey = `results_${paramsHash}`
+        
+        // Limit stored matches to prevent quota exceeded (store max 20 matches)
+        const matchesToStore = matches.slice(0, 20).map(match => ({
+          id: match.property?.id,
+          bfiScore: match.bfiScore,
+          // Store minimal property data
+          property: {
+            id: match.property?.id,
+            title: match.property?.title?.substring(0, 100),
+            price: match.property?.price,
+            city: match.property?.city,
+            propertyType: match.property?.propertyType
+          }
+        }))
+        
+        const cacheData = {
+          matches: matchesToStore,
+          totalMatches,
+          timestamp: Date.now()
+        }
+        
+        const cacheString = JSON.stringify(cacheData)
+        
+        // Check size before storing (rough estimate: 5MB limit)
+        if (new Blob([cacheString]).size > 4 * 1024 * 1024) {
+          console.warn('[Results] Cache data too large, storing minimal data only')
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            totalMatches,
+            timestamp: Date.now(),
+            count: matches.length
+          }))
+        } else {
+          sessionStorage.setItem(cacheKey, cacheString)
+          
+          // Clean up old cache entries to prevent quota issues
+          try {
+            const keys = Object.keys(sessionStorage)
+            const resultKeys = keys.filter(k => k.startsWith('results_'))
+            if (resultKeys.length > 10) {
+              // Remove oldest entries (keep only last 10)
+              const entries = resultKeys.map(key => ({
+                key,
+                timestamp: JSON.parse(sessionStorage.getItem(key) || '{}').timestamp || 0
+              })).sort((a, b) => b.timestamp - a.timestamp)
+              
+              // Remove entries beyond the 10 most recent
+              entries.slice(10).forEach(entry => {
+                sessionStorage.removeItem(entry.key)
+              })
+            }
+          } catch (cleanupError) {
+            console.warn('[Results] Error cleaning up cache:', cleanupError)
+          }
+        }
+      } catch (storageError: any) {
+        // Handle quota exceeded gracefully
+        if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+          console.warn('[Results] Storage quota exceeded, skipping cache. Clearing old entries...')
+          try {
+            // Clear all old result caches
+            const keys = Object.keys(sessionStorage)
+            keys.filter(k => k.startsWith('results_')).forEach(key => {
+              sessionStorage.removeItem(key)
+            })
+          } catch (clearError) {
+            console.error('[Results] Error clearing cache:', clearError)
+          }
+        } else {
+          console.warn('[Results] Error caching results:', storageError)
+        }
+      }
       
       // If no matches, log for debugging
       if (!matches || matches.length === 0) {

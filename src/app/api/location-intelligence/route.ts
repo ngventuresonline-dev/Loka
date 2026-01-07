@@ -151,7 +151,20 @@ function buildMockResponse(lat: number, lng: number): LocationIntelligenceRespon
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as LocationIntelligenceRequest
+    let body: LocationIntelligenceRequest
+    try {
+      body = await request.json() as LocationIntelligenceRequest
+    } catch (jsonError: any) {
+      console.error('[LocationIntelligence API] JSON parse error:', jsonError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid JSON in request body',
+        },
+        { status: 400 }
+      )
+    }
+
     let { lat, lng, address, city, state, propertyType, businessType } = body
 
     if (typeof lat !== 'number' || typeof lng !== 'number') {
@@ -162,16 +175,28 @@ export async function POST(request: NextRequest) {
       const locationQuery = [address, city, state].filter(Boolean).join(', ')
 
       if (apiKey && locationQuery) {
-        const geocodeUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json')
-        geocodeUrl.searchParams.set('address', locationQuery)
-        geocodeUrl.searchParams.set('key', apiKey)
+        try {
+          const geocodeUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json')
+          geocodeUrl.searchParams.set('address', locationQuery)
+          geocodeUrl.searchParams.set('key', apiKey)
 
-        const geoRes = await fetch(geocodeUrl.toString())
-        const geoJson = await geoRes.json()
+          const geoRes = await fetch(geocodeUrl.toString(), {
+            signal: AbortSignal.timeout(10000) // 10 second timeout
+          })
+          
+          if (!geoRes.ok) {
+            console.warn('[LocationIntelligence API] Geocode API returned error:', geoRes.status)
+          } else {
+            const geoJson = await geoRes.json()
 
-        if (geoJson.results && geoJson.results[0]?.geometry?.location) {
-          lat = geoJson.results[0].geometry.location.lat
-          lng = geoJson.results[0].geometry.location.lng
+            if (geoJson.results && geoJson.results[0]?.geometry?.location) {
+              lat = geoJson.results[0].geometry.location.lat
+              lng = geoJson.results[0].geometry.location.lng
+            }
+          }
+        } catch (geocodeError: any) {
+          console.warn('[LocationIntelligence API] Geocode failed:', geocodeError.message)
+          // Continue without coordinates if geocoding fails
         }
       }
     }
@@ -193,48 +218,60 @@ export async function POST(request: NextRequest) {
     let competitors: Competitor[] = []
 
     if (apiKey) {
-      const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
-      url.searchParams.set('location', `${lat},${lng}`)
-      url.searchParams.set('radius', '1000')
-      url.searchParams.set('type', placeType)
-      url.searchParams.set('key', apiKey)
+      try {
+        const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
+        url.searchParams.set('location', `${lat},${lng}`)
+        url.searchParams.set('radius', '1000')
+        url.searchParams.set('type', placeType)
+        url.searchParams.set('key', apiKey)
 
-      const res = await fetch(url.toString())
-      const json = await res.json()
-
-      if (Array.isArray(json.results)) {
-        competitors = json.results.map((place: any) => {
-          const compLat = place.geometry?.location?.lat
-          const compLng = place.geometry?.location?.lng
-
-          const hasCoords =
-            typeof compLat === 'number' && typeof compLng === 'number'
-
-          const distanceMeters = hasCoords
-            ? haversineDistanceMeters({ lat: lat as number, lng: lng as number }, { lat: compLat, lng: compLng })
-            : Number.NaN
-
-          return {
-            name: place.name,
-            lat: compLat ?? 0,
-            lng: compLng ?? 0,
-            distanceMeters: distanceMeters,
-            rating: typeof place.rating === 'number' ? place.rating : undefined,
-            userRatingsTotal:
-              typeof place.user_ratings_total === 'number'
-                ? place.user_ratings_total
-                : undefined,
-            address: place.vicinity || place.formatted_address,
-          } as Competitor
+        const res = await fetch(url.toString(), {
+          signal: AbortSignal.timeout(15000) // 15 second timeout
         })
+        
+        if (!res.ok) {
+          console.warn('[LocationIntelligence API] Places API returned error:', res.status)
+        } else {
+          const json = await res.json()
 
-        // Filter out entries without coordinates
-        competitors = competitors.filter(
-          (c) => Number.isFinite(c.distanceMeters) && c.distanceMeters >= 0
-        )
+          if (Array.isArray(json.results)) {
+            competitors = json.results.map((place: any) => {
+              const compLat = place.geometry?.location?.lat
+              const compLng = place.geometry?.location?.lng
 
-        // Sort competitors by distance
-        competitors.sort((a, b) => a.distanceMeters - b.distanceMeters)
+              const hasCoords =
+                typeof compLat === 'number' && typeof compLng === 'number'
+
+              const distanceMeters = hasCoords
+                ? haversineDistanceMeters({ lat: lat as number, lng: lng as number }, { lat: compLat, lng: compLng })
+                : Number.NaN
+
+              return {
+                name: place.name,
+                lat: compLat ?? 0,
+                lng: compLng ?? 0,
+                distanceMeters: distanceMeters,
+                rating: typeof place.rating === 'number' ? place.rating : undefined,
+                userRatingsTotal:
+                  typeof place.user_ratings_total === 'number'
+                    ? place.user_ratings_total
+                    : undefined,
+                address: place.vicinity || place.formatted_address,
+              } as Competitor
+            })
+
+            // Filter out entries without coordinates
+            competitors = competitors.filter(
+              (c) => Number.isFinite(c.distanceMeters) && c.distanceMeters >= 0
+            )
+
+            // Sort competitors by distance
+            competitors.sort((a, b) => a.distanceMeters - b.distanceMeters)
+          }
+        }
+      } catch (placesError: any) {
+        console.warn('[LocationIntelligence API] Places API fetch failed:', placesError.message)
+        // Continue with empty competitors array - will use mock data
       }
     }
 

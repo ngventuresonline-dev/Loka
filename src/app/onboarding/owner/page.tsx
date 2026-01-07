@@ -522,23 +522,55 @@ function OwnerOnboardingContent() {
   const fetchMatchingBrands = async (filterData: any) => {
     try {
       setLoadingBrands(true)
+      
+      // Extract location - handle both array and string formats
+      const location = filterData.locations?.[0] || filterData.location || ''
+      
+      // Extract size and rent - handle both number and string formats
+      const size = typeof filterData.size === 'number' 
+        ? filterData.size 
+        : parseInt(String(filterData.size || '').replace(/[^0-9]/g, '') || '0')
+      
+      const rent = typeof filterData.rent === 'number'
+        ? filterData.rent
+        : parseInt(String(filterData.rent || '').replace(/[^0-9]/g, '') || '0')
+      
+      // Validate required fields
+      if (!filterData.propertyType || !size || !rent) {
+        console.warn('[Brand Match] Missing required fields:', {
+          propertyType: filterData.propertyType,
+          size,
+          rent,
+          location
+        })
+        setMatchingBrands([])
+        return
+      }
+      
+      const requestBody = {
+        propertyType: filterData.propertyType,
+        location: location,
+        size: size,
+        rent: rent
+      }
+      
       const response = await fetch('/api/brands/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          propertyType: filterData.propertyType,
-          location: filterData.locations?.[0],
-          size: filterData.size,
-          rent: filterData.rent
-        })
+        body: JSON.stringify(requestBody)
       })
       
       if (response.ok) {
         const data = await response.json()
         setMatchingBrands(data.matches || [])
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[Brand Match] API error:', response.status, errorData)
+        setMatchingBrands([])
       }
     } catch (error) {
-      console.error('Error fetching matching brands:', error)
+      console.error('[Brand Match] Error fetching matching brands:', error)
+      setMatchingBrands([])
     } finally {
       setLoadingBrands(false)
     }
@@ -1110,15 +1142,19 @@ function OwnerOnboardingContent() {
               </div>
             ) : matchingBrands.length > 0 ? (
               <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-                {matchingBrands.slice(0, 6).map((brand, index) => (
-                  <div key={index} className="flex-shrink-0">
+                {matchingBrands.slice(0, 6).map((brand) => (
+                  <div key={brand.id || `brand-${brand.name}-${Math.random()}`} className="flex-shrink-0">
                     <BrandCard brand={brand} />
                   </div>
                 ))}
               </div>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 sm:p-8 text-center">
-                <p className="text-sm sm:text-base text-gray-600">No matching brands found yet. Complete more details below to see matches.</p>
+                <p className="text-sm sm:text-base text-gray-600">
+                  {loadingBrands 
+                    ? 'Finding matching brands...' 
+                    : 'No matching brands found yet. Complete more details below to see matches, or check back later as more brands join our platform.'}
+                </p>
               </div>
             )}
             </div>

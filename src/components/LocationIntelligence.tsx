@@ -112,15 +112,31 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
   })
 
   useEffect(() => {
+    // AbortController to cancel previous requests
+    const abortController = new AbortController()
+    let mounted = true
+
     const fetchData = async () => {
       if (!coordinates) {
-        setError('No location data available for this property.')
+        if (mounted) {
+          setError('No location data available for this property.')
+        }
+        return
+      }
+
+      // Debounce to prevent rapid successive calls
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Check if component is still mounted and not aborted
+      if (!mounted || abortController.signal.aborted) {
         return
       }
 
       try {
-        setLoading(true)
-        setError(null)
+        if (mounted) {
+          setLoading(true)
+          setError(null)
+        }
 
         const response = await fetch('/api/location-intelligence', {
           method: 'POST',
@@ -134,7 +150,13 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
             propertyType: property.propertyType,
             businessType,
           }),
+          signal: abortController.signal,
         })
+
+        // Check if request was aborted
+        if (abortController.signal.aborted || !mounted) {
+          return
+        }
 
         if (!response.ok) {
           let errorMessage = 'Unable to load location intelligence right now.'
@@ -147,22 +169,50 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
           } catch (parseError) {
             console.error('[LocationIntelligence] API error (non-JSON response):', response.status, response.statusText)
           }
-          setError(errorMessage)
+          if (mounted) {
+            setError(errorMessage)
+            setLoading(false)
+          }
           return
         }
 
         const json = await response.json()
-        setData(json.data)
-      } catch (err) {
-        console.error('[LocationIntelligence] Fetch failed:', err)
-        setError('Unable to load location intelligence right now.')
-      } finally {
-        setLoading(false)
+        if (mounted && !abortController.signal.aborted) {
+          setData(json.data)
+          setLoading(false)
+        }
+      } catch (err: any) {
+        // Don't set error if request was aborted (component unmounted or new request started)
+        if (err.name === 'AbortError' || abortController.signal.aborted || !mounted) {
+          return
+        }
+
+        // Handle network errors gracefully
+        if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+          console.warn('[LocationIntelligence] Network error - connection may have changed or server unavailable')
+          if (mounted) {
+            setError('Unable to load location intelligence. Please check your connection and try again.')
+          }
+        } else {
+          console.error('[LocationIntelligence] Fetch failed:', err)
+          if (mounted) {
+            setError('Unable to load location intelligence right now.')
+          }
+        }
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchData()
-  }, [coordinates, property.address, property.city, property.state, property.propertyType, businessType])
+
+    // Cleanup function to abort request if component unmounts or dependencies change
+    return () => {
+      mounted = false
+      abortController.abort()
+    }
+  }, [coordinates?.lat, coordinates?.lng, property.address, property.city, property.state, property.propertyType, businessType])
 
   if (!coordinates) {
     return null

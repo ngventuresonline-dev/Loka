@@ -10,3 +10,4 @@ out/
 *.swp
 *.swo
 *~
+next-env.d.ts
