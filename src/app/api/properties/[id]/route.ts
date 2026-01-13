@@ -38,29 +38,41 @@ export async function GET(
     //
     // So we ONLY filter by id here, and keep status filtering in the list API.
     // Handle missing map_link column gracefully
+    // Also ensure status field is included if it exists
     let property
     try {
+      // Try to include status field if column exists
+      const includeFields: any = {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            userType: true,
+          },
+        },
+        _count: {
+          select: {
+            savedBy: true,
+            inquiries: true,
+          },
+        },
+      }
+      
+      // Check if status column exists and include it
+      try {
+        await prisma.$queryRawUnsafe(`SELECT status FROM properties WHERE id = $1 LIMIT 1`, propertyId)
+        // Status column exists, Prisma will include it automatically in findUnique
+      } catch {
+        // Status column doesn't exist, that's fine
+      }
+      
       property = await prisma.property.findUnique({
         where: { 
           id: propertyId,
         },
-        include: {
-          owner: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              userType: true,
-            },
-          },
-          _count: {
-            select: {
-              savedBy: true,
-              inquiries: true,
-            },
-          },
-        },
+        include: includeFields,
       })
     } catch (error: any) {
       // If map_link column doesn't exist, query without it using raw SQL

@@ -59,6 +59,21 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
     
+    // Check if status column exists (do this once before building filters)
+    let statusColumnExists = false
+    if (status) {
+      try {
+        // Check if status column exists by attempting a simple query
+        await prisma.$queryRawUnsafe(`SELECT status FROM properties LIMIT 1`)
+        statusColumnExists = true
+        console.log('[Admin properties] ✅ Status column exists, using status filter')
+      } catch (colError: any) {
+        // Status column doesn't exist, will use availability fallback
+        statusColumnExists = false
+        console.log('[Admin properties] ⚠️ Status column not found, using availability fallback')
+      }
+    }
+    
     // Build search filter
     const searchFilters: any[] = []
     if (search) {
@@ -82,23 +97,34 @@ export async function GET(request: NextRequest) {
       andConditions.push({ OR: searchFilters })
     }
     
-    // Add status filter - use availability as fallback since status column may not exist
-    // Map status filters to availability-based filters to avoid errors if status column doesn't exist
+    // Add status filter - use status column if it exists, otherwise fallback to availability
     if (status === 'pending') {
-      // Pending properties are typically not available
-      andConditions.push({ availability: false })
+      if (statusColumnExists) {
+        andConditions.push({ status: 'pending' })
+      } else {
+        // Fallback to availability if status column doesn't exist
+        // Pending properties are typically not available
+        andConditions.push({ availability: false })
+      }
     } else if (status === 'approved') {
-      // For approved properties, show available or featured properties
-      // Don't filter by status column as it may not exist
-      andConditions.push({
-        OR: [
-          { availability: true },
-          { isFeatured: true }
-        ]
-      })
+      if (statusColumnExists) {
+        andConditions.push({ status: 'approved' })
+      } else {
+        // Fallback: approved properties are typically available
+        andConditions.push({
+          OR: [
+            { availability: true },
+            { isFeatured: true }
+          ]
+        })
+      }
     } else if (status === 'rejected') {
-      // Rejected properties are typically not available
-      andConditions.push({ availability: false })
+      if (statusColumnExists) {
+        andConditions.push({ status: 'rejected' })
+      } else {
+        // Fallback: rejected properties are typically not available
+        andConditions.push({ availability: false })
+      }
     } else if (status === 'available') {
       andConditions.push({ availability: true })
     } else if (status === 'occupied') {
@@ -157,32 +183,44 @@ export async function GET(request: NextRequest) {
       // Ensure where is a valid object (empty object is valid for Prisma = all records)
       const queryWhere = Object.keys(where).length > 0 ? where : {}
       
-      // Select only needed fields - don't select status as it may not exist
-      // Status will be derived from availability in the formatting step
+      // Select only needed fields - include status if it exists
+      // Try to include status, but handle gracefully if column doesn't exist
+      const selectFields: any = {
+        id: true,
+        title: true,
+        address: true,
+        city: true,
+        size: true,
+        price: true,
+        priceType: true,
+        availability: true,
+        isFeatured: true,
+        createdAt: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      }
+      
+      // Try to include status field
+      try {
+        // Check if status column exists by attempting a test query
+        await prisma.$queryRawUnsafe(`SELECT status FROM properties LIMIT 1`)
+        selectFields.status = true
+      } catch {
+        // Status column doesn't exist, skip it
+        console.log('[Admin properties] Status column not found, using availability as fallback')
+      }
+      
       properties = await prisma.property.findMany({
         where: queryWhere,
         orderBy,
         skip: (page - 1) * limit,
         take: limit,
-        select: {
-          id: true,
-          title: true,
-          address: true,
-          city: true,
-          size: true,
-          price: true,
-          priceType: true,
-          availability: true,
-          isFeatured: true,
-          createdAt: true,
-          owner: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          }
-        }
+        select: selectFields
       })
       console.log('[Admin properties] ✅ Fetched', properties.length, 'properties from database')
       
