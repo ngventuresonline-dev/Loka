@@ -341,14 +341,17 @@ export async function GET(request: NextRequest) {
       const effectiveStatus: 'pending' | 'approved' | 'rejected' =
         rawStatus ?? (availability ? 'approved' : 'pending')
 
+      // Type-safe owner access
+      const owner = p.owner as { name?: string; email?: string } | null
+      
       return {
         id: p.id,
         title: p.title,
         address: p.address,
         city: p.city,
         owner: {
-          name: p.owner?.name || 'Unknown',
-          email: p.owner?.email || '',
+          name: owner?.name || 'Unknown',
+          email: owner?.email || '',
         },
         size: p.size,
         price: Number(p.price),
