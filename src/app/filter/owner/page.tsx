@@ -111,8 +111,8 @@ const featuresCategories = {
   'Other': ['Other']
 }
 
-// Flatten for backward compatibility
-const features = Object.values(featuresCategories).flat()
+// Flatten for backward compatibility (avoid Array.prototype.flat compatibility issues)
+const features = Object.values(featuresCategories).reduce<string[]>((acc, items) => acc.concat(items), [])
 const availabilities = ['Immediate', '1 month', '1-2 months', '3+ months']
 
 function SizeSlider({ index = 0, required = false, onSizeChange, error }: { index?: number; required?: boolean; onSizeChange?: (size: number) => void; error?: boolean }) {

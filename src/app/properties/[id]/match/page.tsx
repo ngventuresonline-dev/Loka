@@ -445,7 +445,7 @@ function MatchDetailsContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Navbar />
+        <Navbar hideOnMobile={true} />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <LokazenNodesLoader size="lg" className="mb-4" />
@@ -462,13 +462,13 @@ function MatchDetailsContent() {
   if (!matchDetails) {
     return (
       <div className="min-h-screen bg-white">
-        <Navbar />
+        <Navbar hideOnMobile={true} />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Match not found</h2>
             <p className="text-gray-600 mb-4">Unable to load match details</p>
-            <Link href="/properties" className="text-[#FF5200] hover:text-[#E4002B] font-medium">
-              ← Back to Properties
+            <Link href="/" className="text-[#FF5200] hover:text-[#E4002B] font-medium">
+              ← Back to Home
             </Link>
           </div>
         </div>
@@ -490,7 +490,7 @@ function MatchDetailsContent() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar hideOnMobile={true} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 lg:pt-28 pb-20 sm:pb-24 md:pb-12">
         {/* Back Button */}

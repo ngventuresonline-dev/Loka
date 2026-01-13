@@ -6,6 +6,7 @@ import ButtonFlowModal from './ButtonFlowModal'
 import { ButtonFlowState } from '@/lib/ai-search/button-flow'
 import { getContextualInsight } from '@/lib/loading-insights'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import { trackAISearch, trackAISearchResult, trackFormFieldFocus } from '@/lib/tracking'
 
 interface Message {
   id: string
@@ -65,6 +66,10 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) return
+
+    // Track AI search start
+    const startTime = Date.now()
+    trackAISearch(query)
 
     // Add user message
     const userMessage: Message = {
@@ -314,6 +319,13 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
       setStreamingMessageId(null)
       setIsLoading(false)
       setLoadingMessage('Processing...')
+      
+      // Track AI search result
+      const responseTime = Date.now() - startTime
+      trackAISearchResult(query, properties.length)
+      if (properties.length > 0) {
+        trackAISearch(query, responseTime)
+      }
 
     } catch (error: any) {
       console.error('[Frontend] Search error:', error)
@@ -334,7 +346,13 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    handleSearch(inputValue)
+    if (inputValue.trim()) {
+      const startTime = Date.now()
+      handleSearch(inputValue).then(() => {
+        const responseTime = Date.now() - startTime
+        // Track AI search will be handled in handleSearch after results
+      })
+    }
   }
 
   const handleButtonFlowComplete = async (data: ButtonFlowState['data']) => {
@@ -611,6 +629,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
               ref={inputRef as any}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onFocus={() => trackFormFieldFocus('ai_search', 'search_input')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()

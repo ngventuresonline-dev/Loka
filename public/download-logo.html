@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Lokazen Logo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(31, 41, 55, 0.8);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 82, 0, 0.2);
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: #9CA3AF;
+            margin-bottom: 30px;
+        }
+        .logo-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .logo-item {
+            background: rgba(17, 24, 39, 0.6);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid rgba(255, 82, 0, 0.1);
+        }
+        .logo-item h3 {
+            color: #E5E7EB;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .logo-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .download-btn {
+            background: linear-gradient(135deg, #FF5200, #E4002B);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 82, 0, 0.3);
+        }
+        .download-btn:active {
+            transform: translateY(0);
+        }
+        .info {
+            background: rgba(255, 82, 0, 0.1);
+            border-left: 3px solid #FF5200;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            color: #D1D5DB;
+            font-size: 14px;
+        }
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lokazen Logo Downloads</h1>
+        <p class="subtitle">Download the Lokazen logo in various formats</p>
+        
+        <div class="logo-preview">
+            <!-- Logo Icon Only -->
+            <div class="logo-item">
+                <h3>Logo Icon (Quantum Nodes)</h3>
+                <div class="logo-display">
+                    <img src="/lokazen-logo.svg" alt="Lokazen Logo Icon" style="width: 150px; height: 150px;">
+                </div>
+                <button class="download-btn" onclick="downloadLogo('lokazen-logo.svg', 'Lokazen-Logo-Icon.svg')">
+                    Download SVG
+                </button>
+            </div>
+            
+            <!-- Logo with Text -->
+            <div class="logo-item">
+                <h3>Logo with Text</h3>
+                <div class="logo-display">
+                    <img src="/lokazen-logo-text.svg" alt="Lokazen Logo with Text" style="width: 100%; max-width: 400px;">
+                </div>
+                <button class="download-btn" onclick="downloadLogo('lokazen-logo-text.svg', 'Lokazen-Logo-Text.svg')">
+                    Download SVG
+                </button>
+            </div>
+            
+            <!-- Favicon -->
+            <div class="logo-item">
+                <h3>Favicon</h3>
+                <div class="logo-display">
+                    <img src="/lokazen-favicon.svg" alt="Lokazen Favicon" style="width: 64px; height: 64px;">
+                </div>
+                <button class="download-btn" onclick="downloadLogo('lokazen-favicon.svg', 'Lokazen-Favicon.svg')">
+                    Download SVG Favicon
+                </button>
+                <button class="download-btn" onclick="downloadLogo('lokazen-favicon.png', 'Lokazen-Favicon.png')" style="margin-top: 10px;">
+                    Download PNG Favicon
+                </button>
+            </div>
+        </div>
+        
+        <div class="info">
+            <strong>Note:</strong> SVG files are vector-based and can be scaled to any size without quality loss. 
+            For PNG versions, you can convert the SVG files using online tools or image editing software.
+        </div>
+    </div>
+    
+    <script>
+        function downloadLogo(filename, downloadName) {
+            const link = document.createElement('a');
+            link.href = `/${filename}`;
+            link.download = downloadName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
+
+

@@ -472,7 +472,7 @@ function PropertiesResultsContent() {
 
   // Clear all filters
   const clearAllFilters = () => {
-    router.push('/properties')
+    router.push('/properties/results')
   }
 
   // Edit filters - return to brand filter page with pre-filled values

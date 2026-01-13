@@ -9,6 +9,7 @@ type CookiePreferences = {
 }
 
 const STORAGE_KEY = 'lokazen-cookie-consent'
+const FORM_INTERACTION_KEY = 'lokazen-form-interaction'
 
 function loadStoredPreferences(): CookiePreferences | null {
   if (typeof window === 'undefined') return null
@@ -30,6 +31,23 @@ function persistPreferences(prefs: CookiePreferences) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
   } catch {
     // ignore write failures (e.g., in private mode)
+  }
+}
+
+function hasFormInteraction(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(FORM_INTERACTION_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function markFormInteraction() {
+  try {
+    window.localStorage.setItem(FORM_INTERACTION_KEY, 'true')
+  } catch {
+    // ignore write failures
   }
 }
 
@@ -57,7 +75,51 @@ export default function CookieConsent() {
       setPreferences(stored)
       applyConsent(stored)
     } else {
-      setShowBanner(true)
+      // Only show banner if user has interacted with a form
+      if (hasFormInteraction()) {
+        setShowBanner(true)
+      } else {
+        // Listen for first form interaction
+        const handleFormInteraction = () => {
+          if (!hasFormInteraction()) {
+            markFormInteraction()
+            setShowBanner(true)
+          }
+        }
+
+        // Listen for focus events on inputs, textareas, selects
+        const formElements = document.querySelectorAll('input, textarea, select')
+        formElements.forEach(el => {
+          el.addEventListener('focus', handleFormInteraction, { once: true })
+        })
+
+        // Also listen for any new form elements added dynamically
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) {
+                const element = node as Element
+                const formEls = element.querySelectorAll?.('input, textarea, select')
+                formEls?.forEach(el => {
+                  el.addEventListener('focus', handleFormInteraction, { once: true })
+                })
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName)) {
+                  element.addEventListener('focus', handleFormInteraction, { once: true })
+                }
+              }
+            })
+          })
+        })
+
+        observer.observe(document.body, { childList: true, subtree: true })
+
+        return () => {
+          formElements.forEach(el => {
+            el.removeEventListener('focus', handleFormInteraction)
+          })
+          observer.disconnect()
+        }
+      }
     }
   }, [])
 
@@ -83,84 +145,81 @@ export default function CookieConsent() {
   const banner = useMemo(() => {
     if (!showBanner) return null
     return (
-      <div className="fixed inset-x-4 bottom-6 z-50 mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-xl backdrop-blur md:p-5">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-base font-semibold text-gray-900">Cookies & tracking preferences</p>
-              <p className="text-sm text-gray-700">
-                We use cookies to improve experience, measure analytics, and personalize marketing. Choose what you want
-                to allow.
+      <div className="fixed inset-x-4 bottom-4 z-[9999] mx-auto max-w-lg rounded-xl border border-orange-200 bg-white shadow-2xl md:bottom-6 md:max-w-xl">
+        <div className="p-3 md:p-4">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-900 md:text-base">Cookie Preferences</p>
+              <p className="mt-1 text-xs text-gray-600 md:text-sm">
+                We use cookies to provide better and accurate results. Choose your preferences below.
               </p>
             </div>
           </div>
-          <div className="flex flex-col gap-3">
-            <label className="flex items-start gap-3 text-sm text-gray-800">
+          <div className="mb-3 flex flex-col gap-2">
+            <label className="flex items-start gap-2.5 text-xs text-gray-800 md:text-sm">
               <input
                 type="checkbox"
                 checked
                 disabled
-                className="mt-1 h-4 w-4 cursor-not-allowed rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                className="mt-0.5 h-3.5 w-3.5 cursor-not-allowed rounded border-gray-300 text-orange-500 focus:ring-orange-500 md:h-4 md:w-4"
               />
-              <div>
+              <div className="flex-1">
                 <p className="font-medium text-gray-900">Essential</p>
-                <p className="text-xs text-gray-600">Required for site functionality and security.</p>
+                <p className="text-[10px] text-gray-600 md:text-xs">Required for site functionality.</p>
               </div>
             </label>
-            <label className="flex items-start gap-3 text-sm text-gray-800">
+            <label className="flex items-start gap-2.5 text-xs text-gray-800 md:text-sm">
               <input
                 type="checkbox"
                 checked={current.analytics}
                 onChange={e => setPreferences({ ...current, analytics: e.target.checked })}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 md:h-4 md:w-4"
               />
-              <div>
+              <div className="flex-1">
                 <p className="font-medium text-gray-900">Analytics</p>
-                <p className="text-xs text-gray-600">Helps us measure performance (Google Analytics).</p>
+                <p className="text-[10px] text-gray-600 md:text-xs">Helps us improve our services.</p>
               </div>
             </label>
-            <label className="flex items-start gap-3 text-sm text-gray-800">
+            <label className="flex items-start gap-2.5 text-xs text-gray-800 md:text-sm">
               <input
                 type="checkbox"
                 checked={current.marketing}
                 onChange={e => setPreferences({ ...current, marketing: e.target.checked })}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 md:h-4 md:w-4"
               />
-              <div>
+              <div className="flex-1">
                 <p className="font-medium text-gray-900">Marketing</p>
-                <p className="text-xs text-gray-600">Enables ad personalization (Meta Pixel).</p>
+                <p className="text-[10px] text-gray-600 md:text-xs">Personalized content and ads.</p>
               </div>
             </label>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-gray-600">
-              Read our{' '}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-[10px] text-gray-600 md:text-xs">
               <a href="/cookies" className="font-medium text-orange-600 hover:text-orange-700">
-                cookie policy
+                Cookie policy
               </a>
-              .
             </div>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={handleRejectNonEssential}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:border-gray-300 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 md:px-4 md:py-2 md:text-sm"
               >
-                Reject non-essential
+                Reject
               </button>
               <button
                 type="button"
                 onClick={() => handleSave(current)}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:border-gray-300 hover:bg-gray-50"
+                className="rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50 md:px-4 md:py-2 md:text-sm"
               >
-                Save preferences
+                Save
               </button>
               <button
                 type="button"
                 onClick={handleAcceptAll}
-                className="rounded-lg bg-gradient-to-r from-red-500 via-orange-500 to-pink-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md"
+                className="rounded-lg bg-gradient-to-r from-[#FF5200] to-[#E4002B] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:shadow-md md:px-4 md:py-2 md:text-sm"
               >
-                Accept all
+                Accept All
               </button>
             </div>
           </div>
@@ -245,4 +304,3 @@ declare global {
     fbq?: (...args: unknown[]) => void
   }
 }
-

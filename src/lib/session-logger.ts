@@ -30,32 +30,31 @@ export const getClientSessionUserId = (): string | null => {
   }
 }
 
-export const logSessionEvent = async ({
+export function logSessionEvent({
   sessionType,
   action,
   userId,
   data,
-}: SessionLogPayload) => {
+}: SessionLogPayload): void {
   if (typeof window === 'undefined') return
 
-  try {
-    const finalUserId = userId ?? getClientSessionUserId()
+  // Fire and forget - don't block the UI
+  const finalUserId = userId ?? getClientSessionUserId()
 
-    await fetch('/api/sessions/log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionType,
-        userId: finalUserId,
-        data,
-        action,
-      }),
-      keepalive: action === 'navigate' || action === 'submit',
-    })
-  } catch (error) {
+  fetch('/api/sessions/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sessionType,
+      userId: finalUserId,
+      data,
+      action,
+    }),
+    keepalive: action === 'navigate' || action === 'submit',
+  }).catch((error) => {
     // Avoid breaking UX on logging failures
     console.warn('[session-logger] failed to log event', action, error)
-  }
+  })
 }
 
 

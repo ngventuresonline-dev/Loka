@@ -7,7 +7,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Logo from './Logo'
 
-export default function Navbar() {
+interface NavbarProps {
+  hideOnMobile?: boolean
+}
+
+export default function Navbar({ hideOnMobile = false }: NavbarProps) {
   const { user, isLoggedIn, logout, loading } = useAuth()
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -24,7 +28,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="fixed top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 z-50 bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50">
+    <nav className={`fixed top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 z-50 bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50 ${hideOnMobile ? 'hidden md:block' : ''}`}>
       <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200]/5 via-transparent to-[#E4002B]/5 rounded-2xl sm:rounded-3xl"></div>
       <div className="relative z-10 max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between items-center h-14 sm:h-16 lg:h-20">
@@ -32,16 +36,6 @@ export default function Navbar() {
             <Logo size="md" href="/" variant="light" />
           </div>
           
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/about" className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200 relative group">
-              <span>About</span>
-              <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] group-hover:w-full transition-all duration-300"></div>
-            </Link>
-            <Link href="/location-intelligence" className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200 relative group">
-              <span>Location Intel</span>
-              <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] group-hover:w-full transition-all duration-300"></div>
-            </Link>
-          </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
             {mounted && !loading && isLoggedIn && user ? (

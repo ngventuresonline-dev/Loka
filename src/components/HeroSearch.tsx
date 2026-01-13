@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import { parseQuery, parsedQueryToParams } from '@/lib/query-parser'
+import { trackSearch, trackFormFieldFocus } from '@/lib/tracking'
 
 // Removed framer-motion for instant render - using CSS animations instead
 
@@ -59,6 +60,9 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
   const goToFilter = useCallback(() => {
     try {
       if (mode === 'brand' && searchQuery.trim()) {
+        // Track search event
+        trackSearch(searchQuery, mode)
+        
         // Parse the query and extract requirements
         const parsed = parseQuery(searchQuery)
         const params = parsedQueryToParams(parsed)
@@ -154,6 +158,7 @@ export default function HeroSearch({ onModeChange }: HeroSearchProps = {}) {
 
   const handleInputFocus = useCallback(() => {
     setIsTyping(true)
+    trackFormFieldFocus('hero_search', 'search_input')
     // Scrolling is handled by useEffect to ensure proper mobile keyboard handling
   }, [])
 

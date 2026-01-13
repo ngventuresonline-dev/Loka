@@ -5,6 +5,7 @@ import { useState, memo } from 'react'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import LokazenNodesPlaceholder from './LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import { trackPropertyView, trackCardClick } from '@/lib/tracking'
 
 interface PropertyCardProps {
   property: Property
@@ -108,6 +109,9 @@ function PropertyCard({
         property_id: property.id,
       },
     })
+    // Track analytics events
+    trackCardClick('property', property.id, property.title || undefined)
+    trackPropertyView(property.id, property.title || undefined, property.location || undefined)
   }
 
   return (

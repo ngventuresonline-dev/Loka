@@ -351,11 +351,9 @@ export async function POST(request: NextRequest) {
       displayOrder: null,
     }
 
-    // Include latitude and longitude (use extracted values if available)
-    if (latitude && longitude) {
-      propertyData.latitude = latitude
-      propertyData.longitude = longitude
-    }
+    // Note: latitude and longitude are not stored in the Property model
+    // They are validated during creation but not persisted to the database
+    // The mapLink field is used instead for location reference
     
     // Include mapLink if provided
     // Note: If map_link column doesn't exist in database, run the migration:

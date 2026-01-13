@@ -1092,7 +1092,7 @@ export default function Home() {
         </div>
       </div>
       
-      <Navbar />
+      <Navbar hideOnMobile={showMobileNav} />
 
       {/* Hero Section */}
       <div className={`relative min-h-screen flex items-center justify-center pt-20 sm:pt-24 pb-12 sm:pb-16 transition-all duration-700 ${heroMode === 'owner' ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : ''}`} style={{ zIndex: 10 }}>
