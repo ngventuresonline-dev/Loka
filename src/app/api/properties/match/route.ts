@@ -169,7 +169,11 @@ export async function POST(request: NextRequest) {
           city: p.city || '',
           state: p.state || '',
           zipCode: p.zipCode || '',
-          price: Number(p.price) || 0,
+          price: typeof p.price === 'object' && p.price !== null && 'toNumber' in p.price
+            ? (p.price as any).toNumber()
+            : typeof p.price === 'bigint'
+            ? Number(p.price)
+            : Number(p.price) || 0,
           priceType: (p.priceType as 'monthly' | 'yearly' | 'sqft') || 'monthly',
           size: Number(p.size) || 0,
           propertyType: (['office', 'retail', 'warehouse', 'restaurant', 'other'].includes(p.propertyType) 

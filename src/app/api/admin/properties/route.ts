@@ -350,6 +350,13 @@ export async function GET(request: NextRequest) {
         ? createdAt.toISOString() 
         : (createdAt ? new Date(createdAt).toISOString() : new Date().toISOString())
       
+      // Convert Decimal/BigInt to number/string to avoid serialization errors
+      const safePrice = typeof p.price === 'object' && p.price !== null && 'toNumber' in p.price
+        ? (p.price as any).toNumber()
+        : typeof p.price === 'bigint'
+        ? Number(p.price)
+        : Number(p.price) || 0
+
       return {
         id: p.id,
         title: p.title,
@@ -359,8 +366,8 @@ export async function GET(request: NextRequest) {
           name: owner?.name || 'Unknown',
           email: owner?.email || '',
         },
-        size: p.size,
-        price: Number(p.price),
+        size: Number(p.size) || 0,
+        price: safePrice,
         priceType: p.priceType,
         status: effectiveStatus,
         availability,

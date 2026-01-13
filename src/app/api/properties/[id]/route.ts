@@ -161,12 +161,36 @@ export async function GET(
       })
       .catch((err) => console.error('[Properties API] Error incrementing views:', err))
 
+    // Convert Decimal/BigInt to safe JSON-serializable values
+    const safeProperty = property ? {
+      ...property,
+      price: typeof property.price === 'object' && property.price !== null && 'toNumber' in property.price
+        ? (property.price as any).toNumber()
+        : typeof property.price === 'bigint'
+        ? Number(property.price)
+        : Number(property.price) || 0,
+      securityDeposit: property.securityDeposit 
+        ? (typeof property.securityDeposit === 'object' && property.securityDeposit !== null && 'toNumber' in property.securityDeposit
+          ? (property.securityDeposit as any).toNumber()
+          : typeof property.securityDeposit === 'bigint'
+          ? Number(property.securityDeposit)
+          : Number(property.securityDeposit))
+        : null,
+      rentEscalation: property.rentEscalation
+        ? (typeof property.rentEscalation === 'object' && property.rentEscalation !== null && 'toNumber' in property.rentEscalation
+          ? (property.rentEscalation as any).toNumber()
+          : typeof property.rentEscalation === 'bigint'
+          ? Number(property.rentEscalation)
+          : Number(property.rentEscalation))
+        : null,
+    } : null
+
     // Add caching headers for faster subsequent requests
     const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_LISTINGS)
     
     return NextResponse.json({
       success: true,
-      property,
+      property: safeProperty,
     }, { headers })
   } catch (error: any) {
     console.error('[Properties API] Error fetching property:', error)
