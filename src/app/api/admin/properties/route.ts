@@ -344,6 +344,12 @@ export async function GET(request: NextRequest) {
       // Type-safe owner access
       const owner = p.owner as { name?: string; email?: string } | null
       
+      // Type-safe createdAt access
+      const createdAt = p.createdAt as Date | null | undefined
+      const createdAtISO = createdAt instanceof Date 
+        ? createdAt.toISOString() 
+        : (createdAt ? new Date(createdAt).toISOString() : new Date().toISOString())
+      
       return {
         id: p.id,
         title: p.title,
@@ -358,7 +364,7 @@ export async function GET(request: NextRequest) {
         priceType: p.priceType,
         status: effectiveStatus,
         availability,
-        createdAt: p.createdAt?.toISOString() || new Date().toISOString(),
+        createdAt: createdAtISO,
         isFeatured: p.isFeatured ?? false,
       }
     })
