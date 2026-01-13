@@ -402,9 +402,26 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Convert Decimal/BigInt to safe JSON-serializable values
+    const safeProperties = properties.map((p: any) => ({
+      ...p,
+      price: typeof p.price === 'object' && p.price !== null && 'toNumber' in p.price
+        ? (p.price as any).toNumber()
+        : typeof p.price === 'bigint'
+        ? Number(p.price)
+        : Number(p.price) || 0,
+      securityDeposit: p.securityDeposit
+        ? (typeof p.securityDeposit === 'object' && p.securityDeposit !== null && 'toNumber' in p.securityDeposit
+          ? (p.securityDeposit as any).toNumber()
+          : typeof p.securityDeposit === 'bigint'
+          ? Number(p.securityDeposit)
+          : Number(p.securityDeposit))
+        : null,
+    }))
+
     const responseData = {
       success: true,
-      properties,
+      properties: safeProperties,
       pagination: {
         page,
         limit,
@@ -417,7 +434,7 @@ export async function GET(request: NextRequest) {
     
     // Log query size for monitoring
     const responseSize = estimateJsonSize(responseData)
-    logQuerySize('/api/properties', responseSize, properties.length)
+    logQuerySize('/api/properties', responseSize, safeProperties.length)
     
     // Add caching headers
     const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_LISTINGS)
