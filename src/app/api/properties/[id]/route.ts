@@ -6,6 +6,7 @@ import {
   checkPropertyOwnership,
 } from '@/lib/api-auth'
 import { UpdatePropertySchema } from '@/lib/validations/property'
+import { getCacheHeaders, CACHE_CONFIGS } from '@/lib/api-cache'
 
 /**
  * GET /api/properties/[id]
@@ -160,10 +161,13 @@ export async function GET(
       })
       .catch((err) => console.error('[Properties API] Error incrementing views:', err))
 
+    // Add caching headers for faster subsequent requests
+    const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_LISTINGS)
+    
     return NextResponse.json({
       success: true,
       property,
-    })
+    }, { headers })
   } catch (error: any) {
     console.error('[Properties API] Error fetching property:', error)
 
