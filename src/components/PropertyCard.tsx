@@ -111,7 +111,7 @@ function PropertyCard({
     })
     // Track analytics events
     trackCardClick('property', property.id, property.title || undefined)
-    trackPropertyView(property.id, property.title || undefined, property.location || undefined)
+    trackPropertyView(property.id, property.title || undefined, property.city || undefined)
   }
 
   return (
