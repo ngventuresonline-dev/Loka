@@ -196,16 +196,62 @@ function MatchDetailsContent() {
         propertyType: searchParams.get('propertyType') || ''
       }
 
-      // Fetch property details
-      const propertyResponse = await fetch(`/api/properties/${propertyId}`)
-      let property: any | null = null
-      if (propertyResponse.ok) {
-        const propertyData = await propertyResponse.json()
-        property = propertyData.property || propertyData
-      } else {
-        console.warn('Property not found for id:', propertyId)
+      // Calculate match score parameters
+      const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
+        ? { min: filters.sizeMin, max: filters.sizeMax }
+        : undefined
+
+      const budgetRange = filters.budgetMin > 0 || filters.budgetMax < 10000000
+        ? { min: filters.budgetMin, max: filters.budgetMax }
+        : undefined
+
+      // PARALLELIZE API calls for faster loading with timeout
+      // Optimize: pass propertyId to match API so it only fetches that property
+      const timeout = 8000 // 8 second timeout
+      const fetchWithTimeout = (url: string, options?: RequestInit) => {
+        return Promise.race([
+          fetch(url, options),
+          new Promise<Response>((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout')), timeout)
+          )
+        ])
       }
 
+      const [propertyResponse, matchResponse] = await Promise.allSettled([
+        fetchWithTimeout(`/api/properties/${propertyId}`),
+        fetchWithTimeout('/api/properties/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            propertyId, // Pass propertyId to optimize match API
+            businessType: filters.businessType,
+            sizeRange,
+            locations: filters.locations,
+            budgetRange,
+            timeline: filters.timeline,
+            propertyType: filters.propertyType
+          })
+        })
+      ])
+
+      // Process responses from Promise.allSettled
+      let property: any | null = null
+      let matchPayload: any = null
+
+      // Handle property response
+      if (propertyResponse.status === 'fulfilled' && propertyResponse.value.ok) {
+        const propertyData = await propertyResponse.value.json()
+        property = propertyData.property || propertyData
+      } else if (propertyResponse.status === 'fulfilled' && !propertyResponse.value.ok) {
+        // Property fetch failed, use fallback
+      }
+
+      // Handle match response
+      if (matchResponse.status === 'fulfilled' && matchResponse.value.ok) {
+        matchPayload = await matchResponse.value.json()
+      }
+
+      // If property not loaded, create fallback
       if (!property) {
         property = {
           id: propertyId,
@@ -215,7 +261,6 @@ function MatchDetailsContent() {
           city: filters.locations[0] || '',
           state: '',
           zipCode: '',
-          // Use raw filter ranges here to avoid referencing variables before declaration
           price: filters.budgetMax || 0,
           priceType: 'monthly',
           size: filters.sizeMax || 0,
@@ -232,30 +277,7 @@ function MatchDetailsContent() {
       // Store for use in catch/fallbacks
       fallbackProperty = property as Property
 
-      // Calculate match score
-      const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
-        ? { min: filters.sizeMin, max: filters.sizeMax }
-        : undefined
-
-      const budgetRange = filters.budgetMin > 0 || filters.budgetMax < 10000000
-        ? { min: filters.budgetMin, max: filters.budgetMax }
-        : undefined
-
-      const matchResponse = await fetch('/api/properties/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessType: filters.businessType,
-          sizeRange,
-          locations: filters.locations,
-          budgetRange,
-          timeline: filters.timeline,
-          propertyType: filters.propertyType
-        })
-      })
-
-      if (matchResponse.ok) {
-        const matchPayload = await matchResponse.json()
+      if (matchPayload) {
         const matches = Array.isArray(matchPayload.matches) ? matchPayload.matches : []
         const match = matches.find((m: any) => m.property?.id === propertyId)
         
@@ -311,7 +333,7 @@ function MatchDetailsContent() {
           }
         }
       } else {
-        // Fallback if match API fails
+        // Fallback if match API fails or times out
         if (fallbackProperty) {
           const matchData: MatchDetails = {
             property: fallbackProperty,

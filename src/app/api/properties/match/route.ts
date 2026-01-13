@@ -79,42 +79,83 @@ export async function POST(request: NextRequest) {
     //   where.propertyType = propertyType
     // }
 
-    // Fetch properties from database - limit to 50 to reduce egress
-    const properties = await prisma.property.findMany({
-      where,
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        address: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        size: true,
-        propertyType: true,
-        price: true,
-        priceType: true,
-        amenities: true,
-        images: true,
-        availability: true,
-        isFeatured: true,
-        createdAt: true,
-        updatedAt: true,
-        ownerId: true, // Include ownerId for property mapping
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true
+    // Check if a specific propertyId is requested (for view match page optimization)
+    const requestedPropertyId = body.propertyId
+    let properties: any[]
+    
+    // If specific property requested, fetch only that property for faster response
+    if (requestedPropertyId) {
+      const property = await prisma.property.findUnique({
+        where: { id: requestedPropertyId },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          size: true,
+          propertyType: true,
+          price: true,
+          priceType: true,
+          amenities: true,
+          images: true,
+          availability: true,
+          isFeatured: true,
+          createdAt: true,
+          updatedAt: true,
+          ownerId: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true
+            }
           }
         }
-      },
-      take: 30, // Reduced to 30 for faster queries
-      orderBy: {
-        isFeatured: 'desc' // Prioritize featured properties
-      }
-    })
+      })
+      
+      properties = property ? [property] : []
+    } else {
+      // Fetch properties from database - limit to 30 for faster queries
+      properties = await prisma.property.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          size: true,
+          propertyType: true,
+          price: true,
+          priceType: true,
+          amenities: true,
+          images: true,
+          availability: true,
+          isFeatured: true,
+          createdAt: true,
+          updatedAt: true,
+          ownerId: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true
+            }
+          }
+        },
+        take: 30,
+        orderBy: {
+          isFeatured: 'desc'
+        }
+      })
+    }
 
     // Convert Prisma properties to Property type
     // Be defensive about null/undefined fields so matching engine doesn't crash
