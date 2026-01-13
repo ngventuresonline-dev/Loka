@@ -643,7 +643,34 @@ export async function PATCH(request: NextRequest) {
     if (updateData.city !== undefined) data.city = updateData.city
     if (updateData.state !== undefined) data.state = updateData.state
     if (updateData.zipCode !== undefined) data.zipCode = updateData.zipCode
-    if (updateData.mapLink !== undefined) data.mapLink = updateData.mapLink
+    
+    // Handle mapLink - check if column exists first
+    if (updateData.mapLink !== undefined) {
+      // Try to add the column if it doesn't exist, then update
+      try {
+        // Check if column exists by attempting a query
+        await prisma.$queryRawUnsafe(`SELECT map_link FROM properties LIMIT 1`)
+        // Column exists, safe to update
+        data.mapLink = updateData.mapLink
+      } catch (colError: any) {
+        // Column doesn't exist, add it first
+        if (colError.message?.includes('map_link') || colError.message?.includes('does not exist')) {
+          try {
+            await prisma.$executeRawUnsafe(`
+              ALTER TABLE properties 
+              ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000)
+            `)
+            data.mapLink = updateData.mapLink
+          } catch (alterError: any) {
+            console.warn('[Admin properties] Could not add map_link column:', alterError.message)
+            // Skip mapLink update if we can't add the column
+          }
+        } else {
+          // Some other error, try to include mapLink anyway
+          data.mapLink = updateData.mapLink
+        }
+      }
+    }
     
     // Pricing
     if (updateData.price !== undefined) data.price = updateData.price

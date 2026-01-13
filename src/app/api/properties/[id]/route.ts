@@ -37,28 +37,98 @@ export async function GET(
     // - Public visibility is already controlled by the list endpoint (/api/properties) and frontend logic.
     //
     // So we ONLY filter by id here, and keep status filtering in the list API.
-    const property = await prisma.property.findUnique({
-      where: { 
-        id: propertyId,
-      },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            userType: true,
+    // Handle missing map_link column gracefully
+    let property
+    try {
+      property = await prisma.property.findUnique({
+        where: { 
+          id: propertyId,
+        },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              userType: true,
+            },
+          },
+          _count: {
+            select: {
+              savedBy: true,
+              inquiries: true,
+            },
           },
         },
-        _count: {
-          select: {
-            savedBy: true,
-            inquiries: true,
-          },
-        },
-      },
-    })
+      })
+    } catch (error: any) {
+      // If map_link column doesn't exist, query without it using raw SQL
+      if (error.message?.includes('map_link') || error.message?.includes('does not exist')) {
+        try {
+          // First, try to add the column if it doesn't exist
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE properties 
+            ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000)
+          `)
+          
+          // Retry the original query after adding the column
+          property = await prisma.property.findUnique({
+            where: { 
+              id: propertyId,
+            },
+            include: {
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone: true,
+                  userType: true,
+                },
+              },
+              _count: {
+                select: {
+                  savedBy: true,
+                  inquiries: true,
+                },
+              },
+            },
+          })
+        } catch (alterError: any) {
+          // If we can't add the column, query without it using raw SQL
+          console.warn('[Properties API] Could not add map_link column, using fallback query:', alterError.message)
+          const rawProperty = await prisma.$queryRawUnsafe<Array<any>>(
+            `SELECT p.*, 
+              json_build_object('id', u.id, 'name', u.name, 'email', u.email, 'phone', u.phone, 'userType', u.user_type) as owner,
+              (SELECT COUNT(*) FROM saved_properties WHERE property_id = p.id) as saved_count,
+              (SELECT COUNT(*) FROM inquiries WHERE property_id = p.id) as inquiry_count
+              FROM properties p
+              LEFT JOIN users u ON p.owner_id = u.id
+              WHERE p.id = $1`,
+            propertyId
+          )
+          
+          if (rawProperty && rawProperty.length > 0) {
+            const prop = rawProperty[0]
+            // Map the raw result to Prisma format
+            property = {
+              ...prop,
+              mapLink: null, // Column doesn't exist, set to null
+              owner: typeof prop.owner === 'object' ? prop.owner : null,
+              _count: {
+                savedBy: Number(prop.saved_count) || 0,
+                inquiries: Number(prop.inquiry_count) || 0,
+              },
+            } as any
+          } else {
+            property = null
+          }
+        }
+      } else {
+        throw error
+      }
+    }
 
     if (!property) {
       return NextResponse.json(
