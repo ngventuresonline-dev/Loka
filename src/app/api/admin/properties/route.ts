@@ -698,39 +698,48 @@ export async function PATCH(request: NextRequest) {
     if (updateData.state !== undefined) data.state = updateData.state
     if (updateData.zipCode !== undefined) data.zipCode = updateData.zipCode
     
-    // Handle mapLink - check if column exists first
+    // Handle mapLink - ensure column exists, then save
     if (updateData.mapLink !== undefined) {
-      // Try to add the column if it doesn't exist, then update
       try {
-        // Check if column exists by attempting a query
-        await prisma.$queryRawUnsafe(`SELECT map_link FROM properties LIMIT 1`)
-        // Column exists, safe to update
-        data.mapLink = updateData.mapLink
-      } catch (colError: any) {
-        // Column doesn't exist, add it first
-        if (colError.message?.includes('map_link') || colError.message?.includes('does not exist')) {
-          try {
-            await prisma.$executeRawUnsafe(`
-              ALTER TABLE properties 
-              ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000)
-            `)
-            data.mapLink = updateData.mapLink
-          } catch (alterError: any) {
-            console.warn('[Admin properties] Could not add map_link column:', alterError.message)
-            // Skip mapLink update if we can't add the column
-          }
-        } else {
-          // Some other error, try to include mapLink anyway
-          data.mapLink = updateData.mapLink
-        }
+        // Try to add column if it doesn't exist (idempotent)
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE properties 
+          ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000)
+        `).catch(() => {}) // Ignore error if column already exists
+        data.mapLink = updateData.mapLink || null
+      } catch (error: any) {
+        // If column add fails, try to save anyway (column might already exist)
+        data.mapLink = updateData.mapLink || null
       }
     }
     
-    // Pricing
-    if (updateData.price !== undefined) data.price = updateData.price
+    // Pricing - ensure proper number conversion
+    if (updateData.price !== undefined) {
+      data.price = typeof updateData.price === 'number' ? updateData.price : Number(updateData.price) || 0
+    }
     if (updateData.priceType !== undefined) data.priceType = updateData.priceType
-    if (updateData.securityDeposit !== undefined) data.securityDeposit = updateData.securityDeposit
-    if (updateData.rentEscalation !== undefined) data.rentEscalation = updateData.rentEscalation
+    
+    // Security deposit - convert to number or null
+    if (updateData.securityDeposit !== undefined) {
+      if (updateData.securityDeposit === null || updateData.securityDeposit === '' || updateData.securityDeposit === 0) {
+        data.securityDeposit = null
+      } else {
+        data.securityDeposit = typeof updateData.securityDeposit === 'number' 
+          ? updateData.securityDeposit 
+          : Number(updateData.securityDeposit) || null
+      }
+    }
+    
+    // Rent escalation - convert to number or null
+    if (updateData.rentEscalation !== undefined) {
+      if (updateData.rentEscalation === null || updateData.rentEscalation === '' || updateData.rentEscalation === 0) {
+        data.rentEscalation = null
+      } else {
+        data.rentEscalation = typeof updateData.rentEscalation === 'number'
+          ? updateData.rentEscalation
+          : Number(updateData.rentEscalation) || null
+      }
+    }
     
     // Property details
     if (updateData.size !== undefined) data.size = updateData.size

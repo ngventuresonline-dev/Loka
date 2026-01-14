@@ -59,8 +59,8 @@ export default function PropertiesPage() {
     
     try {
       setLoading(true)
-      // Fetch ONLY approved properties from API
-      const url = `/api/admin/properties?userEmail=${encodeURIComponent(userEmail)}&status=approved&limit=1000`
+      // Optimize: Fetch with pagination and limit to reduce load time
+      const url = `/api/admin/properties?userEmail=${encodeURIComponent(userEmail)}&status=approved&limit=50&page=1`
       const response = await fetch(url)
       
       if (response.ok) {
