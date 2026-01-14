@@ -348,8 +348,15 @@ export default function ButtonFlowModal({ isOpen, onClose, onComplete }: ButtonF
       entityType: state.data.entityType || 'brand',
       businessType: state.data.businessType,
       selectedAreas: state.data.selectedAreas || selectedAreas,
-      sizeRange: state.data.sizeRange,
-      budgetRange: state.data.budgetRange,
+      // Ensure we only send structured range objects, not string literals like "custom"
+      sizeRange:
+        state.data.sizeRange && typeof state.data.sizeRange === 'object'
+          ? { min: (state.data.sizeRange as any).min, max: (state.data.sizeRange as any).max }
+          : undefined,
+      budgetRange:
+        state.data.budgetRange && typeof state.data.budgetRange === 'object'
+          ? { min: (state.data.budgetRange as any).min, max: (state.data.budgetRange as any).max }
+          : undefined,
       brandName: formData.brandName,
       contactPerson: formData.contactPerson,
       phone: formData.phone,
