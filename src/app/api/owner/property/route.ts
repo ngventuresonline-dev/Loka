@@ -410,7 +410,8 @@ export async function POST(request: NextRequest) {
       location: property.location || 'Bangalore',
       size: size,
       rent: rent,
-      deposit: securityDeposit,
+      // Normalize nullable securityDeposit to match webhook type (number | undefined)
+      deposit: securityDeposit ?? undefined,
       ownerName: owner?.name,
       ownerEmail: owner?.email,
       ownerPhone: owner?.phone
