@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
+import { sendBrandOnboardingWebhook } from '@/lib/pabbly-webhook'
 
 const audiencePresets = [
   'Young professionals',
@@ -158,6 +159,19 @@ function BrandOnboardingContent() {
     params.set('budgetMax', budgetMaxNum.toString())
     // Save for future prefill if needed
     localStorage.setItem('brandOnboardingSubmission', JSON.stringify(formData))
+    
+    // Send webhook to Pabbly
+    sendBrandOnboardingWebhook({
+      brandName: formData.brandName,
+      storeType: formData.storeType,
+      size: formData.size,
+      budgetMin: formData.budgetMin,
+      budgetMax: formData.budgetMax,
+      targetAudience: formData.targetAudience,
+      preferredLocations: formData.preferredLocations,
+      additionalRequirements: formData.additionalRequirements || ''
+    }).catch(err => console.warn('Failed to send brand onboarding webhook:', err))
+    
     router.push(`/properties/results?${params.toString()}`)
   }
 

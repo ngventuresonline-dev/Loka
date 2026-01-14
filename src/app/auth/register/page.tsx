@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createUser } from '@/lib/auth'
 import Logo from '@/components/Logo'
+import { sendUserRegistrationWebhook } from '@/lib/pabbly-webhook'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -57,6 +58,14 @@ export default function RegisterPage() {
     setLoading(false)
 
     if (result.success) {
+      // Send webhook to Pabbly
+      sendUserRegistrationWebhook({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        userType: formData.userType
+      }).catch(err => console.warn('Failed to send registration webhook:', err))
+      
       // Redirect to onboarding based on user type
       if (formData.userType === 'brand') {
         router.push('/?step=brand-onboarding')

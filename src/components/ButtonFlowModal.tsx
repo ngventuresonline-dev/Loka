@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { ButtonFlowState, FlowStep, ButtonOption, FLOW_STEPS, isRecommended } from '@/lib/ai-search/button-flow'
 import { getIcon } from '@/components/Icons'
+import { sendButtonFlowCompletionWebhook } from '@/lib/pabbly-webhook'
 // import PropertyCard from './PropertyCard' // Will be used when displaying properties
 
 interface ButtonFlowModalProps {
@@ -342,6 +343,21 @@ export default function ButtonFlowModal({ isOpen, onClose, onComplete }: ButtonF
   }
 
   const handleConfirm = () => {
+    // Send webhook to Pabbly
+    sendButtonFlowCompletionWebhook({
+      entityType: state.data.entityType || 'brand',
+      businessType: state.data.businessType,
+      selectedAreas: state.data.selectedAreas || selectedAreas,
+      sizeRange: state.data.sizeRange,
+      budgetRange: state.data.budgetRange,
+      brandName: formData.brandName,
+      contactPerson: formData.contactPerson,
+      phone: formData.phone,
+      email: formData.email,
+      additionalNotes: formData.additionalNotes,
+      ...state.data
+    }).catch(err => console.warn('Failed to send button flow webhook:', err))
+    
     // Handle owner flow completion
     if (state.data.entityType === 'owner') {
       onComplete(state.data)

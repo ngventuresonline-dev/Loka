@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendLeadCreationWebhook } from '@/lib/pabbly-webhook'
 
 export async function POST(req: Request) {
   try {
@@ -59,6 +60,19 @@ export async function POST(req: Request) {
     )
 
     console.log('[LEADS][CREATE] Lead saved for userId:', userId)
+
+    // Send webhook to Pabbly
+    sendLeadCreationWebhook({
+      name: name || email || phone || 'Brand Lead',
+      email,
+      phone,
+      businessType: businessTypeRaw,
+      locations,
+      budgetMin,
+      budgetMax,
+      sizeMin,
+      sizeMax
+    }).catch(err => console.warn('[LEADS][CREATE] Failed to send webhook:', err))
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

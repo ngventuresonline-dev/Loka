@@ -3,6 +3,7 @@ import { getPrisma, executePrismaQuery } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import bcrypt from 'bcryptjs'
 import { generateSecurePassword, sendOwnerWelcomeEmail } from '@/lib/email-service'
+import { sendPropertyCreationWebhook } from '@/lib/pabbly-webhook'
 
 export async function POST(request: NextRequest) {
   try {
@@ -400,6 +401,20 @@ export async function POST(request: NextRequest) {
         throw new Error(`Failed to create property: ${errorMessage}`)
       }
     }
+
+    // Send webhook to Pabbly
+    sendPropertyCreationWebhook({
+      propertyId: propertyRow.id,
+      ownerId,
+      propertyType: normalizedType,
+      location: property.location || 'Bangalore',
+      size: size,
+      rent: rent,
+      deposit: securityDeposit,
+      ownerName: owner?.name,
+      ownerEmail: owner?.email,
+      ownerPhone: owner?.phone
+    }).catch(err => console.warn('[Owner Property API] Failed to send webhook:', err))
 
     return NextResponse.json(
       {

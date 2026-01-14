@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { sendExpertConnectWebhook } from '@/lib/pabbly-webhook'
 
 /**
  * Connect with expert - saves expert requests to database.
@@ -56,6 +57,17 @@ export async function POST(request: NextRequest) {
 
     // TODO: Send email/WhatsApp notifications to user and expert team
     // TODO: Assign expert based on property location/business type
+
+    // Send webhook to Pabbly
+    sendExpertConnectWebhook({
+      propertyId,
+      brandName,
+      email,
+      phone,
+      scheduleDateTime,
+      notes,
+      requestId: expertRequest.id
+    }).catch(err => console.warn('[Expert Connect] Failed to send webhook:', err))
 
     return NextResponse.json({
       success: true,

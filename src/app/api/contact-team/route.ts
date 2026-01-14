@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { sendContactTeamWebhook } from '@/lib/pabbly-webhook'
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,6 +43,15 @@ export async function POST(request: NextRequest) {
 
     // TODO: Send email notification to admin team
     // TODO: Send confirmation email to user
+
+    // Send webhook to Pabbly
+    sendContactTeamWebhook({
+      name,
+      phone,
+      bestTime,
+      additionalRequirements,
+      searchCriteria
+    }).catch(err => console.warn('[Contact Team] Failed to send webhook:', err))
 
     return NextResponse.json({
       success: true,
