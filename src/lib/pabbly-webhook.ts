@@ -7,7 +7,7 @@ const PABBLY_WEBHOOK_URL = 'https://connect.pabbly.com/workflow/sendwebhookdata/
 
 export interface WebhookPayload {
   eventType: string
-  timestamp: string
+  timestamp?: string // Optional - added automatically by sendPabblyWebhook
   [key: string]: any
 }
 
