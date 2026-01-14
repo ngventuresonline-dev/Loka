@@ -121,6 +121,9 @@ CREATE TABLE properties (
     -- Images (stored as JSONB array of URLs)
     images JSONB,
     
+    -- Location
+    map_link VARCHAR(1000), -- Google Maps link
+    
     -- Ownership & Status
     owner_id VARCHAR(36) NOT NULL,
     is_available BOOLEAN DEFAULT TRUE,

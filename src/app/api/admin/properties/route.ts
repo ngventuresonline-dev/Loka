@@ -701,14 +701,29 @@ export async function PATCH(request: NextRequest) {
     // Handle mapLink - ensure column exists, then save
     if (updateData.mapLink !== undefined) {
       try {
-        // Try to add column if it doesn't exist (idempotent)
-        await prisma.$executeRawUnsafe(`
-          ALTER TABLE properties 
-          ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000)
-        `).catch(() => {}) // Ignore error if column already exists
+        // Check if column exists first
+        const columnExists = await prisma.$queryRawUnsafe<Array<{exists: boolean}>>(`
+          SELECT EXISTS (
+            SELECT 1 
+            FROM information_schema.columns 
+            WHERE table_name = 'properties' 
+            AND column_name = 'map_link'
+          ) as exists
+        `)
+        
+        if (!columnExists[0]?.exists) {
+          // Column doesn't exist, add it
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE properties 
+            ADD COLUMN map_link VARCHAR(1000) NULL
+          `)
+        }
+        
+        // Now save the mapLink value
         data.mapLink = updateData.mapLink || null
       } catch (error: any) {
         // If column add fails, try to save anyway (column might already exist)
+        console.warn('[Admin properties] Map link column check/add failed:', error.message)
         data.mapLink = updateData.mapLink || null
       }
     }
