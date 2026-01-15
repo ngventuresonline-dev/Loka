@@ -55,9 +55,6 @@ export async function POST(request: NextRequest) {
 
     console.log('[Expert Connect] Request created:', expertRequest.id)
 
-    // TODO: Send email/WhatsApp notifications to user and expert team
-    // TODO: Assign expert based on property location/business type
-
     // Send webhook to Pabbly
     sendExpertConnectWebhook({
       propertyId,
@@ -66,8 +63,10 @@ export async function POST(request: NextRequest) {
       phone,
       scheduleDateTime,
       notes,
-      requestId: expertRequest.id
     }).catch(err => console.warn('[Expert Connect] Failed to send webhook:', err))
+
+    // TODO: Send email/WhatsApp notifications to user and expert team
+    // TODO: Assign expert based on property location/business type
 
     return NextResponse.json({
       success: true,

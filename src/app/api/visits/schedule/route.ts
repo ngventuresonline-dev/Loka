@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sendVisitScheduleWebhook } from '@/lib/pabbly-webhook'
 
 /**
  * Schedule a visit placeholder.
@@ -22,6 +23,17 @@ export async function POST(request: NextRequest) {
 
     // Placeholder persistence: store in-memory log (replace with DB)
     console.log('[Visit Schedule]', { propertyId, dateTime, note, name, email, phone, company })
+
+    // Send webhook to Pabbly
+    sendVisitScheduleWebhook({
+      propertyId,
+      dateTime,
+      note,
+      name,
+      email,
+      phone,
+      company,
+    }).catch(err => console.warn('[Visit Schedule] Failed to send webhook:', err))
 
     // TODO: Create brand requirement record in DB here
     // TODO: Create Cashfree payment link/session and return URL to frontend

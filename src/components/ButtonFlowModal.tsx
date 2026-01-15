@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { ButtonFlowState, FlowStep, ButtonOption, FLOW_STEPS, isRecommended } from '@/lib/ai-search/button-flow'
 import { getIcon } from '@/components/Icons'
-import { sendButtonFlowCompletionWebhook } from '@/lib/pabbly-webhook'
 // import PropertyCard from './PropertyCard' // Will be used when displaying properties
 
 interface ButtonFlowModalProps {
@@ -343,31 +342,6 @@ export default function ButtonFlowModal({ isOpen, onClose, onComplete }: ButtonF
   }
 
   const handleConfirm = () => {
-    // Send webhook to Pabbly
-    sendButtonFlowCompletionWebhook({
-      // Spread raw state first so we can override any conflicting fields below
-      ...state.data,
-      entityType: state.data.entityType || 'brand',
-      businessType: state.data.businessType,
-      selectedAreas: state.data.selectedAreas || selectedAreas,
-      // Ensure we only send structured range objects, not string literals like "custom" / "land"
-      sizeRange: (
-        state.data.sizeRange && typeof state.data.sizeRange === 'object'
-          ? { min: (state.data.sizeRange as any).min, max: (state.data.sizeRange as any).max }
-          : undefined
-      ) as { min: number; max: number } | undefined,
-      budgetRange: (
-        state.data.budgetRange && typeof state.data.budgetRange === 'object'
-          ? { min: (state.data.budgetRange as any).min, max: (state.data.budgetRange as any).max }
-          : undefined
-      ) as { min: number; max: number } | undefined,
-      brandName: formData.brandName,
-      contactPerson: formData.contactPerson,
-      phone: formData.phone,
-      email: formData.email,
-      additionalNotes: formData.additionalNotes,
-    }).catch(err => console.warn('Failed to send button flow webhook:', err))
-    
     // Handle owner flow completion
     if (state.data.entityType === 'owner') {
       onComplete(state.data)

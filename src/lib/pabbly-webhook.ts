@@ -1,316 +1,234 @@
 /**
  * Pabbly Webhook Integration
- * Sends form submissions and user actions to Pabbly webhook
+ * 
+ * This module handles sending webhook data to Pabbly Connect for various form submissions.
+ * All webhook payloads are sent to the configured Pabbly webhook URL.
  */
 
-const PABBLY_WEBHOOK_URL = 'https://connect.pabbly.com/workflow/sendwebhookdata/IjU3NjcwNTZjMDYzNjA0MzI1MjZlNTUzMDUxMzAi_pc'
+const PABBLY_WEBHOOK_URL = process.env.PABBLY_WEBHOOK_URL || 
+  'https://connect.pabbly.com/workflow/sendwebhookdata/IjU3NjcwNTZjMDYzNjA0MzI1MjZlNTUzMDUxMzAi_pc'
 
-export interface WebhookPayload {
-  eventType: string
-  timestamp?: string // Optional - added automatically by sendPabblyWebhook
-  [key: string]: any
+/**
+ * Base webhook payload structure
+ */
+interface BaseWebhookPayload {
+  formType: string
+  timestamp: string
+  source: string
 }
 
 /**
- * Send data to Pabbly webhook with retry logic
- * This function is non-blocking and won't throw errors to avoid breaking user experience
- * Automatically retries failed webhooks up to 3 times with exponential backoff
+ * Send webhook to Pabbly
  */
-export async function sendPabblyWebhook(data: WebhookPayload, retryCount = 0): Promise<void> {
-  const MAX_RETRIES = 3
-  const RETRY_DELAYS = [1000, 2000, 4000] // Exponential backoff: 1s, 2s, 4s
-
+async function sendWebhook(payload: any): Promise<void> {
   try {
-    // Don't send webhooks in development unless explicitly enabled
-    if (process.env.NODE_ENV === 'development' && !process.env.ENABLE_PABBLY_WEBHOOK) {
-      console.log('[Pabbly Webhook] Skipped in development:', data.eventType)
-      return
-    }
+    const response = await fetch(PABBLY_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
 
-    const payload = {
-      ...data,
-      timestamp: new Date().toISOString(),
-      source: 'lokazen-platform',
-      environment: process.env.NODE_ENV || 'production',
-      attempt: retryCount + 1
-    }
-
-    // Use fetch with timeout and error handling
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-
-    try {
-      const response = await fetch(PABBLY_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal
+    if (!response.ok) {
+      console.error('[Pabbly Webhook] Failed to send webhook:', {
+        status: response.status,
+        statusText: response.statusText,
+        formType: payload.formType,
       })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        // Retry on non-OK responses (except 4xx client errors)
-        if (response.status >= 500 && retryCount < MAX_RETRIES) {
-          const delay = RETRY_DELAYS[retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
-          console.warn(`[Pabbly Webhook] Server error (${response.status}), retrying in ${delay}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`)
-          await new Promise(resolve => setTimeout(resolve, delay))
-          return sendPabblyWebhook(data, retryCount + 1)
-        } else {
-          console.warn('[Pabbly Webhook] Non-OK response:', response.status, response.statusText, `(attempt ${retryCount + 1})`)
-        }
-      } else {
-        const result = await response.json().catch(() => ({ status: 'success' }))
-        if (retryCount > 0) {
-          console.log(`[Pabbly Webhook] Success after ${retryCount + 1} attempt(s):`, data.eventType, result)
-        } else {
-          console.log('[Pabbly Webhook] Success:', data.eventType, result)
-        }
-      }
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId)
-      
-      // Retry on network errors or timeouts
-      if (retryCount < MAX_RETRIES) {
-        const delay = RETRY_DELAYS[retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
-        const errorType = fetchError.name === 'AbortError' ? 'timeout' : 'network error'
-        console.warn(`[Pabbly Webhook] ${errorType} for ${data.eventType}, retrying in ${delay}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`)
-        await new Promise(resolve => setTimeout(resolve, delay))
-        return sendPabblyWebhook(data, retryCount + 1)
-      } else {
-        if (fetchError.name === 'AbortError') {
-          console.warn(`[Pabbly Webhook] Request timeout after ${MAX_RETRIES + 1} attempts:`, data.eventType)
-        } else {
-          console.warn(`[Pabbly Webhook] Request failed after ${MAX_RETRIES + 1} attempts:`, data.eventType, fetchError.message)
-        }
-      }
+    } else {
+      console.log('[Pabbly Webhook] Successfully sent webhook:', payload.formType)
     }
   } catch (error: any) {
-    // Silently fail - don't break user experience
-    console.warn('[Pabbly Webhook] Error sending webhook:', error?.message || error)
+    console.error('[Pabbly Webhook] Error sending webhook:', {
+      error: error.message,
+      formType: payload.formType,
+    })
+    // Don't throw - webhook failures shouldn't break the main flow
   }
 }
 
 /**
- * Send brand onboarding form submission
+ * 1. Brand Lead Creation Webhook
+ * Triggered when: Brand completes onboarding/search flow
  */
-export async function sendBrandOnboardingWebhook(formData: {
-  brandName: string
-  storeType: string
-  size: string
-  budgetMin: string
-  budgetMax: string
-  targetAudience: string
-  preferredLocations: string
-  additionalRequirements?: string
-  [key: string]: any
+export async function sendLeadCreationWebhook(data: {
+  name?: string
+  email?: string
+  phone?: string
+  businessType?: string | null
+  locations?: string[]
+  budgetMin?: number | null
+  budgetMax?: number | null
+  sizeMin?: number | null
+  sizeMax?: number | null
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'brand_onboarding_submission',
-    formType: 'brand_onboarding',
-    ...formData
+  await sendWebhook({
+    formType: 'brand_lead_creation',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Send owner onboarding form submission
+ * 2. Owner Lead Creation Webhook
+ * Triggered when: Owner submits initial information
  */
-export async function sendOwnerOnboardingWebhook(formData: {
-  propertyType: string
-  location: string
-  mapLink?: string
-  latitude?: string
-  longitude?: string
-  size: string
-  rent: string
-  deposit: string
-  amenities: string
-  description: string
-  ownerName: string
-  ownerEmail: string
-  ownerPhone: string
-  [key: string]: any
+export async function sendOwnerLeadWebhook(data: {
+  name?: string
+  email?: string
+  phone?: string
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'owner_onboarding_submission',
-    formType: 'owner_onboarding',
-    ...formData
+  await sendWebhook({
+    formType: 'owner_lead_creation',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Send user registration
+ * 3. User Registration Webhook
+ * Triggered when: New user registers (brand or owner)
  */
-export async function sendUserRegistrationWebhook(userData: {
+export async function sendUserRegistrationWebhook(data: {
   name: string
   email: string
   phone?: string
   userType: 'brand' | 'owner' | 'admin'
-  [key: string]: any
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'user_registration',
-    formType: 'registration',
-    ...userData
+  await sendWebhook({
+    formType: 'user_registration',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Send owner property creation
+ * 4. Contact Team Form Webhook
+ * Triggered when: User submits "Contact Team" form
  */
-export async function sendPropertyCreationWebhook(propertyData: {
-  propertyId: string
-  ownerId: string
-  propertyType: string
-  location: string
-  size?: number
-  rent?: number
-  deposit?: number
-  [key: string]: any
-}): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'property_creation',
-    formType: 'property_listing',
-    ...propertyData
-  })
-}
-
-/**
- * Send contact team form submission
- */
-export async function sendContactTeamWebhook(contactData: {
+export async function sendContactTeamWebhook(data: {
   name: string
   phone: string
   bestTime?: string
   additionalRequirements?: string
   searchCriteria?: any
-  [key: string]: any
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'contact_team_request',
-    formType: 'contact_form',
-    ...contactData
+  await sendWebhook({
+    formType: 'contact_team',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Send expert connect request
+ * 5. Expert Connect Webhook
+ * Triggered when: Brand requests to connect with expert for a property
  */
-export async function sendExpertConnectWebhook(expertData: {
+export async function sendExpertConnectWebhook(data: {
   propertyId: string
   brandName: string
   email?: string
   phone: string
   scheduleDateTime: string
   notes: string
-  [key: string]: any
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'expert_connect_request',
+  await sendWebhook({
     formType: 'expert_connect',
-    ...expertData
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Send lead creation
+ * 6. Requirements Lead Webhook
+ * Triggered when: User submits requirements form from properties page
  */
-export async function sendLeadCreationWebhook(leadData: {
+export async function sendRequirementsLeadWebhook(data: {
   name: string
-  email?: string
-  phone?: string
-  businessType?: string
-  locations?: string[]
-  budgetMin?: number
-  budgetMax?: number
-  sizeMin?: number
-  sizeMax?: number
-  [key: string]: any
+  phone: string
+  email: string
+  requirements?: string
+  searchCriteria?: any
+  source?: string
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'lead_creation',
-    formType: 'lead_form',
-    ...leadData
+  await sendWebhook({
+    formType: 'requirements_lead',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Send button flow completion
+ * 7. Property Submission Webhook
+ * Triggered when: Owner submits a new property listing
  */
-export async function sendButtonFlowCompletionWebhook(flowData: {
-  entityType: 'brand' | 'owner'
-  businessType?: string
-  selectedAreas?: string[]
-  sizeRange?: { min: number; max: number }
-  budgetRange?: { min: number; max: number }
-  [key: string]: any
+export async function sendPropertySubmissionWebhook(data: {
+  ownerId: string
+  propertyId: string
+  propertyType: string
+  location: string
+  size?: number
+  rent?: number
+  deposit?: number
+  amenities?: string[]
+  ownerName?: string
+  ownerEmail?: string
+  ownerPhone?: string
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'button_flow_completion',
-    formType: 'button_flow',
-    ...flowData
+  await sendWebhook({
+    formType: 'property_submission',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Send AI search query
+ * 8. Visit Schedule Webhook
+ * Triggered when: Brand schedules a property visit
  */
-export async function sendAISearchWebhook(searchData: {
-  query: string
-  resultsCount?: number
-  responseTime?: number
-  [key: string]: any
+export async function sendVisitScheduleWebhook(data: {
+  propertyId: string
+  dateTime: string
+  note?: string
+  name: string
+  email: string
+  phone: string
+  company?: string
 }): Promise<void> {
-  await sendPabblyWebhook({
-    eventType: 'ai_search_query',
-    formType: 'ai_search',
-    ...searchData
+  await sendWebhook({
+    formType: 'visit_schedule',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
 }
 
 /**
- * Generic webhook sender for any custom event
+ * 9. Inquiry Creation Webhook
+ * Triggered when: Brand creates an inquiry for a property
  */
-export async function sendCustomWebhook(eventType: string, data: Record<string, any>): Promise<void> {
-  await sendPabblyWebhook({
-    eventType,
-    ...data
+export async function sendInquiryCreationWebhook(data: {
+  inquiryId: string
+  propertyId: string
+  brandId: string
+  ownerId: string
+  message: string
+  brandName?: string
+  brandEmail?: string
+  propertyTitle?: string
+}): Promise<void> {
+  await sendWebhook({
+    formType: 'inquiry_creation',
+    timestamp: new Date().toISOString(),
+    source: 'lokazen_platform',
+    ...data,
   })
-}
-
-/**
- * Manually resend a webhook with fresh data
- * Useful for retrying failed webhooks or testing
- */
-export async function resendPabblyWebhook(data: WebhookPayload): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Force send even in development for manual resends
-    const originalEnv = process.env.NODE_ENV
-    const originalEnable = process.env.ENABLE_PABBLY_WEBHOOK
-    
-    // Temporarily enable webhook for resend
-    if (originalEnv === 'development') {
-      process.env.ENABLE_PABBLY_WEBHOOK = 'true'
-    }
-
-    await sendPabblyWebhook(data, 0)
-
-    // Restore original settings
-    if (originalEnv === 'development') {
-      if (!originalEnable) {
-        delete process.env.ENABLE_PABBLY_WEBHOOK
-      } else {
-        process.env.ENABLE_PABBLY_WEBHOOK = originalEnable
-      }
-    }
-
-    return { success: true }
-  } catch (error: any) {
-    return { 
-      success: false, 
-      error: error?.message || 'Failed to resend webhook' 
-    }
-  }
 }

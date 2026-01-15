@@ -3288,10 +3288,12 @@ export default function Home() {
       />
 
       {/* Brand Requirements Modal */}
-      <BrandRequirementsModal 
-        isOpen={isBrandModalOpen} 
-        onClose={() => setIsBrandModalOpen(false)} 
-      />
+      <Suspense fallback={null}>
+        <BrandRequirementsModal 
+          isOpen={isBrandModalOpen} 
+          onClose={() => setIsBrandModalOpen(false)} 
+        />
+      </Suspense>
 
       {/* Mobile Bottom Navigation - Only visible on mobile after scrolling past hero */}
       {showMobileNav && (

@@ -41,17 +41,17 @@ export async function POST(request: NextRequest) {
     //   })
     // }
 
-    // TODO: Send email notification to admin team
-    // TODO: Send confirmation email to user
-
     // Send webhook to Pabbly
     sendContactTeamWebhook({
       name,
       phone,
       bestTime,
       additionalRequirements,
-      searchCriteria
+      searchCriteria,
     }).catch(err => console.warn('[Contact Team] Failed to send webhook:', err))
+
+    // TODO: Send email notification to admin team
+    // TODO: Send confirmation email to user
 
     return NextResponse.json({
       success: true,

@@ -9,7 +9,6 @@ import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import Image from 'next/image'
 import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
-import { sendOwnerOnboardingWebhook } from '@/lib/pabbly-webhook'
 
 const BANGALORE_CENTER = { lat: 12.9716, lng: 77.5946 }
 
@@ -954,25 +953,6 @@ function OwnerOnboardingContent() {
         propertyId: result.propertyId,
         ownerId: result.ownerId,
       })
-        
-        // Send webhook to Pabbly
-        sendOwnerOnboardingWebhook({
-          propertyType: formData.propertyType,
-          location: formData.location,
-          mapLink: finalMapLink,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          size: formData.size,
-          rent: formData.rent,
-          deposit: formData.deposit,
-          amenities: formData.amenities,
-          description: formData.description,
-          ownerName: formData.ownerName,
-          ownerEmail: formData.ownerEmail,
-          ownerPhone: formData.ownerPhone,
-          propertyId: result.propertyId,
-          ownerId: result.ownerId
-        }).catch(err => console.warn('Failed to send owner onboarding webhook:', err))
         
         // Persist owner name for dashboard greeting
         if (typeof window !== 'undefined' && formData.ownerName) {

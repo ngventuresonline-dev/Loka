@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendOwnerLeadWebhook } from '@/lib/pabbly-webhook'
 
 export async function POST(req: Request) {
   try {
@@ -32,6 +33,13 @@ export async function POST(req: Request) {
     )
 
     console.log('[LEADS][OWNER] Owner profile upserted for userId:', userId)
+
+    // Send webhook to Pabbly
+    sendOwnerLeadWebhook({
+      name: name || email || phone || 'Owner Lead',
+      email,
+      phone,
+    }).catch(err => console.warn('[LEADS][OWNER] Failed to send webhook:', err))
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

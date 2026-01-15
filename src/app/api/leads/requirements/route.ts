@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
-import { sendLeadCreationWebhook } from '@/lib/pabbly-webhook'
+import { sendRequirementsLeadWebhook } from '@/lib/pabbly-webhook'
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,18 +51,18 @@ export async function POST(request: NextRequest) {
     //   })
     // }
 
-    // TODO: Send email notification to admin team
-    // TODO: Send confirmation email to user
-
     // Send webhook to Pabbly
-    sendLeadCreationWebhook({
+    sendRequirementsLeadWebhook({
       name,
-      email,
       phone,
+      email,
       requirements,
       searchCriteria,
-      source: source || 'properties_results_page'
-    }).catch(err => console.warn('[Leads Requirements] Failed to send webhook:', err))
+      source: source || 'properties_results_page',
+    }).catch(err => console.warn('[Requirements Lead] Failed to send webhook:', err))
+
+    // TODO: Send email notification to admin team
+    // TODO: Send confirmation email to user
 
     return NextResponse.json({
       success: true,

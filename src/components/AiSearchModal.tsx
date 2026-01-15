@@ -7,7 +7,6 @@ import { ButtonFlowState } from '@/lib/ai-search/button-flow'
 import { getContextualInsight } from '@/lib/loading-insights'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 import { trackAISearch, trackAISearchResult, trackFormFieldFocus } from '@/lib/tracking'
-import { sendAISearchWebhook } from '@/lib/pabbly-webhook'
 
 interface Message {
   id: string
@@ -327,13 +326,6 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
       if (properties.length > 0) {
         trackAISearch(query, responseTime)
       }
-      
-      // Send webhook to Pabbly
-      sendAISearchWebhook({
-        query,
-        resultsCount: properties.length,
-        responseTime
-      }).catch(err => console.warn('Failed to send AI search webhook:', err))
 
     } catch (error: any) {
       console.error('[Frontend] Search error:', error)

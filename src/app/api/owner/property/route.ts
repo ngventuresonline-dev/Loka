@@ -3,7 +3,6 @@ import { getPrisma, executePrismaQuery } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import bcrypt from 'bcryptjs'
 import { generateSecurePassword, sendOwnerWelcomeEmail } from '@/lib/email-service'
-import { sendPropertyCreationWebhook } from '@/lib/pabbly-webhook'
 
 export async function POST(request: NextRequest) {
   try {
@@ -403,18 +402,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Send webhook to Pabbly
-    sendPropertyCreationWebhook({
-      propertyId: propertyRow.id,
+    const { sendPropertySubmissionWebhook } = await import('@/lib/pabbly-webhook')
+    sendPropertySubmissionWebhook({
       ownerId,
+      propertyId: propertyRow.id,
       propertyType: normalizedType,
       location: property.location || 'Bangalore',
-      size: size,
-      rent: rent,
-      // Normalize nullable securityDeposit to match webhook type (number | undefined)
-      deposit: securityDeposit ?? undefined,
+      size: size || undefined,
+      rent: rent || undefined,
+      deposit: securityDeposit || undefined,
+      amenities: amenities.length > 0 ? amenities : undefined,
       ownerName: owner?.name,
       ownerEmail: owner?.email,
-      ownerPhone: owner?.phone
+      ownerPhone: owner?.phone,
     }).catch(err => console.warn('[Owner Property API] Failed to send webhook:', err))
 
     return NextResponse.json(
