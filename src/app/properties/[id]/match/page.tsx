@@ -404,9 +404,9 @@ function MatchDetailsContent() {
     try {
       setExpertSubmitting(true)
       
-      // Use a timeout to ensure the API call doesn't hang
+      // Use a timeout to ensure the API call doesn't hang (increased to 60s for database operations)
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
       
       const response = await fetch('/api/expert/connect', {
         method: 'POST',

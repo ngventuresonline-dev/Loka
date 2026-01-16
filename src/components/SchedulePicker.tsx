@@ -144,7 +144,28 @@ export default function SchedulePicker({ value, onChange, minDate, className = '
                 Select Time (30-minute slots)
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                {TIME_SLOTS.map((time) => (
+                {TIME_SLOTS.filter((time) => {
+                  // Check if this time slot should be shown
+                  const now = new Date()
+                  const selectedDateObj = new Date(selectedDate)
+                  const isToday = selectedDateObj.toDateString() === now.toDateString()
+                  
+                  if (!isToday) {
+                    // For future dates, show all slots
+                    return true
+                  }
+                  
+                  // For today's date, filter out past times and enforce 1-hour minimum gap
+                  const [hours, minutes] = time.split(':').map(Number)
+                  const slotTime = new Date(now)
+                  slotTime.setHours(hours, minutes, 0, 0)
+                  
+                  // Add 1 hour to current time (minimum booking time)
+                  const minBookingTime = new Date(now.getTime() + 60 * 60 * 1000)
+                  
+                  // Only show slots that are at least 1 hour from now
+                  return slotTime >= minBookingTime
+                }).map((time) => (
                   <button
                     key={time}
                     type="button"
