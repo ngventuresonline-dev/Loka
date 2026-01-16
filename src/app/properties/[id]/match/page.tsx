@@ -94,6 +94,7 @@ function MatchDetailsContent() {
   const [expertSubmitting, setExpertSubmitting] = useState(false)
   const [expertFeeAcknowledged, setExpertFeeAcknowledged] = useState(false)
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
     // Prefill expert contact details from brand onboarding/filter data in localStorage
@@ -402,6 +403,11 @@ function MatchDetailsContent() {
     }
     try {
       setExpertSubmitting(true)
+      
+      // Use a timeout to ensure the API call doesn't hang
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      
       const response = await fetch('/api/expert/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -412,20 +418,33 @@ function MatchDetailsContent() {
           phone: expertPhone,
           scheduleDateTime: expertDateTime,
           notes: expertNotes
-        })
+        }),
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to connect with expert' }))
         throw new Error(errorData.error || 'Failed to connect with expert')
       }
-      alert('Request submitted! Our expert will reach out to you shortly via email/WhatsApp.')
+      
+      // Immediately show success message - API call succeeded
       setShowExpertModal(false)
+      setShowSuccessMessage(true)
+      
+      // Reset form
       setExpertNotes('')
       setExpertDateTime('')
       setExpertFeeAcknowledged(false)
+      
     } catch (err: any) {
       console.error(err)
-      alert(err.message || 'Could not submit your request. Please try again.')
+      if (err.name === 'AbortError') {
+        alert('Request timed out. Please try again.')
+      } else {
+        alert(err.message || 'Could not submit your request. Please try again.')
+      }
     } finally {
       setExpertSubmitting(false)
     }
@@ -844,6 +863,38 @@ function MatchDetailsContent() {
             <p className="text-xs text-gray-500 mt-3 break-words">
               Our expert will reach out to you within 24 hours via email or WhatsApp to discuss your requirements.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Message Modal */}
+      {showSuccessMessage && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-3 sm:px-4 py-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 text-center relative">
+            <button
+              onClick={() => setShowSuccessMessage(false)}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl leading-none w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center"
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="mb-4">
+              <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Thank You!</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-6 leading-relaxed">
+              Your request has been submitted successfully. Our expert will reach out to you within 24 hours via email or WhatsApp to discuss your requirements.
+            </p>
+            <button
+              onClick={() => setShowSuccessMessage(false)}
+              className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity shadow-lg"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
