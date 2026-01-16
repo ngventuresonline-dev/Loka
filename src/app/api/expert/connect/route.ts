@@ -58,9 +58,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create expert request record (with timeout protection)
-    let expertRequest
+    // If database save fails, we still return success - webhook will capture the lead
+    let expertRequestId = `temp-${Date.now()}`
     try {
-      expertRequest = await Promise.race([
+      const expertRequest = await Promise.race([
         prisma.expertRequest.create({
           data: {
             propertyId,
@@ -77,17 +78,16 @@ export async function POST(request: NextRequest) {
         )
       ])
       
-      console.log('[Expert Connect] Request created:', expertRequest.id)
+      expertRequestId = expertRequest.id
+      console.log('[Expert Connect] Request created:', expertRequestId)
     } catch (error: any) {
-      console.error('[Expert Connect] Failed to create request:', error)
-      // If database creation fails, return error (but webhook will still try to send)
-      return NextResponse.json(
-        { success: false, error: 'Failed to save request. Please try again.' },
-        { status: 500 }
-      )
+      // If database creation fails, log but continue - webhook will still capture the lead
+      console.warn('[Expert Connect] Database save failed (non-critical):', error.message)
+      console.warn('[Expert Connect] Webhook will handle lead capture as fallback')
     }
 
-    // Send webhook to Pabbly (non-blocking, already async)
+    // Always send webhook to Pabbly (non-blocking, already async)
+    // This ensures we capture the lead even if database save failed
     sendExpertConnectWebhook({
       propertyId,
       brandName,
@@ -100,10 +100,11 @@ export async function POST(request: NextRequest) {
     // TODO: Send email/WhatsApp notifications to user and expert team
     // TODO: Assign expert based on property location/business type
 
+    // Always return success - webhook will handle lead capture even if DB fails
     return NextResponse.json({
       success: true,
-      message: 'Expert connection request submitted. Our team will reach out within 24 hours.',
-      requestId: expertRequest.id
+      message: 'Successfully submitted. We will connect soon.',
+      requestId: expertRequestId
     })
   } catch (error: any) {
     console.error('[Expert Connect] Error:', error)

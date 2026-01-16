@@ -885,9 +885,9 @@ function MatchDetailsContent() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Thank You!</h3>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Successfully Submitted!</h3>
             <p className="text-sm sm:text-base text-gray-600 mb-6 leading-relaxed">
-              Your request has been submitted successfully. Our expert will reach out to you within 24 hours via email or WhatsApp to discuss your requirements.
+              We will connect with you soon.
             </p>
             <button
               onClick={() => setShowSuccessMessage(false)}
