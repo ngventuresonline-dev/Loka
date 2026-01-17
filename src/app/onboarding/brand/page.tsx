@@ -158,6 +158,11 @@ function BrandOnboardingContent() {
     params.set('budgetMax', budgetMaxNum.toString())
     // Save for future prefill if needed
     localStorage.setItem('brandOnboardingSubmission', JSON.stringify(formData))
+    
+    // Track form completion and Lead event
+    const { trackFormComplete } = await import('@/lib/tracking')
+    trackFormComplete('brand', formData)
+    
     router.push(`/properties/results?${params.toString()}`)
   }
 

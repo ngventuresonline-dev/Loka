@@ -1404,6 +1404,10 @@ export default function OwnerFilterPage() {
       userId: getClientSessionUserId(),
     })
     
+    // Track filter application
+    const { trackFilterApply } = await import('@/lib/tracking')
+    trackFilterApply(filterData, 'owner')
+    
     // Redirect to onboarding
     router.push('/onboarding/owner?prefilled=true')
   }

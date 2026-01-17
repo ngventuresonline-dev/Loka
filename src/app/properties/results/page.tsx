@@ -531,6 +531,10 @@ function PropertiesResultsContent() {
       })
 
       if (response.ok) {
+        // Track inquiry event
+        const { trackInquiry } = await import('@/lib/tracking')
+        trackInquiry('general', 'Property Search', 'contact_team')
+        
         alert('Thank you! Our team will contact you within 24 hours.')
         setShowContactForm(false)
         setContactFormData({ name: '', phone: '', bestTime: '', additionalRequirements: '' })
@@ -561,6 +565,11 @@ function PropertiesResultsContent() {
       })
 
       if (response.ok) {
+        // Track inquiry/lead event
+        const { trackInquiry, trackFormComplete } = await import('@/lib/tracking')
+        trackInquiry('general', 'Requirements Submission', 'requirements_lead')
+        trackFormComplete('inquiry', { source: 'requirements_modal' })
+        
         alert('Thank you! We\'ve saved your requirements. Our team will find the perfect property for you.')
         setShowRequirementsModal(false)
         setRequirementsFormData({ name: '', phone: '', email: '', requirements: '' })

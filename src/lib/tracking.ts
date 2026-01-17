@@ -64,6 +64,12 @@ export function trackSearch(query: string, mode: 'brand' | 'owner') {
     search_term: query,
     search_type: mode,
   })
+  
+  // Meta Pixel Search event
+  trackMeta('Search', {
+    search_string: query,
+    content_type: 'property',
+  })
 }
 
 export function trackSearchResults(query: string, resultCount: number, mode: 'brand' | 'owner') {
@@ -174,6 +180,16 @@ export function trackFilterApply(filters: Record<string, any>, mode: 'brand' | '
     filters: filters,
     mode: mode,
   })
+  
+  // Meta Pixel ViewCategory event
+  const propertyType = filters.propertyType || filters.propertyTypes?.[0]
+  const location = filters.location || filters.locations?.[0]
+  
+  trackMeta('ViewCategory', {
+    content_type: 'property_category',
+    content_category: propertyType || 'commercial_property',
+    content_name: location || 'bangalore',
+  })
 }
 
 // Conversion Events
@@ -214,6 +230,33 @@ export function trackCardClick(cardType: 'property' | 'brand', itemId: string, i
     card_type: cardType,
     item_id: itemId,
     item_name: itemName,
+  })
+}
+
+export function trackAddToWishlist(propertyId: string, propertyName?: string) {
+  trackEvent('add_to_wishlist', {
+    item_id: propertyId,
+    item_name: propertyName,
+    item_category: 'property',
+  })
+  
+  // Meta Pixel AddToWishlist event
+  trackMeta('AddToWishlist', {
+    content_ids: [propertyId],
+    content_type: 'product',
+    content_name: propertyName,
+  })
+}
+
+export function trackCompleteRegistration(userType: 'brand' | 'owner' | 'general') {
+  trackEvent('complete_registration', {
+    user_type: userType,
+  })
+  
+  // Meta Pixel CompleteRegistration event
+  trackMeta('CompleteRegistration', {
+    content_name: `${userType}_registration`,
+    status: 'registered',
   })
 }
 

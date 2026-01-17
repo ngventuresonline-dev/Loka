@@ -939,6 +939,10 @@ function OwnerOnboardingContent() {
 
       const result = await response.json()
     
+      // Track form completion and conversion events
+      const { trackFormComplete, trackConversion } = await import('@/lib/tracking')
+      trackFormComplete('owner', formData)
+      
       if (isUpdate) {
         // Update mode - redirect to dashboard
         logOwnerOnboarding('update', {
@@ -949,10 +953,15 @@ function OwnerOnboardingContent() {
       } else {
         // Create mode - original flow
       logOwnerOnboarding('submit', {
-        status: 'completed',
-        propertyId: result.propertyId,
-        ownerId: result.ownerId,
-      })
+          status: 'completed',
+          propertyId: result.propertyId,
+          ownerId: result.ownerId,
+        })
+        
+        // Track property listing as Purchase event (high-value conversion)
+        if (rentNum > 0) {
+          trackConversion('property_listed', rentNum, 'INR')
+        }
         
         // Persist owner name for dashboard greeting
         if (typeof window !== 'undefined' && formData.ownerName) {

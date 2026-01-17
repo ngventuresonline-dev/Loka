@@ -429,6 +429,17 @@ function MatchDetailsContent() {
         throw new Error(errorData.error || 'Failed to connect with expert')
       }
       
+      // Track inquiry event
+      const { trackInquiry, trackScheduleViewing } = await import('@/lib/tracking')
+      if (propertyId) {
+        trackInquiry(propertyId, property?.title || 'Property', 'expert_request')
+      }
+      
+      // If schedule date/time is set, also track Schedule event
+      if (expertDateTime) {
+        trackScheduleViewing(propertyId || '', property?.title || 'Property')
+      }
+      
       // Immediately show success message - API call succeeded
       setShowExpertModal(false)
       setShowSuccessMessage(true)

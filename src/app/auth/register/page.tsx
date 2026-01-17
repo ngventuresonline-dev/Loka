@@ -57,6 +57,14 @@ export default function RegisterPage() {
     setLoading(false)
 
     if (result.success) {
+      // Track registration completion
+      const { trackCompleteRegistration } = await import('@/lib/tracking')
+      trackCompleteRegistration(formData.userType || 'general')
+      
+      // Also track as Lead event
+      const { trackFormComplete } = await import('@/lib/tracking')
+      trackFormComplete('contact', { userType: formData.userType })
+      
       // Redirect to onboarding based on user type
       if (formData.userType === 'brand') {
         router.push('/?step=brand-onboarding')

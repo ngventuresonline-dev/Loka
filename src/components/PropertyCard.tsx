@@ -75,7 +75,14 @@ function PropertyCard({
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsSaved(!isSaved)
+    const newSavedState = !isSaved
+    setIsSaved(newSavedState)
+    
+    // Track AddToWishlist event when saving
+    if (newSavedState) {
+      const { trackAddToWishlist } = require('@/lib/tracking')
+      trackAddToWishlist(property.id, property.title || undefined)
+    }
     // TODO: Save to database
   }
 
