@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
+import { trackFormComplete } from '@/lib/tracking'
 
 const audiencePresets = [
   'Young professionals',
@@ -160,7 +161,6 @@ function BrandOnboardingContent() {
     localStorage.setItem('brandOnboardingSubmission', JSON.stringify(formData))
     
     // Track form completion and Lead event
-    const { trackFormComplete } = await import('@/lib/tracking')
     trackFormComplete('brand', formData)
     
     router.push(`/properties/results?${params.toString()}`)

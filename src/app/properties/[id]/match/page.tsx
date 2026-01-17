@@ -13,6 +13,7 @@ import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import { trackInquiry, trackScheduleViewing } from '@/lib/tracking'
 
 // Heavy components are dynamically loaded to improve performance
 const MatchBreakdownChart = dynamic(
@@ -430,7 +431,6 @@ function MatchDetailsContent() {
       }
       
       // Track inquiry event
-      const { trackInquiry, trackScheduleViewing } = await import('@/lib/tracking')
       if (propertyId) {
         trackInquiry(propertyId, property?.title || 'Property', 'expert_request')
       }

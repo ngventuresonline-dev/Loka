@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
+import { trackFilterApply } from '@/lib/tracking'
 
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
@@ -1405,7 +1406,6 @@ export default function OwnerFilterPage() {
     })
     
     // Track filter application
-    const { trackFilterApply } = await import('@/lib/tracking')
     trackFilterApply(filterData, 'owner')
     
     // Redirect to onboarding

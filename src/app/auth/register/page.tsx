@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createUser } from '@/lib/auth'
 import Logo from '@/components/Logo'
+import { trackCompleteRegistration, trackFormComplete } from '@/lib/tracking'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -58,11 +59,7 @@ export default function RegisterPage() {
 
     if (result.success) {
       // Track registration completion
-      const { trackCompleteRegistration } = await import('@/lib/tracking')
       trackCompleteRegistration(formData.userType || 'general')
-      
-      // Also track as Lead event
-      const { trackFormComplete } = await import('@/lib/tracking')
       trackFormComplete('contact', { userType: formData.userType })
       
       // Redirect to onboarding based on user type

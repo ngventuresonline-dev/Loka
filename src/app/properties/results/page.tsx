@@ -8,6 +8,7 @@ import PropertyCard from '@/components/PropertyCard'
 import { Property } from '@/types/workflow'
 import { motion, AnimatePresence } from 'framer-motion'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
+import { trackInquiry, trackFormComplete } from '@/lib/tracking'
 
 interface MatchResult {
   property: Property
@@ -532,7 +533,6 @@ function PropertiesResultsContent() {
 
       if (response.ok) {
         // Track inquiry event
-        const { trackInquiry } = await import('@/lib/tracking')
         trackInquiry('general', 'Property Search', 'contact_team')
         
         alert('Thank you! Our team will contact you within 24 hours.')
@@ -566,7 +566,6 @@ function PropertiesResultsContent() {
 
       if (response.ok) {
         // Track inquiry/lead event
-        const { trackInquiry, trackFormComplete } = await import('@/lib/tracking')
         trackInquiry('general', 'Requirements Submission', 'requirements_lead')
         trackFormComplete('inquiry', { source: 'requirements_modal' })
         

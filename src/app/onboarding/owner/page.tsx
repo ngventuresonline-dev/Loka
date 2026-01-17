@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
+import { trackFormComplete, trackConversion } from '@/lib/tracking'
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import Image from 'next/image'
@@ -940,7 +941,6 @@ function OwnerOnboardingContent() {
       const result = await response.json()
     
       // Track form completion and conversion events
-      const { trackFormComplete, trackConversion } = await import('@/lib/tracking')
       trackFormComplete('owner', formData)
       
       if (isUpdate) {
