@@ -78,10 +78,12 @@ export default function RootLayout({
         {/* Preload critical API endpoints */}
         <link rel="prefetch" href="/api/brands" as="fetch" crossOrigin="anonymous" />
         <link rel="prefetch" href="/api/properties?limit=20" as="fetch" crossOrigin="anonymous" />
-        {/* Microsoft Clarity */}
+      </head>
+      <body className="font-sans antialiased text-gray-900">
+        {/* Microsoft Clarity - Load early for proper initialization */}
         <Script
           id="clarity-init"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -90,8 +92,6 @@ export default function RootLayout({
     })(window, document, "clarity", "script", "v3r7u519pf");`,
           }}
         />
-      </head>
-      <body className="font-sans antialiased text-gray-900">
         <CookieConsent />
         <GoogleMapsErrorHandler />
         <AuthProvider>
