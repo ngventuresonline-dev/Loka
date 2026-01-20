@@ -1,0 +1,225 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Brand Gradient -->
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Diagonal Brand Gradient -->
+    <linearGradient id="diagonalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Background Gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Accent Glow Gradient -->
+    <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- Glow Filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Soft Glow -->
+    <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Text Shadow -->
+    <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    
+    <!-- Grid Pattern -->
+    <pattern id="gridPattern" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#334155" stroke-width="0.5" opacity="0.4"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="1200" fill="url(#bgGradient)"/>
+  
+  <!-- Grid Overlay -->
+  <rect width="1200" height="1200" fill="url(#gridPattern)" opacity="0.3"/>
+  
+  <!-- Large Accent Glow - Center -->
+  <ellipse cx="600" cy="400" rx="500" ry="400" fill="url(#glowGradient)" filter="url(#softGlow)"/>
+  
+  <!-- Decorative Corner Elements -->
+  <!-- Top Left -->
+  <line x1="0" y1="80" x2="150" y2="80" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <line x1="80" y1="0" x2="80" y2="150" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <circle cx="80" cy="80" r="8" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.9"/>
+  
+  <!-- Top Right -->
+  <line x1="1200" y1="80" x2="1050" y2="80" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <line x1="1120" y1="0" x2="1120" y2="150" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <circle cx="1120" cy="80" r="8" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.9"/>
+  
+  <!-- Bottom Left -->
+  <line x1="0" y1="1120" x2="150" y2="1120" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <line x1="80" y1="1200" x2="80" y2="1050" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <circle cx="80" cy="1120" r="8" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.9"/>
+  
+  <!-- Bottom Right -->
+  <line x1="1200" y1="1120" x2="1050" y2="1120" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <line x1="1120" y1="1200" x2="1120" y2="1050" stroke="url(#brandGradient)" stroke-width="3" opacity="0.6"/>
+  <circle cx="1120" cy="1120" r="8" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.9"/>
+  
+  <!-- Central Quantum Network -->
+  <g transform="translate(600, 350)">
+    <!-- Outer Rings -->
+    <circle cx="0" cy="0" r="180" fill="none" stroke="url(#brandGradient)" stroke-width="1" opacity="0.15"/>
+    <circle cx="0" cy="0" r="140" fill="none" stroke="url(#brandGradient)" stroke-width="1.5" opacity="0.2"/>
+    <circle cx="0" cy="0" r="100" fill="none" stroke="url(#brandGradient)" stroke-width="2" opacity="0.3"/>
+    <circle cx="0" cy="0" r="60" fill="none" stroke="url(#brandGradient)" stroke-width="2.5" opacity="0.4"/>
+    
+    <!-- Connection Lines -->
+    <line x1="0" y1="-100" x2="0" y2="100" stroke="url(#brandGradient)" stroke-width="1.5" opacity="0.25"/>
+    <line x1="-100" y1="0" x2="100" y2="0" stroke="url(#brandGradient)" stroke-width="1.5" opacity="0.25"/>
+    <line x1="-70" y1="-70" x2="70" y2="70" stroke="url(#brandGradient)" stroke-width="1" opacity="0.2"/>
+    <line x1="70" y1="-70" x2="-70" y2="70" stroke="url(#brandGradient)" stroke-width="1" opacity="0.2"/>
+    
+    <!-- Quantum Orbs - Main -->
+    <circle cx="0" cy="-100" r="16" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.95">
+      <animate attributeName="cy" values="-100;-95;-100" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="100" cy="0" r="16" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.95">
+      <animate attributeName="cx" values="100;105;100" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="0" cy="100" r="16" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.95">
+      <animate attributeName="cy" values="100;105;100" dur="4s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="-100" cy="0" r="16" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.95">
+      <animate attributeName="cx" values="-100;-95;-100" dur="4s" begin="1.5s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- Quantum Orbs - Diagonal -->
+    <circle cx="70" cy="-70" r="10" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.7"/>
+    <circle cx="70" cy="70" r="10" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.7"/>
+    <circle cx="-70" cy="70" r="10" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.7"/>
+    <circle cx="-70" cy="-70" r="10" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.7"/>
+    
+    <!-- Center Orb -->
+    <circle cx="0" cy="0" r="25" fill="url(#brandGradient)" filter="url(#glow)" opacity="1">
+      <animate attributeName="r" values="25;28;25" dur="3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Floating Particles -->
+  <circle cx="200" cy="200" r="5" fill="url(#brandGradient)" opacity="0.5">
+    <animate attributeName="cy" values="200;190;200" dur="5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1000" cy="250" r="4" fill="url(#brandGradient)" opacity="0.4">
+    <animate attributeName="cy" values="250;240;250" dur="4.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="300" cy="500" r="6" fill="url(#brandGradient)" opacity="0.5">
+    <animate attributeName="cx" values="300;310;300" dur="6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="900" cy="450" r="4" fill="url(#brandGradient)" opacity="0.4">
+    <animate attributeName="cx" values="900;890;900" dur="5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="150" cy="700" r="5" fill="url(#brandGradient)" opacity="0.5">
+    <animate attributeName="cy" values="700;690;700" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1050" cy="750" r="6" fill="url(#brandGradient)" opacity="0.5">
+    <animate attributeName="cy" values="750;760;750" dur="5.5s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Introducing Text -->
+  <text x="600" y="580" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="400" fill="#94A3B8" text-anchor="middle" letter-spacing="8">
+    INTRODUCING
+  </text>
+  
+  <!-- LOKAZEN Logo -->
+  <g transform="translate(600, 700)">
+    <!-- L -->
+    <text x="-180" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="120" font-weight="900" fill="url(#brandGradient)" text-anchor="start" filter="url(#textShadow)">
+      L
+    </text>
+    
+    <!-- O as Quantum Node -->
+    <circle cx="-85" cy="-30" r="22" fill="url(#brandGradient)" filter="url(#glow)" opacity="0.95">
+      <animate attributeName="r" values="22;25;22" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- ka -->
+    <text x="-55" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="120" font-weight="900" fill="url(#brandGradient)" text-anchor="start" filter="url(#textShadow)">
+      ka
+    </text>
+    
+    <!-- zen -->
+    <text x="120" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="120" font-weight="900" fill="#F8FAFC" text-anchor="start" filter="url(#textShadow)">
+      zen
+    </text>
+  </g>
+  
+  <!-- Powered By AI -->
+  <text x="600" y="780" font-family="'Segoe UI', Arial, sans-serif" font-size="22" font-weight="500" fill="#94A3B8" text-anchor="middle" letter-spacing="4">
+    POWERED BY AI
+  </text>
+  
+  <!-- Divider Line -->
+  <line x1="400" y1="830" x2="800" y2="830" stroke="url(#brandGradient)" stroke-width="2" opacity="0.4"/>
+  
+  <!-- Main Tagline -->
+  <text x="600" y="900" font-family="'Segoe UI', Arial, sans-serif" font-size="42" font-weight="600" fill="#F8FAFC" text-anchor="middle" filter="url(#textShadow)">
+    Find Your Perfect
+  </text>
+  <text x="600" y="960" font-family="'Segoe UI', Arial, sans-serif" font-size="42" font-weight="600" fill="#F8FAFC" text-anchor="middle" filter="url(#textShadow)">
+    Commercial Space
+  </text>
+  
+  <!-- Feature Pills -->
+  <g transform="translate(600, 1040)">
+    <!-- AI Matching -->
+    <rect x="-280" y="-20" width="160" height="40" rx="20" fill="none" stroke="url(#brandGradient)" stroke-width="2" opacity="0.6"/>
+    <text x="-200" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="16" font-weight="500" fill="#E2E8F0" text-anchor="middle">
+      AI Matching
+    </text>
+    
+    <!-- Instant Results -->
+    <rect x="-80" y="-20" width="160" height="40" rx="20" fill="none" stroke="url(#brandGradient)" stroke-width="2" opacity="0.6"/>
+    <text x="0" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="16" font-weight="500" fill="#E2E8F0" text-anchor="middle">
+      Instant Results
+    </text>
+    
+    <!-- Free to Use -->
+    <rect x="120" y="-20" width="160" height="40" rx="20" fill="none" stroke="url(#brandGradient)" stroke-width="2" opacity="0.6"/>
+    <text x="200" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="16" font-weight="500" fill="#E2E8F0" text-anchor="middle">
+      Free to Start
+    </text>
+  </g>
+  
+  <!-- CTA -->
+  <g transform="translate(600, 1120)">
+    <rect x="-120" y="-25" width="240" height="50" rx="25" fill="url(#diagonalGradient)" filter="url(#glow)"/>
+    <text x="0" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+      Get Started Now
+    </text>
+  </g>
+  
+  <!-- Bottom Accent Bar -->
+  <rect x="0" y="1190" width="1200" height="10" fill="url(#brandGradient)" opacity="0.8"/>
+  
+  <!-- Top Accent Bar -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#brandGradient)" opacity="0.6"/>
+</svg>

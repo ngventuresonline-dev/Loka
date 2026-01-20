@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="textGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="25" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="url(#bgGradient)"/>
+  
+  <!-- Grid pattern -->
+  <g opacity="0.08">
+    <line x1="0" y1="270" x2="1080" y2="270" stroke="#FF5200" stroke-width="1"/>
+    <line x1="0" y1="540" x2="1080" y2="540" stroke="#FF5200" stroke-width="1"/>
+    <line x1="0" y1="810" x2="1080" y2="810" stroke="#FF5200" stroke-width="1"/>
+    <line x1="360" y1="0" x2="360" y2="1080" stroke="#FF5200" stroke-width="1"/>
+    <line x1="720" y1="0" x2="720" y2="1080" stroke="#FF5200" stroke-width="1"/>
+  </g>
+  
+  <!-- Top accent -->
+  <rect x="0" y="0" width="1080" height="8" fill="url(#brandGradient)"/>
+  
+  <!-- LOGO top left with Powered By Ai -->
+  <g transform="translate(50, 50)">
+    <!-- Quantum orb icon -->
+    <g transform="translate(18, 0)">
+      <circle cx="0" cy="0" r="16" fill="none" stroke="#FF5200" stroke-width="1" opacity="0.3"/>
+      <circle cx="0" cy="-16" r="3" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="16" cy="0" r="3" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="0" cy="16" r="3" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="-16" cy="0" r="3" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="0" cy="0" r="5" fill="#FF5200" filter="url(#glow)"/>
+    </g>
+    <!-- Lokazen text -->
+    <text x="50" y="8" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#FF5200">Loka</text>
+    <text x="120" y="8" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF">zen</text>
+    <!-- Powered By Ai - Highlighted -->
+    <rect x="46" y="16" width="110" height="20" rx="10" fill="#FF5200" opacity="0.15"/>
+    <text x="50" y="31" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#FF5200">Powered By Ai</text>
+  </g>
+  
+  <!-- Split layout - Left: Stacked locations, Right: Number -->
+  
+  <!-- LEFT SIDE - Stacked locations -->
+  <g transform="translate(60, 160)">
+    <text x="0" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="13" font-weight="600" fill="#64748B" letter-spacing="3">HOTSPOTS</text>
+    
+    <g transform="translate(0, 40)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#FF5200"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">BTM Layout</text>
+    </g>
+    <g transform="translate(0, 105)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FF5200">Marathahalli</text>
+    </g>
+    <g transform="translate(0, 170)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#FF5200"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">Whitefield</text>
+    </g>
+    <g transform="translate(0, 235)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FF5200">Electronic City</text>
+    </g>
+    <g transform="translate(0, 300)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#FF5200"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">HSR Layout</text>
+    </g>
+    <g transform="translate(0, 365)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FF5200">Bellandur</text>
+    </g>
+    <g transform="translate(0, 430)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#FF5200"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">Sarjapur Road</text>
+    </g>
+    <g transform="translate(0, 495)">
+      <rect x="0" y="0" width="200" height="50" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="20" y="33" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FF5200">KR Puram</text>
+    </g>
+  </g>
+  
+  <!-- RIGHT SIDE - Big number and info -->
+  <g transform="translate(700, 350)">
+    <text x="0" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="240" font-weight="900" fill="#FF5200" text-anchor="middle" filter="url(#textGlow)">30+</text>
+    <text x="0" y="80" font-family="'Segoe UI', Arial, sans-serif" font-size="36" font-weight="800" fill="#FFFFFF" text-anchor="middle">CLOUD</text>
+    <text x="0" y="125" font-family="'Segoe UI', Arial, sans-serif" font-size="36" font-weight="800" fill="#FFFFFF" text-anchor="middle">KITCHENS</text>
+    <text x="0" y="170" font-family="'Segoe UI', Arial, sans-serif" font-size="18" font-weight="500" fill="#94A3B8" text-anchor="middle">need space NOW</text>
+  </g>
+  
+  <!-- What is Lokazen - bottom right area -->
+  <g transform="translate(700, 570)">
+    <rect x="-140" y="-18" width="280" height="36" rx="18" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="0" y="6" font-family="'Segoe UI', Arial, sans-serif" font-size="12" font-weight="600" fill="#94A3B8" text-anchor="middle">AI-powered brand-property matching</text>
+  </g>
+  
+  <!-- Bottom specs bar -->
+  <g transform="translate(540, 850)">
+    <rect x="-420" y="-30" width="840" height="60" rx="30" fill="#0F172A" stroke="#334155" stroke-width="1"/>
+    <text x="-280" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FF5200" text-anchor="middle">300-600 sqft</text>
+    <text x="-100" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="500" fill="#64748B" text-anchor="middle">|</text>
+    <text x="60" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#FF5200" text-anchor="middle">Rs 25K-50K</text>
+    <text x="220" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="500" fill="#64748B" text-anchor="middle">|</text>
+    <text x="350" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#10B981" text-anchor="middle">No Frontage</text>
+  </g>
+  
+  <!-- AI Insight - Highlighted -->
+  <g transform="translate(540, 920)">
+    <rect x="-340" y="-18" width="680" height="36" rx="18" fill="#FF5200" opacity="0.1"/>
+    <rect x="-340" y="-18" width="680" height="36" rx="18" fill="none" stroke="#FF5200" stroke-width="1" opacity="0.4"/>
+    <text x="0" y="6" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#FF5200" text-anchor="middle">AI scoring enriched with real-time location insights for perfect property-brand matching</text>
+  </g>
+  
+  <!-- CTA -->
+  <g transform="translate(540, 1000)">
+    <rect x="-200" y="-35" width="400" height="70" rx="35" fill="url(#brandGradient)" filter="url(#glow)"/>
+    <text x="0" y="12" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#FFFFFF" text-anchor="middle">LIST YOUR PROPERTY FREE</text>
+  </g>
+  
+  <!-- Bottom accent -->
+  <rect x="0" y="1072" width="1080" height="8" fill="url(#brandGradient)"/>
+</svg>

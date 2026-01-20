@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="diagonalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glowGradient" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:0.25" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:0" />
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <pattern id="gridPattern" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#334155" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  
+  <rect width="1080" height="1080" fill="url(#bgGradient)"/>
+  <rect width="1080" height="1080" fill="url(#gridPattern)" opacity="0.25"/>
+  <ellipse cx="540" cy="400" rx="500" ry="350" fill="url(#glowGradient)"/>
+  
+  <rect x="0" y="0" width="1080" height="6" fill="url(#brandGradient)"/>
+  
+  <!-- Category Badge -->
+  <g transform="translate(540, 80)">
+    <rect x="-200" y="-28" width="400" height="50" rx="25" fill="url(#diagonalGradient)" opacity="0.15" stroke="url(#brandGradient)" stroke-width="2"/>
+    <text x="0" y="6" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="600" fill="#FF5200" text-anchor="middle" letter-spacing="1">
+      RETAIL  |  Fashion  |  Lifestyle  |  D2C
+    </text>
+  </g>
+  
+  <!-- Property Owners -->
+  <text x="540" y="175" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700" fill="#94A3B8" text-anchor="middle" letter-spacing="4">
+    PROPERTY OWNERS
+  </text>
+  
+  <!-- Main Headline -->
+  <text x="540" y="300" font-family="'Segoe UI', Arial, sans-serif" font-size="52" font-weight="700" fill="#FFFFFF" text-anchor="middle" filter="url(#textShadow)">
+    Retail brands choose
+  </text>
+  <text x="540" y="380" font-family="'Segoe UI', Arial, sans-serif" font-size="64" font-weight="800" fill="url(#brandGradient)" text-anchor="middle" filter="url(#textShadow)">
+    visibility
+  </text>
+  <text x="540" y="460" font-family="'Segoe UI', Arial, sans-serif" font-size="52" font-weight="700" fill="#FFFFFF" text-anchor="middle" filter="url(#textShadow)">
+    before rent.
+  </text>
+  
+  <!-- Divider -->
+  <line x1="340" y1="520" x2="740" y2="520" stroke="url(#brandGradient)" stroke-width="2" opacity="0.4"/>
+  
+  <!-- Sub Message -->
+  <text x="540" y="600" font-family="'Segoe UI', Arial, sans-serif" font-size="36" font-weight="600" fill="#E2E8F0" text-anchor="middle">
+    Let the right brands
+  </text>
+  <text x="540" y="660" font-family="'Segoe UI', Arial, sans-serif" font-size="36" font-weight="600" fill="#E2E8F0" text-anchor="middle">
+    discover your frontage.
+  </text>
+  
+  <!-- Storefront Icon -->
+  <g transform="translate(540, 800)" opacity="0.5">
+    <rect x="-60" y="-50" width="120" height="100" fill="none" stroke="url(#brandGradient)" stroke-width="4" rx="5"/>
+    <line x1="-60" y1="-20" x2="60" y2="-20" stroke="url(#brandGradient)" stroke-width="3"/>
+    <path d="M -60 -50 L -75 -80 L 75 -80 L 60 -50" fill="none" stroke="url(#brandGradient)" stroke-width="3"/>
+    <rect x="-20" y="10" width="40" height="40" fill="none" stroke="url(#brandGradient)" stroke-width="3" rx="3"/>
+    <line x1="0" y1="10" x2="0" y2="50" stroke="url(#brandGradient)" stroke-width="2"/>
+  </g>
+  
+  <!-- Features -->
+  <g transform="translate(540, 920)">
+    <text x="0" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="22" font-weight="500" fill="#94A3B8" text-anchor="middle">
+      Verified retail brands  |  AI matching
+    </text>
+  </g>
+  
+  <!-- CTA -->
+  <g transform="translate(540, 990)">
+    <rect x="-140" y="-32" width="280" height="64" rx="32" fill="url(#diagonalGradient)" filter="url(#glow)"/>
+    <text x="0" y="10" font-family="'Segoe UI', Arial, sans-serif" font-size="26" font-weight="800" fill="#FFFFFF" text-anchor="middle">
+      Get started free
+    </text>
+  </g>
+  
+  <!-- Logo -->
+  <g transform="translate(540, 1050)">
+    <text x="-45" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="900" fill="url(#brandGradient)">L</text>
+    <circle cx="-24" cy="-6" r="4" fill="url(#brandGradient)" filter="url(#glow)"/>
+    <text x="-15" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="900" fill="url(#brandGradient)">ka</text>
+    <text x="22" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="900" fill="#F8FAFC">zen</text>
+  </g>
+  
+  <rect x="0" y="1074" width="1080" height="6" fill="url(#brandGradient)"/>
+</svg>

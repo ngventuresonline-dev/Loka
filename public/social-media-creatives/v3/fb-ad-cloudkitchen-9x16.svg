@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glowGradient" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:0.35" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:0" />
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="bigGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="30" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1920" fill="url(#bgGradient)"/>
+  <ellipse cx="540" cy="750" rx="600" ry="500" fill="url(#glowGradient)"/>
+  
+  <!-- Top Accent -->
+  <rect x="0" y="0" width="1080" height="8" fill="url(#brandGradient)"/>
+  
+  <!-- LOGO - Centered with Powered By Ai -->
+  <g transform="translate(540, 100)">
+    <!-- Quantum orb icon -->
+    <g transform="translate(-100, 0)">
+      <circle cx="0" cy="0" r="20" fill="none" stroke="#FF5200" stroke-width="1.5" opacity="0.3"/>
+      <circle cx="0" cy="-20" r="4" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="20" cy="0" r="4" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="0" cy="20" r="4" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="-20" cy="0" r="4" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="0" cy="0" r="6" fill="#FF5200" filter="url(#glow)"/>
+    </g>
+    <!-- Lokazen text -->
+    <text x="-55" y="14" font-family="Arial, sans-serif" font-size="44" font-weight="900" fill="#FF5200">Loka</text>
+    <text x="58" y="14" font-family="Arial, sans-serif" font-size="44" font-weight="900" fill="#FFFFFF">zen</text>
+    <!-- Powered By Ai - Highlighted -->
+    <rect x="-70" y="32" width="140" height="28" rx="14" fill="#FF5200" opacity="0.15"/>
+    <text x="0" y="52" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#FF5200" text-anchor="middle">Powered By Ai</text>
+  </g>
+  
+  <!-- Main Visual - Big Number -->
+  <g transform="translate(540, 600)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="300" font-weight="900" fill="#FF5200" text-anchor="middle" filter="url(#bigGlow)">30+</text>
+    <text x="0" y="120" font-family="Arial, sans-serif" font-size="54" font-weight="700" fill="#FFFFFF" text-anchor="middle">Cloud Kitchen Brands</text>
+    <text x="0" y="200" font-family="Arial, sans-serif" font-size="42" font-weight="500" fill="#94A3B8" text-anchor="middle">searching for space</text>
+  </g>
+  
+  <!-- Specs -->
+  <g transform="translate(540, 1000)">
+    <rect x="-300" y="-40" width="600" height="80" rx="40" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="-150" y="14" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#FF5200" text-anchor="middle">200-800 sqft</text>
+    <line x1="0" y1="-20" x2="0" y2="20" stroke="#334155" stroke-width="2"/>
+    <text x="150" y="14" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#FF5200" text-anchor="middle">Rs 30K-1.5L</text>
+  </g>
+  
+  <!-- Value Prop -->
+  <g transform="translate(540, 1200)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="46" font-weight="600" fill="#FFFFFF" text-anchor="middle">We bring verified brands</text>
+    <text x="0" y="70" font-family="Arial, sans-serif" font-size="46" font-weight="600" fill="#FFFFFF" text-anchor="middle">to your property</text>
+  </g>
+  
+  <!-- Locations -->
+  <text x="540" y="1400" font-family="Arial, sans-serif" font-size="24" font-weight="500" fill="#64748B" text-anchor="middle">BTM Layout | HSR | Marathahalli | Whitefield</text>
+  
+  <!-- AI Insight - Highlighted -->
+  <g transform="translate(540, 1520)">
+    <rect x="-400" y="-20" width="800" height="40" rx="20" fill="#FF5200" opacity="0.1"/>
+    <rect x="-400" y="-20" width="800" height="40" rx="20" fill="none" stroke="#FF5200" stroke-width="1" opacity="0.4"/>
+    <text x="0" y="8" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#FF5200" text-anchor="middle">AI scoring enriched with real-time location insights for perfect property-brand matching</text>
+  </g>
+  
+  <!-- CTA -->
+  <g transform="translate(540, 1650)">
+    <rect x="-200" y="-50" width="400" height="100" rx="50" fill="url(#brandGradient)" filter="url(#glow)"/>
+    <text x="0" y="18" font-family="Arial, sans-serif" font-size="36" font-weight="800" fill="#FFFFFF" text-anchor="middle">LIST FREE</text>
+  </g>
+  
+  <!-- Swipe Indicator -->
+  <text x="540" y="1820" font-family="Arial, sans-serif" font-size="20" font-weight="500" fill="#64748B" text-anchor="middle">Swipe up to get started</text>
+  
+  <!-- Bottom Accent -->
+  <rect x="0" y="1912" width="1080" height="8" fill="url(#brandGradient)"/>
+</svg>

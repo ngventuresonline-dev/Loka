@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="628" viewBox="0 0 1200 628" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Brand Gradient -->
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Diagonal Brand Gradient -->
+    <linearGradient id="diagonalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Background Gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Glow Gradient Left -->
+    <radialGradient id="glowLeft" cx="20%" cy="50%" r="40%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:0.25" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- Glow Gradient Right -->
+    <radialGradient id="glowRight" cx="80%" cy="50%" r="40%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#10B981;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- Glow Filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Strong Glow -->
+    <filter id="strongGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Text Shadow -->
+    <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    
+    <!-- Grid Pattern -->
+    <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#334155" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="628" fill="url(#bgGradient)"/>
+  
+  <!-- Grid Overlay -->
+  <rect width="1200" height="628" fill="url(#gridPattern)" opacity="0.25"/>
+  
+  <!-- Accent Glows -->
+  <rect width="1200" height="628" fill="url(#glowLeft)"/>
+  <rect width="1200" height="628" fill="url(#glowRight)"/>
+  
+  <!-- Top Accent Bar -->
+  <rect x="0" y="0" width="1200" height="5" fill="url(#brandGradient)"/>
+  
+  <!-- Left Section - The Problem -->
+  <g transform="translate(0, 0)">
+    <!-- Property Owner Badge -->
+    <g transform="translate(200, 60)">
+      <rect x="-120" y="-22" width="240" height="40" rx="20" fill="url(#diagonalGradient)" opacity="0.15" stroke="url(#brandGradient)" stroke-width="1.5"/>
+      <text x="0" y="6" font-family="'Segoe UI', Arial, sans-serif" font-size="18" font-weight="700" fill="#FF5200" text-anchor="middle" letter-spacing="2">
+        PROPERTY OWNERS
+      </text>
+    </g>
+    
+    <!-- Main Hook -->
+    <text x="200" y="150" font-family="'Segoe UI', Arial, sans-serif" font-size="38" font-weight="500" fill="#94A3B8" text-anchor="middle">
+      Your Property is Earning
+    </text>
+    
+    <!-- Big Zero -->
+    <text x="200" y="280" font-family="'Segoe UI', Arial, sans-serif" font-size="120" font-weight="900" fill="url(#brandGradient)" text-anchor="middle" filter="url(#textShadow)">
+      Rs. 0
+    </text>
+    <text x="200" y="330" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="600" fill="#FFFFFF" text-anchor="middle">
+      Right Now
+    </text>
+    
+    <!-- Empty Building -->
+    <g transform="translate(200, 450)" opacity="0.4">
+      <rect x="-45" y="-60" width="90" height="120" fill="none" stroke="#64748B" stroke-width="2" rx="4"/>
+      <line x1="-28" y1="-45" x2="-8" y2="-45" stroke="#64748B" stroke-width="2"/>
+      <line x1="8" y1="-45" x2="28" y2="-45" stroke="#64748B" stroke-width="2"/>
+      <line x1="-28" y1="-20" x2="-8" y2="-20" stroke="#64748B" stroke-width="2"/>
+      <line x1="8" y1="-20" x2="28" y2="-20" stroke="#64748B" stroke-width="2"/>
+      <line x1="-28" y1="5" x2="-8" y2="5" stroke="#64748B" stroke-width="2"/>
+      <line x1="8" y1="5" x2="28" y2="5" stroke="#64748B" stroke-width="2"/>
+      <rect x="-12" y="30" width="24" height="30" fill="none" stroke="#64748B" stroke-width="2"/>
+    </g>
+  </g>
+  
+  <!-- Center Divider with Arrow -->
+  <g transform="translate(440, 314)">
+    <line x1="0" y1="-120" x2="0" y2="120" stroke="url(#brandGradient)" stroke-width="1" opacity="0.3"/>
+    
+    <!-- Arrow -->
+    <line x1="-30" y1="0" x2="60" y2="0" stroke="url(#brandGradient)" stroke-width="4" filter="url(#glow)"/>
+    <polygon points="60,-10 85,0 60,10" fill="url(#brandGradient)" filter="url(#glow)"/>
+  </g>
+  
+  <!-- Right Section - The Solution -->
+  <g transform="translate(600, 0)">
+    <!-- LOKAZEN Logo -->
+    <g transform="translate(280, 60)">
+      <text x="-55" y="5" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="900" fill="url(#brandGradient)" text-anchor="start">
+        L
+      </text>
+      <circle cx="-25" cy="-3" r="6" fill="url(#brandGradient)" filter="url(#glow)"/>
+      <text x="-12" y="5" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="900" fill="url(#brandGradient)" text-anchor="start">
+        ka
+      </text>
+      <text x="40" y="5" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="900" fill="#F8FAFC" text-anchor="start">
+        zen
+      </text>
+    </g>
+    
+    <!-- Solution Hook -->
+    <text x="280" y="150" font-family="'Segoe UI', Arial, sans-serif" font-size="38" font-weight="500" fill="#94A3B8" text-anchor="middle">
+      Change it to
+    </text>
+    
+    <!-- Big Money Number -->
+    <text x="280" y="280" font-family="'Segoe UI', Arial, sans-serif" font-size="100" font-weight="900" fill="#10B981" text-anchor="middle" filter="url(#textShadow)">
+      Rs. 50K+
+    </text>
+    <text x="280" y="330" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="600" fill="#FFFFFF" text-anchor="middle">
+      per month
+    </text>
+    
+    <!-- Lit Building -->
+    <g transform="translate(280, 450)">
+      <rect x="-45" y="-60" width="90" height="120" fill="none" stroke="url(#brandGradient)" stroke-width="2" rx="4" filter="url(#glow)"/>
+      <rect x="-30" y="-48" width="18" height="14" fill="#10B981" opacity="0.9" rx="2"/>
+      <rect x="12" y="-48" width="18" height="14" fill="#10B981" opacity="0.9" rx="2"/>
+      <rect x="-30" y="-26" width="18" height="14" fill="#10B981" opacity="0.9" rx="2"/>
+      <rect x="12" y="-26" width="18" height="14" fill="#10B981" opacity="0.9" rx="2"/>
+      <rect x="-30" y="-4" width="18" height="14" fill="#10B981" opacity="0.9" rx="2"/>
+      <rect x="12" y="-4" width="18" height="14" fill="#10B981" opacity="0.9" rx="2"/>
+      <rect x="-12" y="30" width="24" height="30" fill="url(#brandGradient)" rx="2"/>
+    </g>
+  </g>
+  
+  <!-- Bottom Bar -->
+  <g transform="translate(600, 565)">
+    <!-- Features -->
+    <text x="-380" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="18" font-weight="600" fill="#E2E8F0" text-anchor="middle">
+      FREE Listing
+    </text>
+    <text x="-200" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="18" font-weight="600" fill="#E2E8F0" text-anchor="middle">
+      1000+ Brands
+    </text>
+    <text x="-20" y="0" font-family="'Segoe UI', Arial, sans-serif" font-size="18" font-weight="600" fill="#E2E8F0" text-anchor="middle">
+      AI Matching
+    </text>
+    
+    <!-- CTA Button -->
+    <g transform="translate(280, 0)">
+      <rect x="-150" y="-25" width="300" height="50" rx="25" fill="url(#diagonalGradient)" filter="url(#glow)"/>
+      <text x="0" y="8" font-family="'Segoe UI', Arial, sans-serif" font-size="22" font-weight="800" fill="#FFFFFF" text-anchor="middle">
+        LIST YOUR PROPERTY FREE
+      </text>
+    </g>
+  </g>
+  
+  <!-- Bottom Accent -->
+  <rect x="0" y="623" width="1200" height="5" fill="url(#brandGradient)"/>
+  
+  <!-- Floating Particles -->
+  <circle cx="100" cy="100" r="4" fill="url(#brandGradient)" opacity="0.5"/>
+  <circle cx="1100" cy="150" r="3" fill="url(#brandGradient)" opacity="0.4"/>
+  <circle cx="550" cy="80" r="5" fill="url(#brandGradient)" opacity="0.3"/>
+  <circle cx="1050" cy="500" r="4" fill="#10B981" opacity="0.4"/>
+  <circle cx="150" cy="550" r="3" fill="url(#brandGradient)" opacity="0.4"/>
+</svg>

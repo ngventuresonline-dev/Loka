@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { getBrandLogo } from '@/lib/brand-logos';
 
 export interface BrandPlacement {
@@ -54,6 +54,16 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
     }
   }, [placement.brand]);
 
+  // Close this card
+  const closeCard = useCallback(() => {
+    if (isClicked) {
+      setIsClicked(false);
+      setAnyCardOpen(false);
+      const closeEvent = new CustomEvent('pinCardClosed', { detail: { index } });
+      window.dispatchEvent(closeEvent);
+    }
+  }, [isClicked, index]);
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -66,14 +76,11 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
       const openEvent = new CustomEvent('pinCardOpened', { detail: { index } });
       window.dispatchEvent(openEvent);
       setAnyCardOpen(true);
+      setIsClicked(true);
     } else {
-      // Closing this card
-      const closeEvent = new CustomEvent('pinCardClosed', { detail: { index } });
-      window.dispatchEvent(closeEvent);
-      setAnyCardOpen(false);
+      closeCard();
     }
     
-    setIsClicked(!isClicked);
     if (onPinClick) {
       onPinClick(placement);
     }
@@ -81,13 +88,10 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
 
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsClicked(false);
-    setAnyCardOpen(false);
-    const closeEvent = new CustomEvent('pinCardClosed', { detail: { index } });
-    window.dispatchEvent(closeEvent);
+    closeCard();
   };
 
-  // Listen for close events from other pins
+  // Listen for close events from other pins and click outside
   useEffect(() => {
     const handleClosePopups = (e: CustomEvent) => {
       if (e.detail?.excludeIndex !== index && isClicked) {
@@ -106,7 +110,7 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
       if (e.detail?.index !== index) {
         // Check if any other card is still open
         setTimeout(() => {
-          const openCards = document.querySelectorAll('.pin-popup-container');
+          const openCards = document.querySelectorAll('[data-pin-popup="true"]');
           if (openCards.length === 0) {
             setAnyCardOpen(false);
           }
@@ -116,16 +120,32 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
       }
     };
 
+    // Click outside to close - listen on document
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!isClicked) return;
+      
+      const target = e.target as Element;
+      // Check if click is outside the pin and popup
+      const clickedOnPin = target.closest('.brand-placement-pin');
+      const clickedOnPopup = target.closest('[data-pin-popup="true"]');
+      
+      if (!clickedOnPin && !clickedOnPopup) {
+        closeCard();
+      }
+    };
+
     window.addEventListener('closeAllPinPopups' as any, handleClosePopups as EventListener);
     window.addEventListener('pinCardOpened' as any, handleCardOpened as EventListener);
     window.addEventListener('pinCardClosed' as any, handleCardClosed as EventListener);
+    document.addEventListener('click', handleClickOutside, true);
     
     return () => {
       window.removeEventListener('closeAllPinPopups' as any, handleClosePopups as EventListener);
       window.removeEventListener('pinCardOpened' as any, handleCardOpened as EventListener);
       window.removeEventListener('pinCardClosed' as any, handleCardClosed as EventListener);
+      document.removeEventListener('click', handleClickOutside, true);
     };
-  }, [index, isClicked]);
+  }, [index, isClicked, closeCard]);
 
   // Pin size and animations (slightly larger on mobile for readability)
   const baseSize = isMobile ? 36 : 32;
@@ -201,6 +221,7 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
   return (
     <g
       className="brand-placement-pin"
+      data-pin-index={index}
       transform={`translate(${x}, ${y})`}
       style={{ 
         cursor: 'pointer',
@@ -284,12 +305,11 @@ const BrandPlacementPin = memo(function BrandPlacementPin({
       {/* Popup card when clicked */}
       {isClicked && (
         <g
-          className="pin-popup pin-popup-container"
+          className="pin-popup"
+          data-pin-popup="true"
           transform={`translate(${popupX - x}, ${popupY - y})`}
           style={{ 
             pointerEvents: 'all',
-            isolation: 'isolate',
-            zIndex: 1000,
           }}
         >
           {/* Popup background with higher z-index effect */}

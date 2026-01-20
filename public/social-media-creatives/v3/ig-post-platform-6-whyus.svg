@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1350" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A"/>
+      <stop offset="100%" style="stop-color:#1E293B"/>
+    </linearGradient>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200"/>
+      <stop offset="100%" style="stop-color:#E4002B"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1350" fill="url(#bgGradient)"/>
+  
+  <!-- Top Accent -->
+  <rect x="0" y="0" width="1080" height="6" fill="url(#brandGradient)"/>
+  
+  <!-- LOGO top left -->
+  <g transform="translate(60, 60)">
+    <g transform="translate(18, 0)">
+      <circle cx="0" cy="0" r="16" fill="none" stroke="#FF5200" stroke-width="1" opacity="0.3"/>
+      <circle cx="0" cy="-16" r="3" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="16" cy="0" r="3" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="0" cy="16" r="3" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="-16" cy="0" r="3" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="0" cy="0" r="5" fill="#FF5200" filter="url(#glow)"/>
+    </g>
+    <text x="50" y="8" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#FF5200">Loka</text>
+    <text x="128" y="8" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#FFFFFF">zen</text>
+    <rect x="46" y="18" width="120" height="22" rx="11" fill="#FF5200" opacity="0.15"/>
+    <text x="50" y="35" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#FF5200">Powered By Ai</text>
+  </g>
+  
+  <!-- Header -->
+  <g transform="translate(540, 200)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#FFFFFF" text-anchor="middle">WHY LOKAZEN?</text>
+    <rect x="-80" y="20" width="160" height="4" rx="2" fill="url(#brandGradient)"/>
+  </g>
+  
+  <!-- Feature 1 -->
+  <g transform="translate(540, 350)">
+    <rect x="-420" y="-40" width="840" height="120" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <circle cx="-340" cy="20" r="35" fill="#FF5200" opacity="0.2"/>
+    <text x="-340" y="30" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#FF5200" text-anchor="middle">AI</text>
+    <text x="-260" y="10" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">AI-Powered Matching</text>
+    <text x="-260" y="50" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#94A3B8">Smart algorithms find the perfect fit for your requirements</text>
+  </g>
+  
+  <!-- Feature 2 -->
+  <g transform="translate(540, 510)">
+    <rect x="-420" y="-40" width="840" height="120" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <circle cx="-340" cy="20" r="35" fill="#22C55E" opacity="0.2"/>
+    <text x="-350" y="32" font-family="Arial, sans-serif" font-size="20" font-weight="900" fill="#22C55E" text-anchor="middle">200+</text>
+    <text x="-260" y="10" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Verified Brands</text>
+    <text x="-260" y="50" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#94A3B8">Only verified, high-intent brands on the platform</text>
+  </g>
+  
+  <!-- Feature 3 -->
+  <g transform="translate(540, 670)">
+    <rect x="-420" y="-40" width="840" height="120" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <circle cx="-340" cy="20" r="35" fill="#3B82F6" opacity="0.2"/>
+    <text x="-350" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="900" fill="#3B82F6" text-anchor="middle">100%</text>
+    <text x="-260" y="10" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Verified Listings</text>
+    <text x="-260" y="50" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#94A3B8">Every property is verified before going live</text>
+  </g>
+  
+  <!-- Feature 4 -->
+  <g transform="translate(540, 830)">
+    <rect x="-420" y="-40" width="840" height="120" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <circle cx="-340" cy="20" r="35" fill="#A855F7" opacity="0.2"/>
+    <text x="-340" y="30" font-family="Arial, sans-serif" font-size="24" font-weight="900" fill="#A855F7" text-anchor="middle">24/7</text>
+    <text x="-260" y="10" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Always Available</text>
+    <text x="-260" y="50" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#94A3B8">Search, filter, and connect anytime you want</text>
+  </g>
+  
+  <!-- Bottom Statement -->
+  <g transform="translate(540, 1010)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#FFFFFF" text-anchor="middle">The smarter way to find</text>
+    <text x="0" y="50" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#FF5200" text-anchor="middle" filter="url(#strongGlow)">commercial real estate</text>
+  </g>
+  
+  <!-- CTA -->
+  <g transform="translate(540, 1170)">
+    <rect x="-180" y="-35" width="360" height="70" rx="35" fill="url(#brandGradient)" filter="url(#glow)"/>
+    <text x="0" y="10" font-family="Arial, sans-serif" font-size="22" font-weight="800" fill="#FFFFFF" text-anchor="middle">START FOR FREE</text>
+  </g>
+  
+  <!-- Website -->
+  <text x="540" y="1310" font-family="Arial, sans-serif" font-size="18" font-weight="500" fill="#64748B" text-anchor="middle">lokazen.in</text>
+  
+  <!-- Bottom Accent -->
+  <rect x="0" y="1344" width="1080" height="6" fill="url(#brandGradient)"/>
+</svg>

@@ -8,6 +8,11 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
+// Debug logging for Supabase configuration
+console.log('🔧 [Supabase Client] Initializing...')
+console.log('🔧 [Supabase Client] URL:', supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : '❌ NOT SET')
+console.log('🔧 [Supabase Client] Anon Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : '❌ NOT SET')
+
 // Create client with fallback empty strings to prevent build errors
 // Will show helpful errors at runtime if not configured
 export const supabase = createClient(
@@ -21,6 +26,8 @@ export const supabase = createClient(
     },
   }
 )
+
+console.log('✅ [Supabase Client] Client created successfully')
 
 // Warn if Supabase is not configured (only in development)
 if (process.env.NODE_ENV === 'development' && (!supabaseUrl || !supabaseAnonKey)) {

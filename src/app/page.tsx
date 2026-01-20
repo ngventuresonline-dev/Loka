@@ -642,75 +642,59 @@ export default function Home() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [activePinIndex, setActivePinIndex] = useState<number | null>(null)
 
-  // Auto-animation + touch/drag for 2nd row logos - using refs for smooth animation
-  const scrollOffsetRef = useRef(0)
-  const targetOffsetRef = useRef(0)
+  // Auto-animation + touch/drag for 2nd row logos
   const logoRowRef = useRef<HTMLDivElement>(null)
-  const animationFrameRef = useRef<number | null>(null)
+  const logoContainerRef = useRef<HTMLDivElement>(null)
   const singleSetWidthRef = useRef(0)
+  const currentOffsetRef = useRef(0)
+  const animationRef = useRef<Animation | null>(null)
   
   // Touch/drag interaction refs
   const isDraggingRef = useRef(false)
   const dragStartXRef = useRef(0)
   const dragStartOffsetRef = useRef(0)
 
-  // Measure single set width on mount for seamless looping
+  // Measure single set width and setup CSS animation
   useEffect(() => {
-    const measureWidth = () => {
+    const setupAnimation = () => {
       if (logoRowRef.current) {
         // Total width divided by 3 (since we render 3 copies)
         singleSetWidthRef.current = logoRowRef.current.scrollWidth / 3
-      }
-    }
-    measureWidth()
-    window.addEventListener('resize', measureWidth)
-    return () => window.removeEventListener('resize', measureWidth)
-  }, [])
-
-  // Smooth animation loop with auto-scroll (left to right) and seamless wrap
-  useEffect(() => {
-    const autoScrollSpeed = 0.3 // Pixels per frame (slow smooth movement)
-    
-    const animate = () => {
-      // Auto-scroll: move left (right to left animation)
-      // Only auto-scroll when not dragging
-      if (!isDraggingRef.current) {
-        targetOffsetRef.current += autoScrollSpeed // Move right to left
-      }
-      
-      // Lerp (linear interpolation) for smooth movement
-      const diff = targetOffsetRef.current - scrollOffsetRef.current
-      scrollOffsetRef.current += diff * 0.08 // Smooth easing factor
-      
-      // Seamless infinite loop wrap
-      const singleWidth = singleSetWidthRef.current
-      if (singleWidth > 0) {
-        // Wrap the offset to stay within one set width range for seamless loop
-        while (scrollOffsetRef.current < -singleWidth) {
-          scrollOffsetRef.current += singleWidth
-          targetOffsetRef.current += singleWidth
-          dragStartOffsetRef.current += singleWidth
+        
+        // Cancel any existing animation
+        if (animationRef.current) {
+          animationRef.current.cancel()
         }
-        while (scrollOffsetRef.current > 0) {
-          scrollOffsetRef.current -= singleWidth
-          targetOffsetRef.current -= singleWidth
-          dragStartOffsetRef.current -= singleWidth
+        
+        // Create smooth CSS animation using Web Animations API
+        const singleWidth = singleSetWidthRef.current
+        if (singleWidth > 0) {
+          animationRef.current = logoRowRef.current.animate(
+            [
+              { transform: 'translateX(0px)' },
+              { transform: `translateX(-${singleWidth}px)` }
+            ],
+            {
+              duration: singleWidth * 50, // Slow speed: 50ms per pixel
+              iterations: Infinity,
+              easing: 'linear'
+            }
+          )
         }
       }
-      
-      if (logoRowRef.current) {
-        logoRowRef.current.style.transform = `translateX(${scrollOffsetRef.current}px)`
-      }
-      
-      animationFrameRef.current = requestAnimationFrame(animate)
     }
     
-    animationFrameRef.current = requestAnimationFrame(animate)
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(setupAnimation, 100)
+    window.addEventListener('resize', setupAnimation)
     
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
+      clearTimeout(timer)
+      window.removeEventListener('resize', setupAnimation)
+      if (animationRef.current) {
+        animationRef.current.cancel()
       }
     }
   }, [])
@@ -719,17 +703,76 @@ export default function Home() {
   const handleDragStart = useCallback((clientX: number) => {
     isDraggingRef.current = true
     dragStartXRef.current = clientX
-    dragStartOffsetRef.current = targetOffsetRef.current
+    
+    // Pause animation and get current position
+    if (animationRef.current && logoRowRef.current) {
+      const computedStyle = getComputedStyle(logoRowRef.current)
+      const matrix = new DOMMatrix(computedStyle.transform)
+      currentOffsetRef.current = matrix.m41 // Get current X translation
+      dragStartOffsetRef.current = currentOffsetRef.current
+      animationRef.current.pause()
+    }
   }, [])
 
   const handleDragMove = useCallback((clientX: number) => {
-    if (!isDraggingRef.current) return
+    if (!isDraggingRef.current || !logoRowRef.current) return
     const delta = clientX - dragStartXRef.current
-    targetOffsetRef.current = dragStartOffsetRef.current + delta
+    let newOffset = dragStartOffsetRef.current + delta
+    
+    // Wrap for seamless loop
+    const singleWidth = singleSetWidthRef.current
+    if (singleWidth > 0) {
+      while (newOffset < -singleWidth) newOffset += singleWidth
+      while (newOffset > 0) newOffset -= singleWidth
+    }
+    
+    currentOffsetRef.current = newOffset
+    logoRowRef.current.style.transform = `translateX(${newOffset}px)`
   }, [])
 
   const handleDragEnd = useCallback(() => {
+    if (!isDraggingRef.current) return
     isDraggingRef.current = false
+    
+    // Resume animation from current position
+    if (animationRef.current && logoRowRef.current) {
+      const singleWidth = singleSetWidthRef.current
+      if (singleWidth > 0) {
+        // Calculate how far through the animation we are based on current offset
+        const progress = Math.abs(currentOffsetRef.current) / singleWidth
+        
+        // Recreate animation from current position
+        animationRef.current.cancel()
+        animationRef.current = logoRowRef.current.animate(
+          [
+            { transform: `translateX(${currentOffsetRef.current}px)` },
+            { transform: `translateX(-${singleWidth}px)` }
+          ],
+          {
+            duration: (singleWidth - Math.abs(currentOffsetRef.current)) * 50,
+            iterations: 1,
+            easing: 'linear'
+          }
+        )
+        
+        // When this partial animation completes, restart the full loop
+        animationRef.current.onfinish = () => {
+          if (logoRowRef.current && !isDraggingRef.current) {
+            animationRef.current = logoRowRef.current.animate(
+              [
+                { transform: 'translateX(0px)' },
+                { transform: `translateX(-${singleWidth}px)` }
+              ],
+              {
+                duration: singleWidth * 50,
+                iterations: Infinity,
+                easing: 'linear'
+              }
+            )
+          }
+        }
+      }
+    }
   }, [])
 
   // Mouse event handlers
@@ -762,6 +805,25 @@ export default function Home() {
   const onTouchEnd = useCallback(() => {
     handleDragEnd()
   }, [handleDragEnd])
+
+  // Listen for pin card open/close events to track active pin for z-index
+  useEffect(() => {
+    const handlePinCardOpened = (e: CustomEvent) => {
+      setActivePinIndex(e.detail?.index ?? null)
+    }
+    
+    const handlePinCardClosed = () => {
+      setActivePinIndex(null)
+    }
+    
+    window.addEventListener('pinCardOpened' as any, handlePinCardOpened as EventListener)
+    window.addEventListener('pinCardClosed' as any, handlePinCardClosed as EventListener)
+    
+    return () => {
+      window.removeEventListener('pinCardOpened' as any, handlePinCardOpened as EventListener)
+      window.removeEventListener('pinCardClosed' as any, handlePinCardClosed as EventListener)
+    }
+  }, [])
 
   // Get brand logos using the brand-logos utility, filtering out null values
   // Memoize to prevent recomputation on every render
@@ -2009,8 +2071,16 @@ export default function Home() {
                     animationSpeed={1.2}
                     className="w-full h-full"
                   >
-                    {/* Brand Placement Pins - Client-side only */}
-                    {isClient && brandPlacements.map((placement, index) => {
+                    {/* Brand Placement Pins - Client-side only, active pin rendered last for z-index */}
+                    {isClient && [...brandPlacements]
+                      .map((placement, index) => ({ placement, index }))
+                      .sort((a, b) => {
+                        // Render active pin last so it's on top
+                        if (a.index === activePinIndex) return 1;
+                        if (b.index === activePinIndex) return -1;
+                        return 0;
+                      })
+                      .map(({ placement, index }) => {
                       try {
                         const coords = getPlacementCoordinates(placement, index, brandPlacements);
                         if (!coords) return null;

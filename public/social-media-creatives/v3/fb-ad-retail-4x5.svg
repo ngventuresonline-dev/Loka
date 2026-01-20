@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1350" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bgGradient" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" style="stop-color:#0F172A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="bigGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="40" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1350" fill="url(#bgGradient)"/>
+  
+  <!-- Vertical light strips -->
+  <g opacity="0.06">
+    <rect x="180" y="0" width="80" height="1350" fill="#FF5200"/>
+    <rect x="820" y="0" width="80" height="1350" fill="#FF5200"/>
+  </g>
+  
+  <!-- Top accent -->
+  <rect x="0" y="0" width="1080" height="8" fill="url(#brandGradient)"/>
+  
+  <!-- LOGO top left with Powered By Ai -->
+  <g transform="translate(50, 60)">
+    <!-- Quantum orb icon -->
+    <g transform="translate(18, 0)">
+      <circle cx="0" cy="0" r="16" fill="none" stroke="#FF5200" stroke-width="1" opacity="0.3"/>
+      <circle cx="0" cy="-16" r="3" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="16" cy="0" r="3" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="0" cy="16" r="3" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="-16" cy="0" r="3" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="0" cy="0" r="5" fill="#FF5200" filter="url(#glow)"/>
+    </g>
+    <!-- Lokazen text -->
+    <text x="50" y="8" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#FF5200">Loka</text>
+    <text x="120" y="8" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF">zen</text>
+    <!-- Powered By Ai - Highlighted -->
+    <rect x="46" y="16" width="110" height="20" rx="10" fill="#FF5200" opacity="0.15"/>
+    <text x="50" y="31" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#FF5200">Powered By Ai</text>
+  </g>
+  
+  <!-- FOR PROPERTY OWNERS badge -->
+  <g transform="translate(540, 170)">
+    <rect x="-120" y="-20" width="240" height="40" rx="20" fill="#22C55E" opacity="0.2"/>
+    <text x="0" y="6" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#22C55E" text-anchor="middle">FOR PROPERTY OWNERS</text>
+  </g>
+  
+  <!-- D2C EXPANSION badge -->
+  <g transform="translate(540, 240)">
+    <rect x="-90" y="-18" width="180" height="36" rx="18" fill="#10B981"/>
+    <text x="0" y="6" font-family="Arial, sans-serif" font-size="16" font-weight="800" fill="#FFFFFF" text-anchor="middle">D2C EXPANSION</text>
+  </g>
+  
+  <!-- Big Number -->
+  <g transform="translate(540, 420)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="200" font-weight="900" fill="#FF5200" text-anchor="middle" filter="url(#bigGlow)">25+</text>
+  </g>
+  
+  <!-- Category -->
+  <text x="540" y="520" font-family="Arial, sans-serif" font-size="52" font-weight="800" fill="#FFFFFF" text-anchor="middle">RETAIL BRANDS</text>
+  <text x="540" y="570" font-family="Arial, sans-serif" font-size="20" font-weight="500" fill="#94A3B8" text-anchor="middle">D2C brands going offline in Bangalore</text>
+  
+  <!-- Location showcase - High street focus -->
+  <g transform="translate(540, 700)">
+    <!-- Premium row -->
+    <g transform="translate(-380, 0)">
+      <rect x="0" y="0" width="180" height="55" rx="8" fill="#FF5200"/>
+      <text x="90" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" text-anchor="middle">Commercial Street</text>
+    </g>
+    <g transform="translate(-180, 0)">
+      <rect x="0" y="0" width="140" height="55" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="70" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FF5200" text-anchor="middle">Brigade Road</text>
+    </g>
+    <g transform="translate(-20, 0)">
+      <rect x="0" y="0" width="120" height="55" rx="8" fill="#FF5200"/>
+      <text x="60" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" text-anchor="middle">Indiranagar</text>
+    </g>
+    <g transform="translate(120, 0)">
+      <rect x="0" y="0" width="130" height="55" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="65" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FF5200" text-anchor="middle">Jayanagar</text>
+    </g>
+    <g transform="translate(270, 0)">
+      <rect x="0" y="0" width="100" height="55" rx="8" fill="#FF5200"/>
+      <text x="50" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" text-anchor="middle">UB City</text>
+    </g>
+    
+    <!-- Expansion row -->
+    <g transform="translate(-330, 75)">
+      <rect x="0" y="0" width="150" height="55" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="75" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FF5200" text-anchor="middle">Koramangala</text>
+    </g>
+    <g transform="translate(-160, 75)">
+      <rect x="0" y="0" width="120" height="55" rx="8" fill="#FF5200"/>
+      <text x="60" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" text-anchor="middle">HSR Layout</text>
+    </g>
+    <g transform="translate(-20, 75)">
+      <rect x="0" y="0" width="140" height="55" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="70" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FF5200" text-anchor="middle">Malleshwaram</text>
+    </g>
+    <g transform="translate(140, 75)">
+      <rect x="0" y="0" width="130" height="55" rx="8" fill="#FF5200"/>
+      <text x="65" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" text-anchor="middle">Whitefield</text>
+    </g>
+    <g transform="translate(290, 75)">
+      <rect x="0" y="0" width="100" height="55" rx="8" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="50" y="35" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#FF5200" text-anchor="middle">JP Nagar</text>
+    </g>
+  </g>
+  
+  <!-- Specs -->
+  <g transform="translate(540, 950)">
+    <text x="-150" y="0" font-family="Arial, sans-serif" font-size="48" font-weight="800" fill="#FFFFFF" text-anchor="middle">300-1500</text>
+    <text x="-150" y="35" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#64748B" text-anchor="middle">SQFT</text>
+    <rect x="-20" y="-18" width="3" height="55" rx="1" fill="#334155"/>
+    <text x="150" y="0" font-family="Arial, sans-serif" font-size="48" font-weight="800" fill="#FFFFFF" text-anchor="middle">60K-2.5L</text>
+    <text x="150" y="35" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#64748B" text-anchor="middle">RENT RANGE</text>
+  </g>
+  
+  <!-- AI Insight - Highlighted -->
+  <g transform="translate(540, 1080)">
+    <rect x="-380" y="-20" width="760" height="40" rx="20" fill="#FF5200" opacity="0.1"/>
+    <rect x="-380" y="-20" width="760" height="40" rx="20" fill="none" stroke="#FF5200" stroke-width="1" opacity="0.4"/>
+    <text x="0" y="7" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#FF5200" text-anchor="middle">AI scoring enriched with real-time location insights for perfect property-brand matching</text>
+  </g>
+  
+  <!-- CTA -->
+  <g transform="translate(540, 1190)">
+    <rect x="-200" y="-40" width="400" height="80" rx="40" fill="url(#brandGradient)" filter="url(#glow)"/>
+    <text x="0" y="12" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#FFFFFF" text-anchor="middle">LIST YOUR PROPERTY FREE</text>
+  </g>
+  
+  <!-- Website -->
+  <text x="540" y="1310" font-family="Arial, sans-serif" font-size="18" font-weight="500" fill="#64748B" text-anchor="middle">lokazen.in</text>
+  
+  <!-- Bottom accent -->
+  <rect x="0" y="1342" width="1080" height="8" fill="url(#brandGradient)"/>
+</svg>
