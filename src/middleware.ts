@@ -74,7 +74,7 @@ export function middleware(request: NextRequest) {
   // CSP header
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://www.facebook.com; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.facebook.com https://www.clarity.ms https://scripts.clarity.ms; frame-src 'self' https://*.google.com https://www.googletagmanager.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://www.facebook.com; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.facebook.com https://www.clarity.ms https://scripts.clarity.ms https://f.clarity.ms; frame-src 'self' https://*.google.com https://www.googletagmanager.com;"
   )
 
   // Rate limiting based on route (disabled in development for easier local testing)
