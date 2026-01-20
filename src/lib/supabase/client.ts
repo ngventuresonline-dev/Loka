@@ -3,38 +3,47 @@
  * Client-side Supabase client for browser usage
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+// Check if Supabase is properly configured
+const isSupabaseConfigured = supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')
 
 // Debug logging for Supabase configuration
 console.log('🔧 [Supabase Client] Initializing...')
 console.log('🔧 [Supabase Client] URL:', supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : '❌ NOT SET')
 console.log('🔧 [Supabase Client] Anon Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : '❌ NOT SET')
+console.log('🔧 [Supabase Client] Configured:', isSupabaseConfigured ? '✅ YES' : '❌ NO')
 
-// Create client with fallback empty strings to prevent build errors
-// Will show helpful errors at runtime if not configured
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
+// Create client only if properly configured, otherwise create a mock client
+let supabase: SupabaseClient
+
+if (isSupabaseConfigured) {
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
     },
-  }
-)
-
-console.log('✅ [Supabase Client] Client created successfully')
-
-// Warn if Supabase is not configured (only in development)
-if (process.env.NODE_ENV === 'development' && (!supabaseUrl || !supabaseAnonKey)) {
-  console.warn(
-    '⚠️  Supabase not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local'
-  )
+  })
+  console.log('✅ [Supabase Client] Client created successfully')
+} else {
+  // Create a placeholder client that won't crash but will log warnings
+  console.warn('⚠️  [Supabase Client] Not configured - using placeholder client')
+  console.warn('⚠️  Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local')
+  
+  // Use a dummy URL that passes validation but won't actually work
+  supabase = createClient('https://placeholder.supabase.co', 'placeholder-anon-key', {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
+
+export { supabase, isSupabaseConfigured }
 
 // Database types (will be generated from Supabase)
 export type Database = {

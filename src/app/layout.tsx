@@ -3,6 +3,7 @@ import Script from 'next/script'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import GoogleMapsErrorHandler from '@/components/GoogleMapsErrorHandler'
+import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
@@ -160,6 +161,7 @@ fbq('track', 'PageView');`,
         </noscript>
 
         <GoogleMapsErrorHandler />
+        <SupabaseInitializer />
         <AuthProvider>
           {children}
         </AuthProvider>

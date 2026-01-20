@@ -644,168 +644,6 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false)
   const [activePinIndex, setActivePinIndex] = useState<number | null>(null)
 
-  // Auto-animation + touch/drag for 2nd row logos
-  const logoRowRef = useRef<HTMLDivElement>(null)
-  const logoContainerRef = useRef<HTMLDivElement>(null)
-  const singleSetWidthRef = useRef(0)
-  const currentOffsetRef = useRef(0)
-  const animationRef = useRef<Animation | null>(null)
-  
-  // Touch/drag interaction refs
-  const isDraggingRef = useRef(false)
-  const dragStartXRef = useRef(0)
-  const dragStartOffsetRef = useRef(0)
-
-  // Measure single set width and setup CSS animation
-  useEffect(() => {
-    const setupAnimation = () => {
-      if (logoRowRef.current) {
-        // Total width divided by 3 (since we render 3 copies)
-        singleSetWidthRef.current = logoRowRef.current.scrollWidth / 3
-        
-        // Cancel any existing animation
-        if (animationRef.current) {
-          animationRef.current.cancel()
-        }
-        
-        // Create smooth CSS animation using Web Animations API
-        const singleWidth = singleSetWidthRef.current
-        if (singleWidth > 0) {
-          animationRef.current = logoRowRef.current.animate(
-            [
-              { transform: 'translateX(0px)' },
-              { transform: `translateX(-${singleWidth}px)` }
-            ],
-            {
-              duration: singleWidth * 50, // Slow speed: 50ms per pixel
-              iterations: Infinity,
-              easing: 'linear'
-            }
-          )
-        }
-      }
-    }
-    
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(setupAnimation, 100)
-    window.addEventListener('resize', setupAnimation)
-    
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', setupAnimation)
-      if (animationRef.current) {
-        animationRef.current.cancel()
-      }
-    }
-  }, [])
-
-  // Touch and mouse drag handlers for logo row
-  const handleDragStart = useCallback((clientX: number) => {
-    isDraggingRef.current = true
-    dragStartXRef.current = clientX
-    
-    // Pause animation and get current position
-    if (animationRef.current && logoRowRef.current) {
-      const computedStyle = getComputedStyle(logoRowRef.current)
-      const matrix = new DOMMatrix(computedStyle.transform)
-      currentOffsetRef.current = matrix.m41 // Get current X translation
-      dragStartOffsetRef.current = currentOffsetRef.current
-      animationRef.current.pause()
-    }
-  }, [])
-
-  const handleDragMove = useCallback((clientX: number) => {
-    if (!isDraggingRef.current || !logoRowRef.current) return
-    const delta = clientX - dragStartXRef.current
-    let newOffset = dragStartOffsetRef.current + delta
-    
-    // Wrap for seamless loop
-    const singleWidth = singleSetWidthRef.current
-    if (singleWidth > 0) {
-      while (newOffset < -singleWidth) newOffset += singleWidth
-      while (newOffset > 0) newOffset -= singleWidth
-    }
-    
-    currentOffsetRef.current = newOffset
-    logoRowRef.current.style.transform = `translateX(${newOffset}px)`
-  }, [])
-
-  const handleDragEnd = useCallback(() => {
-    if (!isDraggingRef.current) return
-    isDraggingRef.current = false
-    
-    // Resume animation from current position
-    if (animationRef.current && logoRowRef.current) {
-      const singleWidth = singleSetWidthRef.current
-      if (singleWidth > 0) {
-        // Calculate how far through the animation we are based on current offset
-        const progress = Math.abs(currentOffsetRef.current) / singleWidth
-        
-        // Recreate animation from current position
-        animationRef.current.cancel()
-        animationRef.current = logoRowRef.current.animate(
-          [
-            { transform: `translateX(${currentOffsetRef.current}px)` },
-            { transform: `translateX(-${singleWidth}px)` }
-          ],
-          {
-            duration: (singleWidth - Math.abs(currentOffsetRef.current)) * 50,
-            iterations: 1,
-            easing: 'linear'
-          }
-        )
-        
-        // When this partial animation completes, restart the full loop
-        animationRef.current.onfinish = () => {
-          if (logoRowRef.current && !isDraggingRef.current) {
-            animationRef.current = logoRowRef.current.animate(
-              [
-                { transform: 'translateX(0px)' },
-                { transform: `translateX(-${singleWidth}px)` }
-              ],
-              {
-                duration: singleWidth * 50,
-                iterations: Infinity,
-                easing: 'linear'
-              }
-            )
-          }
-        }
-      }
-    }
-  }, [])
-
-  // Mouse event handlers
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    handleDragStart(e.clientX)
-  }, [handleDragStart])
-
-  const onMouseMove = useCallback((e: React.MouseEvent) => {
-    handleDragMove(e.clientX)
-  }, [handleDragMove])
-
-  const onMouseUp = useCallback(() => {
-    handleDragEnd()
-  }, [handleDragEnd])
-
-  const onMouseLeave = useCallback(() => {
-    handleDragEnd()
-  }, [handleDragEnd])
-
-  // Touch event handlers
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    handleDragStart(e.touches[0].clientX)
-  }, [handleDragStart])
-
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    handleDragMove(e.touches[0].clientX)
-  }, [handleDragMove])
-
-  const onTouchEnd = useCallback(() => {
-    handleDragEnd()
-  }, [handleDragEnd])
-
   // Listen for pin card open/close events to track active pin for z-index
   useEffect(() => {
     const handlePinCardOpened = (e: CustomEvent) => {
@@ -1404,25 +1242,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Second Row - Logo Images - Seamless infinite loop with scroll/touch/drag */}
-        <div 
-          className="relative mb-5 w-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseLeave}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
-          <div 
-            ref={logoRowRef}
-            className="flex gap-6 md:gap-8 items-center py-2 will-change-transform pointer-events-none"
-            style={{ 
-              minWidth: 'max-content'
-            }}
-          >
-            {/* Render 3 copies for seamless infinite loop */}
+        {/* Second Row - Logo Images - Pure CSS infinite scroll (opposite direction: RIGHT → LEFT) */}
+        <div className="relative mb-5 w-full overflow-hidden">
+          <div className="flex gap-6 md:gap-8 w-max items-center animate-[scrollReverse_40s_linear_infinite]">
             {[...uniqueLogos, ...uniqueLogos, ...uniqueLogos].map((logoItem, idx) => {
               const logoPath = logoItem.logoPath as string
               const brandName = logoItem.brand
@@ -1434,7 +1256,6 @@ export default function Home() {
                 className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
               >
                 <div className="relative h-full flex items-center justify-center w-full">
-                  {/* Robust Logo Image Component - NEVER disappears, always shows fallback */}
                   <LogoImage
                     src={logoPath}
                     alt={`${brandName} logo`}

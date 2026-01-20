@@ -19,10 +19,23 @@ export async function uploadPropertyImage(
   propertyId: string,
   imageIndex: number = 0
 ): Promise<{ success: boolean; url?: string; error?: string }> {
+  console.log('[Supabase Storage] uploadPropertyImage called', { 
+    propertyId, 
+    imageIndex, 
+    fileName: file.name, 
+    fileSize: file.size,
+    fileType: file.type 
+  })
+  
   try {
     const fileExt = file.name.split('.').pop()
     const fileName = `${propertyId}/${imageIndex}-${Date.now()}.${fileExt}`
     const filePath = `${fileName}`
+
+    console.log('[Supabase Storage] Uploading to bucket', { 
+      bucket: STORAGE_BUCKETS.PROPERTY_IMAGES, 
+      filePath 
+    })
 
     // Upload file
     const { data, error } = await supabase.storage
@@ -33,8 +46,11 @@ export async function uploadPropertyImage(
       })
 
     if (error) {
+      console.error('[Supabase Storage] Upload error', { error: error.message, filePath })
       return { success: false, error: error.message }
     }
+
+    console.log('[Supabase Storage] Upload successful', { filePath, data })
 
     // Get public URL
     const {
@@ -43,8 +59,10 @@ export async function uploadPropertyImage(
       .from(STORAGE_BUCKETS.PROPERTY_IMAGES)
       .getPublicUrl(filePath)
 
+    console.log('[Supabase Storage] Public URL generated', { publicUrl })
     return { success: true, url: publicUrl }
   } catch (error: any) {
+    console.error('[Supabase Storage] uploadPropertyImage exception', { error: error.message })
     return { success: false, error: error.message || 'Failed to upload image' }
   }
 }
@@ -56,6 +74,11 @@ export async function uploadPropertyImages(
   files: File[],
   propertyId: string
 ): Promise<{ success: boolean; urls?: string[]; errors?: string[] }> {
+  console.log('[Supabase Storage] uploadPropertyImages called', { 
+    propertyId, 
+    fileCount: files.length 
+  })
+  
   const results = await Promise.all(
     files.map((file, index) => uploadPropertyImage(file, propertyId, index))
   )
@@ -71,6 +94,12 @@ export async function uploadPropertyImages(
     }
   })
 
+  console.log('[Supabase Storage] uploadPropertyImages completed', { 
+    propertyId, 
+    successCount: urls.length, 
+    errorCount: errors.length 
+  })
+
   return {
     success: errors.length === 0,
     urls: urls.length > 0 ? urls : undefined,
@@ -84,6 +113,8 @@ export async function uploadPropertyImages(
 export async function deletePropertyImage(
   imageUrl: string
 ): Promise<{ success: boolean; error?: string }> {
+  console.log('[Supabase Storage] deletePropertyImage called', { imageUrl })
+  
   try {
     // Extract file path from URL
     const urlParts = imageUrl.split('/')
@@ -91,16 +122,21 @@ export async function deletePropertyImage(
     const propertyId = urlParts[urlParts.length - 2]
     const filePath = `${propertyId}/${fileName}`
 
+    console.log('[Supabase Storage] Deleting file', { filePath, bucket: STORAGE_BUCKETS.PROPERTY_IMAGES })
+
     const { error } = await supabase.storage
       .from(STORAGE_BUCKETS.PROPERTY_IMAGES)
       .remove([filePath])
 
     if (error) {
+      console.error('[Supabase Storage] Delete error', { error: error.message, filePath })
       return { success: false, error: error.message }
     }
 
+    console.log('[Supabase Storage] Delete successful', { filePath })
     return { success: true }
   } catch (error: any) {
+    console.error('[Supabase Storage] deletePropertyImage exception', { error: error.message })
     return { success: false, error: error.message || 'Failed to delete image' }
   }
 }
@@ -112,10 +148,21 @@ export async function uploadUserAvatar(
   file: File,
   userId: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
+  console.log('[Supabase Storage] uploadUserAvatar called', { 
+    userId, 
+    fileName: file.name, 
+    fileSize: file.size 
+  })
+  
   try {
     const fileExt = file.name.split('.').pop()
     const fileName = `${userId}-${Date.now()}.${fileExt}`
     const filePath = `${fileName}`
+
+    console.log('[Supabase Storage] Uploading avatar', { 
+      bucket: STORAGE_BUCKETS.USER_AVATARS, 
+      filePath 
+    })
 
     // Upload file
     const { data, error } = await supabase.storage
@@ -126,8 +173,11 @@ export async function uploadUserAvatar(
       })
 
     if (error) {
+      console.error('[Supabase Storage] Avatar upload error', { error: error.message })
       return { success: false, error: error.message }
     }
+
+    console.log('[Supabase Storage] Avatar upload successful', { filePath })
 
     // Get public URL
     const {
@@ -136,8 +186,10 @@ export async function uploadUserAvatar(
       .from(STORAGE_BUCKETS.USER_AVATARS)
       .getPublicUrl(filePath)
 
+    console.log('[Supabase Storage] Avatar public URL generated', { userId, publicUrl })
     return { success: true, url: publicUrl }
   } catch (error: any) {
+    console.error('[Supabase Storage] uploadUserAvatar exception', { error: error.message })
     return { success: false, error: error.message || 'Failed to upload avatar' }
   }
 }
