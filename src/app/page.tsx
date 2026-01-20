@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -643,6 +643,126 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
+  // Auto-animation + touch/drag for 2nd row logos - using refs for smooth animation
+  const scrollOffsetRef = useRef(0)
+  const targetOffsetRef = useRef(0)
+  const logoRowRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number | null>(null)
+  const singleSetWidthRef = useRef(0)
+  
+  // Touch/drag interaction refs
+  const isDraggingRef = useRef(false)
+  const dragStartXRef = useRef(0)
+  const dragStartOffsetRef = useRef(0)
+
+  // Measure single set width on mount for seamless looping
+  useEffect(() => {
+    const measureWidth = () => {
+      if (logoRowRef.current) {
+        // Total width divided by 3 (since we render 3 copies)
+        singleSetWidthRef.current = logoRowRef.current.scrollWidth / 3
+      }
+    }
+    measureWidth()
+    window.addEventListener('resize', measureWidth)
+    return () => window.removeEventListener('resize', measureWidth)
+  }, [])
+
+  // Smooth animation loop with auto-scroll (left to right) and seamless wrap
+  useEffect(() => {
+    const autoScrollSpeed = 0.3 // Pixels per frame (slow smooth movement)
+    
+    const animate = () => {
+      // Auto-scroll: move left (right to left animation)
+      // Only auto-scroll when not dragging
+      if (!isDraggingRef.current) {
+        targetOffsetRef.current += autoScrollSpeed // Move right to left
+      }
+      
+      // Lerp (linear interpolation) for smooth movement
+      const diff = targetOffsetRef.current - scrollOffsetRef.current
+      scrollOffsetRef.current += diff * 0.08 // Smooth easing factor
+      
+      // Seamless infinite loop wrap
+      const singleWidth = singleSetWidthRef.current
+      if (singleWidth > 0) {
+        // Wrap the offset to stay within one set width range for seamless loop
+        while (scrollOffsetRef.current < -singleWidth) {
+          scrollOffsetRef.current += singleWidth
+          targetOffsetRef.current += singleWidth
+          dragStartOffsetRef.current += singleWidth
+        }
+        while (scrollOffsetRef.current > 0) {
+          scrollOffsetRef.current -= singleWidth
+          targetOffsetRef.current -= singleWidth
+          dragStartOffsetRef.current -= singleWidth
+        }
+      }
+      
+      if (logoRowRef.current) {
+        logoRowRef.current.style.transform = `translateX(${scrollOffsetRef.current}px)`
+      }
+      
+      animationFrameRef.current = requestAnimationFrame(animate)
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(animate)
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [])
+
+  // Touch and mouse drag handlers for logo row
+  const handleDragStart = useCallback((clientX: number) => {
+    isDraggingRef.current = true
+    dragStartXRef.current = clientX
+    dragStartOffsetRef.current = targetOffsetRef.current
+  }, [])
+
+  const handleDragMove = useCallback((clientX: number) => {
+    if (!isDraggingRef.current) return
+    const delta = clientX - dragStartXRef.current
+    targetOffsetRef.current = dragStartOffsetRef.current + delta
+  }, [])
+
+  const handleDragEnd = useCallback(() => {
+    isDraggingRef.current = false
+  }, [])
+
+  // Mouse event handlers
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    handleDragStart(e.clientX)
+  }, [handleDragStart])
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    handleDragMove(e.clientX)
+  }, [handleDragMove])
+
+  const onMouseUp = useCallback(() => {
+    handleDragEnd()
+  }, [handleDragEnd])
+
+  const onMouseLeave = useCallback(() => {
+    handleDragEnd()
+  }, [handleDragEnd])
+
+  // Touch event handlers
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    handleDragStart(e.touches[0].clientX)
+  }, [handleDragStart])
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    handleDragMove(e.touches[0].clientX)
+  }, [handleDragMove])
+
+  const onTouchEnd = useCallback(() => {
+    handleDragEnd()
+  }, [handleDragEnd])
+
   // Get brand logos using the brand-logos utility, filtering out null values
   // Memoize to prevent recomputation on every render
   const allBrands = useMemo(() => [
@@ -1222,21 +1342,33 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Second Row - Logo Images - Cinematic infinite scroll RIGHT → LEFT */}
-        <div className="relative mb-5 w-full overflow-hidden">
-          <div className="flex gap-6 md:gap-8 w-max items-center animate-[scrollReverse_40s_linear_infinite]">
-            {[
-              ...uniqueLogos,
-              ...uniqueLogos,
-              ...uniqueLogos
-            ].map((logoItem, idx) => {
+        {/* Second Row - Logo Images - Seamless infinite loop with scroll/touch/drag */}
+        <div 
+          className="relative mb-5 w-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseLeave}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <div 
+            ref={logoRowRef}
+            className="flex gap-6 md:gap-8 items-center py-2 will-change-transform pointer-events-none"
+            style={{ 
+              minWidth: 'max-content'
+            }}
+          >
+            {/* Render 3 copies for seamless infinite loop */}
+            {[...uniqueLogos, ...uniqueLogos, ...uniqueLogos].map((logoItem, idx) => {
               const logoPath = logoItem.logoPath as string
               const brandName = logoItem.brand
               const shouldRemoveBg = needsBackgroundRemoval(brandName)
               
               return (
               <div
-                key={`logo-container-${logoPath}-${brandName}-${idx}`}
+                key={`logo-container-${idx}`}
                 className="relative flex-shrink-0 w-auto flex items-center justify-center h-16 md:h-20"
               >
                 <div className="relative h-full flex items-center justify-center w-full">
