@@ -32,7 +32,9 @@ export default function LogoImage({
 }: LogoImageProps) {
   const [imageError, setImageError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
+  // Start with false to avoid loading flash - image will show immediately if cached
+  // or the onLoad handler will confirm it's ready
+  const [isLoading, setIsLoading] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
   const maxRetries = 3
 
@@ -65,13 +67,11 @@ export default function LogoImage({
     }
   }, [imageError, retryCount, src])
 
-  // Preload image
+  // Preload image in background (for retry logic only, not for loading state)
   useEffect(() => {
     if (src && !imageError) {
       const img = new window.Image()
-      img.onload = () => setIsLoading(false)
       img.onerror = () => {
-        setIsLoading(false)
         if (retryCount < maxRetries) {
           setImageError(true)
         }
@@ -94,26 +94,16 @@ export default function LogoImage({
     )
   }
 
-  // Use Next.js Image for better optimization, but fallback to regular img if needed
+  // Simple image render - no loading state, no flash
   return (
     <div className="relative w-full h-full flex items-center justify-center" style={style}>
-      {/* Loading placeholder */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-xl animate-pulse">
-          <span className="text-gray-400 text-xs">{getInitial(brandName)}</span>
-        </div>
-      )}
-      
-      {/* Actual image */}
       <img
         ref={imgRef}
         src={src}
         alt={alt}
         loading={loading}
         fetchPriority={fetchPriority}
-        className={`relative h-full w-auto object-contain rounded-2xl max-w-[150px] md:max-w-[180px] transition-opacity duration-300 ${
-          isLoading ? 'opacity-0' : 'opacity-100'
-        } ${
+        className={`relative h-full w-auto object-contain rounded-2xl max-w-[150px] md:max-w-[180px] ${
           shouldRemoveBg 
             ? hasBlackBackground 
               ? 'logo-no-bg-black' 
@@ -127,19 +117,12 @@ export default function LogoImage({
         }}
         onError={(e) => {
           const target = e.target as HTMLImageElement
-          setIsLoading(false)
           if (retryCount < maxRetries) {
             setImageError(true)
           } else {
             // After max retries, show fallback
             target.style.display = 'none'
           }
-        }}
-        onLoad={(e) => {
-          setIsLoading(false)
-          const target = e.target as HTMLImageElement
-          target.style.opacity = '1'
-          target.style.visibility = 'visible'
         }}
       />
     </div>
