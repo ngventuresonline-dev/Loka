@@ -124,7 +124,7 @@ export function trackFormComplete(formType: 'brand' | 'owner' | 'inquiry' | 'con
 }
 
 export function trackFormFieldFocus(formType: string, fieldName: string) {
-  // Track first form interaction to trigger cookie consent
+  // Track form field interactions
   trackEvent('form_field_focus', {
     form_type: formType,
     field_name: fieldName,
