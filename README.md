@@ -46,7 +46,7 @@ AI-powered commercial real estate matching platform built with Next.js 15.
 
 ## AI Search System
 
-The AI search system is documented in `AI_SEARCH_CONFIG.md`. It uses a simple, robust approach with:
+The AI search system is documented in `docs/AI_SEARCH_CONFIG.md`. It uses a simple, robust approach with:
 - Entity type detection (Brand vs Owner)
 - Context-aware detail extraction
 - Fallback responses for reliability
@@ -67,14 +67,26 @@ src/
 └── lib/
     └── ai-search/
         └── simple-search.ts  # Core AI search logic
+docs/                         # Documentation files
 ```
 
 ## Key Files
 
-- `AI_SEARCH_CONFIG.md`: Complete documentation of the AI search system
+- `docs/AI_SEARCH_CONFIG.md`: Complete documentation of the AI search system
+- `docs/BUILD.md`: Complete build and architecture documentation
+- `docs/loka.md`: Complete platform documentation
 - `src/lib/ai-search/simple-search.ts`: Main AI search implementation
 - `src/components/AiSearchModal.tsx`: Frontend chat interface
 - `src/app/api/ai-search/route.ts`: API endpoint
+
+## Documentation
+
+All documentation files have been organized in the `docs/` folder. Key documentation includes:
+- `docs/BUILD.md` - Build and architecture documentation
+- `docs/loka.md` - Complete platform documentation
+- `docs/AI_SEARCH_CONFIG.md` - AI search system documentation
+- `docs/SECURITY_REVIEW.md` - Security review and best practices
+- And more...
 
 ## Development
 

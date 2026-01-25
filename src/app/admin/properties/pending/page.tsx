@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatISTTimestamp } from '@/lib/utils'
 
 interface Property {
   id: string
@@ -253,6 +254,7 @@ export default function PendingPropertiesPage() {
   const handleApprove = async (propertyId: string) => {
     if (!user?.id || !user?.email) {
       alert('You must be logged in to approve properties')
+      router.push('/auth/login')
       return
     }
 
@@ -262,9 +264,14 @@ export default function PendingPropertiesPage() {
 
     try {
       setProcessing(propertyId)
-      const response = await fetch(`/api/admin/properties/${propertyId}/approve`, {
+      // Include user email and ID in query params for authentication
+      const url = `/api/admin/properties/${propertyId}/approve?userId=${encodeURIComponent(user.id)}&userEmail=${encodeURIComponent(user.email)}`
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -296,6 +303,7 @@ export default function PendingPropertiesPage() {
   const handleReject = async (propertyId: string) => {
     if (!user?.id || !user?.email) {
       alert('You must be logged in to reject properties')
+      router.push('/auth/login')
       return
     }
 
@@ -305,9 +313,14 @@ export default function PendingPropertiesPage() {
 
     try {
       setProcessing(propertyId)
-      const response = await fetch(`/api/admin/properties/${propertyId}/reject`, {
+      // Include user email and ID in query params for authentication
+      const url = `/api/admin/properties/${propertyId}/reject?userId=${encodeURIComponent(user.id)}&userEmail=${encodeURIComponent(user.email)}`
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -376,7 +389,7 @@ export default function PendingPropertiesPage() {
                       ₹{property.price.toLocaleString()}/{property.priceType === 'monthly' ? 'mo' : 'yr'}
                     </td>
                     <td className="px-6 py-4 text-gray-400 text-sm">
-                      {new Date(property.createdAt).toLocaleDateString()}
+                      {formatISTTimestamp(property.createdAt, { format: 'dd MMM yyyy' })}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">

@@ -78,14 +78,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isLoggedIn || user?.userType !== 'admin') {
-        router.push('/')
-        return
+      // Auth check is handled by AdminLayout, just fetch data if authenticated
+      if (isLoggedIn && user?.userType === 'admin') {
+        fetchData()
+        fetchExpertRequests()
       }
-      fetchData()
-      fetchExpertRequests()
     }
-  }, [isLoggedIn, user, authLoading, router, dateRange])
+  }, [isLoggedIn, user, authLoading, dateRange])
 
   const fetchExpertRequests = async () => {
     if (!user?.id || !user?.email) return

@@ -5,7 +5,7 @@
   "scripts": {
     "vercel-install": "npm install --legacy-peer-deps",
     "postinstall": "prisma generate",
-    "dev": "SET NODE_TLS_REJECT_UNAUTHORIZED=0 && next dev --webpack",
+    "dev": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
@@ -22,7 +22,9 @@
     "db:update-property-ids": "tsx scripts/update-property-ids.ts",
     "db:update-brand-ids": "tsx scripts/update-brand-ids.ts",
     "db:studio": "prisma studio",
-    "favicon:convert": "tsx scripts/convert-favicon-to-png.ts"
+    "favicon:convert": "tsx scripts/convert-favicon-to-png.ts",
+    "check-timezone": "tsx scripts/check-timezone.ts",
+    "debug:clear": "node scripts/remove-debug-logs.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
@@ -43,6 +45,7 @@
     "clsx": "^2.1.1",
     "critters": "^0.0.23",
     "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "framer-motion": "^12.23.25",
     "langchain": "^1.1.2",
     "lucide-react": "^0.562.0",
@@ -61,6 +64,7 @@
     "@types/node": "^20",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "cross-env": "^7.0.3",
     "dotenv": "^17.2.3",
     "eslint": "^8",
     "eslint-config-next": "^16.0.8",

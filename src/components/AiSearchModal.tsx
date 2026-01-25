@@ -7,6 +7,7 @@ import { ButtonFlowState } from '@/lib/ai-search/button-flow'
 import { getContextualInsight } from '@/lib/loading-insights'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 import { trackAISearch, trackAISearchResult, trackFormFieldFocus } from '@/lib/tracking'
+import { useSessionTracking } from '@/hooks/useSessionTracking'
 
 interface Message {
   id: string
@@ -24,6 +25,11 @@ interface AiSearchModalProps {
 }
 
 export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: AiSearchModalProps) {
+  // Progressive session tracking
+  const sessionTracking = useSessionTracking({
+    autoTrackPageViews: false // Don't track page views in modal
+  })
+
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -70,6 +76,12 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
     // Track AI search start
     const startTime = Date.now()
     trackAISearch(query)
+    
+    // Progressive session tracking
+    await sessionTracking.trackAISearch(query, {
+      startTime,
+      source: 'ai_search_modal'
+    })
 
     // Add user message
     const userMessage: Message = {
@@ -326,6 +338,18 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
       if (properties.length > 0) {
         trackAISearch(query, responseTime)
       }
+      
+      // Progressive session tracking - update with results
+      await sessionTracking.updateSession({
+        action: 'ai_search',
+        data: {
+          query,
+          resultCount: properties.length,
+          responseTime,
+          entityType: data.entityType,
+          completed: true
+        }
+      })
 
     } catch (error: any) {
       console.error('[Frontend] Search error:', error)

@@ -87,34 +87,46 @@ export async function getAllAvailableProperties() {
   })
 
   // Convert Prisma properties to Property type
-  return properties.map((p: any) => ({
-    id: p.id,
-    title: p.title,
-    description: p.description || '',
-    address: p.address,
-    city: p.city,
-    state: p.state,
-    zipCode: p.zipCode || '',
-    price: Number(p.price),
-    priceType: p.priceType,
-    securityDeposit: p.securityDeposit ? Number(p.securityDeposit) : undefined,
-    rentEscalation: p.rentEscalation ? Number(p.rentEscalation) : undefined,
-    size: p.size,
-    propertyType: p.propertyType,
-    amenities: Array.isArray(p.amenities) ? p.amenities : [],
-    storePowerCapacity: p.storePowerCapacity || '',
-    powerBackup: p.powerBackup || false,
-    waterFacility: p.waterFacility || false,
-    images: Array.isArray(p.images) ? p.images : [],
-    ownerId: p.ownerId,
-    createdAt: new Date(p.createdAt),
-    updatedAt: new Date(p.updatedAt || p.createdAt),
-    isAvailable: p.availability !== false,
-    condition: 'good' as const, // Default value
-    accessibility: false, // Default value
-    parking: false, // Default value
-    publicTransport: false // Default value
-  })) as Property[]
+  return properties.map((p: any) => {
+    // Extract amenities - handle both legacy array format and new object format
+    let amenitiesArray: string[] = []
+    if (Array.isArray(p.amenities)) {
+      // Legacy format: amenities is an array
+      amenitiesArray = p.amenities
+    } else if (p.amenities && typeof p.amenities === 'object' && p.amenities.features) {
+      // New format: amenities is { features: [...], map_link: "..." }
+      amenitiesArray = Array.isArray(p.amenities.features) ? p.amenities.features : []
+    }
+
+    return {
+      id: p.id,
+      title: p.title,
+      description: p.description || '',
+      address: p.address,
+      city: p.city,
+      state: p.state,
+      zipCode: p.zipCode || '',
+      price: Number(p.price),
+      priceType: p.priceType,
+      securityDeposit: p.securityDeposit ? Number(p.securityDeposit) : undefined,
+      rentEscalation: p.rentEscalation ? Number(p.rentEscalation) : undefined,
+      size: p.size,
+      propertyType: p.propertyType,
+      amenities: amenitiesArray,
+      storePowerCapacity: p.storePowerCapacity || '',
+      powerBackup: p.powerBackup || false,
+      waterFacility: p.waterFacility || false,
+      images: Array.isArray(p.images) ? p.images : [],
+      ownerId: p.ownerId,
+      createdAt: new Date(p.createdAt),
+      updatedAt: new Date(p.updatedAt || p.createdAt),
+      isAvailable: p.availability !== false,
+      condition: 'good' as const, // Default value
+      accessibility: false, // Default value
+      parking: false, // Default value
+      publicTransport: false // Default value
+    }
+  }) as Property[]
 }
 
 /**

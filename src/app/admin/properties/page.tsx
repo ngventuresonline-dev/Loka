@@ -108,16 +108,27 @@ export default function PropertiesPage() {
   }
 
   const handleApprove = async (propertyId: string) => {
+    if (!user?.id || !user?.email) {
+      alert('You must be logged in to approve properties')
+      return
+    }
+
     try {
-      const response = await fetch(`/api/admin/properties/${propertyId}/approve`, {
+      // Include user email and ID in query params for authentication
+      const url = `/api/admin/properties/${propertyId}/approve?userId=${encodeURIComponent(user.id)}&userEmail=${encodeURIComponent(user.email)}`
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
       })
       
       if (response.ok) {
         fetchProperties() // Refresh list
       } else {
-        alert('Failed to approve property')
+        const errorData = await response.json().catch(() => ({}))
+        alert(errorData.error || 'Failed to approve property')
       }
     } catch (error) {
       console.error('Error approving property:', error)
@@ -126,16 +137,27 @@ export default function PropertiesPage() {
   }
 
   const handleReject = async (propertyId: string) => {
+    if (!user?.id || !user?.email) {
+      alert('You must be logged in to reject properties')
+      return
+    }
+
     try {
-      const response = await fetch(`/api/admin/properties/${propertyId}/reject`, {
+      // Include user email and ID in query params for authentication
+      const url = `/api/admin/properties/${propertyId}/reject?userId=${encodeURIComponent(user.id)}&userEmail=${encodeURIComponent(user.email)}`
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
       })
       
       if (response.ok) {
         fetchProperties() // Refresh list
       } else {
-        alert('Failed to reject property')
+        const errorData = await response.json().catch(() => ({}))
+        alert(errorData.error || 'Failed to reject property')
       }
     } catch (error) {
       console.error('Error rejecting property:', error)

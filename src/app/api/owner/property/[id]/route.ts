@@ -104,7 +104,30 @@ export async function PUT(
     // Note: latitude/longitude are not stored in the Property model currently
     // They are validated during creation but not persisted to the database
     if (body.amenities !== undefined) {
-      updateData.amenities = Array.isArray(body.amenities) ? body.amenities : []
+      // Handle amenities - could be array (legacy) or object with features and map_link
+      if (Array.isArray(body.amenities)) {
+        // Legacy format: just array of features
+        updateData.amenities = { features: body.amenities }
+      } else if (typeof body.amenities === 'object' && body.amenities !== null) {
+        // New format: object with features and map_link
+        updateData.amenities = body.amenities
+      } else {
+        updateData.amenities = { features: [] }
+      }
+    }
+    // Handle map_link separately - merge into amenities if provided
+    if (body.mapLink !== undefined) {
+      const currentAmenities = updateData.amenities || body.amenities || {}
+      const amenitiesObj = typeof currentAmenities === 'object' && !Array.isArray(currentAmenities) 
+        ? currentAmenities 
+        : { features: Array.isArray(currentAmenities) ? currentAmenities : [] }
+      
+      if (body.mapLink && body.mapLink.trim()) {
+        amenitiesObj.map_link = body.mapLink.trim()
+      } else {
+        delete amenitiesObj.map_link
+      }
+      updateData.amenities = amenitiesObj
     }
     if (body.images !== undefined) {
       updateData.images = Array.isArray(body.images) ? body.images : []

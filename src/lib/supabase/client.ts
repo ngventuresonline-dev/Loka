@@ -45,6 +45,14 @@ if (isSupabaseConfigured) {
 
 export { supabase, isSupabaseConfigured }
 
+/**
+ * Create Supabase client for client components
+ * Returns the configured Supabase client instance
+ */
+export function createClientComponentClient() {
+  return supabase
+}
+
 // Database types (will be generated from Supabase)
 export type Database = {
   public: {

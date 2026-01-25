@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { loginUser, initializeAdminAccount } from '@/lib/auth'
 import Logo from '@/components/Logo'
+import { loginUser, initializeAdminAccount } from '@/lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,7 +16,16 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Initialize admin account on page load
-    initializeAdminAccount()
+    const initAdmin = async () => {
+      try {
+        if (typeof initializeAdminAccount === 'function') {
+          await initializeAdminAccount()
+        }
+      } catch (error) {
+        console.error('Error initializing admin account:', error)
+      }
+    }
+    initAdmin()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,18 +33,29 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    // Authenticate user
-    const result = await loginUser(email, password)
+    try {
+      // Authenticate user
+      if (typeof loginUser !== 'function') {
+        throw new Error('Login function is not available')
+      }
 
-    setLoading(false)
+      const result = await loginUser(email, password)
 
-    if (result.success && result.user) {
-      // Redirect all users to homepage after login
-      // Admins can use navbar to navigate to /admin dashboard
-      router.push('/')
-    } else {
-      console.error('Login failed:', result.error)
-      setError(result.error || 'Failed to login')
+      if (result && result.success && result.user) {
+        // Redirect admins to admin dashboard, others to homepage
+        if (result.user.userType === 'admin') {
+          router.push('/admin')
+        } else {
+          router.push('/')
+        }
+      } else {
+        setError(result?.error || 'Failed to login')
+      }
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setError(err?.message || 'An unexpected error occurred')
+    } finally {
+      setLoading(false)
     }
   }
 

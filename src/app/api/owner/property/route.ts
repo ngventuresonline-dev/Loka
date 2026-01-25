@@ -4,8 +4,22 @@ import { generatePropertyId } from '@/lib/property-id-generator'
 import bcrypt from 'bcryptjs'
 import { generateSecurePassword, sendOwnerWelcomeEmail } from '@/lib/email-service'
 
+/* TODO: Add auth when owner registration enabled
+import { getAuthenticatedUser } from '@/lib/api-auth'
+*/
+
 export async function POST(request: NextRequest) {
   try {
+    /* TODO: Add auth when owner registration enabled
+    // Check authentication
+    const user = await getAuthenticatedUser(request)
+    if (!user || user.userType !== 'owner') {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    */
     let body: any
     try {
       body = await request.json()
@@ -37,6 +51,9 @@ export async function POST(request: NextRequest) {
         images?: string[]
       }
     } = body
+
+    // Get anon_id from request if available (for tracking) - declare once at top level
+    const anonId = body.sessionId || body.userId || null
 
     // If ownerId is provided, skip owner creation/validation
     // Otherwise, require owner contact info
@@ -170,6 +187,9 @@ export async function POST(request: NextRequest) {
 
         // If no existing owner found, create new one
         if (!ownerId) {
+          // anonId already declared at top level
+          console.log('[LOKAZEN_DEBUG] USER_CREATE', 'Creating user from anon_id:', anonId)
+          
           // Generate secure password for new owner
           const plainPassword = generateSecurePassword(12)
           const hashedPassword = await bcrypt.hash(plainPassword, 10)
@@ -188,14 +208,89 @@ export async function POST(request: NextRequest) {
           )
 
           ownerId = ownerUser.id
+          
+          console.log('[LOKAZEN_DEBUG] USER_CREATE', 'User created:', {
+            anon_id: anonId,
+            user_id: ownerUser.id,
+            email: ownerUser.email
+          })
+
+          // Link session to user immediately after user creation
+          if (anonId && anonId.startsWith('anon_')) {
+            try {
+              console.log('[LOKAZEN_DEBUG] SESSION_LINK', 'Linking session to user after creation:', {
+                anon_id: anonId,
+                user_id: ownerUser.id
+              })
+              
+              // Get existing session data
+              const existingSession = await prisma.$queryRawUnsafe<Array<{ 
+                id: string
+                user_id: string
+                filter_step: any 
+              }>>(
+                `SELECT id, user_id, filter_step FROM property_onboarding_sessions WHERE user_id = $1::varchar LIMIT 1`,
+                anonId
+              ).catch(() => [])
+              
+              if (existingSession.length > 0) {
+                const session = existingSession[0]
+                const existingFilterStep = session.filter_step || {}
+                const existingData = typeof existingFilterStep === 'string' ? JSON.parse(existingFilterStep) : existingFilterStep
+                
+                // Preserve existing structure and update user_id
+                const updatedFilterStep = {
+                  userType: existingData.userType || 'owner',
+                  filter_step: existingData.filter_step || {},
+                  metadata: {
+                    ...(existingData.metadata || {}),
+                    userId: ownerUser.id,
+                    lastUpdated: new Date().toISOString()
+                  }
+                }
+                
+                // Update session user_id from anon_id to actual user_id
+                await prisma.$executeRawUnsafe(
+                  `
+                  UPDATE property_onboarding_sessions
+                  SET 
+                    user_id = $1::varchar,
+                    filter_step = $2::jsonb,
+                    updated_at = NOW()
+                  WHERE user_id = $3::varchar
+                  `,
+                  ownerUser.id,
+                  JSON.stringify(updatedFilterStep),
+                  anonId
+                )
+                
+                console.log('[LOKAZEN_DEBUG] SESSION_LINK', 'Session linked to user:', {
+                  session_id: session.id,
+                  old_user_id: anonId,
+                  new_user_id: ownerUser.id
+                })
+              }
+            } catch (err) {
+              console.warn('[LOKAZEN_DEBUG] SESSION_LINK', 'Failed to link session after user creation:', err)
+            }
+          }
 
           // Optional: create an owner profile shell
           if (ownerId) {
             try {
-              await prisma.owner_profiles.create({
+              console.log('[LOKAZEN_DEBUG] OWNER_PROFILE', 'Creating owner profile:', {
+                user_id: ownerId
+              })
+              
+              const ownerProfile = await prisma.owner_profiles.create({
                 data: {
                   user_id: ownerId,
                 },
+              })
+              
+              console.log('[LOKAZEN_DEBUG] OWNER_PROFILE', 'Owner profile created:', {
+                profile_id: ownerProfile.id,
+                user_id: ownerProfile.user_id
               })
             } catch (profileError: any) {
               // Don't fail the request if profile creation fails
@@ -263,9 +358,35 @@ export async function POST(request: NextRequest) {
       property.description ||
       `Commercial property in ${property.location || 'Bangalore'} listed via onboarding form.`
 
-    const amenities = property.amenities && property.amenities.length > 0
-      ? property.amenities
-      : []
+    // Handle amenities properly - convert array to object format
+    // Structure: { features: [...], map_link: "..." }
+    let amenitiesData: any = {}
+
+    // If amenities is array (legacy format from form)
+    if (Array.isArray(property.amenities)) {
+      amenitiesData = {
+        features: property.amenities.filter(Boolean) // Remove any empty values
+      }
+    }
+    // If amenities is already an object (new format or from update)
+    else if (property.amenities && typeof property.amenities === 'object') {
+      amenitiesData = { ...property.amenities }
+      // Ensure features array exists
+      if (!amenitiesData.features || !Array.isArray(amenitiesData.features)) {
+        amenitiesData.features = []
+      }
+    }
+    // If amenities is undefined/null/empty, start with empty features
+    else {
+      amenitiesData = {
+        features: []
+      }
+    }
+
+    // Add map_link to amenities object if provided
+    if (property.mapLink && property.mapLink.trim()) {
+      amenitiesData.map_link = property.mapLink.trim()
+    }
 
     const images = property.images && property.images.length > 0
       ? property.images
@@ -323,6 +444,12 @@ export async function POST(request: NextRequest) {
 
     const propertyId = await generatePropertyId()
 
+    // anonId already declared at top level
+    console.log('[LOKAZEN_DEBUG] PROPERTY_CREATE', 'Creating property:', {
+      owner_id: ownerId,
+      anon_id: anonId
+    })
+
     // Prepare property data
     const propertyData: any = {
       id: propertyId,
@@ -341,7 +468,7 @@ export async function POST(request: NextRequest) {
       storePowerCapacity: null,
       powerBackup: false,
       waterFacility: false,
-      amenities,
+      amenities: amenitiesData, // Contains both features array and map_link
       images,
       ownerId,
       status: 'pending', // New properties start as pending
@@ -353,56 +480,104 @@ export async function POST(request: NextRequest) {
 
     // Note: latitude and longitude are not stored in the Property model
     // They are validated during creation but not persisted to the database
-    // The mapLink field is used instead for location reference
-    
-    // Include mapLink if provided
-    // Note: If map_link column doesn't exist in database, run the migration:
-    // ALTER TABLE properties ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000);
-    if (property.mapLink) {
-      propertyData.mapLink = property.mapLink
-    }
+    // The mapLink is stored in amenities.map_link JSONB field (workaround for column timeout)
 
     // Use executePrismaQuery to handle connection pool timeouts with retry
-    let propertyRow
-    try {
-      propertyRow = await executePrismaQuery(async (p) =>
-        p.property.create({
-          data: propertyData,
-          select: { id: true },
+    const propertyRow = await executePrismaQuery(async (p) =>
+      p.property.create({
+        data: propertyData,
+        select: { id: true },
+      })
+    )
+    
+    console.log('[LOKAZEN_DEBUG] PROPERTY_CREATE', 'Property created:', {
+      property_id: propertyRow.id,
+      owner_id: ownerId
+    })
+
+    // Link session to user if anon_id exists - reuse anonId from top level
+    if (anonId && ownerId && anonId.startsWith('anon_')) {
+      try {
+        console.log('[LOKAZEN_DEBUG] SESSION_COMPLETE', 'Linking session to user:', {
+          anon_id: anonId,
+          user_id: ownerId,
+          property_id: propertyRow.id
         })
-      )
-    } catch (error: any) {
-      // If error is about map_link column not existing, try without it
-      const errorMessage = error?.message || error?.toString() || ''
-      const errorCode = error?.code || ''
-      
-      if (
-        errorMessage.includes('map_link') || 
-        errorMessage.includes('mapLink') ||
-        errorMessage.includes('does not exist') ||
-        errorCode === 'P2011' // Prisma error for missing column
-      ) {
-        console.warn('[Owner Property API] map_link column not found, creating property without it. Run migration: ALTER TABLE properties ADD COLUMN IF NOT EXISTS map_link VARCHAR(1000);')
-        delete propertyData.mapLink
-        try {
-          propertyRow = await executePrismaQuery(async (p) =>
-            p.property.create({
-              data: propertyData,
-              select: { id: true },
-            })
+        
+        // Get existing session data first
+        const existingSession = await prisma.$queryRawUnsafe<Array<{ 
+          id: string
+          user_id: string
+          filter_step: any 
+          status: string
+        }>>(
+          `SELECT id, user_id, filter_step, status FROM property_onboarding_sessions WHERE user_id = $1::varchar LIMIT 1`,
+          anonId
+        ).catch(() => [])
+        
+        if (existingSession.length > 0) {
+          const session = existingSession[0]
+          const existingFilterStep = session.filter_step || {}
+          const existingData = typeof existingFilterStep === 'string' ? JSON.parse(existingFilterStep) : existingFilterStep
+          
+          // Preserve existing structure (userType, filter_step, metadata)
+          const updatedFilterStep = {
+            userType: existingData.userType || 'owner',
+            filter_step: existingData.filter_step || {},
+            metadata: {
+              ...(existingData.metadata || {}),
+              status: 'completed',
+              lastUpdated: new Date().toISOString(),
+              completedAt: new Date().toISOString(),
+              userId: ownerId,
+              propertyId: propertyRow.id
+            }
+          }
+          
+          // Update session to link anon_id to user_id
+          await prisma.$executeRawUnsafe(
+            `
+            UPDATE property_onboarding_sessions
+            SET 
+              user_id = $1::varchar,
+              filter_step = $2::jsonb,
+              status = 'completed',
+              updated_at = NOW()
+            WHERE user_id = $3::varchar
+            `,
+            ownerId,
+            JSON.stringify(updatedFilterStep),
+            anonId
           )
-        } catch (retryError: any) {
-          console.error('[Owner Property API] Error creating property even without mapLink:', retryError)
-          throw new Error(`Failed to create property: ${retryError?.message || retryError?.toString() || 'Unknown error'}`)
+          
+          console.log('[LOKAZEN_DEBUG] SESSION_COMPLETE', 'Session linked successfully:', {
+            old_user_id: anonId,
+            new_user_id: ownerId,
+            session_id: session.id
+          })
+        } else {
+          console.warn('[LOKAZEN_DEBUG] SESSION_COMPLETE', 'No session found with anon_id:', anonId)
         }
-      } else {
-        console.error('[Owner Property API] Error creating property:', error)
-        throw new Error(`Failed to create property: ${errorMessage}`)
+        
+        // Log full journey
+        console.log('[LOKAZEN_DEBUG] JOURNEY_COMPLETE', 'Full ID mapping:', {
+          '1_anon_id': anonId,
+          '2_user_id': ownerId,
+          '3_owner_id': ownerId,
+          '4_property_id': propertyRow.id,
+          flow: 'anon → user → owner_profile → property'
+        })
+      } catch (err) {
+        console.error('[LOKAZEN_DEBUG] SESSION_COMPLETE', 'Error linking session:', err)
       }
+    } else if (anonId && !anonId.startsWith('anon_')) {
+      console.log('[LOKAZEN_DEBUG] SESSION_COMPLETE', 'anonId is not anonymous, skipping linking:', anonId)
     }
 
     // Send webhook to Pabbly
     const { sendPropertySubmissionWebhook } = await import('@/lib/pabbly-webhook')
+    // Extract features array from amenitiesData for webhook (webhook expects array format)
+    const amenitiesArray = Array.isArray(amenitiesData?.features) ? amenitiesData.features : []
     sendPropertySubmissionWebhook({
       ownerId,
       propertyId: propertyRow.id,
@@ -411,7 +586,7 @@ export async function POST(request: NextRequest) {
       size: size || undefined,
       rent: rent || undefined,
       deposit: securityDeposit || undefined,
-      amenities: amenities.length > 0 ? amenities : undefined,
+      amenities: amenitiesArray.length > 0 ? amenitiesArray : undefined,
       ownerName: owner?.name,
       ownerEmail: owner?.email,
       ownerPhone: owner?.phone,
