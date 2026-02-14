@@ -161,7 +161,7 @@ export default function BrandsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Brands</h1>
-            <p className="text-gray-400">Manage all brand accounts</p>
+            <p className="text-gray-400">Brand requirements · display order · status badges</p>
           </div>
           <button
             onClick={() => router.push('/admin/brands/new')}

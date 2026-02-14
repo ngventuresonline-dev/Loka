@@ -1,0 +1,19 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up - 10 users/sec"
+    - duration: 120
+      arrivalRate: 50
+      name: "Load test - 50 users/sec"
+  plugins:
+    expect: {}
+scenarios:
+  - name: "Properties API Test"
+    flow:
+      - get:
+          url: "/api/properties"
+          expect:
+            - statusCode: 200
+            - contentType: json

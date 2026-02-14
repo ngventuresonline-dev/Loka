@@ -386,8 +386,9 @@ export default function EditPropertyPage() {
   }
 
   const fetchOwners = async () => {
+    if (!user?.id || !user?.email) return
     try {
-      const response = await fetch('/api/admin/owners')
+      const response = await fetch(`/api/admin/owners?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`)
       if (response.ok) {
         const data = await response.json()
         setOwners(data.owners || [])

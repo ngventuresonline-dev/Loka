@@ -247,12 +247,13 @@ export default function NewPropertyPage() {
   }
 
   useEffect(() => {
-    fetchOwners()
-  }, [])
+    if (user?.id && user?.email) fetchOwners()
+  }, [user?.id, user?.email])
 
   const fetchOwners = async () => {
+    if (!user?.id || !user?.email) return
     try {
-      const response = await fetch('/api/admin/owners')
+      const response = await fetch(`/api/admin/owners?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`)
       if (response.ok) {
         const data = await response.json()
         const list = data.owners || []

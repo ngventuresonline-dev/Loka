@@ -707,21 +707,30 @@ export async function PATCH(request: NextRequest) {
     if (updateData.state !== undefined) data.state = updateData.state
     if (updateData.zipCode !== undefined) data.zipCode = updateData.zipCode
     
-    // Handle mapLink - try to save, handle missing column gracefully
+    // mapLink column removed - store in amenities.map_link per schema workaround
     if (updateData.mapLink !== undefined) {
-      try {
-        // Try to save mapLink - if column doesn't exist, Prisma will error
-        // but we'll catch it and skip the field
-        data.mapLink = updateData.mapLink || null
-      } catch (error: any) {
-        // If column doesn't exist, skip mapLink (don't fail the whole update)
-        if (error.message?.includes('map_link') || error.message?.includes('does not exist')) {
-          console.warn('[Admin properties] Map link column does not exist, skipping mapLink update')
-          // Don't include mapLink in the update
-          delete data.mapLink
-        } else {
-          throw error
-        }
+      const mapLinkVal = updateData.mapLink || null
+      if (updateData.amenities !== undefined) {
+        const am = updateData.amenities
+        const merged: Record<string, unknown> = typeof am === 'object' && am !== null && !Array.isArray(am)
+          ? { ...(am as Record<string, unknown>), map_link: mapLinkVal }
+          : Array.isArray(am)
+            ? { features: am, map_link: mapLinkVal }
+            : { map_link: mapLinkVal }
+        data.amenities = merged
+      } else {
+        // Only mapLink sent - fetch current amenities to preserve
+        const current = await prisma.property.findUnique({
+          where: { id: propertyId },
+          select: { amenities: true }
+        })
+        const existing = current?.amenities
+        const merged: Record<string, unknown> = typeof existing === 'object' && existing !== null && !Array.isArray(existing)
+          ? { ...(existing as Record<string, unknown>), map_link: mapLinkVal }
+          : Array.isArray(existing)
+            ? { features: existing, map_link: mapLinkVal }
+            : { map_link: mapLinkVal }
+        data.amenities = merged
       }
     }
     

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
+import { calculateBFI } from '@/lib/matching-engine'
 
 /**
  * Calculate Property Fit Index (PFI) - reverse of BFI
@@ -213,10 +214,13 @@ export async function GET(request: NextRequest) {
         title: true,
         address: true,
         city: true,
+        state: true,
+        zipCode: true,
         size: true,
         price: true,
         priceType: true,
         propertyType: true,
+        amenities: true,
         createdAt: true,
         owner: {
           select: {
@@ -244,16 +248,18 @@ export async function GET(request: NextRequest) {
       const locations = Array.isArray(brand.preferred_locations) ? brand.preferred_locations as string[] : []
       const propertyTypes = Array.isArray(brand.preferred_property_types) ? brand.preferred_property_types as string[] : []
 
+      const brandRequirements = {
+        locations,
+        sizeMin,
+        sizeMax,
+        budgetMin,
+        budgetMax,
+        businessType: brand.industry || '',
+      }
+
       for (const property of properties) {
         const pfiScore = calculatePFI(
-          {
-            sizeMin,
-            sizeMax,
-            budgetMin,
-            budgetMax,
-            locations,
-            businessType: brand.industry || '',
-          },
+          brandRequirements,
           {
             size: property.size,
             price: Number(property.price),
@@ -264,6 +270,27 @@ export async function GET(request: NextRequest) {
         )
 
         if (pfiScore >= minScore) {
+          // BFI (Brand Fit Index): how well this property fits the brand's requirements
+          const propertyForBFI = {
+            id: property.id,
+            title: property.title,
+            description: '',
+            address: property.address || '',
+            city: property.city || '',
+            state: (property as any).state || '',
+            zipCode: (property as any).zipCode || '',
+            price: Number(property.price),
+            priceType: property.priceType as 'monthly' | 'yearly' | 'sqft',
+            size: property.size,
+            propertyType: property.propertyType as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other',
+            amenities: Array.isArray((property as any).amenities) ? (property as any).amenities as string[] : [],
+            ownerId: property.owner?.id || '',
+            createdAt: property.createdAt || new Date(),
+            updatedAt: new Date(),
+            isAvailable: true,
+          }
+          const bfiResult = calculateBFI(propertyForBFI, brandRequirements)
+
           allMatches.push({
             id: `${brand.id}-${property.id}`,
             brand: {
@@ -288,12 +315,13 @@ export async function GET(request: NextRequest) {
               city: property.city,
               size: property.size,
               price: Number(property.price),
-              // Use actual priceType from database (monthly / yearly)
               priceType: property.priceType,
               propertyType: property.propertyType,
               owner: property.owner,
             },
             pfiScore,
+            bfiScore: bfiResult.score,
+            bfiBreakdown: bfiResult.breakdown,
             matchQuality: getMatchQuality(pfiScore),
             createdAt: property.createdAt?.toISOString() || new Date().toISOString(),
           })

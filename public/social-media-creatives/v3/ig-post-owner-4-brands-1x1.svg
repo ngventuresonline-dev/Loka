@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A0F1A"/>
+      <stop offset="50%" style="stop-color:#1E293B"/>
+      <stop offset="100%" style="stop-color:#0F172A"/>
+    </linearGradient>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5200"/>
+      <stop offset="100%" style="stop-color:#E4002B"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F59E0B"/>
+      <stop offset="50%" style="stop-color:#FBBF24"/>
+      <stop offset="100%" style="stop-color:#F59E0B"/>
+    </linearGradient>
+    <radialGradient id="centerGlow" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:0.25"/>
+      <stop offset="50%" style="stop-color:#FF5200;stop-opacity:0.08"/>
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="pulseGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:0.4"/>
+      <stop offset="40%" style="stop-color:#FF5200;stop-opacity:0.1"/>
+      <stop offset="100%" style="stop-color:#FF5200;stop-opacity:0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="strongGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="megaGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="25" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="textShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#FF5200" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="url(#bgGradient)"/>
+  
+  <!-- Center glow -->
+  <ellipse cx="540" cy="380" rx="500" ry="350" fill="url(#centerGlow)"/>
+  
+  <!-- Outer pulsing ring -->
+  <circle cx="540" cy="380" r="280" fill="none" stroke="#FF5200" stroke-width="1" opacity="0.15"/>
+  <circle cx="540" cy="380" r="320" fill="none" stroke="#FF5200" stroke-width="0.5" opacity="0.08"/>
+  
+  <!-- Floating particles -->
+  <g opacity="0.6">
+    <circle cx="120" cy="200" r="3" fill="#FF5200" filter="url(#glow)"/>
+    <circle cx="950" cy="150" r="2" fill="#FF5200" filter="url(#glow)"/>
+    <circle cx="80" cy="500" r="2" fill="#E4002B" filter="url(#glow)"/>
+    <circle cx="1000" cy="450" r="3" fill="#FF5200" filter="url(#glow)"/>
+    <circle cx="200" cy="850" r="2" fill="#E4002B" filter="url(#glow)"/>
+    <circle cx="900" cy="800" r="2" fill="#FF5200" filter="url(#glow)"/>
+    <circle cx="150" cy="700" r="1.5" fill="#FBBF24" filter="url(#glow)"/>
+    <circle cx="930" cy="650" r="1.5" fill="#FBBF24" filter="url(#glow)"/>
+  </g>
+  
+  <!-- Top Accent with glow -->
+  <rect x="0" y="0" width="1080" height="6" fill="url(#brandGradient)" filter="url(#glow)"/>
+  
+  <!-- Corner accents -->
+  <g opacity="0.3">
+    <path d="M0,0 L100,0 L0,100 Z" fill="url(#brandGradient)"/>
+    <path d="M1080,0 L980,0 L1080,100 Z" fill="url(#brandGradient)"/>
+  </g>
+  
+  <!-- LOGO top left with quantum orb -->
+  <g transform="translate(55, 55)">
+    <!-- Orb glow behind -->
+    <circle cx="18" cy="0" r="25" fill="#FF5200" opacity="0.1" filter="url(#strongGlow)"/>
+    <g transform="translate(18, 0)">
+      <circle cx="0" cy="0" r="18" fill="none" stroke="#FF5200" stroke-width="1.5" opacity="0.4"/>
+      <circle cx="0" cy="-18" r="4" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="18" cy="0" r="4" fill="#FF5200" filter="url(#glow)"/>
+      <circle cx="0" cy="18" r="4" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="-18" cy="0" r="4" fill="#E4002B" filter="url(#glow)"/>
+      <circle cx="0" cy="0" r="6" fill="#FF5200" filter="url(#strongGlow)"/>
+    </g>
+    <text x="55" y="10" font-family="Arial, sans-serif" font-size="30" font-weight="900" fill="#FF5200">Loka</text>
+    <text x="127" y="10" font-family="Arial, sans-serif" font-size="30" font-weight="900" fill="#FFFFFF">zen</text>
+    <rect x="51" y="20" width="115" height="22" rx="11" fill="#FF5200" opacity="0.2"/>
+    <text x="55" y="37" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#FF5200">Powered By Ai</text>
+  </g>
+  
+  <!-- Hook with sparkle effect -->
+  <g transform="translate(540, 160)">
+    <rect x="-180" y="-18" width="360" height="36" rx="18" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="0" y="6" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#94A3B8" text-anchor="middle">BRANDS ACTIVELY SEARCHING</text>
+  </g>
+  
+  <!-- Massive glowing number -->
+  <g transform="translate(540, 340)">
+    <!-- Background glow -->
+    <ellipse cx="0" cy="0" rx="180" ry="120" fill="url(#pulseGlow)"/>
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="180" font-weight="900" fill="#FF5200" text-anchor="middle" filter="url(#megaGlow)">200+</text>
+  </g>
+  
+  <!-- Verified badge -->
+  <g transform="translate(540, 440)">
+    <rect x="-130" y="-22" width="260" height="44" rx="22" fill="#10B981" filter="url(#glow)"/>
+    <text x="0" y="8" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#FFFFFF" text-anchor="middle">VERIFIED BRANDS</text>
+  </g>
+  
+  <!-- Subtitle -->
+  <text x="540" y="510" font-family="Arial, sans-serif" font-size="18" font-weight="500" fill="#94A3B8" text-anchor="middle">Looking for properties like yours</text>
+  
+  <!-- Brand Categories - Hexagon style arrangement -->
+  <g transform="translate(540, 620)">
+    <!-- Row 1 - 4 items -->
+    <g transform="translate(-280, 0)">
+      <rect x="-70" y="-22" width="140" height="44" rx="22" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="0" y="7" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">QSR Chains</text>
+    </g>
+    <g transform="translate(-95, 0)">
+      <rect x="-60" y="-22" width="120" height="44" rx="22" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="0" y="7" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">Cafes</text>
+    </g>
+    <g transform="translate(95, 0)">
+      <rect x="-70" y="-22" width="140" height="44" rx="22" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="0" y="7" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">Restaurants</text>
+    </g>
+    <g transform="translate(280, 0)">
+      <rect x="-60" y="-22" width="120" height="44" rx="22" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="0" y="7" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">Retail</text>
+    </g>
+    
+    <!-- Row 2 - 3 items centered -->
+    <g transform="translate(-180, 65)">
+      <rect x="-75" y="-22" width="150" height="44" rx="22" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="0" y="7" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">Cloud Kitchen</text>
+    </g>
+    <g transform="translate(0, 65)">
+      <rect x="-65" y="-22" width="130" height="44" rx="22" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="0" y="7" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">Salon / Spa</text>
+    </g>
+    <g transform="translate(180, 65)">
+      <rect x="-70" y="-22" width="140" height="44" rx="22" fill="#1E293B" stroke="#FF5200" stroke-width="2"/>
+      <text x="0" y="7" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">Gym / Fitness</text>
+    </g>
+  </g>
+  
+  <!-- Power statements with highlight -->
+  <g transform="translate(540, 800)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="26" font-weight="600" fill="#FFFFFF" text-anchor="middle">All actively searching.</text>
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="26" font-weight="600" fill="#FFFFFF" text-anchor="middle">All verified.</text>
+    <text x="0" y="80" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FF5200" text-anchor="middle" filter="url(#glow)">All ready to move.</text>
+  </g>
+  
+  <!-- CTA with extra glow -->
+  <g transform="translate(540, 970)">
+    <!-- Glow behind button -->
+    <ellipse cx="0" cy="0" rx="200" ry="50" fill="#FF5200" opacity="0.15" filter="url(#strongGlow)"/>
+    <rect x="-170" y="-32" width="340" height="64" rx="32" fill="url(#brandGradient)" filter="url(#glow)"/>
+    <text x="0" y="10" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#FFFFFF" text-anchor="middle">LIST YOUR PROPERTY</text>
+  </g>
+  
+  <!-- Website -->
+  <text x="540" y="1045" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#64748B" text-anchor="middle">lokazen.in</text>
+  
+  <!-- Bottom Accent with glow -->
+  <rect x="0" y="1074" width="1080" height="6" fill="url(#brandGradient)" filter="url(#glow)"/>
+</svg>

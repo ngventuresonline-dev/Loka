@@ -47,8 +47,8 @@ export default function PropertiesPage() {
   })
 
   useEffect(() => {
-    fetchProperties()
-  }, [])
+    if (user?.id && user?.email) fetchProperties()
+  }, [user?.id, user?.email, filters.status])
 
   useEffect(() => {
     applyFilters(properties)
@@ -56,28 +56,21 @@ export default function PropertiesPage() {
 
   const fetchProperties = async () => {
     const userEmail = user?.email || 'admin@ngventures.com'
+    const userId = user?.id || ''
+    const statusParam = filters.status || 'all'
     
     try {
       setLoading(true)
-      // Optimize: Fetch with pagination and limit to reduce load time
-      const url = `/api/admin/properties?userEmail=${encodeURIComponent(userEmail)}&status=approved&limit=50&page=1`
+      const statusQuery = statusParam === 'all' ? '' : `&status=${statusParam}`
+      const url = `/api/admin/properties?userEmail=${encodeURIComponent(userEmail)}&userId=${userId}&limit=500&page=1${statusQuery}`
       const response = await fetch(url)
       
       if (response.ok) {
         const data = await response.json()
-        let allProps: Property[] = data.properties || []
-
-        // API already filters by status=approved, availability=true, or isFeatured=true
-        // Normalize status: if status is null, infer from availability
-        allProps = allProps.map((p: any) => ({
+        let allProps: Property[] = (data.properties || []).map((p: any) => ({
           ...p,
           status: p.status || (p.availability ? 'approved' : 'pending')
-        })).filter((p: Property) =>
-          // Include properties that are approved, available, or featured
-          p.status === 'approved' || 
-          p.availability === true || 
-          p.isFeatured === true
-        )
+        }))
 
         setProperties(allProps)
         applyFilters(allProps)
@@ -359,8 +352,31 @@ export default function PropertiesPage() {
   return (
     <AdminLayout>
       <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Approved Properties</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-white">Properties</h1>
+          <button
+            onClick={() => router.push('/admin/properties/new')}
+            className="px-4 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors font-medium"
+          >
+            + Add Property
+          </button>
+        </div>
+
+        {/* Filter: All | Pending | Approved */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {(['all', 'pending', 'approved'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => handleFilterChange('status', s)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                (filters.status || 'all') === s
+                  ? 'bg-[#FF5200] text-white'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
         </div>
 
         {/* Search and Bulk Actions */}

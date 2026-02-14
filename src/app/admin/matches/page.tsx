@@ -38,6 +38,8 @@ type MatchGroup = {
     brand: any
     property: any
     pfiScore: number
+    bfiScore?: number
+    bfiBreakdown?: { locationScore: number; sizeScore: number; budgetScore: number; typeScore: number }
     matchQuality: 'Excellent' | 'Good' | 'Fair'
     createdAt: string
   }>
@@ -113,8 +115,10 @@ export default function AdminMatchesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white">Brand Matches</h1>
-            <p className="text-gray-400 mt-1">View all brand-property matches across the platform</p>
+            <h1 className="text-3xl font-bold text-white">BFI & PFI – Property & Brand Matches</h1>
+            <p className="text-gray-400 mt-1">
+              View property–brand matches. <strong className="text-gray-300">BFI</strong> (Brand Fit Index) = how well a property fits a brand’s requirements. <strong className="text-gray-300">PFI</strong> (Property Fit Index) = same fit from the property’s perspective.
+            </p>
           </div>
         </div>
 
@@ -322,8 +326,11 @@ export default function AdminMatchesPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white font-bold">
-                                {topMatch.pfiScore}%
+                              <div className="flex flex-col gap-1">
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white font-bold" title="PFI / BFI score">
+                                  {topMatch.bfiScore ?? topMatch.pfiScore}%
+                                </div>
+                                <span className="text-xs text-gray-500">BFI</span>
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -412,8 +419,11 @@ export default function AdminMatchesPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white font-bold">
-                                {topMatch.pfiScore}%
+                              <div className="flex flex-col gap-1">
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white font-bold" title="PFI / BFI score">
+                                  {topMatch.bfiScore ?? topMatch.pfiScore}%
+                                </div>
+                                <span className="text-xs text-gray-500">BFI</span>
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -619,14 +629,23 @@ export default function AdminMatchesPage() {
                             </div>
                             <div className="flex items-center gap-4 ml-4">
                               <div className="text-center">
-                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white font-bold text-lg">
-                                  {match.pfiScore}%
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white font-bold text-lg" title="BFI (Brand Fit Index)">
+                                  {(match.bfiScore ?? match.pfiScore)}%
                                 </div>
+                                <div className="mt-2 text-xs text-gray-500">BFI</div>
                                 <div className="mt-2">
                                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getMatchQualityColor(match.matchQuality)}`}>
                                     {match.matchQuality}
                                   </span>
                                 </div>
+                                {match.bfiBreakdown && (
+                                  <div className="mt-3 text-left text-xs text-gray-400 space-y-1">
+                                    <div>Location: {match.bfiBreakdown.locationScore}</div>
+                                    <div>Size: {match.bfiBreakdown.sizeScore}</div>
+                                    <div>Budget: {match.bfiBreakdown.budgetScore}</div>
+                                    <div>Type: {match.bfiBreakdown.typeScore}</div>
+                                  </div>
+                                )}
                               </div>
                               <div className="flex flex-col gap-2">
                                 {view === 'brand' ? (
