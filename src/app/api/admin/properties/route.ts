@@ -462,9 +462,19 @@ export async function POST(request: NextRequest) {
     const storePowerCapacity = body.storePowerCapacity ? String(body.storePowerCapacity).trim() : ''
     const powerBackup = Boolean(body.powerBackup)
     const waterFacility = Boolean(body.waterFacility)
-    const amenities = Array.isArray(body.amenities) ? body.amenities : []
+    const amenitiesArray = Array.isArray(body.amenities) ? body.amenities : []
     const images = Array.isArray(body.images) ? body.images : []
     const mapLink = body.mapLink ? String(body.mapLink).trim() : ''
+    
+    // Store map_link in amenities JSONB field (workaround for Supabase column timeout)
+    // Structure: { features: [...], map_link: "..." }
+    const amenitiesData: any = {
+      features: amenitiesArray
+    }
+    if (mapLink) {
+      amenitiesData.map_link = mapLink
+    }
+    
     const ownerId = body.ownerId as string | undefined
     const availability = body.availability
     const isFeatured = body.isFeatured
@@ -572,9 +582,8 @@ export async function POST(request: NextRequest) {
         storePowerCapacity: storePowerCapacity || null,
         powerBackup,
         waterFacility,
-        amenities,
+        amenities: amenitiesData, // Contains both features array and map_link
         images,
-        mapLink: mapLink || null,
         ownerId: finalOwnerId!,
         availability: availability !== undefined ? Boolean(availability) : true,
         isFeatured: Boolean(isFeatured),

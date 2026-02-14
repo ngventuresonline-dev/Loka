@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 
 interface Inquiry {
   id: string
+  type: 'inquiry' | 'expert_request'
   brand: {
     name: string
     email: string
@@ -18,9 +19,11 @@ interface Inquiry {
     name: string
     email: string
   } | null
-  status: 'pending' | 'responded' | 'closed'
+  status: 'pending' | 'responded' | 'closed' | 'contacted' | 'scheduled' | 'completed' | 'cancelled'
   createdAt: string
   message: string
+  phone?: string
+  scheduleDateTime?: string
 }
 
 interface InquiryManagementTableProps {
@@ -33,7 +36,7 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'responded' | 'closed'>('all')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'responded' | 'closed' | 'scheduled' | 'cancelled'>('all')
   const [sortBy, setSortBy] = useState<'date'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [currentPage, setCurrentPage] = useState(1)
@@ -71,9 +74,13 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
     }
   }
 
-  const handleStatusUpdate = async (inquiryId: string, newStatus: string) => {
+  const handleStatusUpdate = async (inquiryId: string, newStatus: string, type: 'inquiry' | 'expert_request') => {
     try {
-      const response = await fetch(`/api/admin/inquiries/${inquiryId}`, {
+      const endpoint = type === 'expert_request' 
+        ? `/api/admin/expert-requests/${inquiryId}`
+        : `/api/admin/inquiries/${inquiryId}`
+      
+      const response = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,10 +89,13 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
       })
       if (response.ok) {
         await fetchInquiries()
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update status')
       }
     } catch (error: any) {
-      console.error('Error updating inquiry status:', error)
-      alert('Failed to update inquiry status')
+      console.error('Error updating status:', error)
+      alert(`Failed to update status: ${error.message}`)
     }
   }
 
@@ -94,9 +104,15 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
       case 'pending':
         return 'bg-yellow-500/20 text-yellow-300'
       case 'responded':
+      case 'contacted':
         return 'bg-blue-500/20 text-blue-300'
       case 'closed':
+      case 'completed':
         return 'bg-green-500/20 text-green-300'
+      case 'scheduled':
+        return 'bg-purple-500/20 text-purple-300'
+      case 'cancelled':
+        return 'bg-red-500/20 text-red-300'
       default:
         return 'bg-gray-500/20 text-gray-300'
     }
@@ -127,8 +143,10 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
-            <option value="responded">Responded</option>
-            <option value="closed">Closed</option>
+            <option value="responded">Responded/Contacted</option>
+            <option value="closed">Closed/Completed</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="cancelled">Cancelled</option>
           </select>
           <select
             value={`${sortBy}-${sortOrder}`}
@@ -159,6 +177,7 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-700">
+                  <th className="text-left py-3 px-4 text-gray-300 font-semibold">Type</th>
                   <th className="text-left py-3 px-4 text-gray-300 font-semibold">Brand Name</th>
                   <th className="text-left py-3 px-4 text-gray-300 font-semibold">Property</th>
                   <th className="text-left py-3 px-4 text-gray-300 font-semibold">Owner</th>
@@ -177,8 +196,20 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
                     className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
                   >
                     <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        inquiry.type === 'expert_request' 
+                          ? 'bg-purple-500/20 text-purple-300' 
+                          : 'bg-blue-500/20 text-blue-300'
+                      }`}>
+                        {inquiry.type === 'expert_request' ? 'Expert Request' : 'Inquiry'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
                       <div className="text-white">{inquiry.brand.name}</div>
                       <div className="text-gray-400 text-sm">{inquiry.brand.email}</div>
+                      {inquiry.phone && (
+                        <div className="text-gray-400 text-sm">📞 {inquiry.phone}</div>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <div className="text-white">{inquiry.property.title}</div>
@@ -188,24 +219,56 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
                       {inquiry.owner ? inquiry.owner.name : 'N/A'}
                     </td>
                     <td className="py-3 px-4">
-                      <select
-                        value={inquiry.status}
-                        onChange={(e) => handleStatusUpdate(inquiry.id, e.target.value)}
-                        className={`px-2 py-1 rounded text-xs font-semibold border-0 ${getStatusColor(inquiry.status)} bg-transparent cursor-pointer`}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="responded">Responded</option>
-                        <option value="closed">Closed</option>
-                      </select>
+                      {inquiry.type === 'expert_request' ? (
+                        <select
+                          value={inquiry.status}
+                          onChange={(e) => handleStatusUpdate(inquiry.id, e.target.value, 'expert_request')}
+                          className={`px-2 py-1 rounded text-xs font-semibold border-0 ${getStatusColor(inquiry.status)} bg-transparent cursor-pointer`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="contacted">Contacted</option>
+                          <option value="scheduled">Scheduled</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      ) : (
+                        <select
+                          value={inquiry.status}
+                          onChange={(e) => handleStatusUpdate(inquiry.id, e.target.value, 'inquiry')}
+                          className={`px-2 py-1 rounded text-xs font-semibold border-0 ${getStatusColor(inquiry.status)} bg-transparent cursor-pointer`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="responded">Responded</option>
+                          <option value="closed">Closed</option>
+                        </select>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-gray-400 text-sm">
-                      {new Date(inquiry.createdAt).toLocaleDateString()}
+                      <div>{new Date(inquiry.createdAt).toLocaleDateString()}</div>
+                      {inquiry.scheduleDateTime && (
+                        <div className="text-xs text-purple-300 mt-1">
+                          📅 {new Date(inquiry.scheduleDateTime).toLocaleString()}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => {
-                            const inquiryInfo = `Inquiry Details:\n\nBrand: ${inquiry.brand.name} (${inquiry.brand.email})\nProperty: ${inquiry.property.title}\nAddress: ${inquiry.property.address}\nOwner: ${inquiry.owner ? `${inquiry.owner.name} (${inquiry.owner.email})` : 'N/A'}\nStatus: ${inquiry.status}\nDate: ${new Date(inquiry.createdAt).toLocaleDateString()}\n\nMessage:\n${inquiry.message || 'No message provided'}`
+                            let inquiryInfo = `${inquiry.type === 'expert_request' ? 'Expert Request' : 'Inquiry'} Details:\n\n`
+                            inquiryInfo += `Brand: ${inquiry.brand.name} (${inquiry.brand.email})\n`
+                            if (inquiry.phone) {
+                              inquiryInfo += `Phone: ${inquiry.phone}\n`
+                            }
+                            inquiryInfo += `Property: ${inquiry.property.title}\n`
+                            inquiryInfo += `Address: ${inquiry.property.address}\n`
+                            inquiryInfo += `Owner: ${inquiry.owner ? `${inquiry.owner.name} (${inquiry.owner.email})` : 'N/A'}\n`
+                            inquiryInfo += `Status: ${inquiry.status}\n`
+                            inquiryInfo += `Date: ${new Date(inquiry.createdAt).toLocaleDateString()}\n`
+                            if (inquiry.scheduleDateTime) {
+                              inquiryInfo += `Scheduled: ${new Date(inquiry.scheduleDateTime).toLocaleString()}\n`
+                            }
+                            inquiryInfo += `\n${inquiry.type === 'expert_request' ? 'Notes' : 'Message'}:\n${inquiry.message || 'No message provided'}`
                             alert(inquiryInfo)
                           }}
                           className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"

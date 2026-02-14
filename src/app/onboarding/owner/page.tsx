@@ -1,15 +1,22 @@
 "use client"
 
-import { useState, useEffect, Suspense, useMemo } from 'react'
+import { useState, useEffect, Suspense, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
+import { getOrCreateSessionId } from '@/lib/session-utils'
 import { trackFormComplete, trackConversion } from '@/lib/tracking'
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import Image from 'next/image'
 import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
+import { uploadPropertyImages } from '@/lib/supabase/storage'
+
+/* TODO: Re-enable auth when owner login is implemented
+import { supabase } from '@/lib/supabase/client'
+import { getCurrentUser } from '@/lib/supabase/auth'
+*/
 
 const BANGALORE_CENTER = { lat: 12.9716, lng: 77.5946 }
 
@@ -153,11 +160,26 @@ function OwnerOnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
+
+  /* TODO: Re-enable auth when owner login is implemented
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const user = await getCurrentUser()
+      if (!user || user.userType !== 'owner') {
+        router.push('/auth/login')
+      }
+    }
+    checkAuth()
+  }, [router])
+  */
   const [matchingBrands, setMatchingBrands] = useState<any[]>([])
   const [loadingBrands, setLoadingBrands] = useState(false)
   const [generatingDescription, setGeneratingDescription] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const isSubmittingRef = useRef(false) // Ref for immediate double-submit prevention
   const [formData, setFormData] = useState({
     propertyType: '',
     location: '',
@@ -179,11 +201,157 @@ function OwnerOnboardingContent() {
 
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [mapApiError, setMapApiError] = useState<string | null>(null)
 
   const { isLoaded: isMapLoaded, loadError: mapLoadError } = useLoadScript({
     googleMapsApiKey: getGoogleMapsApiKey(),
     libraries: GOOGLE_MAPS_LIBRARIES,
   })
+
+  // Debug logging for map loading state
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[OwnerOnboarding] Map state:', {
+        isLoaded: isMapLoaded,
+        loadError: mapLoadError?.message || null,
+        apiKey: getGoogleMapsApiKey() ? 'Set' : 'Missing',
+        googleMapsAvailable: typeof window !== 'undefined' && window.google && window.google.maps ? 'Yes' : 'No',
+      })
+      
+      // Check if script loaded but API failed
+      if (isMapLoaded && !mapLoadError && typeof window !== 'undefined' && (!window.google || !window.google.maps)) {
+        console.error('[OwnerOnboarding] Script loaded but Google Maps API not available. Check API key restrictions and enabled APIs.')
+      }
+    }
+  }, [isMapLoaded, mapLoadError])
+  
+  // Monitor for InvalidKeyMapError - intercept console errors (with verification)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    // Intercept console.error to catch InvalidKeyMapError specifically
+    const originalError = console.error
+    const originalWarn = console.warn
+    
+    const errorHandler = (...args: any[]) => {
+      const message = args[0]?.toString() || ''
+      // Only catch actual InvalidKeyMapError, not generic "API key" messages
+      if (message.includes('InvalidKeyMapError') || 
+          (message.includes('Google Maps') && message.includes('invalid key')) ||
+          (message.includes('Google Maps JavaScript API error') && message.includes('InvalidKey'))) {
+        // Verify the error is real by testing map creation
+        // Don't set error immediately - verify first
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && window.google && window.google.maps) {
+            try {
+              const testDiv = document.createElement('div')
+              testDiv.style.width = '1px'
+              testDiv.style.height = '1px'
+              testDiv.style.position = 'absolute'
+              testDiv.style.visibility = 'hidden'
+              document.body.appendChild(testDiv)
+              
+              const testMap = new window.google.maps.Map(testDiv, {
+                zoom: 1,
+                center: { lat: 0, lng: 0 },
+              })
+              
+              // Map creation succeeded - error was false positive, don't set error
+              setTimeout(() => {
+                if (document.body.contains(testDiv)) {
+                  document.body.removeChild(testDiv)
+                }
+              }, 100)
+            } catch (error: any) {
+              // Map creation failed - error is real
+              setMapApiError('Google Maps API key is invalid. Please check your API key configuration in Google Cloud Console.')
+            }
+          }
+        }, 500) // Wait 500ms to verify
+      }
+      originalError.apply(console, args)
+    }
+    
+    const warnHandler = (...args: any[]) => {
+      const message = args[0]?.toString() || ''
+      // Only catch actual InvalidKeyMapError, not generic "API key" messages
+      if (message.includes('InvalidKeyMapError') || 
+          (message.includes('Google Maps') && message.includes('invalid key')) ||
+          (message.includes('Google Maps JavaScript API error') && message.includes('InvalidKey'))) {
+        // Same verification logic as error handler
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && window.google && window.google.maps) {
+            try {
+              const testDiv = document.createElement('div')
+              testDiv.style.width = '1px'
+              testDiv.style.height = '1px'
+              testDiv.style.position = 'absolute'
+              testDiv.style.visibility = 'hidden'
+              document.body.appendChild(testDiv)
+              
+              const testMap = new window.google.maps.Map(testDiv, {
+                zoom: 1,
+                center: { lat: 0, lng: 0 },
+              })
+              
+              // Map creation succeeded - error was false positive
+              setTimeout(() => {
+                if (document.body.contains(testDiv)) {
+                  document.body.removeChild(testDiv)
+                }
+              }, 100)
+            } catch (error: any) {
+              // Map creation failed - error is real
+              setMapApiError('Google Maps API key is invalid. Please check your API key configuration in Google Cloud Console.')
+            }
+          }
+        }, 500)
+      }
+      originalWarn.apply(console, args)
+    }
+    
+    console.error = errorHandler
+    console.warn = warnHandler
+    
+    return () => {
+      console.error = originalError
+      console.warn = originalWarn
+    }
+  }, [])
+  
+  // Clear error if map initializes successfully
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!isMapLoaded || mapLoadError || !mapApiError) return
+    if (!window.google || !window.google.maps) return
+    
+    // Test if map can actually be created
+    try {
+      const testDiv = document.createElement('div')
+      testDiv.style.width = '1px'
+      testDiv.style.height = '1px'
+      testDiv.style.position = 'absolute'
+      testDiv.style.visibility = 'hidden'
+      document.body.appendChild(testDiv)
+      
+      const testMap = new window.google.maps.Map(testDiv, {
+        zoom: 1,
+        center: { lat: 0, lng: 0 },
+      })
+      
+      // If test map succeeds, clear the error
+      setMapApiError(null)
+      
+      setTimeout(() => {
+        if (document.body.contains(testDiv)) {
+          document.body.removeChild(testDiv)
+        }
+      }, 100)
+    } catch (error) {
+      // Error persists, keep it
+    }
+  }, [isMapLoaded, mapLoadError, mapApiError])
+  
 
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
 
@@ -800,16 +968,34 @@ function OwnerOnboardingContent() {
     e.preventDefault()
     setSubmitError(null)
     
+    // STRONG double submit prevention - check ref immediately (before state updates)
+    if (isSubmittingRef.current || isSubmitting || uploadingImages) {
+      console.warn('[LOKAZEN] ⚠️ Duplicate submission prevented:', {
+        ref: isSubmittingRef.current,
+        state: isSubmitting,
+        uploading: uploadingImages
+      })
+      return
+    }
+    
+    // Set ref immediately to prevent any race conditions
+    isSubmittingRef.current = true
+    setIsSubmitting(true)
+    
     const mapLink = formData.mapLink.trim() || formData.googleMapLink.trim()
     
     // Accept valid Google Maps link even if coordinates aren't extracted
     // Coordinates can be extracted server-side or user can click on map
     if (!mapLink) {
+      isSubmittingRef.current = false
+      setIsSubmitting(false)
       alert('Please add a valid Google Maps link so we can pin the exact property location before submitting.')
       return
     }
     
     if (!isValidGoogleMapsLink(mapLink)) {
+      isSubmittingRef.current = false
+      setIsSubmitting(false)
       alert('Please paste a valid Google Maps link (e.g., https://maps.google.com/...) before submitting.')
       return
     }
@@ -836,15 +1022,16 @@ function OwnerOnboardingContent() {
       : null
     
     if (!existingOwnerId && (!formData.ownerName || !formData.ownerPhone || formData.ownerPhone.replace(/\D/g, '').length !== 10)) {
+      isSubmittingRef.current = false
+      setIsSubmitting(false)
       alert('Please add your name and a valid 10-digit contact number before listing your property.')
       return
     }
 
     try {
-      setIsSubmitting(true)
 
-      // For now we skip actual media upload and only save structured data.
-      // Media files can be handled in a separate flow when storage is configured.
+      // Images will be uploaded after property creation (we need property ID)
+      // Start with empty array, will be updated after upload
       const mediaUrls: string[] = []
 
       const sizeNum = parseInt(formData.size?.replace(/[^0-9]/g, '') || '0')
@@ -879,10 +1066,14 @@ function OwnerOnboardingContent() {
       const latitude = formData.latitude ? parseFloat(formData.latitude) : undefined
       const longitude = formData.longitude ? parseFloat(formData.longitude) : undefined
 
+      // Get sessionId for tracking
+      const sessionId = getOrCreateSessionId()
+      
       const requestBody = isUpdate
         ? {
             // Update format - include ownerId for verification
             ownerId: existingOwnerId || undefined,
+            sessionId, // Add sessionId for tracking
             title: formData.description ? formData.description.split('.')[0] : undefined,
             description: formData.description,
             address: formData.location,
@@ -900,6 +1091,7 @@ function OwnerOnboardingContent() {
         : {
             // Create format - original structure
             ownerId: existingOwnerId || undefined,
+            sessionId, // Add sessionId for tracking
             owner: existingOwnerId ? undefined : {
             name: formData.ownerName,
             email: formData.ownerEmail,
@@ -939,6 +1131,124 @@ function OwnerOnboardingContent() {
       }
 
       const result = await response.json()
+      
+      // Get property ID and owner ID from result
+      const finalPropertyId = result.propertyId || result.property?.id || editPropertyId
+      const finalOwnerId = result.ownerId || existingOwnerId
+      
+      // Upload images AFTER property creation/update (we now have property ID)
+      let uploadedImageUrls: string[] = []
+      
+      if (formData.photos.length > 0 && finalPropertyId && finalOwnerId) {
+        console.log('[LOKAZEN] Starting image upload process', {
+          propertyId: finalPropertyId,
+          ownerId: finalOwnerId,
+          fileCount: formData.photos.length,
+          files: formData.photos.map(f => ({ name: f.name, size: f.size, type: f.type }))
+        })
+        
+        try {
+          setUploadingImages(true)
+          
+          console.log('[LOKAZEN] Calling uploadPropertyImages function...')
+          const uploadResult = await uploadPropertyImages(
+            formData.photos,
+            finalPropertyId
+          )
+          
+          console.log('[LOKAZEN] uploadPropertyImages returned:', {
+            success: uploadResult.success,
+            urlCount: uploadResult.urls?.length || 0,
+            errorCount: uploadResult.errors?.length || 0,
+            urls: uploadResult.urls,
+            errors: uploadResult.errors
+          })
+          
+          if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
+            uploadedImageUrls = uploadResult.urls
+            console.log('[LOKAZEN] ✅ Images uploaded successfully:', uploadedImageUrls.length, 'images')
+            console.log('[LOKAZEN] Image URLs:', uploadedImageUrls)
+            
+            // Update property with image URLs
+            console.log('[LOKAZEN] Updating property with image URLs...')
+            const updateResponse = await fetch(`/api/owner/property/${finalPropertyId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ownerId: finalOwnerId,
+                images: uploadedImageUrls
+              })
+            })
+            
+            if (updateResponse.ok) {
+              const updateResult = await updateResponse.json().catch(() => ({}))
+              console.log('[LOKAZEN] ✅ Property updated with image URLs:', updateResult)
+            } else {
+              const updateError = await updateResponse.json().catch(() => ({}))
+              console.error('[LOKAZEN] ❌ Failed to update property with images:', {
+                status: updateResponse.status,
+                statusText: updateResponse.statusText,
+                error: updateError
+              })
+              setSubmitError(`Property created, but failed to save image URLs. Error: ${updateError?.error || 'Unknown error'}`)
+            }
+          } else {
+            const errorMsg = uploadResult.errors?.join(', ') || 'Unknown upload error'
+            console.error('[LOKAZEN] ❌ Image upload failed:', {
+              success: uploadResult.success,
+              errors: uploadResult.errors,
+              partialUrls: uploadResult.urls
+            })
+            
+            // Some images may have failed, but continue anyway
+            if (uploadResult.urls && uploadResult.urls.length > 0) {
+              uploadedImageUrls = uploadResult.urls
+              console.log('[LOKAZEN] ⚠️ Partial success: updating with', uploadedImageUrls.length, 'images')
+              
+              // Still try to update with partial images
+              try {
+                const partialUpdateResponse = await fetch(`/api/owner/property/${finalPropertyId}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    ownerId: finalOwnerId,
+                    images: uploadedImageUrls
+                  })
+                })
+                
+                if (partialUpdateResponse.ok) {
+                  console.log('[LOKAZEN] ✅ Property updated with partial images')
+                } else {
+                  const partialError = await partialUpdateResponse.json().catch(() => ({}))
+                  console.error('[LOKAZEN] ❌ Failed to update with partial images:', partialError)
+                }
+              } catch (e: any) {
+                console.error('[LOKAZEN] ❌ Exception updating with partial images:', e)
+              }
+            } else {
+              // No images uploaded at all
+              console.error('[LOKAZEN] ❌ No images were uploaded. Errors:', errorMsg)
+              setSubmitError(`Property created, but image upload failed: ${errorMsg}. You can add images later by editing the property.`)
+            }
+          }
+        } catch (uploadError: any) {
+          console.error('[LOKAZEN] ❌ Image upload exception:', {
+            message: uploadError?.message,
+            stack: uploadError?.stack,
+            error: uploadError
+          })
+          setSubmitError(`Property created successfully, but image upload failed: ${uploadError?.message || 'Unknown error'}. You can add images later by editing the property.`)
+        } finally {
+          setUploadingImages(false)
+          console.log('[LOKAZEN] Image upload process completed')
+        }
+      } else {
+        console.log('[LOKAZEN] Skipping image upload:', {
+          hasPhotos: formData.photos.length > 0,
+          hasPropertyId: !!finalPropertyId,
+          hasOwnerId: !!finalOwnerId
+        })
+      }
     
       // Track form completion and conversion events
       trackFormComplete('owner', formData)
@@ -948,6 +1258,7 @@ function OwnerOnboardingContent() {
         logOwnerOnboarding('update', {
           status: 'completed',
           propertyId: editPropertyId,
+          imagesUploaded: uploadedImageUrls.length
         })
         router.push('/dashboard/owner')
       } else {
@@ -956,6 +1267,7 @@ function OwnerOnboardingContent() {
           status: 'completed',
           propertyId: result.propertyId,
           ownerId: result.ownerId,
+          imagesUploaded: uploadedImageUrls.length
         })
         
         // Track property listing as Purchase event (high-value conversion)
@@ -1008,6 +1320,7 @@ function OwnerOnboardingContent() {
             deposit: depositAmount,
             amenities: amenitiesArray,
             description: formData.description,
+            images: uploadedImageUrls, // Include uploaded image URLs
           },
           matches,
         }
@@ -1020,7 +1333,11 @@ function OwnerOnboardingContent() {
       router.push('/dashboard/owner')
       }
     } catch (error: any) {
-      console.error('Error listing property:', error)
+      console.error('[LOKAZEN] ❌ Error listing property:', {
+        message: error?.message,
+        stack: error?.stack,
+        error: error
+      })
       const errorMessage = error?.message || error?.toString() || 'Something went wrong while listing your property.'
       setSubmitError(errorMessage)
       
@@ -1030,6 +1347,8 @@ function OwnerOnboardingContent() {
       }
     } finally {
       setIsSubmitting(false)
+      isSubmittingRef.current = false // Reset ref to allow future submissions
+      console.log('[LOKAZEN] Submit process completed, ref reset')
     }
   }
 
@@ -1362,7 +1681,7 @@ function OwnerOnboardingContent() {
                           Loading map…
                   </div>
                       )}
-                      {mapLoadError && (
+                      {(mapLoadError || mapApiError) && (
                         <div className="relative flex items-center justify-center h-full px-4 text-center overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/10 via-[#E4002B]/5 to-[#FFB199]/15 blur-sm" />
                           <div className="absolute inset-4 rounded-2xl border border-white/60 bg-white/60 backdrop-blur-xl shadow-[0_18px_45px_rgba(15,23,42,0.22)]" />
@@ -1371,12 +1690,33 @@ function OwnerOnboardingContent() {
                               Map
                             </div>
                             <div className="text-sm font-semibold text-gray-900 mb-1">
-                              Interactive map coming soon
+                              Google Maps Error
                             </div>
-                            <div className="text-xs text-gray-600 mb-3">
-                              We&apos;ll still use your pinned location and address to power brand matches. The live map
-                              view will be unlocked for you shortly.
+                            <div className="text-xs text-gray-600 mb-2">
+                              {mapApiError || mapLoadError?.message || 'Failed to load Google Maps'}
                             </div>
+                            {process.env.NODE_ENV === 'development' && (
+                              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-[10px] text-red-800 text-left mb-3">
+                                <strong>Debug:</strong>
+                                <br />
+                                API Key: {getGoogleMapsApiKey() ? 'Set ✓' : 'Missing ✗'}
+                                <br />
+                                Error: {mapApiError || mapLoadError?.message || 'Unknown'}
+                                <br />
+                                <br />
+                                <strong>Fix InvalidKeyMapError:</strong>
+                                <br />
+                                1. Check API key restrictions - ensure localhost/127.0.0.1 is allowed
+                                <br />
+                                2. Verify Maps JavaScript API is ENABLED (not just in restrictions)
+                                <br />
+                                3. Check billing is enabled in Google Cloud Console
+                                <br />
+                                4. Verify API key is from the correct Google Cloud project
+                                <br />
+                                5. Try regenerating the API key
+                              </div>
+                            )}
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-[10px] sm:text-xs text-gray-100 shadow-[0_10px_25px_rgba(15,23,42,0.45)]">
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                               <span>Location data saved securely</span>
@@ -1384,22 +1724,70 @@ function OwnerOnboardingContent() {
                           </div>
                         </div>
                       )}
-                      {isMapLoaded && !mapLoadError && (
-                        <GoogleMap
-                          mapContainerStyle={{ width: '100%', height: '100%' }}
-                          center={markerPosition || mapCenter}
-                          zoom={16}
-                          options={DEFAULT_MAP_OPTIONS}
-                          onClick={handleMapClick}
-                        >
-                          {markerPosition && (
-                            <Marker
-                              position={markerPosition}
-                              draggable
-                              onDragEnd={handleMarkerDragEnd}
-                            />
-                          )}
-                        </GoogleMap>
+                      {isMapLoaded && !mapLoadError && !mapApiError && (
+                        typeof window !== 'undefined' && window.google && window.google.maps ? (
+                          <>
+                            <GoogleMap
+                              mapContainerStyle={{ width: '100%', height: '100%' }}
+                              center={markerPosition || mapCenter}
+                              zoom={16}
+                              options={DEFAULT_MAP_OPTIONS}
+                              onClick={handleMapClick}
+                              onLoad={() => {
+                                // Clear any error state when map loads successfully
+                                if (mapApiError) {
+                                  setMapApiError(null)
+                                }
+                              }}
+                              onError={(error) => {
+                                const errorMsg = error?.message || String(error || '')
+                                // Verify the error is real before setting it
+                                if (errorMsg.includes('InvalidKeyMapError') || errorMsg.includes('invalid key') || errorMsg.includes('API key')) {
+                                  // Test if map creation actually fails
+                                  setTimeout(() => {
+                                    if (typeof window !== 'undefined' && window.google && window.google.maps) {
+                                      try {
+                                        const testDiv = document.createElement('div')
+                                        testDiv.style.width = '1px'
+                                        testDiv.style.height = '1px'
+                                        testDiv.style.position = 'absolute'
+                                        testDiv.style.visibility = 'hidden'
+                                        document.body.appendChild(testDiv)
+                                        
+                                        const testMap = new window.google.maps.Map(testDiv, {
+                                          zoom: 1,
+                                          center: { lat: 0, lng: 0 },
+                                        })
+                                        
+                                        // Map creation succeeded - error was false positive, don't set error
+                                        setTimeout(() => {
+                                          if (document.body.contains(testDiv)) {
+                                            document.body.removeChild(testDiv)
+                                          }
+                                        }, 100)
+                                      } catch (testError: any) {
+                                        // Map creation failed - error is real
+                                        setMapApiError('Google Maps API key error: ' + errorMsg)
+                                      }
+                                    }
+                                  }, 500)
+                                }
+                              }}
+                            >
+                              {markerPosition && (
+                                <Marker
+                                  position={markerPosition}
+                                  draggable
+                                  onDragEnd={handleMarkerDragEnd}
+                                />
+                              )}
+                            </GoogleMap>
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-sm text-gray-500">
+                            Google Maps API not available. Check browser console for details.
+                          </div>
+                        )
                       )}
                   </div>
                   </div>
@@ -1656,12 +2044,14 @@ function OwnerOnboardingContent() {
                 ) : (
                   <button
                     type="submit"
-                    disabled={isSubmitting || loadingProperty}
+                    disabled={isSubmitting || uploadingImages || loadingProperty}
                     className="w-full sm:flex-1 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-[1.02] text-base disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting 
-                      ? (isEditMode ? 'Updating Property...' : 'Listing Property...')
-                      : (isEditMode ? 'Update Property' : 'List Property & Get Matches')
+                    {uploadingImages
+                      ? `Uploading Images... (${formData.photos.length} files)`
+                      : isSubmitting 
+                        ? (isEditMode ? 'Updating Property...' : 'Creating Property...')
+                        : (isEditMode ? 'Update Property' : 'List Property & Get Matches')
                     }
                   </button>
                 )}

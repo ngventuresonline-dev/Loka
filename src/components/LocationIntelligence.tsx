@@ -111,6 +111,23 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
     libraries: GOOGLE_MAPS_LIBRARIES,
   })
 
+  // Debug logging for map loading state
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[LocationIntelligence] Map state:', {
+        isLoaded,
+        loadError: loadError?.message || null,
+        apiKey: getGoogleMapsApiKey() ? 'Set' : 'Missing',
+        googleMapsAvailable: typeof window !== 'undefined' && window.google && window.google.maps ? 'Yes' : 'No',
+      })
+      
+      // Check if script loaded but API failed
+      if (isLoaded && !loadError && typeof window !== 'undefined' && (!window.google || !window.google.maps)) {
+        console.error('[LocationIntelligence] Script loaded but Google Maps API not available. Check API key restrictions and enabled APIs.')
+      }
+    }
+  }, [isLoaded, loadError])
+
   useEffect(() => {
     // AbortController to cancel previous requests
     const abortController = new AbortController()
@@ -277,12 +294,32 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                     <LokazenNodesLoader size="md" />
                   </div>
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 leading-tight">
-                    Location Intel Preview Unavailable
+                    Google Maps Error
                   </h4>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
-                    We&apos;re processing location signals for this area. Map view is temporarily unavailable, but all match insights are calculated behind the scenes.
+                  <p className="text-xs sm:text-sm text-gray-600 mb-2 leading-relaxed">
+                    {loadError.message || 'Failed to load Google Maps'}
                   </p>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 text-xs sm:text-sm text-gray-100 shadow-[0_10px_25px_rgba(15,23,42,0.45)]">
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800 text-left">
+                      <strong>Debug Info:</strong>
+                      <br />
+                      API Key: {getGoogleMapsApiKey() ? 'Set' : 'Missing'}
+                      <br />
+                      Error: {loadError.message || 'Unknown error'}
+                      <br />
+                      <br />
+                      <strong>Common fixes:</strong>
+                      <br />
+                      1. Restart dev server after adding API key
+                      <br />
+                      2. Check API key restrictions in Google Cloud Console
+                      <br />
+                      3. Enable: Maps JavaScript API, Geocoding API, Places API
+                      <br />
+                      4. Ensure billing is enabled
+                    </div>
+                  )}
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 text-xs sm:text-sm text-gray-100 shadow-[0_10px_25px_rgba(15,23,42,0.45)] mt-4">
                     <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>AI Location Engine · Live</span>
                   </div>
@@ -290,24 +327,31 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
               </div>
             )}
             {isLoaded && !loadError && (
-              <div className="relative h-full overflow-hidden">
-                {/* Blurred map background */}
-                <div className="absolute inset-0" style={{ filter: 'blur(12px)', transform: 'scale(1.1)' }}>
-              <GoogleMap
-                mapContainerStyle={{ ...containerStyle, height: '100%' }}
-                center={coordinates}
-                zoom={16}
-                options={{
-                  ...DEFAULT_MAP_OPTIONS,
-                  styles: [],
-                      disableDefaultUI: true,
-                      zoomControl: false,
-                      streetViewControl: false,
-                      mapTypeControl: false,
-                      fullscreenControl: false,
-                      gestureHandling: 'none',
-                }}
-              >
+              typeof window !== 'undefined' && window.google && window.google.maps ? (
+                <div className="relative h-full overflow-hidden">
+                  {/* Blurred map background */}
+                  <div className="absolute inset-0" style={{ filter: 'blur(12px)', transform: 'scale(1.1)' }}>
+                <GoogleMap
+                  mapContainerStyle={{ ...containerStyle, height: '100%' }}
+                  center={coordinates}
+                  zoom={16}
+                  options={{
+                    ...DEFAULT_MAP_OPTIONS,
+                    styles: [],
+                        disableDefaultUI: true,
+                        zoomControl: false,
+                        streetViewControl: false,
+                        mapTypeControl: false,
+                        fullscreenControl: false,
+                        gestureHandling: 'none',
+                  }}
+                  onLoad={() => {
+                    // Map loaded successfully
+                  }}
+                  onError={(error) => {
+                    // Handle map errors
+                  }}
+                >
                 {/* Radius circle */}
                 <Circle
                   center={coordinates}
@@ -374,6 +418,13 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                   </div>
                 </div>
               </div>
+              ) : (
+                <div className="flex items-center justify-center h-full px-4 text-center">
+                  <div className="text-sm text-gray-600">
+                    Google Maps API not available. Check browser console for details.
+                  </div>
+                </div>
+              )
             )}
           </div>
         </div>

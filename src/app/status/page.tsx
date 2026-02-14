@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Navbar from '@/components/Navbar'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import { motion } from 'framer-motion'
+import { formatISTTimestamp } from '@/lib/utils'
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -176,7 +177,7 @@ export default function StatusPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
+    return formatISTTimestamp(dateString)
   }
 
   return (

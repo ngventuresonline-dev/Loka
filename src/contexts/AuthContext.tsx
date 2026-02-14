@@ -32,7 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check authentication on mount (client-side only)
     if (typeof window !== 'undefined') {
-      refreshUser()
+      try {
+        refreshUser()
+        const currentUser = getCurrentUser()
+        console.log('[AuthContext] Initialized with user:', currentUser ? { id: currentUser.id, email: currentUser.email, userType: currentUser.userType } : null)
+      } catch (error) {
+        console.error('[AuthContext] Error initializing:', error)
+      }
     }
     setLoading(false)
   }, [])

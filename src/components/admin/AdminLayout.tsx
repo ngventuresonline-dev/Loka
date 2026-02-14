@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import AdminSidebar from './AdminSidebar'
 
 interface AdminLayoutProps {
@@ -12,10 +12,17 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
   const { user, isLoggedIn, loading: authLoading } = useAuth()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
+  // Admin auth check - redirect non-admins to homepage
   useEffect(() => {
-    if (!authLoading && (!isLoggedIn || user?.userType !== 'admin')) {
-      router.push('/')
+    if (!authLoading) {
+      console.log('[AdminLayout] Auth check:', { isLoggedIn, userType: user?.userType, user })
+      if (!isLoggedIn || user?.userType !== 'admin') {
+        console.log('[AdminLayout] User not authorized, redirecting...')
+        setIsRedirecting(true)
+        router.replace('/')
+      }
     }
   }, [isLoggedIn, user, authLoading, router])
 
@@ -31,7 +38,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   if (!isLoggedIn || user?.userType !== 'admin') {
-    return null
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200] mx-auto mb-4"></div>
+          <p className="text-gray-400 text-lg mb-2">
+            {!isLoggedIn 
+              ? 'You must be logged in to access the admin panel.' 
+              : 'You do not have admin privileges to access this page.'}
+          </p>
+          <p className="text-gray-500 text-sm">Redirecting to homepage...</p>
+          {!isLoggedIn && (
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="mt-4 px-6 py-2 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] transition-colors"
+            >
+              Go to Login
+            </button>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -105,7 +105,8 @@ model Property {
   rentEscalation       Decimal?           @map("rent_escalation") @db.Decimal(5, 2)
   size                 Int
   propertyType         property_type_enum @map("property_type")
-  mapLink              String?            @map("map_link") @db.VarChar(1000)
+  // mapLink temporarily stored in amenities JSONB field due to Supabase column creation timeout
+  // mapLink              String?            @map("map_link") @db.VarChar(1000)
   storePowerCapacity   String?            @map("store_power_capacity") @db.VarChar(50)
   powerBackup          Boolean?           @map("power_backup") @default(false)
   waterFacility        Boolean?           @map("water_facility") @default(false)

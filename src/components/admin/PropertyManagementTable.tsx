@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { formatISTTimestamp } from '@/lib/utils'
 
 interface Property {
   id: string
@@ -236,13 +237,13 @@ export default function PropertyManagementTable({ userEmail, userId }: PropertyM
                       </span>
                     </td>
                     <td className="py-3 px-4 text-gray-400 text-sm">
-                      {new Date(property.createdAt).toLocaleDateString()}
+                      {formatISTTimestamp(property.createdAt, { format: 'dd MMM yyyy' })}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => {
-                            const propertyInfo = `Property Details:\n\nTitle: ${property.title}\nAddress: ${property.address}\nCity: ${property.city}\nOwner: ${property.owner.name} (${property.owner.email})\nSize: ${property.size.toLocaleString()} sq ft\nRent: ${formatPrice(property.price, property.priceType)}\nStatus: ${property.availability ? 'Available' : 'Occupied'}\nFeatured: ${property.isFeatured ? 'Yes' : 'No'}\nListed: ${new Date(property.createdAt).toLocaleDateString()}`
+                            const propertyInfo = `Property Details:\n\nTitle: ${property.title}\nAddress: ${property.address}\nCity: ${property.city}\nOwner: ${property.owner.name} (${property.owner.email})\nSize: ${property.size.toLocaleString()} sq ft\nRent: ${formatPrice(property.price, property.priceType)}\nStatus: ${property.availability ? 'Available' : 'Occupied'}\nFeatured: ${property.isFeatured ? 'Yes' : 'No'}\nListed: ${formatISTTimestamp(property.createdAt, { format: 'dd MMM yyyy' })}`
                             alert(propertyInfo)
                           }}
                           className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"

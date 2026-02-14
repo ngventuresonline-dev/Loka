@@ -11,21 +11,23 @@ export const getClientSessionUserId = (): string | null => {
   if (typeof window === 'undefined') return null
 
   try {
+    // Check for authenticated session first
     const authJson = window.localStorage.getItem('ngventures_session')
     if (authJson) {
       const session = JSON.parse(authJson)
       if (session?.userId) return String(session.userId)
     }
 
-    // Fallback: anonymous session id
-    const key = 'ng_anon_session_id'
-    let anon = window.localStorage.getItem(key)
-    if (!anon) {
-      anon = `anon_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-      window.localStorage.setItem(key, anon)
+    // Use consistent session ID key
+    const key = 'clientSessionUserId'
+    let sessionId = window.localStorage.getItem(key)
+    if (!sessionId) {
+      sessionId = `anon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+      window.localStorage.setItem(key, sessionId)
     }
-    return anon
-  } catch {
+    return sessionId
+  } catch (error) {
+    console.error('[Session Logger] Error accessing localStorage:', error)
     return null
   }
 }

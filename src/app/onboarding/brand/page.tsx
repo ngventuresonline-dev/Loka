@@ -6,6 +6,11 @@ import Navbar from '@/components/Navbar'
 import DynamicBackground from '@/components/DynamicBackground'
 import { trackFormComplete } from '@/lib/tracking'
 
+/* TODO: Re-enable auth when brand login is implemented
+import { supabase } from '@/lib/supabase/client'
+import { getCurrentUser } from '@/lib/supabase/auth'
+*/
+
 const audiencePresets = [
   'Young professionals',
   'College students',
@@ -22,6 +27,19 @@ function BrandOnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
+
+  /* TODO: Re-enable auth when brand login is implemented
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const user = await getCurrentUser()
+      if (!user || user.userType !== 'brand') {
+        router.push('/auth/login')
+      }
+    }
+    checkAuth()
+  }, [router])
+  */
   const [selectedSizeRanges, setSelectedSizeRanges] = useState<Set<string>>(new Set())
   const [selectedAudience, setSelectedAudience] = useState<Set<string>>(new Set())
   const [formData, setFormData] = useState({

@@ -6,6 +6,7 @@ import Button from './ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Logo from './Logo'
+import ProfileModal from './ProfileModal'
 
 interface NavbarProps {
   hideOnMobile?: boolean
@@ -15,6 +16,7 @@ export default function Navbar({ hideOnMobile = false }: NavbarProps) {
   const { user, isLoggedIn, logout, loading } = useAuth()
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -98,7 +100,11 @@ export default function Navbar({ hideOnMobile = false }: NavbarProps) {
                       </Link>
                       <Link
                         href="/profile"
-                        onClick={() => setShowUserMenu(false)}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setShowUserMenu(false)
+                          setShowProfileModal(true)
+                        }}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       >
                         <div className="flex items-center gap-2">
@@ -174,6 +180,12 @@ export default function Navbar({ hideOnMobile = false }: NavbarProps) {
           </div>
         </div>
       </div>
+      
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </nav>
   )
 }

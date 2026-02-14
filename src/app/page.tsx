@@ -29,6 +29,9 @@ import { getTheme, getPaletteColors } from '@/lib/theme'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import LogoImage from '@/components/LogoImage'
+import { detectSessionType, getSessionId, getOrCreateSessionId } from '@/lib/session-utils'
+import { useSessionTracking } from '@/hooks/useSessionTracking'
+import ProfileModal from '@/components/ProfileModal'
 
 type AppStep = 'home' | 'brand-onboarding' | 'owner-onboarding' | 'brand-dashboard' | 'owner-dashboard'
 
@@ -636,6 +639,18 @@ export default function Home() {
   const router = useRouter()
   const { user } = useAuth()
   
+  // Initialize session ID on mount to ensure persistence
+  useEffect(() => {
+    getOrCreateSessionId() // Creates if doesn't exist
+  }, [])
+  
+  // Progressive session tracking - only track if user is logged in with known type
+  const sessionTracking = useSessionTracking({
+    userType: user?.userType === 'brand' ? 'brand' : user?.userType === 'owner' ? 'owner' : 'unknown',
+    autoTrackPageViews: false, // Don't auto-track page views on homepage
+    entryPage: typeof window !== 'undefined' ? window.location.pathname : '/'
+  })
+  
   const [currentStep, setCurrentStep] = useState<AppStep>('home')
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null)
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null)
@@ -765,11 +780,14 @@ export default function Home() {
   const [brandsError, setBrandsError] = useState<string | null>(null)
   const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null)
   const [showMobileNav, setShowMobileNav] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // Handle AI Search - Open modal with query
   const handleSearch = () => {
     if (!searchQuery.trim()) return
     setIsAiModalOpen(true)
+    // Track AI search button click
+    sessionTracking.trackButtonClick('ai_search_open', { query: searchQuery })
   }
 
   useEffect(() => {
@@ -1787,7 +1805,11 @@ export default function Home() {
           <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 mt-6 md:mt-8">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
               <button
-                onClick={() => router.push('/filter/owner')}
+                onClick={() => {
+                  sessionTracking.setUserType('owner')
+                  sessionTracking.trackButtonClick('list_property', { source: 'hero_section' })
+                  router.push('/filter/owner')
+                }}
                 className="px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-xl min-w-[180px] sm:min-w-[200px] flex items-center justify-center gap-2"
               >
                 <span>List Property</span>
@@ -3122,7 +3144,11 @@ export default function Home() {
             
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0">
               <button 
-                onClick={() => router.push('/filter/brand')}
+                onClick={() => {
+                  sessionTracking.setUserType('brand')
+                  sessionTracking.trackButtonClick('brand_looking_for_space', { source: 'cta_section' })
+                  router.push('/filter/brand')
+                }}
                 className="group relative px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-full text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden min-h-[48px] sm:min-h-[56px]"
               >
                 <span className="relative z-10 flex items-center justify-center whitespace-nowrap">
@@ -3135,7 +3161,11 @@ export default function Home() {
               </button>
               
               <button 
-                onClick={() => router.push('/filter/owner')}
+                onClick={() => {
+                  sessionTracking.setUserType('owner')
+                  sessionTracking.trackButtonClick('list_property', { source: 'cta_section' })
+                  router.push('/filter/owner')
+                }}
                 className="group relative px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-white border-2 border-gray-300 text-gray-900 rounded-full text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-[#FF5200] overflow-hidden min-h-[48px] sm:min-h-[56px]"
               >
                 <span className="relative z-10 flex items-center justify-center group-hover:text-[#FF5200] transition-colors whitespace-nowrap gap-2">
@@ -3306,8 +3336,14 @@ export default function Home() {
       {/* AI Search Modal */}
       <AiSearchModal 
         isOpen={isAiModalOpen} 
-        onClose={() => setIsAiModalOpen(false)} 
+        onClose={() => setIsAiModalOpen(false)}
         initialQuery={isAiModalOpen ? searchQuery : ''}
+      />
+
+      {/* Profile Phone Lookup Modal */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
       />
 
       {/* Brand Requirements Modal */}
@@ -3504,16 +3540,9 @@ export default function Home() {
 
               {/* Profile */}
               <button
-                onClick={() => {
-                  if (user?.userType === 'owner') {
-                    router.push('/dashboard/owner')
-                  } else if (user?.userType === 'brand') {
-                    // For brands, route to home with dashboard view or create brand dashboard
-                    router.push('/')
-                  } else {
-                    // Default to about page if not logged in
-                    router.push('/about')
-                  }
+                onClick={async () => {
+                  // Show phone lookup modal instead of auto-routing
+                  setShowProfileModal(true)
                 }}
                 className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl hover:bg-white/5 active:bg-white/10 transition-all relative group"
               >

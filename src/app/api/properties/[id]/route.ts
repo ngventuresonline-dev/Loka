@@ -201,6 +201,31 @@ export async function GET(
     
     const safeProperty = property ? serializeValue(property) : null
 
+    // Extract map_link from amenities JSONB field (workaround for column timeout)
+    // Structure: amenities = { features: [...], map_link: "..." }
+    if (safeProperty && safeProperty.amenities) {
+      const amenitiesData = safeProperty.amenities
+      if (typeof amenitiesData === 'object' && amenitiesData !== null && !Array.isArray(amenitiesData)) {
+        // Extract map_link if it exists
+        if (amenitiesData.map_link) {
+          safeProperty.mapLink = amenitiesData.map_link
+        }
+        // Convert amenities to array format for backward compatibility
+        if (amenitiesData.features && Array.isArray(amenitiesData.features)) {
+          safeProperty.amenities = amenitiesData.features
+        } else if (Array.isArray(amenitiesData)) {
+          // Legacy format: amenities is already an array
+          safeProperty.amenities = amenitiesData
+        } else {
+          safeProperty.amenities = []
+        }
+      } else if (Array.isArray(amenitiesData)) {
+        // Legacy format: amenities is already an array, no map_link
+        safeProperty.amenities = amenitiesData
+        safeProperty.mapLink = null
+      }
+    }
+
     // Add caching headers for faster subsequent requests
     const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_LISTINGS)
     

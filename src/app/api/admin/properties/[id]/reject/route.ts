@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminAuth } from '@/lib/admin-security'
 import { getPrisma } from '@/lib/get-prisma'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authResult = await requireAdminAuth(request)
+  if (!authResult.authorized) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.statusCode || 401 }
+    )
+  }
+
   try {
     const prisma = await getPrisma()
     if (!prisma) {

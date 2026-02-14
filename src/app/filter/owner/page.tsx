@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import { trackFilterApply } from '@/lib/tracking'
+import { useSessionTracking } from '@/hooks/useSessionTracking'
 
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
@@ -1273,6 +1274,13 @@ function FilterCard({
 export default function OwnerFilterPage() {
   const router = useRouter()
   
+  // Progressive session tracking
+  const sessionTracking = useSessionTracking({
+    userType: 'owner',
+    autoTrackPageViews: true,
+    entryPage: '/filter/owner'
+  })
+  
   // Track all selections
   const [propertyTypeSelected, setPropertyTypeSelected] = useState<Set<string>>(new Set())
   const [sizeValue, setSizeValue] = useState<number>(1000)
@@ -1358,7 +1366,7 @@ export default function OwnerFilterPage() {
     }, 500)
   }
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate all fields
     const newErrors = {
       propertyType: propertyTypeSelected.size === 0,
@@ -1407,6 +1415,9 @@ export default function OwnerFilterPage() {
     
     // Track filter application
     trackFilterApply(filterData, 'owner')
+    
+    // Progressive session tracking - mark form as complete
+    await sessionTracking.trackFormComplete('owner_filter', filterData)
     
     // Redirect to onboarding
     router.push('/onboarding/owner?prefilled=true')
@@ -1502,6 +1513,10 @@ export default function OwnerFilterPage() {
               onSelectionChange={(set) => {
                 setPropertyTypeSelected(set)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+                // Progressive session tracking
+                sessionTracking.trackFilterUpdate({
+                  propertyType: Array.from(set)[0] || null
+                })
               }}
               error={errors.propertyType}
             />
@@ -1513,6 +1528,10 @@ export default function OwnerFilterPage() {
               onSizeChange={(size) => {
                 setSizeValue(size)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+                // Progressive session tracking
+                sessionTracking.trackFilterUpdate({
+                  size
+                })
               }}
               error={errors.size}
             />
@@ -1532,6 +1551,10 @@ export default function OwnerFilterPage() {
               onSelectionChange={(set) => {
                 setLocationSelected(set)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+                // Progressive session tracking
+                sessionTracking.trackFilterUpdate({
+                  location: Array.from(set)[0] || null
+                })
               }}
               error={errors.location}
             />
@@ -1543,6 +1566,10 @@ export default function OwnerFilterPage() {
               onRentChange={(rent) => {
                 setRentValue(rent)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
+                // Progressive session tracking
+                sessionTracking.trackFilterUpdate({
+                  rent
+                })
               }}
               error={errors.rent}
             />

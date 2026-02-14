@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { formatISTTimestamp } from '@/lib/utils'
 
 interface Activity {
   id: string
@@ -83,7 +84,7 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm">{activity.description}</p>
                   <p className="text-gray-400 text-xs mt-1">
-                    {new Date(activity.timestamp).toLocaleString()}
+                    {formatISTTimestamp(activity.timestamp)}
                   </p>
                 </div>
               </div>
