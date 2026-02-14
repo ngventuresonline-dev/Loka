@@ -35,7 +35,7 @@ export default function InvestorDeckPage() {
 
       <main className="pt-16 sm:pt-20 pb-20 sm:pb-24">
         {/* Cover — punchy + illustration */}
-        <section className="min-h-[80vh] sm:min-h-[85vh] flex flex-col justify-center px-4 sm:px-6 max-w-5xl mx-auto relative overflow-hidden">
+        <section className="min-h-[80vh] sm:min-h-[85vh] flex flex-col justify-center px-4 sm:px-6 pt-8 sm:pt-12 pb-12 sm:pb-16 max-w-5xl mx-auto relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none opacity-30" aria-hidden>
             <svg className="absolute top-1/4 right-0 w-[min(50vw,400px)] h-[min(50vw,400px)] -translate-y-1/2" viewBox="0 0 200 200" fill="none">
               <circle cx="100" cy="100" r="80" stroke="url(#coverGrad)" strokeWidth="1" fill="none" />
@@ -51,11 +51,11 @@ export default function InvestorDeckPage() {
             </svg>
           </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FF5200]/10 border border-[#FF5200]/20 text-[#FF5200] text-xs sm:text-sm font-semibold uppercase tracking-wider w-fit mb-4 sm:mb-6 relative z-10">
-            Bangalore · ₹1 Cr · 3–5 investors · 3–8x
+            Bangalore · ₹1 Cr · 3–5 investors · 3x
           </div>
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-3 sm:mb-4 relative z-10">
             <span className="bg-gradient-to-r" style={{ backgroundImage: `linear-gradient(90deg, ${ORANGE}, ${RED})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Commercial real estate
+              Commercial Real Estate
             </span>
             <br />
             <span className="text-white">matchmaking, powered by AI.</span>
@@ -169,37 +169,37 @@ export default function InvestorDeckPage() {
         </section>
 
         {/* Few brands we've placed — with logos where available + illustration */}
-        <section className="py-16 px-6 border-t border-white/10 bg-gradient-to-b from-[#E4002B]/5 to-transparent">
+        <section className="py-12 sm:py-16 px-4 sm:px-6 border-t border-white/10 bg-gradient-to-b from-[#E4002B]/5 to-transparent">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-2 mb-6" aria-hidden>
+            <div className="flex items-center gap-2 mb-4 sm:mb-6" aria-hidden>
               <svg width="36" height="36" viewBox="0 0 40 40" fill="none" className="text-[#FF5200] opacity-80">
                 <path d="M8 12h24v16H8z" stroke="currentColor" strokeWidth="1.5" rx="2"/>
                 <path d="M14 18h4v4h-4zM22 18h4v4h-4z" fill="currentColor" opacity="0.6"/>
               </svg>
             </div>
             <p className="text-[#FF5200] font-bold text-xs sm:text-sm uppercase tracking-widest mb-2">Proof</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Few brands we’ve placed</h2>
-            <div className="flex flex-wrap gap-3">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-4 sm:mb-6">Few brands we’ve placed</h2>
+            <div className="flex flex-wrap gap-3 sm:gap-4">
               {brandsPlacedDisplay.map((name, i) => {
                 const logoPath = getBrandLogo(name)
                 const initial = getBrandInitial(name)
                 return (
-                  <span key={i} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/15 text-gray-200 text-sm font-medium">
+                  <span key={i} className="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl bg-white/5 border border-white/15 text-gray-200 font-medium text-sm sm:text-base">
                     {logoPath ? (
                       <span className="relative w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
                         <Image src={logoPath} alt={name} fill className="object-contain" sizes="28px" unoptimized />
                       </span>
                     ) : (
-                      <span className="w-7 h-7 rounded-lg flex-shrink-0 bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center text-white text-xs font-bold">
+                      <span className="w-7 h-7 rounded-lg flex-shrink-0 bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center text-white text-xs sm:text-sm font-bold">
                         {initial}
                       </span>
                     )}
-                    {name}
+                    <span className="text-sm sm:text-base">{name}</span>
                   </span>
                 )
               })}
             </div>
-            <p className="text-gray-400 text-sm mt-4">Across Indiranagar, Koramangala, Sarjapur Road, JP Nagar, Residency Road, HAL, Bannerghatta Road & more.</p>
+            <p className="text-gray-400 text-sm sm:text-base mt-4 sm:mt-5">Across Indiranagar, Koramangala, Sarjapur Road, JP Nagar, Residency Road, HAL, Bannerghatta Road & more.</p>
           </div>
         </section>
 
@@ -382,13 +382,13 @@ export default function InvestorDeckPage() {
         <section className="py-12 sm:py-16 px-4 sm:px-6 border-t border-white/5 bg-gradient-to-b from-[#FF5200]/10 to-transparent">
           <div className="max-w-5xl mx-auto">
             <p className="text-[#FF5200] font-bold text-xs sm:text-sm uppercase tracking-widest mb-2">The round</p>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-6 sm:mb-8">₹1 Cr · 3–5 investors · 3–8x</h2>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-6 sm:mb-8">₹1 Cr · 3–5 investors · 3x</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
               {[
                 { v: '₹1 Cr', l: 'Total raise' },
                 { v: '3–5', l: 'Max investors' },
                 { v: '₹20–33L', l: 'Cheque size' },
-                { v: '3–8x', l: 'Target return (5–7 yr)' },
+                { v: '3x', l: 'Target return (5–7 yr)' },
               ].map((item, i) => (
                 <div key={i} className="rounded-xl bg-white/5 border border-[#FF5200]/20 p-4 sm:p-5 text-center">
                   <div className="text-xl sm:text-2xl font-black text-[#FF5200]">{item.v}</div>
@@ -397,7 +397,7 @@ export default function InvestorDeckPage() {
               ))}
             </div>
             <div className="rounded-2xl border-2 border-[#FF5200]/30 bg-[#0f172a]/80 p-4 sm:p-6">
-              <p className="text-white text-sm sm:text-base mb-2"><strong>3x</strong> on ₹1 Cr → <span className="text-[#FF5200]">₹3 Cr</span> return. <strong>8x</strong> → <span className="text-[#FF5200]">₹8 Cr</span> return. Y5 revenue ₹22–35 Cr supports this at 1–2x revenue multiple.</p>
+              <p className="text-white text-sm sm:text-base mb-2"><strong>3x</strong> on ₹1 Cr → <span className="text-[#FF5200]">₹3 Cr</span> return. Y5 revenue ₹22–35 Cr supports this at 1–2x revenue multiple.</p>
               <p className="text-gray-400 text-sm">Stake & valuation in conversation. Cap table & scenarios under NDA.</p>
             </div>
           </div>
