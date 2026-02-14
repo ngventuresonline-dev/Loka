@@ -61,7 +61,7 @@ export async function GET(
       name: user.name,
       email: user.email,
       phone: user.phone,
-      companyName: user.ownerProfiles?.companyName || null,
+      companyName: user.ownerProfiles?.company_name ?? null,
       properties: properties,
       propertiesByStatus,
       totalProperties: properties.length

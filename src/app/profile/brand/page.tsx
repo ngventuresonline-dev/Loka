@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -50,7 +50,7 @@ interface BrandProfileData {
   searchFilters: any
 }
 
-export default function BrandProfilePage() {
+function BrandProfileContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const userIdFromQuery = searchParams.get('userId')
@@ -441,5 +441,13 @@ export default function BrandProfilePage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function BrandProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-500">Loading...</div>}>
+      <BrandProfileContent />
+    </Suspense>
   )
 }

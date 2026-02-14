@@ -26,7 +26,7 @@ interface OwnerProfileData {
   totalProperties: number
 }
 
-export default function OwnerProfilePage() {
+function OwnerProfileContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const userIdFromQuery = searchParams.get('userId')
@@ -336,5 +336,13 @@ export default function OwnerProfilePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OwnerProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-500">Loading...</div>}>
+      <OwnerProfileContent />
+    </Suspense>
   )
 }

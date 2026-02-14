@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        companyName: user.ownerProfiles?.companyName || null,
+        companyName: user.ownerProfiles?.company_name ?? null,
         totalProperties: properties.length,
         properties: properties,
         propertiesByStatus: {
@@ -146,21 +146,21 @@ export async function POST(request: Request) {
         LIMIT 20
       `.catch(() => [])
 
-      const recentViews = recentViewsRaw.map(view => ({
-        id: view.id,
-        viewedAt: view.viewed_at?.toISOString() || new Date().toISOString(),
-        property: view.property
-      }))
+      const recentViews = recentViewsRaw.map(view => {
+        const at = view.viewed_at
+        const viewedAtStr = at instanceof Date ? at.toISOString() : typeof at === 'string' ? at : new Date().toISOString()
+        return { id: view.id, viewedAt: viewedAtStr, property: view.property }
+      })
 
       profileData = {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        companyName: user.brandProfiles?.companyName || null,
+        companyName: user.brandProfiles?.company_name ?? null,
         industry: user.brandProfiles?.industry || null,
         savedProperties: savedProperties.map(sp => ({
           id: sp.id,
-          savedAt: sp.createdAt.toISOString(),
+          savedAt: sp.createdAt?.toISOString() ?? new Date().toISOString(),
           notes: sp.notes,
           property: sp.property
         })),
@@ -168,13 +168,13 @@ export async function POST(request: Request) {
           id: inq.id,
           message: inq.message,
           status: inq.status,
-          createdAt: inq.createdAt.toISOString(),
+          createdAt: inq.createdAt?.toISOString() ?? new Date().toISOString(),
           property: inq.property,
           owner: inq.owner
         })),
         recentViews: recentViews.map(view => ({
           id: view.id,
-          viewedAt: view.viewedAt?.toISOString() || new Date().toISOString(),
+          viewedAt: typeof view.viewedAt === 'string' ? view.viewedAt : new Date().toISOString(),
           property: view.property
         }))
       }

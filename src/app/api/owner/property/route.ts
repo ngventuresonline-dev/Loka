@@ -369,8 +369,8 @@ export async function POST(request: NextRequest) {
       }
     }
     // If amenities is already an object (new format or from update)
-    else if (property.amenities && typeof property.amenities === 'object') {
-      amenitiesData = { ...property.amenities }
+    else if (property.amenities && typeof property.amenities === 'object' && !Array.isArray(property.amenities)) {
+      amenitiesData = { ...(property.amenities as Record<string, unknown>) }
       // Ensure features array exists
       if (!amenitiesData.features || !Array.isArray(amenitiesData.features)) {
         amenitiesData.features = []

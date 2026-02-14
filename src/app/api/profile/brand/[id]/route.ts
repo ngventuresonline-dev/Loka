@@ -110,30 +110,34 @@ export async function GET(
       LIMIT 50
     `.catch(() => [])
 
-    const recentViews = recentViewsRaw.map(view => ({
-      id: view.id,
-      propertyId: view.property_id,
-      viewedAt: view.viewed_at?.toISOString() || new Date().toISOString(),
-      property: view.property
-    }))
+    const recentViews = recentViewsRaw.map(view => {
+      const at = view.viewed_at
+      const viewedAtStr = at instanceof Date ? at.toISOString() : typeof at === 'string' ? at : new Date().toISOString()
+      return {
+        id: view.id,
+        propertyId: view.property_id,
+        viewedAt: viewedAtStr,
+        property: view.property
+      }
+    })
 
     return NextResponse.json({
       name: user.name,
       email: user.email,
       phone: user.phone,
-      companyName: user.brandProfiles?.companyName || null,
+      companyName: user.brandProfiles?.company_name ?? null,
       industry: user.brandProfiles?.industry || null,
       recentViews: recentViews.map(view => ({
         id: view.id,
         propertyId: view.property.id,
-        viewedAt: view.viewedAt?.toISOString() || new Date().toISOString(),
+        viewedAt: view.viewedAt,
         property: view.property
       })),
       savedProperties: savedProperties.map(sp => ({
         id: sp.id,
         property: sp.property,
         notes: sp.notes,
-        savedAt: sp.createdAt.toISOString()
+        savedAt: sp.createdAt?.toISOString() ?? new Date().toISOString()
       })),
       inquiries: inquiries.map(inq => ({
         id: inq.id,
@@ -141,7 +145,7 @@ export async function GET(
         owner: inq.owner,
         message: inq.message,
         status: inq.status,
-        createdAt: inq.createdAt.toISOString()
+        createdAt: inq.createdAt?.toISOString() ?? new Date().toISOString()
       })),
       searchFilters: null // Can be populated from sessions if needed
     })

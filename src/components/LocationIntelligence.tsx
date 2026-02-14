@@ -348,9 +348,6 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                   onLoad={() => {
                     // Map loaded successfully
                   }}
-                  onError={(error) => {
-                    // Handle map errors
-                  }}
                 >
                 {/* Radius circle */}
                 <Circle

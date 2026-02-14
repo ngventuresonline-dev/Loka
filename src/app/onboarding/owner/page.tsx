@@ -1739,41 +1739,7 @@ function OwnerOnboardingContent() {
                                   setMapApiError(null)
                                 }
                               }}
-                              onError={(error) => {
-                                const errorMsg = error?.message || String(error || '')
-                                // Verify the error is real before setting it
-                                if (errorMsg.includes('InvalidKeyMapError') || errorMsg.includes('invalid key') || errorMsg.includes('API key')) {
-                                  // Test if map creation actually fails
-                                  setTimeout(() => {
-                                    if (typeof window !== 'undefined' && window.google && window.google.maps) {
-                                      try {
-                                        const testDiv = document.createElement('div')
-                                        testDiv.style.width = '1px'
-                                        testDiv.style.height = '1px'
-                                        testDiv.style.position = 'absolute'
-                                        testDiv.style.visibility = 'hidden'
-                                        document.body.appendChild(testDiv)
-                                        
-                                        const testMap = new window.google.maps.Map(testDiv, {
-                                          zoom: 1,
-                                          center: { lat: 0, lng: 0 },
-                                        })
-                                        
-                                        // Map creation succeeded - error was false positive, don't set error
-                                        setTimeout(() => {
-                                          if (document.body.contains(testDiv)) {
-                                            document.body.removeChild(testDiv)
-                                          }
-                                        }, 100)
-                                      } catch (testError: any) {
-                                        // Map creation failed - error is real
-                                        setMapApiError('Google Maps API key error: ' + errorMsg)
-                                      }
-                                    }
-                                  }, 500)
-                                }
-                              }}
-                            >
+                              >
                               {markerPosition && (
                                 <Marker
                                   position={markerPosition}
