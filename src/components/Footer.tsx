@@ -32,7 +32,7 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-lg">For Users</h4>
             <ul className="space-y-3">
-              <li><Link href="/filter/brand" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Onboarding</Link></li>
+              <li><Link href="/for-brands" className="text-gray-400 hover:text-[#FF5200] transition-colors">For Brands</Link></li>
               <li><Link href="/filter/owner" className="text-gray-400 hover:text-[#FF5200] transition-colors">List Property</Link></li>
               <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Brand Login</Link></li>
               <li><Link href="/auth/login" className="text-gray-400 hover:text-[#FF5200] transition-colors">Property Listing Login</Link></li>

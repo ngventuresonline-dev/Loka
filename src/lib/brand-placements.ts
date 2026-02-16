@@ -18,6 +18,7 @@ const areaCoordinates: Record<string, { x: number; y: number }> = {
   'Jayanagar': { x: 480, y: 620 },
   'JP Nagar': { x: 440, y: 670 },
   'Electronic City': { x: 500, y: 750 },
+  'Manyata Tech Park': { x: 400, y: 240 },
 };
 
 function getAreaCoordinates(areaName: string): { x: number; y: number } | null {
@@ -45,7 +46,10 @@ export const brandPlacements: BrandPlacement[] = [
   { brand: "Tan Coffee", location: "Koramangala 80 Ft Road", size: "2,200 sqft" },
   { brand: "The Flour Girl Cafe", location: "Koramangala 80 Ft Road", size: "1,000 sqft" },
   { brand: "GoRally", location: "HAL Indiranagar", size: "15,000 sqft" },
-  { brand: "Klutch Sports", location: "Arekere, Bannerghatta Road", size: "15,000 sqft" }
+  { brand: "Klutch Sports", location: "Arekere, Bannerghatta Road", size: "15,000 sqft" },
+  { brand: "Minibe", location: "Indiranagar 80ft Road", size: "1,000 sqft" },
+  { brand: "Wrapafella", location: "Indiranagar 100ft Road", size: "500 sqft" },
+  { brand: "MPC", location: "Manyata Tech Park", size: "150 sqft" }
 ];
 
 /**
@@ -56,11 +60,14 @@ const locationToBaseArea: Record<string, string> = {
   "JP Nagar": "JP Nagar",
   "Residency Road": "Residency Road",
   "Indiranagar 80ft": "Indiranagar",
+  "Indiranagar 80ft Road": "Indiranagar",
   "Indiranagar 100ft": "Indiranagar",
+  "Indiranagar 100ft Road": "Indiranagar",
   "Indiranagar Double Road": "Indiranagar",
   "HAL Indiranagar": "Indiranagar",
   "Koramangala 80 Ft Road": "Koramangala",
   "Arekere, Bannerghatta Road": "Jayanagar", // Close to Jayanagar area
+  "Manyata Tech Park": "Manyata Tech Park",
 };
 
 /**

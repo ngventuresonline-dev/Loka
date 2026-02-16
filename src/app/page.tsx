@@ -3383,75 +3383,9 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* For Brands */}
+              {/* For Brands - goes to landing page, not the form */}
               <button
-                onClick={async () => {
-                  // Load brand profile data if user is logged in as brand
-                  if (user?.userType === 'brand' && user?.email) {
-                    try {
-                      // Fetch all brands and find the current user's brand
-                      const response = await fetch('/api/brands')
-                      if (response.ok) {
-                        const data = await response.json()
-                        const userBrand = data.brands?.find((b: any) => b.email === user.email)
-                        if (userBrand?.brandProfile) {
-                          const profile = userBrand.brandProfile
-                          // Map brand profile to filter format
-                          const filterData: any = {}
-                          
-                          // Business type from industry
-                          if (profile.storeType) {
-                            filterData.businessType = [profile.storeType]
-                          } else if (userBrand.industry) {
-                            filterData.businessType = [userBrand.industry]
-                          }
-                          
-                          // Size ranges
-                          if (profile.minSize && profile.maxSize) {
-                            // Map to size range labels
-                            const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft']
-                            const matchingRanges = sizeRanges.filter(range => {
-                              const [min, max] = range.replace(' sqft', '').split('-').map(s => {
-                                if (s.includes('+')) return parseInt(s.replace('+', ''))
-                                return parseInt(s.replace(',', ''))
-                              })
-                              return profile.minSize >= min && profile.maxSize <= (max || Infinity)
-                            })
-                            if (matchingRanges.length > 0) {
-                              filterData.sizeRanges = matchingRanges
-                            }
-                          }
-                          
-                          // Locations
-                          if (profile.preferredLocations && profile.preferredLocations.length > 0) {
-                            filterData.locations = profile.preferredLocations
-                          }
-                          
-                          // Budget range
-                          if (profile.budgetMin || profile.budgetMax) {
-                            filterData.budgetRange = {
-                              min: profile.budgetMin || 50000,
-                              max: profile.budgetMax || 200000
-                            }
-                          }
-                          
-                          // Timeline
-                          if (profile.timeline) {
-                            filterData.timeline = profile.timeline
-                          }
-                          
-                          // Store in localStorage for filter page to load
-                          if (Object.keys(filterData).length > 0) {
-                            localStorage.setItem('brandFilterData', JSON.stringify(filterData))
-                          }
-                        }
-                      }
-                    } catch (error) {
-                      console.error('Error loading brand profile:', error)
-                    }
-                  }
-                  router.push('/filter/brand')
-                }}
+                onClick={() => router.push('/for-brands')}
                 className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl hover:bg-white/5 active:bg-white/10 transition-all relative group"
               >
                 <div className="relative z-10 flex flex-col items-center gap-1">

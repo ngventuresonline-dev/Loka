@@ -49,7 +49,12 @@ const brandLogoMap: Record<string, string | null> = {
   
   // Sandwiches & Wraps
   'Sandowitch': '/logos/Sandowitch logo.jpg',
+  'Sandowitch logo': '/logos/Sandowitch logo.jpg',
   'Boba Bhai': '/logos/Boba Bhai Logo.jpg',
+  'Block Two Coffee': '/logos/block two.png',
+  'Block Two': '/logos/block two.png',
+  'Minibe': '/logos/Minibe Logo.jpg',
+  'Wrapafella': '/logos/Wrapafella Logo.png',
   
   // South Indian & Regional
   'Namaste': '/logos/Namaste logo.jpg',
