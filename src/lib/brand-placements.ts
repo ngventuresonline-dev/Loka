@@ -48,8 +48,7 @@ export const brandPlacements: BrandPlacement[] = [
   { brand: "GoRally", location: "HAL Indiranagar", size: "15,000 sqft" },
   { brand: "Klutch Sports", location: "Arekere, Bannerghatta Road", size: "15,000 sqft" },
   { brand: "Minibe", location: "Indiranagar 80ft Road", size: "1,000 sqft" },
-  { brand: "Wrapafella", location: "Indiranagar 100ft Road", size: "500 sqft" },
-  { brand: "MPC", location: "Manyata Tech Park", size: "150 sqft" }
+  { brand: "Wrapafella", location: "Indiranagar 100ft Road", size: "500 sqft" }
 ];
 
 /**

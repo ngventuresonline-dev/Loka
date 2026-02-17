@@ -34,7 +34,7 @@ const WHY_CHOOSE = [
 const FAQ_ITEMS = [
   { q: "What's in each plan?", a: 'Starter: property database access, AI matching, location reports, owner contacts, email support, 30 days. Professional adds dedicated manager, 3 site visits, negotiation support, WhatsApp, 60 days. Premium adds 24/7 priority support, unlimited site visits, legal review, multi-location, 90 days.' },
   { q: 'How long does it take?', a: 'Typically 2–4 weeks from onboarding to lease signing, depending on your requirements and market availability.' },
-  { q: 'What fees are included?', a: 'Your plan’s service fee covers our placement and advisory support. A success fee may apply on deal closure. Standard market practices (e.g. one month’s rent to property owner) may also apply at closure.' },
+  { q: 'What fees are included?', a: 'Your plan’s onboarding fee covers our placement and advisory support. A success fee may apply on deal closure and is independent from the onboarding fee. Standard market practices (e.g. one month’s rent to property owner) may also apply at closure.' },
   { q: 'Can I upgrade?', a: 'Yes. You can upgrade anytime and pay only the difference for the new plan.' },
   { q: 'Which areas are covered?', a: 'We serve prime commercial zones in Bangalore: Indiranagar, Koramangala, Whitefield, MG Road, HSR Layout, Brigade Road, and 15+ more locations.' },
 ]
@@ -601,3 +601,4 @@ export default function ForBrandsPage() {
     </main>
   )
 }
+
