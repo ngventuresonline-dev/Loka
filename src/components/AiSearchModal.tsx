@@ -584,10 +584,12 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
                               <span>📍</span>
                               <span className="truncate">{property.city}</span>
                             </div>
-                            <div className="text-gray-300 flex items-center gap-1">
-                              <span>📏</span>
-                              <span>{property.size} sqft</span>
-                            </div>
+                            {property.size && (
+                              <div className="text-gray-300 flex items-center gap-1">
+                                <span>📏</span>
+                                <span>{property.size} sqft</span>
+                              </div>
+                            )}
                             <div className="text-[#FF6B35] font-bold flex items-center gap-1 col-span-2">
                               <span>💰</span>
                               <span>₹{property.price.toLocaleString()}/{property.priceType}</span>

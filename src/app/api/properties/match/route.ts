@@ -347,7 +347,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Size reasons
-      if (breakdown.sizeScore >= 80) {
+      if (breakdown.sizeScore >= 80 && match.property.size) {
         reasons.push(`Ideal size - ${match.property.size.toLocaleString()} sqft perfect for ${businessType || 'your business'}`)
       }
 

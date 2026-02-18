@@ -615,12 +615,14 @@ function MatchDetailsContent() {
                   </div>
                   <div className="text-[10px] sm:text-xs text-gray-600 mt-1 whitespace-nowrap">Rent</div>
                 </div>
-                <div className="flex flex-col items-center min-w-0 text-center">
-                  <div className="text-base sm:text-lg md:text-xl font-bold text-gray-900 leading-tight">
-                    <span className="whitespace-nowrap">{property.size.toLocaleString()} sqft</span>
+                {property.size && (
+                  <div className="flex flex-col items-center min-w-0 text-center">
+                    <div className="text-base sm:text-lg md:text-xl font-bold text-gray-900 leading-tight">
+                      <span className="whitespace-nowrap">{property.size.toLocaleString()} sqft</span>
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-gray-600 mt-1 whitespace-nowrap">Size</div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-gray-600 mt-1 whitespace-nowrap">Size</div>
-                </div>
+                )}
                 <div className="flex flex-col items-center min-w-0 text-center">
                   <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900 capitalize leading-tight break-words">
                     {getPropertyTypeLabel(property.propertyType, property.title, property.description)}

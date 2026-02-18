@@ -209,9 +209,11 @@ function PropertyCard({
                 {formatPrice(property.price, property.priceType)}
               </span>
             </div>
-            <div className="text-xs sm:text-sm text-gray-600 mt-1">
-              {property.size.toLocaleString()} sq ft
-            </div>
+            {property.size && (
+              <div className="text-xs sm:text-sm text-gray-600 mt-1">
+                {property.size.toLocaleString()} sq ft
+              </div>
+            )}
           </div>
           <span className={`mt-1 sm:mt-0 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap ${
             property.isAvailable 
