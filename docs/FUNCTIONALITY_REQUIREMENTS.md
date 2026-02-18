@@ -244,8 +244,7 @@
   - Brand (`/onboarding/brand`)
   - Owner (`/onboarding/owner`)
 - ✅ **Properties** (`/properties`)
-- ✅ **Status** (`/status`)
-- ✅ **Theme Selector** (`/theme-selector`)
+- ✅ **Status** (`/status`, internal / admin only)
 
 ---
 

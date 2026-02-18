@@ -107,9 +107,9 @@
   - `/onboarding/brand` - Brand onboarding
   - `/onboarding/owner` - Owner onboarding
   - `/location-intelligence` - Location reports
-  - `/theme-selector` - Theme selector
   - `/demo` - Demo page
-  - `/status` - Status page
+  - `/status` - Status page (internal / admin only)
+  - `/bangalore-map`, `/explainer-video`, `/investor-deck` - Internal / admin only
 
 ### API Endpoints
 - ✅ **Status:** All API routes verified:

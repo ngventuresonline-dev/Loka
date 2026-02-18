@@ -47,6 +47,13 @@ import {
   BrandReqScene6LogoZoom
 } from './BrandRequirementsAd'
 
+import {
+  FullPlatformScene1Problem,
+  FullPlatformScene2Solution,
+  FullPlatformScene3HowItWorks,
+  FullPlatformScene4CTA
+} from './FullPlatformExplainers'
+
 export interface SceneConfig {
   component: ComponentType<any>
   duration: number
@@ -861,6 +868,19 @@ const V15Confidence = () => (
 
 // Variant definitions (30 seconds total)
 export const VIDEO_VARIANTS: Record<string, VideoVariant> = {
+  // Full Platform - 30-45s explainer for brands & owners
+  'full-platform': {
+    name: 'Full Platform Video (30-45s)',
+    description: 'One video for brands & owners: Problem → Solution → How it works → CTA. Use with voiceover transcript.',
+    type: 'explainer',
+    scenes: [
+      { component: FullPlatformScene1Problem, duration: 8 },   // 0-8s: Problem
+      { component: FullPlatformScene2Solution, duration: 7 },  // 8-15s: Solution
+      { component: FullPlatformScene3HowItWorks, duration: 20 }, // 15-35s: How it works
+      { component: FullPlatformScene4CTA, duration: 10 },      // 35-45s: CTA
+    ],
+    totalDuration: 45
+  },
   // Complete Flow - Main showcase video
   'complete-flow': {
     name: 'Complete Flow: Brand → Property',

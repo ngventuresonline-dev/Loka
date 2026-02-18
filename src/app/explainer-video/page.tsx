@@ -5,7 +5,7 @@ import { DownloadVideoButton } from '@/components/ExplainerVideo/download'
 import { useState } from 'react'
 
 export default function ExplainerVideoPage() {
-  const [selectedVariant, setSelectedVariant] = useState<keyof typeof VIDEO_VARIANTS>('complete-flow')
+  const [selectedVariant, setSelectedVariant] = useState<keyof typeof VIDEO_VARIANTS>('full-platform')
   
   // Ensure selectedVariant is valid
   const currentVariant = VIDEO_VARIANTS[selectedVariant] || VIDEO_VARIANTS['complete-flow']
@@ -76,6 +76,14 @@ export default function ExplainerVideoPage() {
             autoPlay={true}
             className="w-full"
           />
+          {selectedVariant === 'full-platform' && (
+            <div className="p-4 sm:p-6 bg-gray-800/50 border-t border-gray-700">
+              <h4 className="text-sm font-semibold text-white mb-2">Voiceover transcript (30–45s)</h4>
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                Finding the right retail space is tough for brands. And property owners? They&apos;re swamped with the wrong leads. Lokazen fixes that. One platform for both. Brands share what they need—location, size, budget, footfall. Owners list their spaces with real details. Our AI matches them. No endless calls, no wasted site visits. Just scored matches, location intelligence, and a clear path from interest to deal. Whether you&apos;re a brand looking for your next store or an owner with space to fill—Lokazen is where it happens. Get started today.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Variant Lists */}

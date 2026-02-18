@@ -2,7 +2,7 @@
 
 import PrivateInternalLayout from '@/components/PrivateInternalLayout'
 
-export default function InvestorDeckLayout({
+export default function BangaloreMapLayout({
   children,
 }: {
   children: React.ReactNode

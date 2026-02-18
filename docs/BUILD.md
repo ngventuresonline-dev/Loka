@@ -137,9 +137,7 @@ Loka/
 │   │   │       └── page.tsx
 │   │   ├── properties/               # Properties listing
 │   │   │   └── page.tsx
-│   │   ├── status/                   # Status page
-│   │   │   └── page.tsx
-│   │   ├── theme-selector/           # Theme selector
+│   │   ├── status/                   # Status page (internal / admin only)
 │   │   │   └── page.tsx
 │   │   ├── globals.css               # Global styles
 │   │   ├── layout.tsx                # Root layout (with SEO, viewport, analytics)

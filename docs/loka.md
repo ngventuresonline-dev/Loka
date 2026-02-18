@@ -238,9 +238,8 @@ Loka/
 │   │   │   └── results/            # Search results
 │   │   ├── robots.ts                # Dynamic robots.txt
 │   │   ├── sitemap.ts               # Dynamic sitemap.xml
-│   │   ├── status/                  # Status page
+│   │   ├── status/                  # Status page (internal)
 │   │   ├── terms/                   # Terms of service
-│   │   └── theme-selector/          # Theme selector
 │   │
 │   ├── components/                   # React Components
 │   │   ├── admin/                   # Admin components
