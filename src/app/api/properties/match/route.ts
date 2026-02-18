@@ -352,10 +352,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Property features
-      if (match.property.amenities.some(a => a.toLowerCase().includes('parking'))) {
+      if (match.property.amenities?.some(a => a.toLowerCase().includes('parking'))) {
         reasons.push(`Parking available`)
       }
-      if (match.property.amenities.some(a => a.toLowerCase().includes('ground'))) {
+      if (match.property.amenities?.some(a => a.toLowerCase().includes('ground'))) {
         reasons.push(`Ground floor - high visibility`)
       }
 

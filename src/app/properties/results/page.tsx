@@ -120,11 +120,12 @@ function PropertiesResultsContent() {
     if (cached) {
       try {
         const cachedData = JSON.parse(cached)
-        // Use cached data if it's less than 2 minutes old
+        // Use cached data if it's less than 2 minutes old and has actual matches
         const cacheAge = Date.now() - (cachedData.timestamp || 0)
-        if (cacheAge < 2 * 60 * 1000) {
-          setMatches(cachedData.matches || [])
-          setTotalMatches(cachedData.totalMatches || 0)
+        const cachedMatches = cachedData.matches || []
+        if (cacheAge < 2 * 60 * 1000 && cachedMatches.length > 0 && cachedMatches[0]?.property) {
+          setMatches(cachedMatches)
+          setTotalMatches(cachedData.totalMatches || cachedMatches.length)
           setLoading(false)
           setAiMatching(false)
           return
@@ -257,12 +258,21 @@ function PropertiesResultsContent() {
                     .map((match: MatchResult) => ({
                     id: match.property?.id,
                     bfiScore: match.bfiScore,
+                    matchReasons: match.matchReasons,
                     property: {
                       id: match.property?.id,
                       title: match.property?.title?.substring(0, 100),
-                      price: match.property?.price,
+                      description: match.property?.description?.substring(0, 200),
+                      address: match.property?.address,
                       city: match.property?.city,
-                      propertyType: match.property?.propertyType
+                      state: match.property?.state,
+                      price: match.property?.price,
+                      priceType: match.property?.priceType,
+                      size: match.property?.size,
+                      propertyType: match.property?.propertyType,
+                      amenities: match.property?.amenities,
+                      images: match.property?.images?.slice(0, 1),
+                      isAvailable: match.property?.isAvailable,
                     }
                   }))
                   
@@ -398,13 +408,21 @@ function PropertiesResultsContent() {
         const matchesToStore = matches.slice(0, 20).map((match: MatchResult) => ({
           id: match.property?.id,
           bfiScore: match.bfiScore,
-          // Store minimal property data
+          matchReasons: match.matchReasons,
           property: {
             id: match.property?.id,
             title: match.property?.title?.substring(0, 100),
-            price: match.property?.price,
+            description: match.property?.description?.substring(0, 200),
+            address: match.property?.address,
             city: match.property?.city,
-            propertyType: match.property?.propertyType
+            state: match.property?.state,
+            price: match.property?.price,
+            priceType: match.property?.priceType,
+            size: match.property?.size,
+            propertyType: match.property?.propertyType,
+            amenities: match.property?.amenities,
+            images: match.property?.images?.slice(0, 1),
+            isAvailable: match.property?.isAvailable,
           }
         }))
         

@@ -253,12 +253,12 @@ function PropertyCard({
               Parking
             </span>
           )}
-          {property.amenities.some(a => a.toLowerCase().includes('ground')) && (
+          {property.amenities?.some(a => a.toLowerCase().includes('ground')) && (
             <span className="bg-[#FF5200]/10 border border-[#FF5200]/30 text-[#FF5200] px-2 py-1 rounded text-xs font-medium">
               Ground Floor
             </span>
           )}
-          {property.amenities.some(a => a.toLowerCase().includes('corner')) && (
+          {property.amenities?.some(a => a.toLowerCase().includes('corner')) && (
             <span className="bg-orange-50 border border-orange-200 text-orange-700 px-2 py-1 rounded text-xs font-medium">
               Corner Unit
             </span>
