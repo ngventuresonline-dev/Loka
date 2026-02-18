@@ -249,7 +249,8 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
     return null
   }
 
-  const hasInsights = !!data && !error && !loadError
+  // Show insights even if Google Maps fails to load (we can still show data from API)
+  const hasInsights = !!data && !error
 
   return (
     <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">

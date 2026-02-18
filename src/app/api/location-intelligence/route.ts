@@ -318,16 +318,24 @@ export async function POST(request: NextRequest) {
         
         if (!res.ok) {
           const errorText = await res.text().catch(() => 'Unknown error')
-          console.warn('[LocationIntelligence API] Places API returned error:', res.status, errorText.substring(0, 200))
+          console.warn('[LocationIntelligence API] Places API HTTP error:', res.status, errorText.substring(0, 200))
         } else {
           const json = await res.json()
 
           // Check for Places API errors in response
           if (json.status && json.status !== 'OK' && json.status !== 'ZERO_RESULTS') {
-            console.warn('[LocationIntelligence API] Places API error status:', json.status, json.error_message || '')
-          }
-
-          if (Array.isArray(json.results)) {
+            const errorMsg = json.error_message || ''
+            console.error('[LocationIntelligence API] Places API error status:', json.status, errorMsg)
+            // If REQUEST_DENIED, INVALID_REQUEST, etc. - log error but continue to return location-based data
+            if (json.status === 'REQUEST_DENIED') {
+              console.error('[LocationIntelligence API] Places API access denied. Check API key restrictions, enabled APIs, and billing.')
+            } else if (json.status === 'OVER_QUERY_LIMIT') {
+              console.error('[LocationIntelligence API] Places API quota exceeded. Check billing and quota limits.')
+            }
+            // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
+          } else {
+            // Process results - OK or ZERO_RESULTS are both valid
+            if (Array.isArray(json.results)) {
             competitors = json.results.map((place: any) => {
               const compLat = place.geometry?.location?.lat
               const compLng = place.geometry?.location?.lng
@@ -360,10 +368,12 @@ export async function POST(request: NextRequest) {
 
             // Sort competitors by distance
             competitors.sort((a, b) => a.distanceMeters - b.distanceMeters)
+            }
           }
         }
       } catch (placesError: any) {
-        console.warn('[LocationIntelligence API] Places API fetch failed:', placesError.message)
+        console.error('[LocationIntelligence API] Places API fetch failed:', placesError.message)
+        // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
       }
     }
 
@@ -395,12 +405,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If Google API not configured or returned nothing, fall back to mock
+    // Build response - use real data if we have API key, even if competitors is empty (ZERO_RESULTS is valid)
     let response: LocationIntelligenceResponse
-    if (!apiKey || competitors.length === 0) {
+    if (!apiKey) {
+      // No API key - use mock response
       response = buildMockResponse(lat as number, lng as number)
       if (nearestMetro) response.accessibility.nearestMetro = nearestMetro
     } else {
+      // We have API key - use real data (even if competitors is empty, that's valid - means no competitors found)
       const competitorCount = competitors.length
       let saturation: 'low' | 'medium' | 'high' = 'medium'
       if (competitorCount <= 2) saturation = 'low'
