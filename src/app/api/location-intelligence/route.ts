@@ -338,11 +338,7 @@ export async function POST(request: NextRequest) {
         const res = await fetch(url.toString(), {
           signal: AbortSignal.timeout(15000) // 15 second timeout
         })
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 272af79 (Fix: Production location intelligence API key handling and error reporting)
         if (!res.ok) {
           const errorText = await res.text().catch(() => 'Unknown error')
           console.warn('[LocationIntelligence API] Places API HTTP error:', res.status, errorText.substring(0, 200))
@@ -443,11 +439,7 @@ export async function POST(request: NextRequest) {
     // Note: If apiKey is missing, we should have already returned an error above in production
     let response: LocationIntelligenceResponse
     if (!apiKey) {
-<<<<<<< HEAD
-      // No API key - use mock response
-=======
       // No API key - use mock response (should only happen in development after warning)
->>>>>>> 272af79 (Fix: Production location intelligence API key handling and error reporting)
       response = buildMockResponse(lat as number, lng as number)
       if (nearestMetro) response.accessibility.nearestMetro = nearestMetro
     } else {
