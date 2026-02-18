@@ -129,6 +129,7 @@ export interface Property {
   createdAt: Date;
   updatedAt: Date;
   isAvailable: boolean;
+  isFeatured?: boolean;
   availabilityDate?: Date;
   
   // Location Intelligence (Advanced)

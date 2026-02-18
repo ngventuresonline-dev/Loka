@@ -231,14 +231,16 @@ export async function GET(
     if (safeProperty?.mapLink) {
       const coords = extractLatLngFromMapLink(safeProperty.mapLink)
       if (coords) {
-        (safeProperty as any).latitude = coords.lat
-        (safeProperty as any).longitude = coords.lng
-        safeProperty.coordinates = coords
+        const lat = typeof coords.lat === 'number' ? coords.lat : Number(coords.lat)
+        const lng = typeof coords.lng === 'number' ? coords.lng : Number(coords.lng)
+        ;(safeProperty as any).latitude = lat
+        ;(safeProperty as any).longitude = lng
+        safeProperty.coordinates = { lat, lng }
       }
     }
 
     // If still no coords, geocode address/city/state so we don't fall back to city center (e.g. UB City)
-    if (safeProperty && (safeProperty.latitude == null || safeProperty.longitude == null)) {
+    if (safeProperty && ((safeProperty as any).latitude == null || (safeProperty as any).longitude == null)) {
       const address = (safeProperty.address ?? '').trim()
       const city = (safeProperty.city ?? '').trim()
       const state = (safeProperty.state ?? '').trim()
@@ -246,9 +248,11 @@ export async function GET(
       if (address || city || state) {
         const geocoded = await geocodeAddress(address, city, state, title || undefined)
         if (geocoded) {
-          (safeProperty as any).latitude = geocoded.lat
-          (safeProperty as any).longitude = geocoded.lng
-          safeProperty.coordinates = geocoded
+          const lat = typeof geocoded.lat === 'number' ? geocoded.lat : Number(geocoded.lat)
+          const lng = typeof geocoded.lng === 'number' ? geocoded.lng : Number(geocoded.lng)
+          ;(safeProperty as any).latitude = lat
+          ;(safeProperty as any).longitude = lng
+          safeProperty.coordinates = { lat, lng }
         }
       }
     }

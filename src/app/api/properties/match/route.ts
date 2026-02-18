@@ -199,9 +199,11 @@ export async function POST(request: NextRequest) {
         }
         if (mapLink) prop.mapLink = mapLink
         if (coords) {
-          prop.latitude = coords.lat
-          prop.longitude = coords.lng
-          prop.coordinates = { lat: coords.lat, lng: coords.lng }
+          const lat = typeof coords.lat === 'number' ? coords.lat : Number(coords.lat)
+          const lng = typeof coords.lng === 'number' ? coords.lng : Number(coords.lng)
+          prop.latitude = lat
+          prop.longitude = lng
+          prop.coordinates = { lat, lng }
         }
         return prop
       } catch (error: any) {
