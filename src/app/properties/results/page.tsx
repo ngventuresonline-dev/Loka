@@ -320,15 +320,28 @@ function PropertiesResultsContent() {
       if (!response.ok) {
         // Log detailed error information
         let errorBody: any = null
+        let errorText: string | null = null
         try {
-          errorBody = await response.json().catch(() => null)
-        } catch (e) {
-          // Response might not be JSON
+          // Try to get response as text first to see what we're dealing with
+          errorText = await response.text()
+          // Try to parse as JSON
+          if (errorText) {
+            try {
+              errorBody = JSON.parse(errorText)
+            } catch (parseError) {
+              // Not JSON, use text as error message
+              errorBody = { message: errorText.substring(0, 200) }
+            }
+          }
+        } catch (e: any) {
+          console.error('[Results] Failed to read error response:', e.message)
         }
+        
         console.error('[Results] Match API error:', {
           status: response.status,
           statusText: response.statusText,
-          error: errorBody || 'No error body'
+          error: errorBody || { message: 'Unknown error - no response body' },
+          rawText: errorText ? errorText.substring(0, 200) : null
         })
 
         // Gracefully degrade: show empty state instead of crashing
@@ -339,11 +352,30 @@ function PropertiesResultsContent() {
         return
       }
 
-      const data = await response.json()
+      let data: any
+      try {
+        const responseText = await response.text()
+        if (!responseText || responseText.trim() === '') {
+          console.error('[Results] Match API returned empty response')
+          setMatches([])
+          setTotalMatches(0)
+          setAiMatching(false)
+          setLoading(false)
+          return
+        }
+        data = JSON.parse(responseText)
+      } catch (parseError: any) {
+        console.error('[Results] Failed to parse Match API response:', parseError.message)
+        setMatches([])
+        setTotalMatches(0)
+        setAiMatching(false)
+        setLoading(false)
+        return
+      }
       
       // Check if API returned success: false
       if (data.success === false) {
-        console.error('[Results] Match API returned error:', data.error || data.message)
+        console.error('[Results] Match API returned error:', data.error || data.message || 'Unknown error')
         setMatches([])
         setTotalMatches(0)
         setAiMatching(false)

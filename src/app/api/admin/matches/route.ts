@@ -271,18 +271,19 @@ export async function GET(request: NextRequest) {
 
         if (pfiScore >= minScore) {
           // BFI (Brand Fit Index): how well this property fits the brand's requirements
+          // Create Property object matching the interface requirements
           const propertyForBFI = {
             id: property.id,
-            title: property.title,
+            title: property.title || 'Untitled Property',
             description: '',
             address: property.address || '',
             city: property.city || '',
-            state: (property as any).state || '',
-            zipCode: (property as any).zipCode || '',
-            price: Number(property.price),
-            priceType: property.priceType as 'monthly' | 'yearly' | 'sqft',
-            size: property.size,
-            propertyType: property.propertyType as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other',
+            state: (property as any).state || 'Karnataka', // Default state
+            zipCode: (property as any).zipCode || '560001', // Default zipCode
+            price: Number(property.price) || 0,
+            priceType: (property.priceType || 'monthly') as 'monthly' | 'yearly' | 'sqft',
+            size: property.size || 0,
+            propertyType: (property.propertyType || 'other') as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other',
             amenities: Array.isArray((property as any).amenities) ? (property as any).amenities as string[] : [],
             ownerId: property.owner?.id || '',
             createdAt: property.createdAt || new Date(),
