@@ -47,7 +47,7 @@ export async function geocodeAddress(
   state: string,
   title?: string | null
 ): Promise<{ lat: number; lng: number } | null> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   if (!apiKey) return null
   const query = [address, city, state].filter(Boolean).join(', ')
   if (!query.trim()) return null

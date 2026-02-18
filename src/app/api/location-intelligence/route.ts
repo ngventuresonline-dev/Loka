@@ -250,8 +250,7 @@ export async function POST(request: NextRequest) {
 
     if (typeof lat !== 'number' || typeof lng !== 'number') {
       // If coordinates missing, try to geocode using address + city
-      const apiKey =
-        process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
       const locationQuery = [address, city, state].filter(Boolean).join(', ')
 
@@ -292,27 +291,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // #region agent log
-    const envCheck = {
-      hasGoogleMapsApiKey: !!process.env.GOOGLE_MAPS_API_KEY,
-      hasNextPublicGoogleMapsApiKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-      nodeEnv: process.env.NODE_ENV,
-      vercelEnv: process.env.VERCEL_ENV,
-      apiKeyLength1: process.env.GOOGLE_MAPS_API_KEY?.length || 0,
-      apiKeyLength2: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.length || 0,
-    }
-    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:295',message:'API key environment check',data:envCheck,timestamp:Date.now(),runId:'prod-debug',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    
-    const apiKey =
-      process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:301',message:'API key resolved value',data:{hasApiKey:!!apiKey,apiKeyPrefix:apiKey?.substring(0,4)||'none',apiKeySuffix:apiKey?.substring(apiKey?.length-4)||'none'},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
     if (!apiKey) {
-      console.warn('[LocationIntelligence API] Google Maps API key not found. Set GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in environment variables.')
+      console.warn('[LocationIntelligence API] Google Maps API key not found. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in environment variables.')
     }
     
     const { type: placeType, keyword: placeKeyword } = mapToPlaceTypeAndKeyword(propertyType, businessType)
@@ -331,31 +313,17 @@ export async function POST(request: NextRequest) {
         const res = await fetch(url.toString(), {
           signal: AbortSignal.timeout(15000) // 15 second timeout
         })
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:315',message:'Places API fetch response',data:{status:res.status,statusText:res.statusText,ok:res.ok,url:url.toString().substring(0,100)},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-        
+
         if (!res.ok) {
           const errorText = await res.text().catch(() => 'Unknown error')
           console.warn('[LocationIntelligence API] Places API HTTP error:', res.status, errorText.substring(0, 200))
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:320',message:'Places API HTTP error',data:{status:res.status,errorText:errorText.substring(0,200)},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
         } else {
           const json = await res.json()
-
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:324',message:'Places API JSON response',data:{status:json.status,errorMessage:json.error_message||'none',resultsCount:Array.isArray(json.results)?json.results.length:0},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
 
           // Check for Places API errors in response
           if (json.status && json.status !== 'OK' && json.status !== 'ZERO_RESULTS') {
             const errorMsg = json.error_message || ''
             console.error('[LocationIntelligence API] Places API error status:', json.status, errorMsg)
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:330',message:'Places API error status',data:{status:json.status,errorMessage:errorMsg},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
             // If REQUEST_DENIED, INVALID_REQUEST, etc. - log error but continue to return location-based data
             if (json.status === 'REQUEST_DENIED') {
               console.error('[LocationIntelligence API] Places API access denied. Check API key restrictions, enabled APIs, and billing.')
@@ -403,9 +371,6 @@ export async function POST(request: NextRequest) {
         }
       } catch (placesError: any) {
         console.error('[LocationIntelligence API] Places API fetch failed:', placesError.message)
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:375',message:'Places API fetch exception',data:{errorName:placesError.name,errorMessage:placesError.message,errorStack:placesError.stack?.substring(0,200)},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
         // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
       }
     }
@@ -441,16 +406,10 @@ export async function POST(request: NextRequest) {
     // Build response - use real data if we have API key, even if competitors is empty (ZERO_RESULTS is valid)
     let response: LocationIntelligenceResponse
     if (!apiKey) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:410',message:'Using mock response - no API key',data:{lat,lng},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       // No API key - use mock response
       response = buildMockResponse(lat as number, lng as number)
       if (nearestMetro) response.accessibility.nearestMetro = nearestMetro
     } else {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:415',message:'Building real response with API key',data:{competitorCount:competitors.length,hasCompetitors:competitors.length>0},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       // We have API key - use real data (even if competitors is empty, that's valid - means no competitors found)
       const competitorCount = competitors.length
       let saturation: 'low' | 'medium' | 'high' = 'medium'
@@ -507,19 +466,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:471',message:'Returning response',data:{success:true,competitorCount:response.competitors.length,footfallDaily:response.footfall.dailyAverage,saturationLevel:response.market.saturationLevel},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
-    
     return NextResponse.json({
       success: true,
       data: response,
     })
   } catch (error: any) {
     console.error('[LocationIntelligence] Error:', error)
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'location-intelligence/route.ts:476',message:'Top-level error caught',data:{errorName:error.name,errorMessage:error.message,errorStack:error.stack?.substring(0,200)},timestamp:Date.now(),runId:'prod-debug',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     return NextResponse.json(
       {
         success: false,
