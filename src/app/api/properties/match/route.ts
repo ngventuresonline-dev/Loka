@@ -371,6 +371,7 @@ export async function POST(request: NextRequest) {
     const topMatches = matchesWithReasons.slice(0, 50)
 
     const responseData = {
+      success: true,
       matches: topMatches,
       totalMatches: matchesWithReasons.length,
       minMatchScore: 60
@@ -386,40 +387,44 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(responseData, { headers })
   } catch (error: any) {
     console.error('[API Match] Property matching error:', error)
-    console.error('[API Match] Error stack:', error.stack)
+    console.error('[API Match] Error stack:', error?.stack)
     console.error('[API Match] Error details:', {
-      message: error.message,
-      name: error.name,
-      code: error.code,
-      body: error.body
+      message: error?.message,
+      name: error?.name,
+      code: error?.code,
+      body: error?.body
     })
 
     // Handle Prisma errors
-    if (error.code === 'P1001' || error.message?.includes('connect') || error.message?.includes('ECONNREFUSED')) {
+    if (error?.code === 'P1001' || error?.message?.includes('connect') || error?.message?.includes('ECONNREFUSED')) {
       return NextResponse.json(
         { 
+          success: false,
           error: 'Database connection failed',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+          details: process.env.NODE_ENV === 'development' ? error?.message : undefined
         },
         { status: 503 }
       )
     }
 
     // Handle Prisma schema errors
-    if (error.code === 'P2001' || error.message?.includes('model') || error.message?.includes('does not exist')) {
+    if (error?.code === 'P2001' || error?.message?.includes('model') || error?.message?.includes('does not exist')) {
       return NextResponse.json(
         { 
-          error: 'Database schema error. Please run: npx prisma generate && npx prisma migrate dev',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+          success: false,
+          error: 'Database schema error',
+          details: process.env.NODE_ENV === 'development' ? error?.message : undefined
         },
         { status: 500 }
       )
     }
 
+    // Return proper error response with success: false
     return NextResponse.json(
       { 
-        error: error.message || 'Failed to find matches',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        success: false,
+        error: error?.message || 'Failed to find matches',
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
       },
       { status: 500 }
     )

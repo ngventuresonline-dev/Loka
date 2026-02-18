@@ -318,20 +318,18 @@ function PropertiesResultsContent() {
       )
 
       if (!response.ok) {
-        // Log detailed error information but don't throw to avoid noisy console errors
+        // Log detailed error information
+        let errorBody: any = null
         try {
-          const errorBody = await response.json().catch(() => null)
-          console.error('[Results] Match API error:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorBody
-          })
+          errorBody = await response.json().catch(() => null)
         } catch (e) {
-          console.error('[Results] Match API error (no body):', {
-            status: response.status,
-            statusText: response.statusText
-          })
+          // Response might not be JSON
         }
+        console.error('[Results] Match API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorBody || 'No error body'
+        })
 
         // Gracefully degrade: show empty state instead of crashing
         setMatches([])
@@ -342,6 +340,16 @@ function PropertiesResultsContent() {
       }
 
       const data = await response.json()
+      
+      // Check if API returned success: false
+      if (data.success === false) {
+        console.error('[Results] Match API returned error:', data.error || data.message)
+        setMatches([])
+        setTotalMatches(0)
+        setAiMatching(false)
+        setLoading(false)
+        return
+      }
       
       const matches = (data.matches || []) as MatchResult[]
       const totalMatches = data.totalMatches || 0

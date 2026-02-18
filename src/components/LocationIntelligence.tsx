@@ -121,18 +121,24 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
 
   // Debug logging for map loading state
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[LocationIntelligence] Map state:', {
-        isLoaded,
-        loadError: loadError?.message || null,
-        apiKey: getGoogleMapsApiKey() ? 'Set' : 'Missing',
-        googleMapsAvailable: typeof window !== 'undefined' && window.google && window.google.maps ? 'Yes' : 'No',
-      })
-      
-      // Check if script loaded but API failed
-      if (isLoaded && !loadError && typeof window !== 'undefined' && (!window.google || !window.google.maps)) {
-        console.error('[LocationIntelligence] Script loaded but Google Maps API not available. Check API key restrictions and enabled APIs.')
-      }
+    const apiKey = getGoogleMapsApiKey()
+    console.log('[LocationIntelligence] Map state:', {
+      isLoaded,
+      loadError: loadError?.message || null,
+      apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : 'Missing',
+      googleMapsAvailable: typeof window !== 'undefined' && window.google && window.google.maps ? 'Yes' : 'No',
+    })
+    
+    // Check if script loaded but API failed
+    if (isLoaded && !loadError && typeof window !== 'undefined' && (!window.google || !window.google.maps)) {
+      console.error('[LocationIntelligence] Script loaded but Google Maps API not available. Check API key restrictions and enabled APIs.')
+      setError('Google Maps API not available. Please check API key configuration and domain restrictions.')
+    }
+    
+    // Check for load errors
+    if (loadError) {
+      console.error('[LocationIntelligence] Google Maps load error:', loadError)
+      setError(`Google Maps failed to load: ${loadError.message || 'Check API key and domain restrictions'}`)
     }
   }, [isLoaded, loadError])
 

@@ -294,6 +294,11 @@ export async function POST(request: NextRequest) {
 
     const apiKey =
       process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    
+    if (!apiKey) {
+      console.warn('[LocationIntelligence API] Google Maps API key not found. Set GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in environment variables.')
+    }
+    
     const { type: placeType, keyword: placeKeyword } = mapToPlaceTypeAndKeyword(propertyType, businessType)
 
     let competitors: Competitor[] = []
@@ -312,9 +317,15 @@ export async function POST(request: NextRequest) {
         })
         
         if (!res.ok) {
-          console.warn('[LocationIntelligence API] Places API returned error:', res.status)
+          const errorText = await res.text().catch(() => 'Unknown error')
+          console.warn('[LocationIntelligence API] Places API returned error:', res.status, errorText.substring(0, 200))
         } else {
           const json = await res.json()
+
+          // Check for Places API errors in response
+          if (json.status && json.status !== 'OK' && json.status !== 'ZERO_RESULTS') {
+            console.warn('[LocationIntelligence API] Places API error status:', json.status, json.error_message || '')
+          }
 
           if (Array.isArray(json.results)) {
             competitors = json.results.map((place: any) => {
