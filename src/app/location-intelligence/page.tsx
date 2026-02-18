@@ -177,7 +177,7 @@ export default function LocationIntelligencePage() {
             </p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
               <Link
-                href="/onboarding/brand"
+                href="/filter/brand"
                 className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-sm sm:text-base font-semibold shadow-[0_0_25px_rgba(255,82,0,0.6)] hover:shadow-[0_0_35px_rgba(255,82,0,0.8)] transition-all"
               >
                 Share my requirements

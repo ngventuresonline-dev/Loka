@@ -63,66 +63,148 @@ function haversineDistanceMeters(a: { lat: number; lng: number }, b: { lat: numb
   return EARTH_RADIUS_M * c
 }
 
-function mapToPlaceType(propertyType?: string, businessType?: string): string {
-  const normalizedBusiness = (businessType || '').toLowerCase()
-  const normalizedProperty = (propertyType || '').toLowerCase()
+/** Google Places type + optional keyword for category-specific competitor search */
+function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string): { type: string; keyword: string } {
+  const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
+  const b = (businessType || '').toLowerCase()
+  const p = (propertyType || '').toLowerCase()
 
-  if (normalizedBusiness.includes('qsr') || normalizedBusiness.includes('cafe') || normalizedBusiness.includes('café')) {
-    return 'restaurant'
+  // QSR / Cafe / Coffee – only show same category
+  if (/\b(qsr|quick service|fast food)\b/.test(raw) || /\bcafe\b/.test(raw) || /\bcoffee\b/.test(raw) || /\bcafé\b/.test(raw)) {
+    return { type: 'cafe', keyword: 'cafe coffee' }
   }
-  if (normalizedBusiness.includes('bar') || normalizedBusiness.includes('brew')) {
-    return 'bar'
+  if (/\brestaurant\b/.test(raw) || p.includes('restaurant')) {
+    return { type: 'restaurant', keyword: 'restaurant' }
   }
-  if (normalizedBusiness.includes('retail')) {
-    return 'clothing_store'
+  // Desserts / bakery / sweets – show closest category
+  if (/\b(dessert|desserts|sweet|sweets|bakery|ice cream|cake)\b/.test(raw)) {
+    return { type: 'bakery', keyword: 'dessert bakery sweets' }
+  }
+  if (/\bbar\b/.test(raw) || /\bbrew\b/.test(raw)) {
+    return { type: 'bar', keyword: 'bar' }
+  }
+  if (/\bretail\b/.test(raw) || p.includes('retail')) {
+    return { type: 'clothing_store', keyword: 'retail store' }
+  }
+  if (p.includes('office')) {
+    return { type: 'point_of_interest', keyword: 'office' }
   }
 
-  if (normalizedProperty.includes('restaurant')) return 'restaurant'
-  if (normalizedProperty.includes('retail')) return 'store'
-  if (normalizedProperty.includes('office')) return 'point_of_interest'
+  return { type: 'point_of_interest', keyword: '' }
+}
 
-  return 'point_of_interest'
+/** Deterministic seed 0..n-1 from location + business for peak hours */
+function locationSeed(lat: number, lng: number, businessType?: string): number {
+  const s = `${Math.round(lat * 100)}_${Math.round(lng * 100)}_${(businessType || '').toLowerCase()}`
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+const PEAK_HOURS_VARIANTS: string[][] = [
+  ['12:00–2:30 PM', '7:00–10:00 PM'],
+  ['11:00 AM–2:00 PM', '6:30–9:30 PM'],
+  ['10:30 AM–1:30 PM', '5:00–8:00 PM'],
+  ['1:00–3:00 PM', '8:00–10:30 PM'],
+  ['10:00 AM–12:00 PM', '4:00–7:00 PM'],
+]
+
+/** Bangalore area centres (lat, lng) – used to assign area-specific demographics by nearest match */
+const BANGALORE_AREAS: { key: string; lat: number; lng: number }[] = [
+  { key: 'hsr layout', lat: 12.9121, lng: 77.6446 },
+  { key: 'koramangala', lat: 12.9352, lng: 77.6245 },
+  { key: 'indiranagar', lat: 12.9784, lng: 77.6408 },
+  { key: 'jayanagar', lat: 12.925, lng: 77.5936 },
+  { key: 'jp nagar', lat: 12.9063, lng: 77.5857 },
+  { key: 'btm layout', lat: 12.9166, lng: 77.6101 },
+  { key: 'mg road', lat: 12.975, lng: 77.6063 },
+  { key: 'ub city', lat: 12.9716, lng: 77.5946 },
+  { key: 'whitefield', lat: 12.9698, lng: 77.7499 },
+]
+
+type DemographicsVariant = { ageGroups: { range: string; percentage: number }[]; incomeLevel: 'low' | 'medium' | 'high' | 'mixed'; lifestyle: string[] }
+
+/** Area-specific demographics and lifestyle – each area has its own crowd pull */
+const AREA_DEMOGRAPHICS: Record<string, DemographicsVariant> = {
+  'hsr layout': {
+    ageGroups: [{ range: '18–24', percentage: 28 }, { range: '25–34', percentage: 42 }, { range: '35–44', percentage: 20 }, { range: '45+', percentage: 10 }],
+    incomeLevel: 'medium',
+    lifestyle: ['Students', 'Office goers', 'Tech workers', 'Startup crowd', 'Unicorn Street'],
+  },
+  koramangala: {
+    ageGroups: [{ range: '18–24', percentage: 26 }, { range: '25–34', percentage: 40 }, { range: '35–44', percentage: 24 }, { range: '45+', percentage: 10 }],
+    incomeLevel: 'medium',
+    lifestyle: ['Young professionals', 'Office crowd', 'Cafe hoppers', 'Weekend crowd'],
+  },
+  indiranagar: {
+    ageGroups: [{ range: '18–24', percentage: 24 }, { range: '25–34', percentage: 44 }, { range: '35–44', percentage: 22 }, { range: '45+', percentage: 10 }],
+    incomeLevel: 'high',
+    lifestyle: ['Young professionals', 'After-work hangouts', 'Nightlife', 'Foodies'],
+  },
+  jayanagar: {
+    ageGroups: [{ range: '18–24', percentage: 20 }, { range: '25–34', percentage: 32 }, { range: '35–44', percentage: 28 }, { range: '45+', percentage: 20 }],
+    incomeLevel: 'mixed',
+    lifestyle: ['Families', 'Local shoppers', 'Residential crowd', 'Traditional retail'],
+  },
+  'jp nagar': {
+    ageGroups: [{ range: '18–24', percentage: 22 }, { range: '25–34', percentage: 36 }, { range: '35–44', percentage: 26 }, { range: '45+', percentage: 16 }],
+    incomeLevel: 'mixed',
+    lifestyle: ['Families', 'Office goers', 'Local shoppers', 'Working couples'],
+  },
+  'btm layout': {
+    ageGroups: [{ range: '18–24', percentage: 30 }, { range: '25–34', percentage: 38 }, { range: '35–44', percentage: 20 }, { range: '45+', percentage: 12 }],
+    incomeLevel: 'medium',
+    lifestyle: ['Students', 'Budget-conscious', 'Young professionals', 'Quick service'],
+  },
+  'mg road': {
+    ageGroups: [{ range: '18–24', percentage: 22 }, { range: '25–34', percentage: 38 }, { range: '35–44', percentage: 26 }, { range: '45+', percentage: 14 }],
+    incomeLevel: 'high',
+    lifestyle: ['Office crowd', 'Premium dining', 'Corporates', 'High-end retail'],
+  },
+  'ub city': {
+    ageGroups: [{ range: '18–24', percentage: 18 }, { range: '25–34', percentage: 40 }, { range: '35–44', percentage: 28 }, { range: '45+', percentage: 14 }],
+    incomeLevel: 'high',
+    lifestyle: ['Premium dining', 'Corporates', 'High-end retail', 'Office crowd'],
+  },
+  whitefield: {
+    ageGroups: [{ range: '18–24', percentage: 24 }, { range: '25–34', percentage: 44 }, { range: '35–44', percentage: 24 }, { range: '45+', percentage: 8 }],
+    incomeLevel: 'high',
+    lifestyle: ['Tech workers', 'Office goers', 'Expats', 'Corporate crowd'],
+  },
+}
+
+const DEFAULT_DEMOGRAPHICS: DemographicsVariant = {
+  ageGroups: [{ range: '18–24', percentage: 24 }, { range: '25–34', percentage: 40 }, { range: '35–44', percentage: 22 }, { range: '45+', percentage: 14 }],
+  incomeLevel: 'mixed',
+  lifestyle: ['Young professionals', 'Office crowd', 'Local shoppers'],
+}
+
+/** Find nearest Bangalore area by lat/lng; return its demographics or default */
+function getDemographicsForArea(lat: number, lng: number): DemographicsVariant {
+  let nearestKey: string | null = null
+  let nearestDist = Infinity
+  for (const area of BANGALORE_AREAS) {
+    const d = haversineDistanceMeters({ lat, lng }, { lat: area.lat, lng: area.lng })
+    if (d < nearestDist) {
+      nearestDist = d
+      nearestKey = area.key
+    }
+  }
+  // Use area demographics if within ~8 km of an area centre; otherwise default
+  if (nearestKey != null && nearestDist < 8000) {
+    return AREA_DEMOGRAPHICS[nearestKey] ?? DEFAULT_DEMOGRAPHICS
+  }
+  return DEFAULT_DEMOGRAPHICS
 }
 
 function buildMockResponse(lat: number, lng: number): LocationIntelligenceResponse {
-  // Simple mock data tuned for F&B / retail in urban Bangalore-like context
-  const competitors: Competitor[] = [
-    {
-      name: 'Popular Cafe & Co.',
-      lat: lat + 0.001,
-      lng: lng + 0.001,
-      distanceMeters: 160,
-      rating: 4.4,
-      userRatingsTotal: 220,
-      address: 'High Street, Nearby Market',
-    },
-    {
-      name: 'Neighbourhood QSR',
-      lat: lat - 0.0012,
-      lng: lng + 0.0007,
-      distanceMeters: 210,
-      rating: 4.1,
-      userRatingsTotal: 180,
-      address: 'Main Road Junction',
-    },
-    {
-      name: 'Local Bistro',
-      lat: lat + 0.0006,
-      lng: lng - 0.0011,
-      distanceMeters: 190,
-      rating: 4.0,
-      userRatingsTotal: 95,
-      address: 'Corner Plot Opp. Park',
-    },
-  ]
-
   return {
-    competitors,
+    competitors: [],
     footfall: {
-      dailyAverage: 5200,
-      peakHours: ['12:00–2:30 PM', '7:00–10:30 PM'],
-      weekendBoost: 1.4,
-      confidence: 'medium',
+      dailyAverage: 0,
+      peakHours: [],
+      weekendBoost: 1.3,
+      confidence: 'low',
     },
     demographics: {
       ageGroups: [
@@ -135,16 +217,15 @@ function buildMockResponse(lat: number, lng: number): LocationIntelligenceRespon
       lifestyle: ['Young professionals', 'Working couples', 'Students', 'Early families'],
     },
     accessibility: {
-      walkScore: 82,
-      transitScore: 76,
-      nearestMetro: { name: 'Nearby Metro Station', distanceMeters: 650 },
-      nearestBusStop: { name: 'High Street Bus Stop', distanceMeters: 180 },
+      walkScore: 70,
+      transitScore: 65,
+      nearestMetro: undefined,
+      nearestBusStop: undefined,
     },
     market: {
-      saturationLevel: 'medium',
-      competitorCount: competitors.length,
-      summary:
-        'Good opportunity with a healthy mix of established brands and independents. Focus on differentiation and strong brand positioning.',
+      saturationLevel: 'low',
+      competitorCount: 0,
+      summary: 'Enable Google Maps APIs (Places, Geocoding) for competitor and transit data.',
     },
   }
 }
@@ -213,7 +294,7 @@ export async function POST(request: NextRequest) {
 
     const apiKey =
       process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    const placeType = mapToPlaceType(propertyType, businessType)
+    const { type: placeType, keyword: placeKeyword } = mapToPlaceTypeAndKeyword(propertyType, businessType)
 
     let competitors: Competitor[] = []
 
@@ -223,6 +304,7 @@ export async function POST(request: NextRequest) {
         url.searchParams.set('location', `${lat},${lng}`)
         url.searchParams.set('radius', '1000')
         url.searchParams.set('type', placeType)
+        if (placeKeyword) url.searchParams.set('keyword', placeKeyword)
         url.searchParams.set('key', apiKey)
 
         const res = await fetch(url.toString(), {
@@ -271,7 +353,34 @@ export async function POST(request: NextRequest) {
         }
       } catch (placesError: any) {
         console.warn('[LocationIntelligence API] Places API fetch failed:', placesError.message)
-        // Continue with empty competitors array - will use mock data
+      }
+    }
+
+    // Fetch nearest metro (real data) when we have API key
+    let nearestMetro: { name: string; distanceMeters: number } | undefined
+    let nearestBusStop: { name: string; distanceMeters: number } | undefined
+    if (apiKey && typeof lat === 'number' && typeof lng === 'number') {
+      try {
+        const transitUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
+        transitUrl.searchParams.set('location', `${lat},${lng}`)
+        transitUrl.searchParams.set('radius', '2000')
+        transitUrl.searchParams.set('keyword', 'metro station Namma Metro')
+        transitUrl.searchParams.set('key', apiKey)
+        const transitRes = await fetch(transitUrl.toString(), { signal: AbortSignal.timeout(8000) })
+        if (transitRes.ok) {
+          const transitJson = await transitRes.json()
+          const first = transitJson.results?.[0]
+          if (first?.geometry?.location && first?.name) {
+            const metroLat = first.geometry.location.lat
+            const metroLng = first.geometry.location.lng
+            nearestMetro = {
+              name: first.name,
+              distanceMeters: Math.round(haversineDistanceMeters({ lat, lng }, { lat: metroLat, lng: metroLng })),
+            }
+          }
+        }
+      } catch {
+        // ignore
       }
     }
 
@@ -279,43 +388,48 @@ export async function POST(request: NextRequest) {
     let response: LocationIntelligenceResponse
     if (!apiKey || competitors.length === 0) {
       response = buildMockResponse(lat as number, lng as number)
+      if (nearestMetro) response.accessibility.nearestMetro = nearestMetro
     } else {
       const competitorCount = competitors.length
       let saturation: 'low' | 'medium' | 'high' = 'medium'
+      if (competitorCount <= 2) saturation = 'low'
+      else if (competitorCount >= 8) saturation = 'high'
 
-      if (competitorCount <= 3) saturation = 'low'
-      else if (competitorCount >= 10) saturation = 'high'
+      // Category-based footfall estimate (modeled; not real sensor data – we don't have live footfall APIs)
+      const isFb = ['restaurant', 'cafe', 'bar', 'bakery'].includes(placeType)
+      const baseDaily = isFb ? 2800 : 1800
+      const perCompetitor = isFb ? 180 : 120
+      const dailyAverage = Math.round(baseDaily + competitorCount * perCompetitor)
+
+      const seed = locationSeed(lat as number, lng as number, businessType)
+      const peakVariant = PEAK_HOURS_VARIANTS[seed % PEAK_HOURS_VARIANTS.length]
+      const demoVariant = getDemographicsForArea(lat as number, lng as number)
 
       const footfall: LocationIntelligenceResponse['footfall'] = {
-        dailyAverage: 3000 + competitorCount * 250,
-        peakHours: ['12:00–2:30 PM', '7:00–10:00 PM'],
-        weekendBoost: competitorCount >= 10 ? 1.3 : competitorCount >= 5 ? 1.4 : 1.5,
-        confidence: competitorCount >= 8 ? 'high' : competitorCount >= 4 ? 'medium' : 'low',
+        dailyAverage,
+        peakHours: isFb ? peakVariant : PEAK_HOURS_VARIANTS[(seed + 1) % PEAK_HOURS_VARIANTS.length],
+        weekendBoost: competitorCount >= 8 ? 1.25 : competitorCount >= 4 ? 1.35 : 1.45,
+        confidence: competitorCount >= 6 ? 'high' : competitorCount >= 3 ? 'medium' : 'low',
       }
 
       const demographics: LocationIntelligenceResponse['demographics'] = {
-        ageGroups: [
-          { range: '18–24', percentage: 24 },
-          { range: '25–34', percentage: 40 },
-          { range: '35–44', percentage: 22 },
-          { range: '45+', percentage: 14 },
-        ],
-        incomeLevel: 'mixed',
-        lifestyle: ['Young professionals', 'Office crowd', 'After-work hangouts'],
+        ageGroups: demoVariant.ageGroups,
+        incomeLevel: demoVariant.incomeLevel,
+        lifestyle: demoVariant.lifestyle,
       }
 
       const accessibility: LocationIntelligenceResponse['accessibility'] = {
         walkScore: 75,
-        transitScore: 72,
-        nearestMetro: { name: 'Nearest Metro (approx.)', distanceMeters: 800 },
-        nearestBusStop: { name: 'Nearest Bus Stop (approx.)', distanceMeters: 250 },
+        transitScore: nearestMetro ? (nearestMetro.distanceMeters < 500 ? 82 : nearestMetro.distanceMeters < 1000 ? 72 : 65) : 70,
+        nearestMetro: nearestMetro ?? undefined,
+        nearestBusStop: nearestBusStop ?? undefined,
       }
 
       const summaryMap: Record<'low' | 'medium' | 'high', string> = {
-        low: 'Excellent whitespace for a new entrant. Strong opportunity to establish a flagship outlet.',
+        low: `Low saturation in this category (${competitorCount} nearby). Good opportunity to establish presence.`,
         medium:
-          'Balanced competition. Focus on concept, experience, and brand to stand out in this micro-market.',
-        high: 'Highly saturated pocket. Works best for strong brands with clear differentiation and loyal demand.',
+          `Moderate competition in this category (${competitorCount} nearby). Differentiate by concept and experience.`,
+        high: `High saturation in this category (${competitorCount} nearby). Best for strong brands with clear differentiation.`,
       }
 
       response = {

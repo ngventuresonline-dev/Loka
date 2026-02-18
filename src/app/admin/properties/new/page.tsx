@@ -23,6 +23,7 @@ export default function NewPropertyPage() {
     zipCode: '',
     latitude: '',
     longitude: '',
+    mapLink: '',
     // Pricing
     price: '',
     priceType: 'monthly',
@@ -308,6 +309,7 @@ export default function NewPropertyPage() {
           size: parseInt(formData.size),
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+          mapLink: formData.mapLink || '',
           images,
         }),
       })
@@ -448,6 +450,17 @@ export default function NewPropertyPage() {
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                   placeholder="e.g., 77.5946"
                 />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Google Maps Link (Optional)</label>
+                <input
+                  type="url"
+                  value={formData.mapLink}
+                  onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                  placeholder="https://maps.google.com/..."
+                />
+                <p className="text-xs text-gray-400 mt-1">Paste the Google Maps URL for this property location</p>
               </div>
             </div>
           </div>

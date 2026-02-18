@@ -15,6 +15,16 @@ function pickVariant(source: string, options: string[]): string {
   return options[idx]
 }
 
+/** Normalize amenities from DB: can be array, or object { features: string[], map_link?: string } */
+function toAmenityArray(
+  raw: string[] | { features?: string[] } | null | undefined
+): string[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
+  if (typeof raw === 'object' && Array.isArray(raw.features)) return raw.features
+  return []
+}
+
 interface DescriptionInput {
   title: string
   city?: string | null
@@ -123,8 +133,8 @@ export function generatePropertyDescription(input: DescriptionInput): string {
   const baseSentence = pickVariant(`${hashKey}-base`, baseSentenceVariants)
 
   const amenityHints: string[] = []
-  const amenities = input.amenities || []
-  const normalized = amenities.map((a) => a.toLowerCase())
+  const amenityList = toAmenityArray(input.amenities)
+  const normalized = amenityList.map((a) => String(a).toLowerCase())
 
   if (normalized.some((a) => a.includes('parking'))) {
     amenityHints.push('Dedicated parking available for customers and staff.')
@@ -189,7 +199,9 @@ export function generatePropertyTitle(input: TitleInput): string {
     typeLabel = 'Warehouse'
   }
 
-  const amenities = (input.amenities || []).map((a) => a.toLowerCase())
+  const amenities = toAmenityArray(input.amenities).map((a) =>
+    String(a).toLowerCase()
+  )
 
   const hasGround = amenities.some((a) => a.includes('ground'))
   const hasCorner = amenities.some((a) => a.includes('corner'))

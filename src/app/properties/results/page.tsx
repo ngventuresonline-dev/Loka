@@ -9,6 +9,7 @@ import { Property } from '@/types/workflow'
 import { motion, AnimatePresence } from 'framer-motion'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import { trackInquiry, trackFormComplete } from '@/lib/tracking'
+import { encodePropertyId } from '@/lib/property-slug'
 
 interface MatchResult {
   property: Property
@@ -111,8 +112,9 @@ function PropertiesResultsContent() {
     // Only fetch if component is mounted
     if (!mounted) return
     
-    // Check cache first
-    const cacheKey = `results_${searchParams.toString()}`
+    // Check cache first (use same key as write: hash of search params)
+    const paramsHash = btoa(searchParams.toString()).replace(/[/+=]/g, '_').substring(0, 48)
+    const cacheKey = `results_${paramsHash}`
     const cached = sessionStorage.getItem(cacheKey)
     
     if (cached) {
@@ -246,7 +248,7 @@ function PropertiesResultsContent() {
                 setTotalMatches(formattedMatches.length)
                 // Cache the results (with quota protection)
                 try {
-                  const paramsHash = btoa(searchParams.toString()).substring(0, 50)
+                  const paramsHash = btoa(searchParams.toString()).replace(/[/+=]/g, '_').substring(0, 48)
                   const cacheKey = `results_${paramsHash}`
                   
                   // Limit stored matches to prevent quota exceeded
@@ -349,8 +351,7 @@ function PropertiesResultsContent() {
       
       // Cache the results (with quota protection)
       try {
-        // Create a shorter hash-based cache key instead of full search params
-        const paramsHash = btoa(searchParams.toString()).substring(0, 50)
+        const paramsHash = btoa(searchParams.toString()).replace(/[/+=]/g, '_').substring(0, 48)
         const cacheKey = `results_${paramsHash}`
         
         // Limit stored matches to prevent quota exceeded (store max 20 matches)
@@ -838,7 +839,7 @@ function PropertiesResultsContent() {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ delay: index * 0.05 }}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/properties/${match.property.id}/match?${searchParams.toString()}`)}
+                    onClick={() => router.push(`/properties/${encodePropertyId(match.property.id)}/match?${searchParams.toString()}`)}
                   >
                     <PropertyCard
                       property={match.property}

@@ -3,6 +3,7 @@ import { findMatches } from '@/lib/matching-engine'
 import { Property } from '@/types/workflow'
 import { getPrisma } from '@/lib/get-prisma'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
+import { getPropertyCoordinatesFromRow, getMapLinkFromAmenities, geocodeAddress } from '@/lib/property-coordinates'
 
 export async function POST(request: NextRequest) {
   try {
@@ -157,11 +158,16 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Convert Prisma properties to Property type
-    // Be defensive about null/undefined fields so matching engine doesn't crash
+    // Convert Prisma properties to Property type; attach coordinates from map_link so each property shows correct location
     const typedProperties: Property[] = properties.map((p: any) => {
       try {
-        return {
+        const amenitiesData = p.amenities
+        const isAmenitiesObject = typeof amenitiesData === 'object' && amenitiesData !== null && !Array.isArray(amenitiesData)
+        const amenitiesArray = Array.isArray(amenitiesData) ? amenitiesData : (isAmenitiesObject && Array.isArray((amenitiesData as any).features) ? (amenitiesData as any).features : [])
+        const mapLink = getMapLinkFromAmenities(amenitiesData)
+        const coords = getPropertyCoordinatesFromRow(p)
+
+        const prop: Property & { latitude?: number; longitude?: number; mapLink?: string | null } = {
           id: p.id || '',
           title: p.title || 'Property',
           description: p.description || '',
@@ -180,7 +186,7 @@ export async function POST(request: NextRequest) {
             ? p.propertyType 
             : 'other') as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other',
           condition: 'good' as const,
-          amenities: Array.isArray(p.amenities) ? p.amenities : [],
+          amenities: amenitiesArray,
           accessibility: false,
           parking: false,
           publicTransport: false,
@@ -191,6 +197,13 @@ export async function POST(request: NextRequest) {
           isFeatured: Boolean(p.isFeatured),
           images: Array.isArray(p.images) ? p.images : []
         }
+        if (mapLink) prop.mapLink = mapLink
+        if (coords) {
+          prop.latitude = coords.lat
+          prop.longitude = coords.lng
+          prop.coordinates = { lat: coords.lat, lng: coords.lng }
+        }
+        return prop
       } catch (error: any) {
         console.error('[API Match] Error mapping property:', p.id, error.message)
         // Return a minimal valid property object
@@ -220,6 +233,37 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // Geocode only when fetching a single property (match page); skip for full list to keep results page fast
+    if (requestedPropertyId) {
+      const needGeocode = typedProperties
+        .map((prop, i) => ({ prop, row: properties[i] }))
+        .filter(({ prop, row }) => {
+          const hasCoords = (prop as any).latitude != null && (prop as any).longitude != null
+          const hasAddress = (row?.address || row?.city || '').toString().trim()
+          return !hasCoords && !!hasAddress
+        })
+      if (needGeocode.length > 0) {
+        const geocodeResults = await Promise.all(
+          needGeocode.map(({ row }) =>
+            geocodeAddress(
+              (row?.address ?? '').toString().trim(),
+              (row?.city ?? '').toString().trim(),
+              (row?.state ?? '').toString().trim(),
+              (row?.title ?? '').toString().trim() || undefined
+            )
+          )
+        )
+        geocodeResults.forEach((coords, idx) => {
+          if (coords && needGeocode[idx]) {
+            const prop = needGeocode[idx].prop
+            ;(prop as any).latitude = coords.lat
+            ;(prop as any).longitude = coords.lng
+            prop.coordinates = coords
+          }
+        })
+      }
+    }
 
     // Prepare brand requirements for BFI calculation
     const brandRequirements = {

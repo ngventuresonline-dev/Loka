@@ -56,14 +56,20 @@ const radiusMeters = 1000
 const cityCoordinates: Record<string, { lat: number; lng: number }> = {
   bangalore: { lat: 12.9716, lng: 77.5946 },
   bengaluru: { lat: 12.9716, lng: 77.5946 },
+  jayanagar: { lat: 12.925, lng: 77.5936 },
+  'jayanagar 4th block': { lat: 12.925, lng: 77.5936 },
   koramangala: { lat: 12.9352, lng: 77.6245 },
   indiranagar: { lat: 12.9784, lng: 77.6408 },
   whitefield: { lat: 12.9698, lng: 77.7499 },
   'hsr layout': { lat: 12.9121, lng: 77.6446 },
+  'ub city': { lat: 12.9716, lng: 77.5946 },
+  'mg road': { lat: 12.975, lng: 77.6063 },
+  'btm layout': { lat: 12.9166, lng: 77.6101 },
+  'jp nagar': { lat: 12.9063, lng: 77.5857 },
 }
 
 function getApproxCoords(property: Property): { lat: number; lng: number } | null {
-  if ((property as any).latitude && (property as any).longitude) {
+  if ((property as any).latitude != null && (property as any).longitude != null) {
     return {
       lat: Number((property as any).latitude),
       lng: Number((property as any).longitude),
@@ -74,14 +80,16 @@ function getApproxCoords(property: Property): { lat: number; lng: number } | nul
     return property.coordinates
   }
 
-  const key = property.city?.toLowerCase?.() || ''
-  if (cityCoordinates[key]) return cityCoordinates[key]
-
-  // Try to derive from address keywords
-  const allText = `${property.address || ''} ${property.city || ''}`.toLowerCase()
-  for (const [cityKey, coords] of Object.entries(cityCoordinates)) {
-    if (allText.includes(cityKey)) return coords
+  // Prefer locality in address/title over raw city so "4th Block, Jayanagar, Bangalore" → Jayanagar, not UB City
+  const allText = `${property.address || ''} ${property.city || ''} ${property.state || ''} ${(property as any).title || ''}`.toLowerCase()
+  const sortedKeys = Object.keys(cityCoordinates).sort((a, b) => b.length - a.length)
+  for (const cityKey of sortedKeys) {
+    if (allText.includes(cityKey)) return cityCoordinates[cityKey]
   }
+
+  // Fallback: city name only (e.g. "Bangalore" → city center)
+  const key = property.city?.toLowerCase?.().trim() || ''
+  if (cityCoordinates[key]) return cityCoordinates[key]
 
   return null
 }
@@ -329,8 +337,6 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
             {isLoaded && !loadError && (
               typeof window !== 'undefined' && window.google && window.google.maps ? (
                 <div className="relative h-full overflow-hidden">
-                  {/* Blurred map background */}
-                  <div className="absolute inset-0" style={{ filter: 'blur(12px)', transform: 'scale(1.1)' }}>
                 <GoogleMap
                   mapContainerStyle={{ ...containerStyle, height: '100%' }}
                   center={coordinates}
@@ -338,12 +344,12 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                   options={{
                     ...DEFAULT_MAP_OPTIONS,
                     styles: [],
-                        disableDefaultUI: true,
-                        zoomControl: false,
-                        streetViewControl: false,
-                        mapTypeControl: false,
-                        fullscreenControl: false,
-                        gestureHandling: 'none',
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                    fullscreenControl: false,
+                    gestureHandling: 'greedy',
                   }}
                   onLoad={() => {
                     // Map loaded successfully
@@ -391,9 +397,8 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                   />
                 ))}
               </GoogleMap>
-                </div>
-                {/* Overlay message - same as error state */}
-                <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                {!hasInsights && loading && (
+                <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none bg-white/60">
                   <div className="relative flex items-center justify-center h-full px-4 sm:px-6 text-center overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/10 via-[#E4002B]/5 to-[#FFB199]/15 blur-sm" />
                     <div className="absolute inset-4 sm:inset-6 rounded-2xl border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_18px_45px_rgba(15,23,42,0.22)]" />
@@ -402,10 +407,10 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                         <LokazenNodesLoader size="md" />
                       </div>
                       <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 leading-tight">
-                        Location Intel Preview Unavailable
+                        Analyzing micro-market…
                       </h4>
                       <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
-                        We&apos;re processing location signals for this area. Map view is temporarily unavailable, but all match insights are calculated behind the scenes.
+                        Loading location signals and competitor data.
                       </p>
                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 text-xs sm:text-sm text-gray-100 shadow-[0_10px_25px_rgba(15,23,42,0.45)]">
                         <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -414,6 +419,7 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                     </div>
                   </div>
                 </div>
+                )}
               </div>
               ) : (
                 <div className="flex items-center justify-center h-full px-4 text-center">
@@ -428,19 +434,6 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
 
         {hasInsights ? (
           <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-3 sm:space-4 relative overflow-hidden">
-            {/* Blur overlay */}
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-10 flex items-center justify-center">
-              <div className="text-center px-4">
-                <div className="flex items-center justify-center mb-3">
-                  <LokazenNodesLoader size="sm" />
-                </div>
-                <p className="text-xs sm:text-sm text-gray-700 font-medium">
-                  Location insights preview unavailable
-                </p>
-              </div>
-            </div>
-            {/* Blurred content */}
-            <div style={{ filter: 'blur(8px)', pointerEvents: 'none' }}>
             <div>
               <div className="flex items-center justify-between mb-1 gap-2">
                 <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">Market Saturation</span>
@@ -475,7 +468,7 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
 
             <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs">
               <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 sm:p-3">
-                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Daily Footfall (est.)</div>
+                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Daily Footfall (modeled estimate)</div>
                 <div className="text-base sm:text-lg font-bold text-gray-900 break-words">
                   {data ? data.footfall.dailyAverage.toLocaleString('en-IN') : '—'}
                 </div>
@@ -521,7 +514,6 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                     {formatDistance(data.accessibility.nearestBusStop.distanceMeters)})
                   </div>
                 )}
-                </div>
               </div>
             </div>
           </div>
@@ -562,20 +554,7 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
 
       {hasInsights && data && showDetails && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 lg:col-span-2 relative overflow-hidden">
-            {/* Blur overlay */}
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-10 flex items-center justify-center">
-              <div className="text-center px-4">
-                <div className="flex items-center justify-center mb-3">
-                  <LokazenNodesLoader size="sm" />
-                </div>
-                <p className="text-xs sm:text-sm text-gray-700 font-medium">
-                  Competitor data preview unavailable
-                </p>
-              </div>
-            </div>
-            {/* Blurred content */}
-            <div style={{ filter: 'blur(8px)', pointerEvents: 'none' }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 lg:col-span-2">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
               <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Top Nearby Competitors</h4>
               <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
@@ -599,39 +578,21 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                     )}
                   </div>
                   <div className="text-right text-[10px] sm:text-xs text-gray-600 flex flex-col items-end gap-0.5 flex-shrink-0">
-                    <span>{formatDistance(c.distanceMeters)}</span>
-                    {c.rating && (
+                    {c.rating != null && (
                       <span className="inline-flex items-center gap-1">
                         <span className="inline-flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-yellow-400 text-white text-[8px] sm:text-[9px] font-bold">
                           ★
                         </span>
-                        <span className="whitespace-nowrap">
-                          {c.rating.toFixed(1)}
-                          {c.userRatingsTotal !== undefined && ` · ${c.userRatingsTotal}`}
-                        </span>
+                        <span className="whitespace-nowrap">{c.rating.toFixed(1)}</span>
                       </span>
                     )}
                   </div>
                 </li>
               ))}
             </ul>
-            </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3 relative overflow-hidden">
-            {/* Blur overlay */}
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-10 flex items-center justify-center">
-              <div className="text-center px-4">
-                <div className="flex items-center justify-center mb-3">
-                  <LokazenNodesLoader size="sm" />
-                </div>
-                <p className="text-xs sm:text-sm text-gray-700 font-medium">
-                  Demographics preview unavailable
-                </p>
-              </div>
-            </div>
-            {/* Blurred content */}
-            <div style={{ filter: 'blur(8px)', pointerEvents: 'none' }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
             <div>
               <h4 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2">Demographics (est.)</h4>
               <div className="space-y-1.5">
@@ -669,7 +630,6 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                     Lifestyle segments will appear here once we connect live audience data.
                   </span>
                 )}
-                </div>
               </div>
             </div>
           </div>

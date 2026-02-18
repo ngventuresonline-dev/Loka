@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { decodePropertySlug } from '@/lib/property-slug'
 import {
   requireOwnerOrAdmin,
   getAuthenticatedUser,
@@ -7,6 +8,11 @@ import {
 } from '@/lib/api-auth'
 import { UpdatePropertySchema } from '@/lib/validations/property'
 import { getCacheHeaders, CACHE_CONFIGS } from '@/lib/api-cache'
+import {
+  extractLatLngFromMapLink,
+  getMapLinkFromAmenities,
+  geocodeAddress,
+} from '@/lib/property-coordinates'
 
 /**
  * GET /api/properties/[id]
@@ -19,7 +25,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const propertyId = id
+    const propertyId = decodePropertySlug(id)
 
     const prisma = await getPrisma()
     if (!prisma) {
@@ -205,24 +211,45 @@ export async function GET(
     // Structure: amenities = { features: [...], map_link: "..." }
     if (safeProperty && safeProperty.amenities) {
       const amenitiesData = safeProperty.amenities
+      const mapLink = getMapLinkFromAmenities(amenitiesData)
+      if (mapLink) safeProperty.mapLink = mapLink
       if (typeof amenitiesData === 'object' && amenitiesData !== null && !Array.isArray(amenitiesData)) {
-        // Extract map_link if it exists
-        if (amenitiesData.map_link) {
-          safeProperty.mapLink = amenitiesData.map_link
-        }
-        // Convert amenities to array format for backward compatibility
-        if (amenitiesData.features && Array.isArray(amenitiesData.features)) {
-          safeProperty.amenities = amenitiesData.features
+        if ((amenitiesData as any).features && Array.isArray((amenitiesData as any).features)) {
+          safeProperty.amenities = (amenitiesData as any).features
         } else if (Array.isArray(amenitiesData)) {
-          // Legacy format: amenities is already an array
           safeProperty.amenities = amenitiesData
         } else {
           safeProperty.amenities = []
         }
       } else if (Array.isArray(amenitiesData)) {
-        // Legacy format: amenities is already an array, no map_link
         safeProperty.amenities = amenitiesData
-        safeProperty.mapLink = null
+        if (!safeProperty.mapLink) safeProperty.mapLink = null
+      }
+    }
+
+    // Derive latitude/longitude from mapLink so Location Intelligence uses exact location
+    if (safeProperty?.mapLink) {
+      const coords = extractLatLngFromMapLink(safeProperty.mapLink)
+      if (coords) {
+        (safeProperty as any).latitude = coords.lat
+        (safeProperty as any).longitude = coords.lng
+        safeProperty.coordinates = coords
+      }
+    }
+
+    // If still no coords, geocode address/city/state so we don't fall back to city center (e.g. UB City)
+    if (safeProperty && (safeProperty.latitude == null || safeProperty.longitude == null)) {
+      const address = (safeProperty.address ?? '').trim()
+      const city = (safeProperty.city ?? '').trim()
+      const state = (safeProperty.state ?? '').trim()
+      const title = (safeProperty.title ?? '').trim()
+      if (address || city || state) {
+        const geocoded = await geocodeAddress(address, city, state, title || undefined)
+        if (geocoded) {
+          (safeProperty as any).latitude = geocoded.lat
+          (safeProperty as any).longitude = geocoded.lng
+          safeProperty.coordinates = geocoded
+        }
       }
     }
 
@@ -270,7 +297,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const propertyId = id
+    const propertyId = decodePropertySlug(id)
 
     // Authenticate user
     const user = await requireOwnerOrAdmin(request)
@@ -423,7 +450,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const propertyId = id
+    const propertyId = decodePropertySlug(id)
 
     // Authenticate user
     const user = await requireOwnerOrAdmin(request)

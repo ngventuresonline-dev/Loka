@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { decodePropertySlug } from '@/lib/property-slug'
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: propertyId } = await params
+    const { id } = await params
+    const propertyId = decodePropertySlug(id)
     const { userId } = await request.json()
 
     if (!userId || !propertyId) {

@@ -4,6 +4,7 @@ import { requireAdminAuth, logAdminAction } from '@/lib/admin-security'
 import { getPrisma } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
+import { formatPropertyForPlatform } from '@/lib/property-formatter'
 
 export async function GET(request: NextRequest) {
   // Enhanced admin security check
@@ -447,15 +448,17 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    const title = String(body.title || '').trim()
-    const description = body.description ? String(body.description).trim() : ''
-    const address = String(body.address || '').trim()
-    const city = String(body.city || '').trim()
-    const state = body.state ? String(body.state).trim() : ''
-    const zipCode = body.zipCode ? String(body.zipCode).trim() : ''
-    const rawPrice = body.price
+    // Extract raw data
+    const rawTitle = String(body.title || '').trim()
+    const rawDescription = body.description ? String(body.description).trim() : ''
+    const rawAddress = String(body.address || body.location || '').trim()
+    const rawCity = String(body.city || '').trim()
+    const rawArea = body.area ? String(body.area).trim() : ''
+    const rawState = body.state ? String(body.state).trim() : ''
+    const rawZipCode = body.zipCode ? String(body.zipCode).trim() : ''
+    const rawPrice = body.price || body.rent
     const rawPriceType = body.priceType
-    const rawSecurityDeposit = body.securityDeposit
+    const rawSecurityDeposit = body.securityDeposit || body.deposit
     const rawRentEscalation = body.rentEscalation
     const rawSize = body.size
     const rawPropertyType = body.propertyType
@@ -465,15 +468,8 @@ export async function POST(request: NextRequest) {
     const amenitiesArray = Array.isArray(body.amenities) ? body.amenities : []
     const images = Array.isArray(body.images) ? body.images : []
     const mapLink = body.mapLink ? String(body.mapLink).trim() : ''
-    
-    // Store map_link in amenities JSONB field (workaround for Supabase column timeout)
-    // Structure: { features: [...], map_link: "..." }
-    const amenitiesData: any = {
-      features: amenitiesArray
-    }
-    if (mapLink) {
-      amenitiesData.map_link = mapLink
-    }
+    const latitude = body.latitude ? (typeof body.latitude === 'string' ? parseFloat(body.latitude) : body.latitude) : null
+    const longitude = body.longitude ? (typeof body.longitude === 'string' ? parseFloat(body.longitude) : body.longitude) : null
     
     const ownerId = body.ownerId as string | undefined
     const availability = body.availability
@@ -481,12 +477,40 @@ export async function POST(request: NextRequest) {
     const displayOrder = body.displayOrder
     const addedBy = body.addedBy as string | undefined
 
-    if (!title || !address || !city || rawPrice === undefined || rawSize === undefined || !rawPropertyType) {
+    // Validate required fields
+    if (!rawAddress || !rawCity || rawPrice === undefined || rawSize === undefined || !rawPropertyType) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: address, city, price, size, and propertyType are required' },
         { status: 400 }
       )
     }
+
+    // Auto-format property data to platform standards
+    const formatted = formatPropertyForPlatform({
+      title: rawTitle,
+      description: rawDescription,
+      address: rawAddress,
+      city: rawCity,
+      area: rawArea,
+      state: rawState,
+      zipCode: rawZipCode,
+      propertyType: rawPropertyType,
+      size: rawSize,
+      price: rawPrice,
+      amenities: amenitiesArray,
+      mapLink: mapLink,
+      latitude: latitude,
+      longitude: longitude,
+    })
+
+    // Use formatted data (formatter ensures proper structure)
+    const title = formatted.title
+    const description = formatted.description
+    const address = formatted.address
+    const city = formatted.city
+    const state = formatted.state || rawState || ''
+    const zipCode = formatted.zipCode || rawZipCode || '000000'
+    const amenitiesData = formatted.amenities // Already includes map_link if provided
 
     const prisma = await getPrisma()
     if (!prisma) {
@@ -563,35 +587,56 @@ export async function POST(request: NextRequest) {
     const allowedPriceTypes = ['monthly', 'yearly', 'sqft'] as const
     const priceType = (allowedPriceTypes.includes(priceTypeRaw as any) ? priceTypeRaw : 'monthly') as (typeof allowedPriceTypes)[number]
 
+    // Set status to 'pending' and availability to false so property is ready for approval
+    // Admin can approve it later to make it live
+    let statusValue: 'pending' | 'approved' | 'rejected' = 'pending'
+    let availabilityValue = false // Start as unavailable until approved
+
+    // Check if status column exists before trying to set it
+    let statusColumnExists = false
+    try {
+      await prisma.$queryRawUnsafe(`SELECT status FROM properties LIMIT 1`)
+      statusColumnExists = true
+    } catch {
+      // Status column doesn't exist, will use availability only
+      statusColumnExists = false
+    }
+
+    const propertyData: any = {
+      id: propertyId,
+      title,
+      description: description || null,
+      address,
+      city,
+      state: state || '',
+      zipCode: zipCode || '000000',
+      price,
+      priceType,
+      securityDeposit,
+      rentEscalation,
+      size,
+      propertyType: normalizedType,
+      storePowerCapacity: storePowerCapacity || null,
+      powerBackup,
+      waterFacility,
+      amenities: amenitiesData, // Contains both features array and map_link
+      images,
+      ownerId: finalOwnerId!,
+      availability: availabilityValue, // Start as unavailable until approved
+      isFeatured: Boolean(isFeatured),
+      displayOrder:
+        displayOrder !== undefined && displayOrder !== null && String(displayOrder).trim() !== ''
+          ? parseInt(String(displayOrder), 10)
+          : null,
+    }
+
+    // Only set status if column exists
+    if (statusColumnExists) {
+      propertyData.status = statusValue
+    }
+
     const property = await prisma.property.create({
-      data: {
-        id: propertyId,
-        title,
-        description: description || null,
-        address,
-        city,
-        // Prisma schema requires non-null state; fall back to empty string
-        state: state || '',
-        zipCode: zipCode || '',
-        price,
-        priceType,
-        securityDeposit,
-        rentEscalation,
-        size,
-        propertyType: normalizedType,
-        storePowerCapacity: storePowerCapacity || null,
-        powerBackup,
-        waterFacility,
-        amenities: amenitiesData, // Contains both features array and map_link
-        images,
-        ownerId: finalOwnerId!,
-        availability: availability !== undefined ? Boolean(availability) : true,
-        isFeatured: Boolean(isFeatured),
-        displayOrder:
-          displayOrder !== undefined && displayOrder !== null && String(displayOrder).trim() !== ''
-            ? parseInt(String(displayOrder), 10)
-            : null,
-      },
+      data: propertyData,
       include: {
         owner: {
           select: {
@@ -795,7 +840,15 @@ export async function PATCH(request: NextRequest) {
     if (updateData.amenities !== undefined) data.amenities = updateData.amenities
     if (updateData.images !== undefined) data.images = updateData.images
     
-    // Status
+    // Status (for approval workflow: pending | approved | rejected)
+    if (updateData.status !== undefined && ['pending', 'approved', 'rejected'].includes(updateData.status)) {
+      data.status = updateData.status
+      if (updateData.status === 'approved') {
+        data.availability = true
+      } else if (updateData.status === 'rejected') {
+        data.availability = false
+      }
+    }
     if (updateData.availability !== undefined) data.availability = updateData.availability
     if (updateData.isFeatured !== undefined) data.isFeatured = updateData.isFeatured
     if (updateData.displayOrder !== undefined) data.displayOrder = updateData.displayOrder !== null ? parseInt(String(updateData.displayOrder)) : null

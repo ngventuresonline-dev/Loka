@@ -145,7 +145,7 @@ export default function Navbar({ hideOnMobile = false }: NavbarProps) {
               </div>
             ) : (
               <>
-                <Link href="/onboarding/brand" className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200 text-xs sm:text-sm hidden sm:inline">
+                <Link href="/filter/brand" className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200 text-xs sm:text-sm hidden sm:inline">
                   Looking For A Space
                 </Link>
                 <div className="relative">

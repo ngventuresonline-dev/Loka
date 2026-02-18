@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { getUserIdForSession } from '@/lib/session-utils'
 import { Property } from '@/types'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import { encodePropertyId } from '@/lib/property-slug'
 import WhatsAppButton from '@/components/WhatsAppButton'
 
 // Lazy load LokazenNodesPlaceholder to avoid webpack issues
@@ -306,7 +307,7 @@ function OwnerProfileContent() {
                       <div className="flex gap-2">
                         {(property.status === 'pending' || property.status === 'rejected') && (
                           <Link
-                            href={`/properties/${property.id}/edit`}
+                            href={`/properties/${encodePropertyId(property.id)}/edit`}
                             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg text-sm font-medium transition-colors"
                           >
                             Edit
@@ -321,7 +322,7 @@ function OwnerProfileContent() {
                           </button>
                         )}
                         <Link
-                          href={`/properties/${property.id}`}
+                          href={`/properties/${encodePropertyId(property.id)}`}
                           className="px-4 py-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg text-sm font-medium hover:shadow-lg transition-shadow ml-auto"
                         >
                           View

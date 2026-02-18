@@ -289,7 +289,18 @@ export async function GET(request: NextRequest) {
             updatedAt: new Date(),
             isAvailable: true,
           }
-          const bfiResult = calculateBFI(propertyForBFI, brandRequirements)
+          // Calculate BFI with error handling
+          let bfiScore = pfiScore // Fallback to PFI score if BFI calculation fails
+          let bfiBreakdown: { locationScore: number; sizeScore: number; budgetScore: number; typeScore: number } | undefined = undefined
+          
+          try {
+            const bfiResult = calculateBFI(propertyForBFI, brandRequirements)
+            bfiScore = bfiResult.score
+            bfiBreakdown = bfiResult.breakdown
+          } catch (error) {
+            console.error(`[Admin Matches API] Error calculating BFI for ${property.id}:`, error)
+            // Continue with PFI score as fallback
+          }
 
           allMatches.push({
             id: `${brand.id}-${property.id}`,
@@ -320,8 +331,8 @@ export async function GET(request: NextRequest) {
               owner: property.owner,
             },
             pfiScore,
-            bfiScore: bfiResult.score,
-            bfiBreakdown: bfiResult.breakdown,
+            bfiScore,
+            bfiBreakdown,
             matchQuality: getMatchQuality(pfiScore),
             createdAt: property.createdAt?.toISOString() || new Date().toISOString(),
           })

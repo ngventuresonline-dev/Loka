@@ -66,7 +66,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const handleSignupClick = (type: 'brand' | 'owner') => {
     onClose()
     if (type === 'brand') {
-      router.push('/onboarding/brand')
+      router.push('/filter/brand')
     } else {
       router.push('/filter/owner')
     }

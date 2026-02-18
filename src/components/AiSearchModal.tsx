@@ -272,7 +272,7 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
         const redirectMessage: Message = {
           id: `redirect-${Date.now()}`,
           role: 'assistant',
-          content: `${data.message}\n\nI'm taking you to our brand onboarding form where you can complete your profile and start finding perfect properties.`,
+          content: `${data.message}\n\nI'm taking you to our brand form where you can complete your profile and start finding perfect properties.`,
           timestamp: new Date()
         }
         setMessages(prev => [...prev, redirectMessage])
@@ -422,11 +422,11 @@ export default function AiSearchModal({ isOpen, onClose, initialQuery = '' }: Ai
       setMessages([{
         id: 'complete',
         role: 'assistant',
-        content: `✅ Perfect! I've collected all your requirements. Redirecting you to the brand onboarding form where everything will be pre-filled!`,
+        content: `✅ Perfect! I've collected all your requirements. Redirecting you to the brand form where everything will be pre-filled!`,
         timestamp: new Date()
       }])
       setTimeout(() => {
-        window.location.href = '/onboarding/brand'
+        window.location.href = '/filter/brand'
       }, 2000)
     }
   }

@@ -13,6 +13,7 @@ import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import { decodePropertySlug } from '@/lib/property-slug'
 import { trackInquiry, trackScheduleViewing } from '@/lib/tracking'
 
 // Heavy components are dynamically loaded to improve performance
@@ -82,7 +83,7 @@ function MatchDetailsContent() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const propertyId = params.id as string
+  const propertyId = decodePropertySlug(params.id as string)
   const [loading, setLoading] = useState(true)
   const [matchDetails, setMatchDetails] = useState<MatchDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'location'>('overview')
@@ -133,9 +134,10 @@ function MatchDetailsContent() {
     if (cached) {
       try {
         const cachedData = JSON.parse(cached)
-        // Use cached data if it's less than 5 minutes old
+        const cachedPropertyId = cachedData.data?.property?.id
+        // Only use cache if it's for this property and less than 5 minutes old (avoids showing wrong property)
         const cacheAge = Date.now() - (cachedData.timestamp || 0)
-        if (cacheAge < 5 * 60 * 1000) {
+        if (cacheAge < 5 * 60 * 1000 && cachedPropertyId === propertyId) {
           setMatchDetails(cachedData.data)
           setLoading(false)
           return
@@ -744,7 +746,7 @@ function MatchDetailsContent() {
         {/* Location Intelligence - Full width section after Brand Fit & breakdown */}
         <div className="mt-6 sm:mt-8">
           <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
-            <LocationIntelligence property={property} />
+            <LocationIntelligence property={property} businessType={searchParams.get('businessType') || undefined} />
           </div>
         </div>
       </div>

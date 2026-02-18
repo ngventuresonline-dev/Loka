@@ -5,6 +5,7 @@ import { useState, memo } from 'react'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import LokazenNodesPlaceholder from './LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import { encodePropertyId } from '@/lib/property-slug'
 import { trackPropertyView, trackCardClick } from '@/lib/tracking'
 
 interface PropertyCardProps {
@@ -265,7 +266,7 @@ function PropertyCard({
         {/* Action Buttons */}
         <div className="mt-auto flex gap-2 pt-2 border-t border-gray-100">
           <Link 
-            href={bfiScore !== undefined ? `/properties/${property.id}/match` : `/properties/${property.id}`}
+            href={bfiScore !== undefined ? `/properties/${encodePropertyId(property.id)}/match` : `/properties/${encodePropertyId(property.id)}`}
             onClick={handleViewClick}
             className="flex-1 bg-gradient-to-r from-[#FF5722] to-[#E4002B] hover:from-[#FF6B35] hover:to-[#FF5722] text-white text-center py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 text-sm"
           >

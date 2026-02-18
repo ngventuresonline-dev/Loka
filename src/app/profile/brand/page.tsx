@@ -8,6 +8,7 @@ import { getUserIdForSession } from '@/lib/session-utils'
 import { Property } from '@/types'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
+import { encodePropertyId } from '@/lib/property-slug'
 import WhatsAppButton from '@/components/WhatsAppButton'
 
 interface BrandProfileData {
@@ -266,7 +267,7 @@ function BrandProfileContent() {
                 {data.recentViews.map((view) => (
                   <Link
                     key={view.id}
-                    href={`/properties/${view.propertyId}`}
+                    href={`/properties/${encodePropertyId(view.propertyId)}`}
                     className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-gray-200"
                   >
                     <div className="relative h-48 bg-gray-100">
@@ -315,7 +316,7 @@ function BrandProfileContent() {
                     key={saved.id}
                     className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-gray-200"
                   >
-                    <Link href={`/properties/${saved.property.id}`}>
+                    <Link href={`/properties/${encodePropertyId(saved.property.id)}`}>
                       <div className="relative h-48 bg-gray-100">
                         {saved.property.images && saved.property.images.length > 0 ? (
                           <Image

@@ -409,7 +409,7 @@ export default function AboutPage() {
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <button 
-              onClick={() => router.push('/onboarding/brand')}
+              onClick={() => router.push('/filter/brand')}
               className="group relative px-12 py-5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#E4002B] to-[#FF5200] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
