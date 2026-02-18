@@ -291,10 +291,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-
+    // Priority: Use server-side env var first (more reliable for API routes)
+    // Fallback to NEXT_PUBLIC_* for compatibility
+    const apiKey =
+      process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    
     if (!apiKey) {
-      console.warn('[LocationIntelligence API] Google Maps API key not found. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in environment variables.')
+      const errorMsg = 'Google Maps API key not configured. Please set GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your production environment variables.'
+      console.error('[LocationIntelligence API]', errorMsg)
+      console.error('[LocationIntelligence API] Environment check:', {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        hasGOOGLE_MAPS_API_KEY: !!process.env.GOOGLE_MAPS_API_KEY,
+        hasNEXT_PUBLIC_GOOGLE_MAPS_API_KEY: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+      })
+      
+      // Return error response instead of silent mock data in production
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: errorMsg,
+            details: 'Location intelligence requires Google Maps API key. Please configure it in your deployment platform settings.',
+          },
+          { status: 503 }
+        )
+      }
+      
+      // In development, warn but continue with mock data
+      console.warn('[LocationIntelligence API]', errorMsg)
     }
     
     const { type: placeType, keyword: placeKeyword } = mapToPlaceTypeAndKeyword(propertyType, businessType)
@@ -313,7 +338,11 @@ export async function POST(request: NextRequest) {
         const res = await fetch(url.toString(), {
           signal: AbortSignal.timeout(15000) // 15 second timeout
         })
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 272af79 (Fix: Production location intelligence API key handling and error reporting)
         if (!res.ok) {
           const errorText = await res.text().catch(() => 'Unknown error')
           console.warn('[LocationIntelligence API] Places API HTTP error:', res.status, errorText.substring(0, 200))
@@ -326,9 +355,16 @@ export async function POST(request: NextRequest) {
             console.error('[LocationIntelligence API] Places API error status:', json.status, errorMsg)
             // If REQUEST_DENIED, INVALID_REQUEST, etc. - log error but continue to return location-based data
             if (json.status === 'REQUEST_DENIED') {
-              console.error('[LocationIntelligence API] Places API access denied. Check API key restrictions, enabled APIs, and billing.')
+              const deniedError = 'Google Places API access denied. Check API key restrictions, enabled APIs (Places API, Geocoding API), domain restrictions, and billing in Google Cloud Console.'
+              console.error('[LocationIntelligence API]', deniedError)
+              console.error('[LocationIntelligence API] Full error:', errorMsg)
+              // In production, we might want to surface this more prominently, but for now we continue with other data
             } else if (json.status === 'OVER_QUERY_LIMIT') {
-              console.error('[LocationIntelligence API] Places API quota exceeded. Check billing and quota limits.')
+              const quotaError = 'Google Places API quota exceeded. Check billing and quota limits in Google Cloud Console.'
+              console.error('[LocationIntelligence API]', quotaError)
+              // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
+            } else if (json.status === 'INVALID_REQUEST') {
+              console.error('[LocationIntelligence API] Places API invalid request:', errorMsg)
             }
             // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
           } else {
@@ -404,9 +440,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Build response - use real data if we have API key, even if competitors is empty (ZERO_RESULTS is valid)
+    // Note: If apiKey is missing, we should have already returned an error above in production
     let response: LocationIntelligenceResponse
     if (!apiKey) {
+<<<<<<< HEAD
       // No API key - use mock response
+=======
+      // No API key - use mock response (should only happen in development after warning)
+>>>>>>> 272af79 (Fix: Production location intelligence API key handling and error reporting)
       response = buildMockResponse(lat as number, lng as number)
       if (nearestMetro) response.accessibility.nearestMetro = nearestMetro
     } else {
