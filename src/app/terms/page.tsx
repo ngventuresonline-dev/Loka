@@ -51,7 +51,7 @@ export default function TermsPage() {
                 <strong>Payment Terms:</strong> The brand onboarding fee must be paid in full before account activation. Payment is due immediately upon completion of the onboarding process.
               </p>
               <p className="text-gray-700">
-                <strong>Refund Policy:</strong> The brand onboarding fee is non-refundable once the account has been activated and services have been provided. If services are not activated within 30 days of payment, a refund may be requested subject to administrative charges.
+                <strong>Refund Policy:</strong> No refunds will be provided for any onboarding charges.
               </p>
             </div>
 
@@ -71,7 +71,7 @@ export default function TermsPage() {
                 <strong>Payment Terms:</strong> Marketing charges are billed separately and may be charged on a one-time, monthly, or campaign basis as agreed upon. Payment is due as per the billing cycle or campaign terms.
               </p>
               <p className="text-gray-700">
-                <strong>Refund Policy:</strong> Marketing charges are non-refundable once services have been rendered. Partial refunds may be considered for unused portions of prepaid marketing campaigns, subject to administrative review and applicable cancellation fees.
+                <strong>Refund Policy:</strong> No refunds will be provided for any onboarding charges.
               </p>
             </div>
 
