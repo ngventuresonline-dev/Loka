@@ -488,6 +488,7 @@ export default function InvestorDeckPage() {
             <span className="font-semibold text-gray-400">Lokazen</span>
           </div>
           <p className="text-gray-400">Confidential · 2026</p>
+          <a href="tel:+919686613899" className="block mt-2 text-gray-400 hover:text-[#FF5200] transition-colors">+91 96866 13899</a>
           <Link href="/" className="inline-block mt-3 text-[#FF5200] hover:underline">Back to platform →</Link>
         </footer>
       </main>
