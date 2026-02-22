@@ -7,21 +7,154 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =============================================
+// LOCATION INTELLIGENCE (1000+ attributes)
+// =============================================
+
+model Location {
+  id                     String    @id @default(uuid()) @db.VarChar(36)
+  latitude               Decimal   @db.Decimal(10, 7)
+  longitude              Decimal   @db.Decimal(10, 7)
+  geoHash                String?   @map("geo_hash") @db.VarChar(20)
+  wardName               String?   @map("ward_name") @db.VarChar(100)
+  wardNumber             String?   @map("ward_number") @db.VarChar(20)
+  assemblyConstituency   String?   @map("assembly_constituency") @db.VarChar(100)
+  parliamentaryConstituency String? @map("parliamentary_constituency") @db.VarChar(100)
+  city                   String    @db.VarChar(100)
+  microMarket            String?   @map("micro_market") @db.VarChar(150)
+  subMicroMarket         String?   @map("sub_micro_market") @db.VarChar(150)
+  pinCode                String?   @map("pin_code") @db.VarChar(10)
+  bbmpZone               String?   @map("bbmp_zone") @db.VarChar(100)
+  policeStation          String?   @map("police_station") @db.VarChar(100)
+  roadName               String?   @map("road_name") @db.VarChar(255)
+  roadWidthMeters        Decimal?  @map("road_width_meters") @db.Decimal(6, 2)
+  roadType               String?   @map("road_type") @db.VarChar(50)
+  zoningClassification   String?   @map("zoning_classification") @db.VarChar(100)
+  attributesJson         Json?     @map("attributes_json") @default("{}")
+  createdAt              DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt              DateTime? @map("updated_at") @default(now()) @db.Timestamp(6)
+
+  demographics           LocationDemographics?
+  commercial             LocationCommercial?
+  mobility               LocationMobility?
+  realEstate             LocationRealEstate?
+  scores                 LocationScores[]
+
+  @@map("locations")
+}
+
+model LocationDemographics {
+  id                String   @id @default(uuid()) @db.VarChar(36)
+  locationId        String   @unique @map("location_id") @db.VarChar(36)
+  population100m    Int?     @map("population_100m")
+  population250m    Int?     @map("population_250m")
+  population500m    Int?     @map("population_500m")
+  population1km     Int?     @map("population_1km")
+  population3km     Int?     @map("population_3km")
+  populationDensity500m Decimal? @map("population_density_500m") @db.Decimal(12, 2)
+  householdCount500m Int?    @map("household_count_500m")
+  attributesJson    Json?    @map("attributes_json") @default("{}")
+  version           Int?     @default(1)
+  lastUpdated       DateTime? @map("last_updated") @default(now()) @db.Timestamp(6)
+  createdAt         DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+
+  location          Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("location_demographics")
+}
+
+model LocationCommercial {
+  id                    String   @id @default(uuid()) @db.VarChar(36)
+  locationId            String   @unique @map("location_id") @db.VarChar(36)
+  competitorBrandPresence Json?  @map("competitor_brand_presence") @default("{}")
+  saturationIndices     Json?    @map("saturation_indices") @default("{}")
+  attributesJson        Json?    @map("attributes_json") @default("{}")
+  version               Int?     @default(1)
+  lastUpdated           DateTime? @map("last_updated") @default(now()) @db.Timestamp(6)
+  createdAt             DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+
+  location              Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("location_commercial")
+}
+
+model LocationMobility {
+  id               String   @id @default(uuid()) @db.VarChar(36)
+  locationId       String   @unique @map("location_id") @db.VarChar(36)
+  avgDailyFootfall Int?     @map("avg_daily_footfall")
+  weekdayFootfall  Int?     @map("weekday_footfall")
+  weekendFootfall  Int?     @map("weekend_footfall")
+  peakHourFootfall Int?     @map("peak_hour_footfall")
+  dwellTimeAvg     Int?     @map("dwell_time_avg")
+  attributesJson   Json?    @map("attributes_json") @default("{}")
+  version          Int?     @default(1)
+  lastUpdated      DateTime? @map("last_updated") @default(now()) @db.Timestamp(6)
+  createdAt        DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+
+  location         Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("location_mobility")
+}
+
+model LocationRealEstate {
+  id                 String   @id @default(uuid()) @db.VarChar(36)
+  locationId         String   @unique @map("location_id") @db.VarChar(36)
+  rentPerSqft        Decimal? @map("rent_per_sqft") @db.Decimal(10, 2)
+  frontageWidth      Decimal? @map("frontage_width") @db.Decimal(8, 2)
+  ceilingHeight      Decimal? @map("ceiling_height") @db.Decimal(5, 2)
+  powerLoadCapacity  String?  @map("power_load_capacity") @db.VarChar(50)
+  attributesJson     Json?    @map("attributes_json") @default("{}")
+  version            Int?     @default(1)
+  lastUpdated        DateTime? @map("last_updated") @default(now()) @db.Timestamp(6)
+  createdAt          DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+
+  location           Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("location_real_estate")
+}
+
+model LocationScores {
+  id                  String   @id @default(uuid()) @db.VarChar(36)
+  locationId          String   @map("location_id") @db.VarChar(36)
+  cafeFitScore        Decimal? @map("cafe_fit_score") @db.Decimal(5, 2)
+  qsrFitScore         Decimal? @map("qsr_fit_score") @db.Decimal(5, 2)
+  luxuryFitScore      Decimal? @map("luxury_fit_score") @db.Decimal(5, 2)
+  revenueProjectionMid Decimal? @map("revenue_projection_mid") @db.Decimal(15, 2)
+  roi3yr              Decimal? @map("roi_3yr") @db.Decimal(8, 2)
+  whitespaceScore     Decimal? @map("whitespace_score") @db.Decimal(5, 2)
+  demandGapScore      Decimal? @map("demand_gap_score") @db.Decimal(5, 2)
+  scoresJson          Json?    @map("scores_json") @default("{}")
+  explanationText     String?  @map("explanation_text") @db.Text
+  version             Int?     @default(1)
+  lastUpdated         DateTime? @map("last_updated") @default(now()) @db.Timestamp(6)
+  createdAt           DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+
+  location            Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("location_scores")
+}
+
 model brand_profiles {
-  id                       String    @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
-  user_id                  String    @unique @db.VarChar(36)
-  company_name             String    @db.VarChar(255)
-  industry                 String?   @db.VarChar(100)
-  preferred_locations      Json?
-  budget_min               Decimal?  @db.Decimal(15, 2)
-  budget_max               Decimal?  @db.Decimal(15, 2)
-  min_size                 Int?
-  max_size                 Int?
-  preferred_property_types Json?
+  id                         String    @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  user_id                    String    @unique @db.VarChar(36)
+  company_name               String    @db.VarChar(255)
+  industry                   String?   @db.VarChar(100)
+  category                   String?   @db.VarChar(50)
+  avg_ticket_size            Decimal?  @map("avg_ticket_size") @db.Decimal(10, 2)
+  preferred_income_bracket   String?   @map("preferred_income_bracket") @db.VarChar(20)
+  ideal_footfall_min         Int?      @map("ideal_footfall_min")
+  max_saturation_tolerance Decimal?  @map("max_saturation_tolerance") @db.Decimal(5, 2)
+  weight_config_json         Json?     @map("weight_config_json")
+  preferred_locations        Json?
+  budget_min                 Decimal?  @db.Decimal(15, 2)
+  budget_max                 Decimal?  @db.Decimal(15, 2)
+  min_size                   Int?
+  max_size                   Int?
+  preferred_property_types   Json?
   must_have_amenities      Json?
-  created_at               DateTime? @default(now()) @db.Timestamp(6)
-  updated_at               DateTime? @default(now()) @db.Timestamp(6)
-  user                     User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at                 DateTime? @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime? @default(now()) @db.Timestamp(6)
+  user                       User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id], map: "idx_brand_profiles_user_id")
 }

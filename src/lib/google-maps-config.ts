@@ -1,6 +1,7 @@
 /**
  * Google Maps Configuration
- * Centralized configuration to prevent LoadScript reload warnings
+ * Google = Map display only (LocationIntelligence, owner onboarding).
+ * Mappls = Geocoding. Google Places = Nearby/competitors, transit.
  */
 
 // Libraries array must be a constant to prevent LoadScript reload warnings

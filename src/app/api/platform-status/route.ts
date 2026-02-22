@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
 import { getPrisma } from '@/lib/get-prisma'
+import { isMapplsConfigured, isMapplsKeyPairConfigured } from '@/lib/mappls-config'
 
 interface StatusCheck {
   name: string
@@ -223,6 +224,36 @@ async function checkDatabase(): Promise<StatusCheck> {
 }
 
 /**
+ * Check Mappls (MapMyIndia) configuration
+ */
+function checkMappls(): StatusCheck {
+  const hasRestKey = isMapplsConfigured()
+  const hasKeyPair = isMapplsKeyPairConfigured()
+  if (hasRestKey && hasKeyPair) {
+    return {
+      name: 'Mappls (MapMyIndia)',
+      status: 'operational',
+      message: 'REST API Key + KeyPair configured',
+      uptime: 99.9
+    }
+  }
+  if (hasRestKey) {
+    return {
+      name: 'Mappls (MapMyIndia)',
+      status: 'operational',
+      message: 'REST API Key configured (KeyPair optional for OAuth2)',
+      uptime: 99.9
+    }
+  }
+  return {
+    name: 'Mappls (MapMyIndia)',
+    status: 'degraded',
+    message: 'Not configured. Set MAPPLS_REST_API_KEY in .env.local',
+    uptime: 0
+  }
+}
+
+/**
  * Check authentication service
  */
 function checkAuthentication(): StatusCheck {
@@ -393,10 +424,11 @@ export async function GET() {
   
   try {
     // Run all checks in parallel
-    const [anthropicStatus, databaseStatus, authStatus, dbStats] = await Promise.all([
+    const [anthropicStatus, databaseStatus, authStatus, mapplsStatus, dbStats] = await Promise.all([
       checkAnthropic(),
       checkDatabase(),
       Promise.resolve(checkAuthentication()),
+      Promise.resolve(checkMappls()),
       getDatabaseStats()
     ])
     
@@ -429,7 +461,8 @@ export async function GET() {
       coreSystems: {
         database: databaseStatus,
         aiEngine: anthropicStatus,
-        authentication: authStatus
+        authentication: authStatus,
+        mappls: mapplsStatus
       },
       features: getFeatureStatus(),
       apiEndpoints: getApiEndpoints(),

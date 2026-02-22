@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import {
+  mapplsGeocode,
+  mapplsNearby,
+  mapplsNearbyTransit,
+  mapToMapplsNearbyParams,
+} from '@/lib/mappls-api'
+import { isMapplsConfigured } from '@/lib/mappls-config'
+import {
+  computeSaturationIndex,
+  computeDemandGapScore,
+  computeWhitespaceScore,
+  estimateMonthlyRevenue,
+} from '@/lib/location-intelligence/scoring'
+import { cacheGet, cacheSet, locationIntelCacheKey } from '@/lib/redis'
+import { classifyBrand } from '@/lib/location-intelligence/brand-classifier'
+
 type LocationIntelligenceRequest = {
   lat?: number
   lng?: number
@@ -18,6 +34,7 @@ type Competitor = {
   rating?: number
   userRatingsTotal?: number
   address?: string
+  brandType?: 'popular' | 'new'
 }
 
 type LocationIntelligenceResponse = {
@@ -43,6 +60,26 @@ type LocationIntelligenceResponse = {
     saturationLevel: 'low' | 'medium' | 'high'
     competitorCount: number
     summary: string
+    saturationIndex?: number
+    whitespaceScore?: number
+    demandGapScore?: number
+  }
+  scores?: {
+    saturationIndex: number
+    whitespaceScore: number
+    demandGapScore: number
+    revenueProjectionMonthly: number
+    revenueInputs?: {
+      dailyFootfall: number
+      captureRatePercent: number
+      avgTicketSize: number
+      note: string
+    }
+  }
+  dataSource?: {
+    competitors: 'mappls' | 'google' | 'none'
+    transit: 'mappls' | 'google' | 'none'
+    geocoding: 'mappls' | 'google' | 'none'
   }
 }
 
@@ -63,7 +100,7 @@ function haversineDistanceMeters(a: { lat: number; lng: number }, b: { lat: numb
   return EARTH_RADIUS_M * c
 }
 
-/** Google Places type + optional keyword for category-specific competitor search */
+/** Google Places type + keyword for competitor search (Google = POI data, Mappls = geocoding only) */
 function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string): { type: string; keyword: string } {
   const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
   const b = (businessType || '').toLowerCase()
@@ -225,7 +262,7 @@ function buildMockResponse(lat: number, lng: number): LocationIntelligenceRespon
     market: {
       saturationLevel: 'low',
       competitorCount: 0,
-      summary: 'Enable Google Maps APIs (Places, Geocoding) for competitor and transit data.',
+      summary: 'Enable Google Places API for competitor and transit data (Mappls handles geocoding when configured).',
     },
   }
 }
@@ -249,34 +286,34 @@ export async function POST(request: NextRequest) {
     let { lat, lng, address, city, state, propertyType, businessType } = body
 
     if (typeof lat !== 'number' || typeof lng !== 'number') {
-      // If coordinates missing, try to geocode using address + city
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-
       const locationQuery = [address, city, state].filter(Boolean).join(', ')
-
-      if (apiKey && locationQuery) {
-        try {
-          const geocodeUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json')
-          geocodeUrl.searchParams.set('address', locationQuery)
-          geocodeUrl.searchParams.set('key', apiKey)
-
-          const geoRes = await fetch(geocodeUrl.toString(), {
-            signal: AbortSignal.timeout(10000) // 10 second timeout
-          })
-          
-          if (!geoRes.ok) {
-            console.warn('[LocationIntelligence API] Geocode API returned error:', geoRes.status)
-          } else {
-            const geoJson = await geoRes.json()
-
-            if (geoJson.results && geoJson.results[0]?.geometry?.location) {
-              lat = geoJson.results[0].geometry.location.lat
-              lng = geoJson.results[0].geometry.location.lng
+      if (!locationQuery.trim()) {
+        // Will fail below with proper error
+      } else if (isMapplsConfigured()) {
+        const coords = await mapplsGeocode(locationQuery)
+        if (coords) {
+          lat = coords.lat
+          lng = coords.lng
+        }
+      }
+      if (typeof lat !== 'number' || typeof lng !== 'number') {
+        const googleKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+        if (googleKey && locationQuery) {
+          try {
+            const geoUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json')
+            geoUrl.searchParams.set('address', locationQuery)
+            geoUrl.searchParams.set('key', googleKey)
+            const geoRes = await fetch(geoUrl.toString(), { signal: AbortSignal.timeout(10000) })
+            if (geoRes.ok) {
+              const geoJson = await geoRes.json()
+              if (geoJson.results?.[0]?.geometry?.location) {
+                lat = geoJson.results[0].geometry.location.lat
+                lng = geoJson.results[0].geometry.location.lng
+              }
             }
+          } catch (e: any) {
+            console.warn('[LocationIntelligence API] Geocode failed:', e?.message)
           }
-        } catch (geocodeError: any) {
-          console.warn('[LocationIntelligence API] Geocode failed:', geocodeError.message)
-          // Continue without coordinates if geocoding fails
         }
       }
     }
@@ -291,49 +328,76 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Phase 6: Redis cache
+    const cacheKey = locationIntelCacheKey(lat, lng, body.propertyType, body.businessType)
+    const cached = await cacheGet<LocationIntelligenceResponse>(cacheKey)
+    if (cached) {
+      return NextResponse.json({ success: true, data: cached })
+    }
+
     // Priority: Use server-side env var first (more reliable for API routes)
     // Fallback to NEXT_PUBLIC_* for compatibility
-    const apiKey =
+    const googleApiKey =
       process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    
-    if (!apiKey) {
-      const errorMsg = 'Google Maps API key not configured. Please set GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your production environment variables.'
+    const hasMappls = isMapplsConfigured()
+
+    if (!googleApiKey && !hasMappls) {
+      const errorMsg =
+        'Configure at least one: MAPPLS_REST_API_KEY (India POI) or GOOGLE_MAPS_API_KEY (Places API).'
       console.error('[LocationIntelligence API]', errorMsg)
-      console.error('[LocationIntelligence API] Environment check:', {
-        NODE_ENV: process.env.NODE_ENV,
-        VERCEL_ENV: process.env.VERCEL_ENV,
-        hasGOOGLE_MAPS_API_KEY: !!process.env.GOOGLE_MAPS_API_KEY,
-        hasNEXT_PUBLIC_GOOGLE_MAPS_API_KEY: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-      })
-      
-      // Return error response instead of silent mock data in production
+
       if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
         return NextResponse.json(
           {
             success: false,
             error: errorMsg,
-            details: 'Location intelligence requires Google Maps API key. Please configure it in your deployment platform settings.',
+            details: 'Location intelligence requires Mappls or Google Places API.',
           },
           { status: 503 }
         )
       }
-      
-      // In development, warn but continue with mock data
       console.warn('[LocationIntelligence API]', errorMsg)
     }
     
     const { type: placeType, keyword: placeKeyword } = mapToPlaceTypeAndKeyword(propertyType, businessType)
+    const mapplsParams = mapToMapplsNearbyParams(propertyType, businessType)
 
     let competitors: Competitor[] = []
+    let competitorsSource: 'mappls' | 'google' | 'none' = 'none'
 
-    if (apiKey) {
+    // Phase 2: Mappls first for competitors (India-native POI), fallback to Google
+    if (isMapplsConfigured() && typeof lat === 'number' && typeof lng === 'number') {
+      try {
+        const mapplsResults = await mapplsNearby(
+          lat,
+          lng,
+          { keywords: mapplsParams.keywords, categoryCode: mapplsParams.categoryCode },
+          { radius: 1000, limit: 20 }
+        )
+        if (mapplsResults.length > 0) {
+          competitors = mapplsResults.map((m) => ({
+            name: m.name,
+            lat: m.lat,
+            lng: m.lng,
+            distanceMeters: m.distanceMeters,
+            address: m.address,
+            brandType: classifyBrand(m.name),
+          }))
+          competitorsSource = 'mappls'
+        }
+      } catch (e: any) {
+        console.warn('[LocationIntelligence API] Mappls Nearby failed:', e?.message)
+      }
+    }
+
+    if (competitors.length === 0 && googleApiKey) {
       try {
         const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
         url.searchParams.set('location', `${lat},${lng}`)
         url.searchParams.set('radius', '1000')
         url.searchParams.set('type', placeType)
         if (placeKeyword) url.searchParams.set('keyword', placeKeyword)
-        url.searchParams.set('key', apiKey)
+        url.searchParams.set('key', googleApiKey)
 
         const res = await fetch(url.toString(), {
           signal: AbortSignal.timeout(15000) // 15 second timeout
@@ -388,6 +452,10 @@ export async function POST(request: NextRequest) {
                     ? place.user_ratings_total
                     : undefined,
                 address: place.vicinity || place.formatted_address,
+                brandType: classifyBrand(
+                  place.name,
+                  typeof place.user_ratings_total === 'number' ? place.user_ratings_total : undefined
+                ),
               } as Competitor
             })
 
@@ -398,6 +466,7 @@ export async function POST(request: NextRequest) {
 
             // Sort competitors by distance
             competitors.sort((a, b) => a.distanceMeters - b.distanceMeters)
+            if (competitors.length > 0) competitorsSource = 'google'
             }
           }
         }
@@ -407,38 +476,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch nearest metro (real data) when we have API key
+    // Fetch nearest metro: Mappls first, fallback to Google
     let nearestMetro: { name: string; distanceMeters: number } | undefined
     let nearestBusStop: { name: string; distanceMeters: number } | undefined
-    if (apiKey && typeof lat === 'number' && typeof lng === 'number') {
-      try {
-        const transitUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
-        transitUrl.searchParams.set('location', `${lat},${lng}`)
-        transitUrl.searchParams.set('radius', '2000')
-        transitUrl.searchParams.set('keyword', 'metro station Namma Metro')
-        transitUrl.searchParams.set('key', apiKey)
-        const transitRes = await fetch(transitUrl.toString(), { signal: AbortSignal.timeout(8000) })
-        if (transitRes.ok) {
-          const transitJson = await transitRes.json()
-          const first = transitJson.results?.[0]
-          if (first?.geometry?.location && first?.name) {
-            const metroLat = first.geometry.location.lat
-            const metroLng = first.geometry.location.lng
-            nearestMetro = {
-              name: first.name,
-              distanceMeters: Math.round(haversineDistanceMeters({ lat, lng }, { lat: metroLat, lng: metroLng })),
+    let transitSource: 'mappls' | 'google' | 'none' = 'none'
+
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      if (isMapplsConfigured()) {
+        try {
+          const mapplsMetro = await mapplsNearbyTransit(lat, lng, 'metro station Namma Metro')
+          if (mapplsMetro) {
+            nearestMetro = { name: mapplsMetro.name, distanceMeters: mapplsMetro.distanceMeters }
+            transitSource = 'mappls'
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (!nearestMetro && googleApiKey) {
+        try {
+          const transitUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
+          transitUrl.searchParams.set('location', `${lat},${lng}`)
+          transitUrl.searchParams.set('radius', '2000')
+          transitUrl.searchParams.set('keyword', 'metro station Namma Metro')
+          transitUrl.searchParams.set('key', googleApiKey)
+          const transitRes = await fetch(transitUrl.toString(), { signal: AbortSignal.timeout(8000) })
+          if (transitRes.ok) {
+            const transitJson = await transitRes.json()
+            const first = transitJson.results?.[0]
+            if (first?.geometry?.location && first?.name) {
+              const metroLat = first.geometry.location.lat
+              const metroLng = first.geometry.location.lng
+              nearestMetro = {
+                name: first.name,
+                distanceMeters: Math.round(haversineDistanceMeters({ lat, lng }, { lat: metroLat, lng: metroLng })),
+              }
+              transitSource = 'google'
             }
           }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
       }
     }
 
-    // Build response - use real data if we have API key, even if competitors is empty (ZERO_RESULTS is valid)
-    // Note: If apiKey is missing, we should have already returned an error above in production
+    // Build response - use real data when we have Mappls or Google; mock only when neither
     let response: LocationIntelligenceResponse
-    if (!apiKey) {
+    if (!googleApiKey && !hasMappls) {
       // No API key - use mock response (should only happen in development after warning)
       response = buildMockResponse(lat as number, lng as number)
       if (nearestMetro) response.accessibility.nearestMetro = nearestMetro
@@ -486,6 +570,19 @@ export async function POST(request: NextRequest) {
         high: `High saturation in this category (${competitorCount} nearby). Best for strong brands with clear differentiation.`,
       }
 
+      // Phase 4: Scoring engine integration
+      const populationDensity = 5000 + dailyAverage * 0.3
+      const saturationIdx = computeSaturationIndex(competitorCount, populationDensity)
+      const inverseSaturation = Math.max(0, 100 - saturationIdx)
+      const populationWeighted = Math.min(100, (dailyAverage / 100) * 2)
+      const categorySupplyScore = Math.max(0, 100 - saturationIdx)
+      const demandGap = computeDemandGapScore(populationWeighted, categorySupplyScore)
+      const footfallScore = Math.min(100, Math.round((dailyAverage / 5000) * 100))
+      const whitespaceScore = computeWhitespaceScore(demandGap, inverseSaturation, footfallScore)
+      const captureRate = isFb ? 1.2 : 1
+      const avgTicket = isFb ? 240 : 200
+      const revenueProjection = estimateMonthlyRevenue(dailyAverage, captureRate, avgTicket)
+
       response = {
         competitors,
         footfall,
@@ -495,9 +592,31 @@ export async function POST(request: NextRequest) {
           saturationLevel: saturation,
           competitorCount,
           summary: summaryMap[saturation],
+          saturationIndex: saturationIdx,
+          whitespaceScore,
+          demandGapScore: demandGap,
+        },
+        scores: {
+          saturationIndex: saturationIdx,
+          whitespaceScore,
+          demandGapScore: demandGap,
+          revenueProjectionMonthly: revenueProjection,
+          revenueInputs: {
+            dailyFootfall: dailyAverage,
+            captureRatePercent: captureRate,
+            avgTicketSize: avgTicket,
+            note: 'Conservative estimate: footfall × 30 days × 1.2% capture × ₹240 ticket. Based on industry benchmarks (4% entry × 30% purchase). Excludes rent, COGS, labour.',
+          },
+        },
+        dataSource: {
+          competitors: competitorsSource,
+          transit: transitSource,
+          geocoding: hasMappls ? 'mappls' : googleApiKey ? 'google' : 'none',
         },
       }
     }
+
+    await cacheSet(cacheKey, response)
 
     return NextResponse.json({
       success: true,

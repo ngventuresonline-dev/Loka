@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { GoogleMap, Marker, Circle, useLoadScript } from '@react-google-maps/api'
 import type { Property } from '@/types/workflow'
 import { motion } from 'framer-motion'
@@ -16,6 +16,7 @@ type LocationIntelligenceData = {
     rating?: number
     userRatingsTotal?: number
     address?: string
+    brandType?: 'popular' | 'new'
   }[]
   footfall: {
     dailyAverage: number
@@ -38,6 +39,26 @@ type LocationIntelligenceData = {
     saturationLevel: 'low' | 'medium' | 'high'
     competitorCount: number
     summary: string
+    saturationIndex?: number
+    whitespaceScore?: number
+    demandGapScore?: number
+  }
+  scores?: {
+    saturationIndex: number
+    whitespaceScore: number
+    demandGapScore: number
+    revenueProjectionMonthly: number
+    revenueInputs?: {
+      dailyFootfall: number
+      captureRatePercent: number
+      avgTicketSize: number
+      note: string
+    }
+  }
+  dataSource?: {
+    competitors: 'mappls' | 'google' | 'none'
+    transit: 'mappls' | 'google' | 'none'
+    geocoding: 'mappls' | 'google' | 'none'
   }
 }
 
@@ -104,6 +125,38 @@ function getSaturationColor(level: 'low' | 'medium' | 'high') {
   if (level === 'low') return 'bg-green-100 text-green-800 border-green-300'
   if (level === 'medium') return 'bg-yellow-100 text-yellow-800 border-yellow-300'
   return 'bg-red-100 text-red-800 border-red-300'
+}
+
+function InfoTooltip({ text, className = '' }: { text: string; className?: string }) {
+  const [show, setShow] = useState(false)
+  const id = useId()
+  return (
+    <span className={`relative inline-flex ${className}`}>
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onClick={() => setShow((s) => !s)}
+        onFocus={() => setShow(true)}
+        onBlur={() => setShow(false)}
+        title={text}
+        className="inline-flex items-center justify-center min-w-[18px] min-h-[18px] w-[18px] h-[18px] sm:min-w-[20px] sm:min-h-[20px] sm:w-5 sm:h-5 rounded-full bg-gray-300 text-gray-600 hover:bg-gray-400 hover:text-gray-800 active:bg-gray-500 text-[10px] sm:text-xs font-semibold cursor-help touch-manipulation"
+        aria-label="More info"
+        aria-describedby={show ? id : undefined}
+      >
+        i
+      </button>
+      {show && (
+        <span
+          id={id}
+          role="tooltip"
+          className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-[100] px-3 py-2 text-[11px] sm:text-xs text-gray-100 bg-gray-900 rounded-lg shadow-xl max-w-[260px] sm:max-w-[280px] whitespace-normal pointer-events-none"
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  )
 }
 
 export function LocationIntelligence({ property, businessType }: LocationIntelligenceProps) {
@@ -252,33 +305,45 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
   // Show insights even if Google Maps fails to load (we can still show data from API)
   const hasInsights = !!data && !error
 
+  const newBrands = (data?.competitors ?? []).filter((c) => (c.brandType ?? 'new') === 'new')
+  const popularBrands = (data?.competitors ?? []).filter((c) => c.brandType === 'popular')
+
   return (
-    <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 break-words leading-tight">Location Intelligence</h3>
-          <p className="text-xs sm:text-sm text-gray-600 max-w-xl break-words mt-1 leading-relaxed">
-            AI view of competition, footfall, and accessibility within a 1 km micro-market around this site.
-          </p>
+    <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 w-full max-w-7xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,82,0,0.15),transparent)]" />
+        <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] sm:text-xs font-medium text-white/90 mb-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live · 1 km micro-market
+            </div>
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight break-words">
+              Location Intelligence
+            </h3>
+            <p className="mt-2 text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
+              AI-powered competition, footfall, and accessibility insights for this site.
+            </p>
+          </div>
+          {hasInsights && data && (
+            <span
+              className={`inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap flex-shrink-0 ${getSaturationColor(
+                data.market.saturationLevel
+              )}`}
+            >
+              {data.market.saturationLevel === 'low'
+                ? 'Low Saturation'
+                : data.market.saturationLevel === 'medium'
+                ? 'Medium Saturation'
+                : 'High Saturation'}
+            </span>
+          )}
         </div>
-        {hasInsights && data && (
-          <span
-            className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full border text-xs font-semibold whitespace-nowrap flex-shrink-0 ${getSaturationColor(
-              data.market.saturationLevel
-            )}`}
-          >
-            {data.market.saturationLevel === 'low'
-              ? 'Low Saturation'
-              : data.market.saturationLevel === 'medium'
-              ? 'Medium Saturation'
-              : 'High Saturation'}
-          </span>
-        )}
       </div>
 
       {/* PART 1: Map + Key Metrics (always visible) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] gap-4 sm:gap-5">
+        <div className="min-w-0 bg-white rounded-2xl shadow-sm shadow-gray-200/50 border border-gray-100 overflow-hidden">
           <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white text-[10px] sm:text-xs font-bold flex-shrink-0">
@@ -286,12 +351,26 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
               </span>
               <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">Competition Map · 1 km Radius</span>
             </div>
-            <span className="text-[10px] sm:text-xs text-gray-500 truncate">
-              Lat {coordinates.lat.toFixed(4)}, Lng {coordinates.lng.toFixed(4)}
-            </span>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2">
+              {hasInsights && data?.dataSource && (
+                <span className="text-[9px] sm:text-[10px] text-gray-400 whitespace-nowrap">
+                  {data.dataSource.competitors === 'mappls' ? (
+                    <span title="India-native POI data from Mappls">India POI: Mappls</span>
+                  ) : data.dataSource.competitors === 'google' ? (
+                    'POI: Google'
+                  ) : (
+                    'POI: —'
+                  )}{' '}
+                  · Map: Google
+                </span>
+              )}
+              <span className="text-[10px] sm:text-xs text-gray-500 truncate">
+                Lat {coordinates.lat.toFixed(4)}, Lng {coordinates.lng.toFixed(4)}
+              </span>
+            </div>
           </div>
 
-          <div className="h-64 sm:h-72 md:h-80 lg:h-72">
+          <div className="h-56 sm:h-64 md:h-72 lg:h-[320px] min-h-[220px]">
             {!isLoaded && !loadError && (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center px-4">
@@ -440,7 +519,7 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
         </div>
 
         {hasInsights ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-3 sm:space-4 relative overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm shadow-gray-200/50 border border-gray-100 p-4 sm:p-5 space-y-4 relative overflow-visible min-w-0">
             <div>
               <div className="flex items-center justify-between mb-1 gap-2">
                 <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">Market Saturation</span>
@@ -473,8 +552,8 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs">
-              <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 sm:p-3">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 sm:p-4">
                 <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Daily Footfall (modeled estimate)</div>
                 <div className="text-base sm:text-lg font-bold text-gray-900 break-words">
                   {data ? data.footfall.dailyAverage.toLocaleString('en-IN') : '—'}
@@ -486,7 +565,7 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
                   </span>
                 </div>
               </div>
-              <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 sm:p-3">
+              <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 sm:p-4">
                 <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Peak Hours</div>
                 <ul className="space-y-0.5 sm:space-y-1">
                   {data?.footfall.peakHours.map((h, idx) => (
@@ -498,7 +577,40 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
               </div>
             </div>
 
-            <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 sm:p-3 text-[11px] sm:text-xs">
+            {data?.scores && (
+              <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 text-[10px] sm:text-xs">
+                <div className="rounded-xl bg-slate-50/80 border border-slate-100 px-3 py-2 sm:px-2 sm:py-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5 text-gray-500 min-w-0">
+                    <span className="truncate">Market Opportunity</span>
+                    <InfoTooltip text="Untapped potential in this micro-market." className="flex-shrink-0" />
+                  </div>
+                  <div className="font-semibold text-gray-900 mt-0.5">{data.scores.whitespaceScore}/100</div>
+                </div>
+                <div className="rounded-xl bg-slate-50/80 border border-slate-100 px-3 py-2 sm:px-2 sm:py-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5 text-gray-500 min-w-0">
+                    <span className="truncate">Demand vs Supply</span>
+                    <InfoTooltip text="Unmet demand in this category." className="flex-shrink-0" />
+                  </div>
+                  <div className="font-semibold text-gray-900 mt-0.5">{data.scores.demandGapScore}/100</div>
+                </div>
+                <div className="rounded-xl bg-slate-50/80 border border-slate-100 px-3 py-2 sm:px-2 sm:py-1.5 min-w-0 min-[480px]:col-span-2 sm:col-span-1">
+                  <div className="flex items-center gap-1.5 text-gray-500 min-w-0">
+                    <span className="truncate">Potential Revenue</span>
+                    <InfoTooltip
+                      text="Estimated gross monthly revenue for a similar business."
+                    className="flex-shrink-0"
+                    />
+                  </div>
+                  <div className="font-semibold text-gray-900 mt-0.5">
+                    {data.scores.revenueProjectionMonthly >= 100000
+                      ? `₹${(data.scores.revenueProjectionMonthly / 100000).toFixed(1)}L/mo`
+                      : `₹${(data.scores.revenueProjectionMonthly / 1000).toFixed(0)}K/mo`}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 sm:p-4 text-[11px] sm:text-xs">
               <div className="flex items-center justify-between mb-2 gap-2">
                 <span className="text-gray-500">Accessibility</span>
                 <span className="text-[10px] text-gray-500 whitespace-nowrap flex-shrink-0">
@@ -549,9 +661,9 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
           <button
             type="button"
             onClick={() => setShowDetails(true)}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full border border-gray-300 bg-white text-xs sm:text-sm text-gray-700 hover:border-[#FF5200] hover:text-[#FF5200] transition-colors"
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-gray-700 hover:border-[#FF5200] hover:bg-orange-50/50 hover:text-[#FF5200] transition-all"
           >
-            <span className="break-words">View detailed competitors & demographics</span>
+            <span className="break-words">View New Brands, Popular Brands & Demographics</span>
             <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -560,48 +672,100 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
       )}
 
       {hasInsights && data && showDetails && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 lg:col-span-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Top Nearby Competitors</h4>
-              <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
-                Within 1 km · Showing {Math.min(data.competitors.length || 0, 5)} of{' '}
-                {data.competitors.length || 0}
-              </span>
-            </div>
-            {(!data || data.competitors.length === 0) && (
-              <p className="text-[11px] sm:text-xs text-gray-500 break-words">
-                Competitor information will appear here as soon as Google Places data is available for
-                this micro-market.
-              </p>
-            )}
-            <ul className="divide-y divide-gray-100">
-              {data.competitors.slice(0, 5).map((c, idx) => (
-                <li key={idx} className="py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{c.name}</div>
-                    {c.address && (
-                      <div className="text-[10px] sm:text-xs text-gray-500 truncate">{c.address}</div>
-                    )}
-                  </div>
-                  <div className="text-right text-[10px] sm:text-xs text-gray-600 flex flex-col items-end gap-0.5 flex-shrink-0">
-                    {c.rating != null && (
-                      <span className="inline-flex items-center gap-1">
-                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-yellow-400 text-white text-[8px] sm:text-[9px] font-bold">
-                          ★
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="lg:col-span-2 space-y-4">
+            {newBrands.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm shadow-gray-200/50 border border-gray-100 p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    New Brands
+                  </h4>
+                  <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
+                    {newBrands.length} emerging
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-gray-500 mb-3">Discover newer establishments in this micro-market.</p>
+                <ul className="divide-y divide-gray-100">
+                  {newBrands.slice(0, 6).map((c, idx) => (
+                    <li key={`new-${idx}`} className="py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-gray-900 truncate">{c.name}</div>
+                        {c.address && (
+                          <div className="text-[11px] text-gray-500 truncate mt-0.5">{c.address}</div>
+                        )}
+                      </div>
+                      {c.rating != null && (
+                        <span className="inline-flex items-center gap-1 flex-shrink-0 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-medium">
+                          ★ {c.rating.toFixed(1)}
                         </span>
-                        <span className="whitespace-nowrap">{c.rating.toFixed(1)}</span>
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {popularBrands.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm shadow-gray-200/50 border border-gray-100 p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="inline-flex h-2 w-2 rounded-full bg-slate-400" />
+                    Popular Brands
+                  </h4>
+                  <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
+                    {popularBrands.length} known chains
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-gray-500 mb-3">Established brands already in this area.</p>
+                <ul className="divide-y divide-gray-100">
+                  {popularBrands.slice(0, 4).map((c, idx) => (
+                    <li key={`pop-${idx}`} className="py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-gray-900 truncate">{c.name}</div>
+                        {c.address && (
+                          <div className="text-[11px] text-gray-500 truncate mt-0.5">{c.address}</div>
+                        )}
+                      </div>
+                      {c.rating != null && (
+                        <span className="inline-flex items-center gap-1 flex-shrink-0 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium">
+                          ★ {c.rating.toFixed(1)}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {newBrands.length === 0 && popularBrands.length === 0 && data.competitors.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm shadow-gray-200/50 border border-gray-100 p-4 sm:p-5">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Nearby</h4>
+                <ul className="divide-y divide-gray-100">
+                  {data.competitors.slice(0, 6).map((c, idx) => (
+                    <li key={idx} className="py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-gray-900 truncate">{c.name}</div>
+                        {c.address && <div className="text-[11px] text-gray-500 truncate mt-0.5">{c.address}</div>}
+                      </div>
+                      {c.rating != null && (
+                        <span className="inline-flex items-center gap-1 flex-shrink-0 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-medium">
+                          ★ {c.rating.toFixed(1)}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(!data || data.competitors.length === 0) && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center">
+                <p className="text-sm text-gray-500">POI data will appear here when available (Mappls / Google).</p>
+              </div>
+            )}
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
+          <div className="bg-white rounded-2xl shadow-sm shadow-gray-200/50 border border-gray-100 p-4 sm:p-5 space-y-4">
             <div>
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2">Demographics (est.)</h4>
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Demographics (est.)</h4>
               <div className="space-y-1.5">
                 {data.demographics.ageGroups.map((g, idx) => (
                   <div key={idx} className="flex items-center gap-1.5 sm:gap-2">
@@ -623,12 +787,12 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
             </div>
 
             <div>
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">Lifestyle Snapshot</h4>
-              <div className="flex flex-wrap gap-1 sm:gap-1.5">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Lifestyle Snapshot</h4>
+              <div className="flex flex-wrap gap-2">
                 {data.demographics.lifestyle.map((tag, idx) => (
                   <span
                     key={idx}
-                    className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-gray-50 border border-gray-200 text-[10px] sm:text-[11px] text-gray-700 break-words"
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-xs text-gray-700"
                   >
                     {tag}
                   </span>
@@ -645,7 +809,7 @@ export function LocationIntelligence({ property, businessType }: LocationIntelli
 
       {loading && (
         <p className="text-[11px] sm:text-xs text-gray-500 break-words">
-          Analyzing this micro-market using AI and Google Maps signals…
+          Analyzing this micro-market using AI and location data…
         </p>
       )}
       {error && (

@@ -3,7 +3,7 @@
  * Used so Location Intelligence shows the correct location for each property.
  */
 
-/** Extract lat/lng from a Google Maps URL */
+/** Extract lat/lng from a maps URL (Google Maps, MapMyIndia, etc.) */
 export function extractLatLngFromMapLink(mapLink: string | null | undefined): { lat: number; lng: number } | null {
   if (!mapLink || typeof mapLink !== 'string') return null
   const s = mapLink.trim()
@@ -40,21 +40,33 @@ export function getPropertyCoordinatesFromRow(row: {
   return null
 }
 
-/** Geocode address + city + state (and optional title) via Google Geocoding API. Returns lat/lng or null. */
+/**
+ * Geocode address + city + state. Uses Mappls first (India-native), fallback to Google.
+ * Mappls = geocoding | Google = fallback only.
+ */
 export async function geocodeAddress(
   address: string,
   city: string,
   state: string,
-  title?: string | null
+  _title?: string | null
 ): Promise<{ lat: number; lng: number } | null> {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  if (!apiKey) return null
   const query = [address, city, state].filter(Boolean).join(', ')
   if (!query.trim()) return null
+
+  const { mapplsGeocode } = await import('./mappls-api')
+  const { isMapplsConfigured } = await import('./mappls-config')
+
+  if (isMapplsConfigured()) {
+    const coords = await mapplsGeocode(query)
+    if (coords) return coords
+  }
+
+  const googleKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  if (!googleKey) return null
   try {
     const url = new URL('https://maps.googleapis.com/maps/api/geocode/json')
     url.searchParams.set('address', query)
-    url.searchParams.set('key', apiKey)
+    url.searchParams.set('key', googleKey)
     const res = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const json = await res.json()
