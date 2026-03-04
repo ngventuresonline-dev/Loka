@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BarChart3, DollarSign, Store, Users, Train, ShieldAlert } from 'lucide-react'
 interface IntelligenceData {
   overallScore: number
   footfallScore: number
@@ -193,12 +194,12 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'revenue', label: 'Revenue', icon: '💰' },
-    { id: 'competition', label: 'Competition', icon: '🏪' },
-    { id: 'demographics', label: 'Demographics', icon: '👥' },
-    { id: 'transport', label: 'Transport', icon: '🚇' },
-    { id: 'risks', label: 'Risks', icon: '⚠️' },
+    { id: 'overview', label: 'Overview', Icon: BarChart3 },
+    { id: 'revenue', label: 'Revenue', Icon: DollarSign },
+    { id: 'competition', label: 'Compete', Icon: Store },
+    { id: 'demographics', label: 'Demo', Icon: Users },
+    { id: 'transport', label: 'Transit', Icon: Train },
+    { id: 'risks', label: 'Risks', Icon: ShieldAlert },
   ]
 
   return (
@@ -232,14 +233,14 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`py-2 sm:py-2.5 rounded-lg sm:rounded-full text-center transition-colors ${
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${
               activeTab === t.id
                 ? 'bg-[#FF5200] text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
             }`}
           >
-            <span className="block sm:hidden text-base leading-none">{t.icon}</span>
-            <span className="block text-[9px] sm:text-sm font-medium leading-tight mt-0.5 sm:mt-0 truncate px-0.5">
+            <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
+            <span className="text-[9px] sm:text-xs font-medium leading-none">
               {t.label}
             </span>
           </button>
