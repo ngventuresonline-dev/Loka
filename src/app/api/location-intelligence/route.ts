@@ -378,8 +378,10 @@ function getDemographicsForArea(lat: number, lng: number): DemographicsVariant {
 /** Get demographics: prefer CensusData when available, else AREA_DEMOGRAPHICS fallback */
 async function getDemographicsForLocation(lat: number, lng: number): Promise<DemographicsVariant> {
   const prisma = await getPrisma()
-  const ward = await findNearestCensusWard(prisma, { latitude: lat, longitude: lng })
-  if (ward) return censusToDemographics(ward)
+  if (prisma) {
+    const ward = await findNearestCensusWard(prisma, { latitude: lat, longitude: lng })
+    if (ward) return censusToDemographics(ward)
+  }
   return getDemographicsForArea(lat, lng)
 }
 
