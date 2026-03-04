@@ -858,7 +858,7 @@ export async function POST(request: NextRequest) {
       })
 
       const prismaForWard = await getPrisma()
-      const wardForPop = await findNearestCensusWard(prismaForWard, { latitude: lat, longitude: lng })
+      const wardForPop = prismaForWard ? await findNearestCensusWard(prismaForWard, { latitude: lat, longitude: lng }) : null
       const pop = wardForPop?.totalPopulation as number | undefined
       const hhSize = wardForPop?.avgHouseholdSize as number | undefined
       const inc15 = wardForPop?.incomeAbove15L as number | undefined
