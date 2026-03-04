@@ -4,7 +4,7 @@ AI-powered commercial real estate matching platform built with Next.js 15.
 
 ## Features
 
-- **AI-Powered Search**: Intelligent property search using Anthropic Claude
+- **AI-Powered Search**: Intelligent property search using Google Gemini
 - **Brand & Owner Flows**: Separate flows for brands looking for space and owners listing properties
 - **Context-Aware Conversations**: Maintains conversation context across turns
 - **Form Pre-filling**: Automatically pre-fills onboarding forms with collected details
@@ -12,7 +12,7 @@ AI-powered commercial real estate matching platform built with Next.js 15.
 ## Tech Stack
 
 - **Framework**: Next.js 15
-- **AI**: Anthropic Claude 3.5 Sonnet
+- **AI**: Google Gemini 2.0 Flash
 - **Styling**: Tailwind CSS
 - **Database**: Prisma (PostgreSQL)
 - **Authentication**: NextAuth.js
@@ -27,7 +27,7 @@ AI-powered commercial real estate matching platform built with Next.js 15.
 2. **Set up environment variables**:
    Create a `.env.local` file with:
    ```
-   ANTHROPIC_API_KEY=your_anthropic_api_key
+   GOOGLE_AI_API_KEY=your_google_ai_api_key
    DATABASE_URL=your_database_url
    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
    ```

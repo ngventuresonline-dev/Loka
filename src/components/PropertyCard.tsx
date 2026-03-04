@@ -274,6 +274,12 @@ function PropertyCard({
           >
             {bfiScore !== undefined ? 'View Match' : 'View Details'}
           </Link>
+          <Link
+            href={`/properties/${encodePropertyId(property.id)}/match#intelligence`}
+            className="px-3 sm:px-4 py-3 bg-white border border-gray-200 hover:border-[#FF5722] text-gray-700 rounded-lg font-semibold transition-colors text-[11px] sm:text-sm whitespace-nowrap"
+          >
+            Intelligence
+          </Link>
           {showContact && (
             <button
               onClick={() => setShowContact(!showContact)}

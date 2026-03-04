@@ -210,6 +210,36 @@ model location_reports {
   @@index([user_id], map: "idx_location_reports_user_id")
 }
 
+/// PhonePe payments for brand plans, location reports, and visit scheduling
+model Payment {
+  id                 String            @id @default(uuid()) @db.VarChar(36)
+  merchant_order_id  String            @unique @map("merchant_order_id") @db.VarChar(100)
+  flow               String            @db.VarChar(30)
+  reference_id       String?           @map("reference_id") @db.VarChar(100)
+  user_id            String?           @map("user_id") @db.VarChar(36)
+  amount_paise       Int               @map("amount_paise")
+  amount_inr         Decimal           @map("amount_inr") @db.Decimal(12, 2)
+  status             payment_status_enum @default(pending)
+  phonepe_order_id   String?           @map("phonepe_order_id") @db.VarChar(100)
+  phonepe_transaction_id String?       @map("phonepe_transaction_id") @db.VarChar(100)
+  meta_json          Json?             @map("meta_json")
+  created_at         DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  updated_at         DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
+  user               User?             @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([flow], map: "idx_payments_flow")
+  @@index([user_id], map: "idx_payments_user_id")
+  @@index([merchant_order_id], map: "idx_payments_merchant_order_id")
+  @@index([status], map: "idx_payments_status")
+  @@map("payments")
+}
+
+enum payment_status_enum {
+  pending
+  completed
+  failed
+}
+
 model owner_profiles {
   id               String    @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
   user_id          String    @unique @db.VarChar(36)
@@ -258,6 +288,8 @@ model Property {
   propertyViews        property_views[]
   savedBy              SavedProperty[]
   expertRequests       ExpertRequest[]
+  propertyIntelligence PropertyIntelligence?
+  competitors          Competitor[]
 
   @@map("properties")
   @@index([city], map: "idx_properties_city")
@@ -314,6 +346,7 @@ model User {
   inquiryResponses                    inquiry_responses[]
   locationReports                     location_reports[]
   ownerProfiles                       owner_profiles?
+  payments                            Payment[]
   properties                          Property[]
   propertyViews                       property_views[]
   savedProperties                     SavedProperty[]
@@ -386,4 +419,155 @@ enum expert_request_status_enum {
   scheduled
   completed
   cancelled
+}
+
+// =============================================
+// FRESH LOCATION INTELLIGENCE (2026-FOCUSED)
+// =============================================
+
+/// Per-property intelligence snapshot focused on 5 core questions
+model PropertyIntelligence {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  propertyId  String   @unique @db.VarChar(36)
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // CORE SCORES (0-100)
+  overallScore      Int
+  footfallScore     Int
+  revenueScore      Int
+  competitionScore  Int
+  accessScore       Int
+  demographicScore  Int
+  riskScore         Int
+
+  // FOOTFALL DATA
+  dailyFootfall     Int      // Estimated daily footfall
+  peakHours         String   @db.VarChar(100) // "12-2pm, 7-10pm"
+  weekendBoost      Int      // % increase on weekends
+
+  // REVENUE DATA
+  monthlyRevenueLow   Int    // Conservative estimate
+  monthlyRevenueHigh  Int    // Optimistic estimate
+  breakEvenMonths     Int    // Time to break even
+
+  // COMPETITION (top 5 only)
+  competitors       Json     // [{name, distance, rating, price}]
+  competitorCount   Int      // Total within 1km
+
+  // DEMOGRAPHICS (2026 projected)
+  wardCode          String?  @db.VarChar(50)
+  population        Int
+  populationDensity Int?
+  medianIncome      Int
+  age25_44Percent   Float    @db.DoublePrecision // Prime customer age
+  workingPopPercent Float    @db.DoublePrecision
+
+  // ACCESSIBILITY
+  metroDistance     Int?     // meters
+  metroName         String?  @db.VarChar(150)
+  busStops          Int      // within 500m
+  mainRoadDistance  Int      // meters
+
+  // INFRASTRUCTURE BOOST (2024-2026)
+  infrastructureBoost Int    // % boost from new metro/malls
+
+  // META
+  lastUpdated       DateTime @default(now()) @db.Timestamp(6)
+  dataQuality       Int      // 0-100
+
+  @@index([propertyId])
+  @@index([wardCode])
+  @@map("property_intelligence")
+}
+
+/// Per-locality 2026 demographic + lifestyle projection
+model AreaDemographics {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  locality        String   @unique @db.VarChar(150)  // "Indiranagar", "Koramangala"
+
+  // 2026 PROJECTIONS (from Census 2021 + growth)
+  population2026      Int
+  medianIncome2026    Int
+  age25_44_2026       Float  @db.DoublePrecision
+  workingPop2026      Float  @db.DoublePrecision
+  highIncome2026      Float  @db.DoublePrecision    // % earning >15L
+
+  // LIFESTYLE (2026)
+  diningOutPerWeek    Float  @db.DoublePrecision
+  cafeVisitsPerWeek   Float  @db.DoublePrecision
+  avgSpendPerMeal     Int
+
+  // GROWTH RATES (annual %)
+  populationGrowth    Float  @db.DoublePrecision
+  incomeGrowth        Float  @db.DoublePrecision
+
+  // INFRASTRUCTURE
+  newMetroStations    Int      // 2024-2026
+  newMalls            Int
+
+  @@index([locality])
+  @@map("area_demographics")
+}
+
+/// Ward-level demographics (Census 2021 + 2026 projection) for Bangalore
+model WardDemographics {
+  id                 String   @id @default(uuid()) @db.VarChar(36)
+  wardCode           String   @unique @db.VarChar(50)
+  wardName           String   @db.VarChar(150)
+  locality           String   @db.VarChar(150)
+  city               String   @default("Bangalore") @db.VarChar(100)
+
+  latitude           Float    @db.DoublePrecision
+  longitude          Float    @db.DoublePrecision
+
+  population2021     Int
+  population2026     Int
+  populationDensity  Int
+  populationGrowth   Float    @db.DoublePrecision
+
+  age18_24           Float    @db.DoublePrecision
+  age25_34           Float    @db.DoublePrecision
+  age35_44           Float    @db.DoublePrecision
+  age45_54           Float    @db.DoublePrecision
+  age55Plus          Float    @db.DoublePrecision
+  medianAge          Float    @db.DoublePrecision
+
+  income6to10L       Float    @db.DoublePrecision
+  income10to15L      Float    @db.DoublePrecision
+  incomeAbove15L     Float    @db.DoublePrecision
+  medianIncome       Int
+
+  workingPopulation  Float    @db.DoublePrecision
+  itProfessionals    Float    @db.DoublePrecision
+  businessOwners     Float    @db.DoublePrecision
+  apartments         Float    @db.DoublePrecision
+  carOwnership       Float    @db.DoublePrecision
+
+  diningOutPerWeek   Float    @db.DoublePrecision
+
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@index([wardCode])
+  @@index([locality])
+  @@map("ward_demographics")
+}
+
+/// Competitor POIs stored per property from Google Places
+model Competitor {
+  id             String   @id @default(uuid()) @db.VarChar(36)
+  propertyId     String   @db.VarChar(36)
+  property       Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  name           String   @db.VarChar(255)
+  category       String   @db.VarChar(50)   // "QSR", "Cafe", etc.
+  distance       Int      // meters
+  rating         Float?   @db.DoublePrecision
+  reviewCount    Int?
+  priceLevel     Int?     // 1-4
+
+  latitude       Float    @db.DoublePrecision
+  longitude      Float    @db.DoublePrecision
+
+  @@index([propertyId])
+  @@map("competitors")
 }

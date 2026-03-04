@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendVisitScheduleWebhook } from '@/lib/pabbly-webhook'
+import { createPayment } from '@/lib/phonepe'
+import { getPrisma } from '@/lib/get-prisma'
 
 /**
- * Schedule a visit placeholder.
- * Expects: { propertyId, dateTime, note, name, email, phone, company }
- * TODO:
- *  - Persist to DB (brand requirements / visit requests)
- *  - Integrate Cashfree payment link/session
- *  - Send notifications to user and admin (email/WhatsApp)
+ * Schedule a visit with PhonePe payment for visit fee.
+ * Expects: { propertyId, dateTime, note, name, email, phone, company, userId? }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { propertyId, dateTime, note, name, email, phone, company } = body
+    const { propertyId, dateTime, note, name, email, phone, company, userId } = body
 
     if (!propertyId || !dateTime || !name || !email || !phone) {
       return NextResponse.json(
@@ -21,8 +19,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Placeholder persistence: store in-memory log (replace with DB)
-    console.log('[Visit Schedule]', { propertyId, dateTime, note, name, email, phone, company })
+    // Create visit reference id (visit_<propertyId>_<timestamp>)
+    const visitRefId = `visit_${propertyId}_${Date.now()}`
 
     // Send webhook to Pabbly
     sendVisitScheduleWebhook({
@@ -35,14 +33,39 @@ export async function POST(request: NextRequest) {
       company,
     }).catch(err => console.warn('[Visit Schedule] Failed to send webhook:', err))
 
-    // TODO: Create brand requirement record in DB here
-    // TODO: Create Cashfree payment link/session and return URL to frontend
-    // TODO: Send email/WhatsApp notifications to user and admin
+    // Create PhonePe payment for visit fee (₹499)
+    const payment = await createPayment({
+      flow: 'visit',
+      referenceId: visitRefId,
+      userId: userId || undefined,
+      amountInr: 499,
+      meta: { propertyId, dateTime, name, email, phone },
+    })
+
+    const prisma = await getPrisma()
+    if (prisma) {
+      try {
+        await prisma.expertRequest.create({
+          data: {
+            propertyId,
+            brandName: name,
+            email,
+            phone,
+            scheduleDateTime: new Date(dateTime),
+            notes: note || `Visit for property ${propertyId}. Payment: ${payment.merchantOrderId}`,
+            status: 'pending',
+          },
+        })
+      } catch (dbErr) {
+        console.warn('[Visit Schedule] DB create failed:', dbErr)
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Visit scheduled (placeholder). Payment & notifications pending integration.',
-      paymentUrl: null
+      message: 'Visit requested. Complete payment to confirm.',
+      paymentUrl: payment.redirectUrl,
+      merchantOrderId: payment.merchantOrderId,
     })
   } catch (error: any) {
     console.error('Error scheduling visit:', error)

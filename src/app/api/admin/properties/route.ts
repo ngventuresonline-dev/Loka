@@ -5,6 +5,7 @@ import { getPrisma } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import { formatPropertyForPlatform } from '@/lib/property-formatter'
+import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 
 export async function GET(request: NextRequest) {
   // Enhanced admin security check
@@ -646,6 +647,11 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    })
+
+    // Trigger background enrichment for this new admin-created property
+    enrichPropertyIntelligence(property.id).catch((err) => {
+      console.error('[Intelligence] Background enrichment failed for admin property', property.id, err)
     })
 
     return NextResponse.json({

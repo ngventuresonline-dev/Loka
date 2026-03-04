@@ -69,7 +69,7 @@ interface PlatformStatusData {
     prisma: string
     postgresql: string
     nodejs: string
-    anthropic: string
+    aiEngine: string
     framerMotion: string
     tailwindcss: string
   }

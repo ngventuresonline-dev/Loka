@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { simpleSearch } from '@/lib/ai-search/simple-search'
+import { isGoogleAIConfigured } from '@/lib/google-ai'
 
 /**
  * AI Search API Route
- * Simple, robust search system using Anthropic Claude
+ * Simple, robust search system using Google Gemini
  */
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now()
   console.log('[AI Search] ===== New Request =====')
-  console.log('[AI Search] API Key configured:', !!process.env.ANTHROPIC_API_KEY)
+  console.log('[AI Search] API Key configured:', isGoogleAIConfigured())
   
   try {
     let body: any
@@ -37,12 +39,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!isGoogleAIConfigured()) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Anthropic API key not configured',
-          message: 'AI search is not available. Please configure ANTHROPIC_API_KEY in your environment variables.'
+          error: 'Google AI not configured',
+          message:
+            'AI search is not available. Please configure GOOGLE_AI_API_KEY or GEMINI_API_KEY in your environment variables.',
         },
         { status: 500 }
       )
@@ -124,7 +127,7 @@ export async function POST(request: NextRequest) {
     // Provide helpful error message
     let errorMessage = 'An error occurred while processing your search'
     if (error.message?.includes('API key')) {
-      errorMessage = 'API key issue. Please check your ANTHROPIC_API_KEY configuration.'
+      errorMessage = 'API key issue. Please check your GOOGLE_AI_API_KEY configuration.'
     } else if (error.message?.includes('model')) {
       errorMessage = 'Model configuration issue. Please check the model name.'
     } else if (error.status === 401) {

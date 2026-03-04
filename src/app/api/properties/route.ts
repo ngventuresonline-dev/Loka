@@ -4,6 +4,7 @@ import { requireOwnerOrAdmin, getAuthenticatedUser } from '@/lib/api-auth'
 import { CreatePropertySchema, PropertyQuerySchema } from '@/lib/validations/property'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
+import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 
 /**
  * POST /api/properties
@@ -108,6 +109,11 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    })
+
+    // Fire-and-forget background enrichment for new property (does not block response)
+    enrichPropertyIntelligence(property.id).catch((err) => {
+      console.error('[Intelligence] Background enrichment failed for property', property.id, err)
     })
 
     return NextResponse.json(
@@ -269,12 +275,15 @@ export async function GET(request: NextRequest) {
     // Get Prisma client
     const prisma = await getPrisma()
     if (!prisma) {
+      // Return empty result so the homepage can still load
+      const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_LISTINGS)
       return NextResponse.json(
         {
-          success: false,
-          error: 'Database connection failed. Please check your database configuration.',
+          success: true,
+          properties: [],
+          pagination: { page: 1, limit: Math.min(query?.limit || 20, 20), total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false },
         },
-        { status: 503 }
+        { headers }
       )
     }
 
@@ -443,25 +452,15 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Properties API] Error listing properties:', error)
 
-    // Handle database connection errors
-    if (error.code === 'P1001' || error.message?.includes('connect') || error.message?.includes('ECONNREFUSED')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Database connection failed. Please check your database configuration.',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-        },
-        { status: 503 }
-      )
-    }
-
+    // Return empty result instead of 500 so the homepage can still load
+    const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_LISTINGS)
     return NextResponse.json(
       {
-        success: false,
-        error: error.message || 'Failed to fetch properties',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        success: true,
+        properties: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false },
       },
-      { status: 500 }
+      { headers }
     )
   }
 }

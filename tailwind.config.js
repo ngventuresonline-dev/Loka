@@ -27,6 +27,8 @@ module.exports = {
         'scroll-left': 'scroll-left 35s linear infinite',
         'scroll-left-fast': 'scroll-left-fast 50s linear infinite',
         'scroll-right-fast': 'scroll-right-fast 50s linear infinite',
+        'gridScroll': 'gridScroll 20s linear infinite',
+        'scanLine': 'scanLine 8s ease-in-out infinite',
       },
       keyframes: {
         'gradient-xy': {
@@ -91,6 +93,14 @@ module.exports = {
         'scroll-right-fast': {
           '0%': { transform: 'translateX(-50%)' },
           '100%': { transform: 'translateX(0)' }
+        },
+        'gridScroll': {
+          '0%': { transform: 'translateY(0)' },
+          '100%': { transform: 'translateY(50px)' }
+        },
+        'scanLine': {
+          '0%, 100%': { transform: 'translateY(-100%)', opacity: '0' },
+          '50%': { transform: 'translateY(100vh)', opacity: '1' }
         }
       }
     },

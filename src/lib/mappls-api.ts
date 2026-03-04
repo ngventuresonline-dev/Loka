@@ -16,7 +16,9 @@ export function mapToMapplsNearbyParams(propertyType?: string, businessType?: st
   const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
   const p = (propertyType || '').toLowerCase()
 
-  if (/\b(qsr|cafe|coffee)\b/.test(raw)) return { keywords: 'coffee;cafe', categoryCode: 'FODCOF' }
+  if (/\b(qsr|quick service|fast food)\b/.test(raw) || /\b(cafe|coffee)\b/.test(raw)) {
+    return { keywords: 'coffee;cafe;fast food;burger;pizza;qsr;shawarma;biryani', categoryCode: 'FODCOF' }
+  }
   if (/\brestaurant\b/.test(raw) || p.includes('restaurant')) return { keywords: 'restaurant', categoryCode: 'FODCOF' }
   if (/\b(bakery|dessert|sweet)\b/.test(raw)) return { keywords: 'bakery;dessert' }
   if (/\bbar\b/.test(raw)) return { keywords: 'bar;pub', categoryCode: 'FODCOF' }

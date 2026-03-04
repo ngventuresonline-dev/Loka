@@ -1,0 +1,208 @@
+/**
+ * GeoIQ-style location intelligence features.
+ * Uses CensusData, Mappls, Google, india-benchmarks – no GeoIQ/Placer API.
+ */
+
+import { BANGALORE_AREAS, BANGALORE_PINCODES } from './bangalore-areas'
+
+const EARTH_RADIUS_M = 6371000
+
+function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLng = toRad(b.lng - a.lng)
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2
+  return EARTH_RADIUS_M * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
+}
+
+/** Catchment proxy: nearby pincodes with share % by distance inverse (within 5 km). */
+export function computeCatchment(
+  lat: number,
+  lng: number,
+  maxDistKm = 5
+): Array<{ pincode: string; name: string; sharePct: number; distanceM: number }> {
+  const maxM = maxDistKm * 1000
+  const point = { lat, lng }
+  const withDist = BANGALORE_PINCODES.map((p) => ({
+    ...p,
+    distanceM: Math.round(haversineMeters(point, { lat: p.lat, lng: p.lng })),
+  }))
+    .filter((p) => p.distanceM <= maxM)
+    .map((p) => ({ ...p, invDist: 1 / Math.max(p.distanceM, 100) }))
+
+  const totalInv = withDist.reduce((s, p) => s + p.invDist, 0)
+  if (totalInv <= 0) return []
+
+  return withDist
+    .map((p) => ({
+      pincode: p.pincode,
+      name: p.name,
+      sharePct: Math.round((p.invDist / totalInv) * 100),
+      distanceM: p.distanceM,
+    }))
+    .sort((a, b) => a.distanceM - b.distanceM)
+}
+
+/** Categories for retail mix (from POI names/types). */
+const RETAIL_CATEGORIES = ['restaurant', 'cafe', 'qsr', 'retail', 'bakery', 'bar', 'other'] as const
+
+/** Known branded patterns (subset of brand-classifier + retail). */
+const BRANDED_PATTERNS = [
+  'starbucks', 'ccd', 'cafe coffee day', 'blue tokai', 'third wave', 'chaayos', 'chai point',
+  'mcdonald', 'kfc', 'pizza hut', 'domino', 'subway', 'haldiram', 'bikanervala', 'barista',
+  'costa', 'dunkin', 'faasos', 'wow momo', 'saravana', 'sagar ratna', 'dmart', 'reliance',
+  'decathlon', 'ikea', 'miniso', 'westside', 'titan', 'tanishq', 'levi', 'crocs', 'zara',
+  'h&m', 'pantaloons', 'big bazaar',
+]
+
+function categorizePlace(name: string, placeCategory?: string): (typeof RETAIL_CATEGORIES)[number] {
+  const n = name.toLowerCase()
+  if (placeCategory === 'cafe' || /\b(cafe|coffee|ccd|starbucks|chaayos|barista)\b/.test(n)) return 'cafe'
+  if (placeCategory === 'qsr' || /\b(burger|pizza|shawarma|biryani|momo|kfc|mcdonald|domino)\b/.test(n)) return 'qsr'
+  if (/\brestaurant\b|\b(dining|fine dining)\b/.test(n) || placeCategory === 'restaurant') return 'restaurant'
+  if (/\b(bar|pub|brew)\b/.test(n)) return 'bar'
+  if (/\b(bakery|dessert|sweet|cake|ice cream)\b/.test(n)) return 'bakery'
+  if (/\b(store|shop|retail|clothing|fashion|electronics)\b/.test(n)) return 'retail'
+  return 'other'
+}
+
+function isBranded(name: string): boolean {
+  return BRANDED_PATTERNS.some((p) => name.toLowerCase().includes(p))
+}
+
+export interface RetailMixItem {
+  category: string
+  branded: number
+  nonBranded: number
+  total: number
+}
+
+/** Retail mix from competitor POIs: category counts, branded vs non-branded. */
+export function computeRetailMix(competitors: Array<{ name: string; placeCategory?: string }>): RetailMixItem[] {
+  const byCat: Record<string, { branded: number; nonBranded: number }> = {}
+  for (const c of competitors) {
+    const cat = categorizePlace(c.name, c.placeCategory)
+    if (!byCat[cat]) byCat[cat] = { branded: 0, nonBranded: 0 }
+    if (isBranded(c.name)) byCat[cat].branded++
+    else byCat[cat].nonBranded++
+  }
+  return Object.entries(byCat)
+    .filter(([, v]) => v.branded + v.nonBranded > 0)
+    .map(([category, v]) => ({
+      category,
+      branded: v.branded,
+      nonBranded: v.nonBranded,
+      total: v.branded + v.nonBranded,
+    }))
+    .sort((a, b) => b.total - a.total)
+}
+
+/** Market potential score 0–100 from saturation, demographics, accessibility. */
+export function computeMarketPotentialScore(params: {
+  saturationIndex: number
+  whitespaceScore: number
+  demandGapScore: number
+  transitScore: number
+  demographicStrength: number
+  revenueProjection: number
+  competitorCount: number
+}): number {
+  const {
+    saturationIndex,
+    whitespaceScore,
+    demandGapScore,
+    transitScore,
+    demographicStrength,
+    revenueProjection,
+    competitorCount,
+  } = params
+  let score = 0
+  score += Math.max(0, 100 - saturationIndex) * 0.25
+  score += Math.min(100, whitespaceScore) * 0.2
+  score += Math.min(100, demandGapScore) * 0.2
+  score += Math.min(100, transitScore) * 0.15
+  score += Math.min(100, demographicStrength) * 0.1
+  if (revenueProjection > 0) score += Math.min(20, Math.log10(revenueProjection / 1000) * 5) * 0.05
+  if (competitorCount <= 3) score += 5
+  else if (competitorCount <= 6) score += 2
+  return Math.round(Math.min(100, Math.max(0, score)))
+}
+
+/** Find similar markets (areas with similar profile). Simple distance + area key match. */
+export function findSimilarMarkets(
+  lat: number,
+  lng: number,
+  limit = 5
+): Array<{ area: string; score: number; distanceM: number }> {
+  const point = { lat, lng }
+  const scored = BANGALORE_AREAS.map((a) => ({
+    area: a.key,
+    distanceM: Math.round(haversineMeters(point, { lat: a.lat, lng: a.lng })),
+  }))
+    .filter((a) => a.distanceM > 500)
+    .map((a) => ({
+      ...a,
+      score: Math.round(100 - Math.min(100, (a.distanceM / 8000) * 30)),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+  return scored
+}
+
+/** Extract brand key from place name for grouping same-brand outlets. */
+function extractBrandKey(name: string): string | null {
+  const n = name.toLowerCase()
+  for (const p of BRANDED_PATTERNS) {
+    if (n.includes(p)) return p
+  }
+  return null
+}
+
+/** Distance-based cannibalisation %: <500m High, 500–1k Medium, 1–2k Low, >2k Minimal */
+function distanceToCannibalisationPct(distanceM: number): number {
+  if (distanceM < 500) return Math.round(75 - (distanceM / 500) * 25)
+  if (distanceM < 1000) return Math.round(50 - ((distanceM - 500) / 500) * 20)
+  if (distanceM < 2000) return Math.round(30 - ((distanceM - 1000) / 1000) * 20)
+  return Math.max(5, Math.round(10 - (distanceM - 2000) / 1000))
+}
+
+export interface CannibalisationRiskItem {
+  brand: string
+  outletCount: number
+  nearestSameBrandDistanceM: number
+  cannibalisationPct: number
+}
+
+/** Cannibalisation proxy: brands with 2+ outlets in area; risk % by nearest same-brand distance. */
+export function computeCannibalisationRisk(
+  competitors: Array<{ name: string; lat: number; lng: number; distanceMeters: number }>
+): CannibalisationRiskItem[] {
+  const byBrand = new Map<string, Array<{ name: string; lat: number; lng: number }>>()
+  for (const c of competitors) {
+    const brand = extractBrandKey(c.name)
+    if (!brand) continue
+    if (!byBrand.has(brand)) byBrand.set(brand, [])
+    byBrand.get(brand)!.push({ name: c.name, lat: c.lat, lng: c.lng })
+  }
+  const result: CannibalisationRiskItem[] = []
+  for (const [brand, outlets] of byBrand) {
+    if (outlets.length < 2) continue
+    let minDist = Infinity
+    for (let i = 0; i < outlets.length; i++) {
+      for (let j = i + 1; j < outlets.length; j++) {
+        const d = haversineMeters(outlets[i], outlets[j])
+        if (d < minDist) minDist = d
+      }
+    }
+    if (!Number.isFinite(minDist)) continue
+    result.push({
+      brand: brand.charAt(0).toUpperCase() + brand.slice(1),
+      outletCount: outlets.length,
+      nearestSameBrandDistanceM: Math.round(minDist),
+      cannibalisationPct: distanceToCannibalisationPct(minDist),
+    })
+  }
+  return result.sort((a, b) => b.cannibalisationPct - a.cannibalisationPct)
+}

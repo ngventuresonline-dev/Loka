@@ -5,7 +5,7 @@
  */
 
 // Libraries array must be a constant to prevent LoadScript reload warnings
-export const GOOGLE_MAPS_LIBRARIES: ('places' | 'drawing' | 'geometry' | 'visualization')[] = ['places']
+export const GOOGLE_MAPS_LIBRARIES: ('places' | 'drawing' | 'geometry' | 'visualization')[] = ['places', 'visualization']
 
 // Default map options
 export const DEFAULT_MAP_OPTIONS = {

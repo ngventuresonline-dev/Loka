@@ -1,15 +1,12 @@
 /**
  * SIMPLE, ROBUST AI SEARCH
  * No complex state management - just works
+ * Powered by Google Gemini - smart, fast, India-aware
  * Enhanced with comprehensive normalization from training datasets
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { generateText, isGoogleAIConfigured } from '@/lib/google-ai'
 import { normalizeBudget, normalizeArea, normalizeLocation, disambiguateNumber } from './normalization'
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-})
 
 interface SimpleContext {
   entityType: 'brand' | 'owner' | null
@@ -574,7 +571,8 @@ function extractDetailsSimple(
 }
 
 /**
- * Generate intelligent response using Claude - SIMPLE VERSION
+ * Generate intelligent response using Google Gemini - SIMPLE VERSION
+ * India-aware: understands Bangalore areas, ₹, sqft, lakhs
  */
 async function generateResponse(
   query: string,
@@ -582,29 +580,32 @@ async function generateResponse(
   context: SimpleContext
 ): Promise<string> {
   try {
-    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY.trim() === '') {
-      console.warn('[SimpleSearch] ANTHROPIC_API_KEY not configured, using fallback')
+    if (!isGoogleAIConfigured()) {
+      console.warn('[SimpleSearch] Google AI not configured, using fallback')
       throw new Error('API key not configured')
     }
 
-    const history = (context.conversationHistory || [])
-      .slice(-6) // Last 6 messages
-      .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
-      .join('\n')
+    const historyMessages = (context.conversationHistory || [])
+      .slice(-6)
+      .map((m) => ({
+        role: (m.role === 'assistant' ? 'model' : 'user') as 'user' | 'model',
+        content: m.content,
+      }))
 
-    const systemPrompt = entityType === 'owner' 
-      ? `You are a helpful assistant helping property owners list their commercial properties. 
-Be conversational, friendly, and ask ONE question at a time. 
+    const systemPrompt =
+      entityType === 'owner'
+        ? `You are a helpful assistant helping property owners list their commercial properties on Loka, India's commercial real estate platform.
+Be conversational, friendly, and ask ONE question at a time.
 You've collected: ${JSON.stringify(context.collectedDetails)}
 Ask for the NEXT missing detail. If you have location, size, and rent, guide them to the listing form.
-NEVER ask about budget - owners have rent, not budget.`
-      : `You are a helpful assistant helping brands find commercial properties.
-Be conversational, friendly, and ask ONE question at a time.
+NEVER ask about budget - owners have rent, not budget. Use Indian English and ₹ for amounts.`
+        : `You are a helpful assistant helping brands find commercial properties on Loka, India's commercial real estate platform.
+Be conversational, friendly, and ask ONE question at a time. You understand Indian locations (Bangalore: Koramangala, Indiranagar, HSR, Whitefield, etc.).
 You've collected: ${JSON.stringify(context.collectedDetails)}
 
 Ask questions in this order (only ask what's missing):
 1. Industry (Retail, Food & Beverage, Technology, Healthcare, Fitness, Professional Services)
-2. Location (city and area)
+2. Location (city and area - Bangalore areas, Mumbai, Delhi NCR, etc.)
 3. Space size (min/max sqft or range)
 4. Budget range (monthly, e.g., ₹50k - ₹1 lakh)
 5. Property types (Office, Retail, Restaurant, Warehouse)
@@ -613,32 +614,24 @@ Ask questions in this order (only ask what's missing):
 8. Operating hours (e.g., 9 AM - 6 PM, Mon-Fri)
 9. Must-have amenities (WiFi, Parking, Security, Air Conditioning, etc.)
 
-NEVER ask about "rent you're expecting" - brands have budget, not rent. Ask "What's your monthly budget range?" instead.`
+NEVER ask about "rent you're expecting" - brands have budget, not rent. Ask "What's your monthly budget range?" instead. Use Indian English and ₹.`
 
     const userPrompt = `User said: "${query}"
 
-${history ? `Previous conversation:\n${history}\n` : ''}
+${historyMessages.length ? 'Use the conversation context above. ' : ''}Generate a helpful, conversational response (2-3 sentences max). Ask ONE question if you need more info.`
 
-Generate a helpful, conversational response (2-3 sentences max). Ask ONE question if you need more info.`
-
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 300,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const text = await generateText(userPrompt, {
+      systemInstruction: systemPrompt,
+      maxTokens: 300,
       temperature: 0.7,
+      history: historyMessages,
     })
 
-    const response = message.content?.[0]
-    if (response && response.type === 'text') {
-      return response.text.trim()
-    }
-    
-    console.warn('[SimpleSearch] Invalid API response format:', JSON.stringify(message.content, null, 2))
-    throw new Error('Invalid response from API')
-  } catch (error: any) {
-    console.error('[SimpleSearch] API error:', error.message)
-    
+    return text
+  } catch (error: unknown) {
+    const err = error as Error
+    console.error('[SimpleSearch] API error:', err?.message)
+
     // Fallback to rule-based response
     return generateFallbackResponse(query, entityType, context)
   }

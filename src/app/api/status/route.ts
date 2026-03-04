@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+
+import { testConnection, isGoogleAIConfigured } from '@/lib/google-ai'
 
 interface StatusCheck {
   name: string
@@ -9,57 +10,37 @@ interface StatusCheck {
 }
 
 /**
- * Check Anthropic Claude API status
+ * Check Google AI (Gemini) API status
  */
-async function checkAnthropic(): Promise<StatusCheck> {
+async function checkGoogleAI(): Promise<StatusCheck> {
   const startTime = Date.now()
-  
-  try {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return {
-        name: 'Anthropic Claude API',
-        status: 'down',
-        message: 'API key not configured',
-        responseTime: Date.now() - startTime
-      }
-    }
 
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    })
-
-    // Simple test call
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 5,
-      messages: [{ role: 'user', content: 'test' }]
-    })
-
-    const responseTime = Date.now() - startTime
-    
-    if (message.content && message.content.length > 0) {
-      return {
-        name: 'Anthropic Claude API',
-        status: 'operational',
-        message: 'API is responding',
-        responseTime
-      }
-    } else {
-      return {
-        name: 'Anthropic Claude API',
-        status: 'degraded',
-        message: 'API responded but no content',
-        responseTime
-      }
-    }
-  } catch (error: any) {
-    const responseTime = Date.now() - startTime
+  if (!isGoogleAIConfigured()) {
     return {
-      name: 'Anthropic Claude API',
+      name: 'Google Gemini API',
       status: 'down',
-      message: error.message || 'API request failed',
-      responseTime
+      message: 'API key not configured. Set GOOGLE_AI_API_KEY or GEMINI_API_KEY.',
+      responseTime: Date.now() - startTime,
     }
+  }
+
+  const result = await testConnection()
+  const responseTime = result.latencyMs ?? Date.now() - startTime
+
+  if (result.ok) {
+    return {
+      name: 'Google Gemini API',
+      status: 'operational',
+      message: 'API is responding',
+      responseTime,
+    }
+  }
+
+  return {
+    name: 'Google Gemini API',
+    status: 'down',
+    message: result.error || 'API request failed',
+    responseTime,
   }
 }
 
@@ -97,7 +78,7 @@ async function checkDatabase(): Promise<StatusCheck> {
  * Check environment variables
  */
 function checkEnvironment(): StatusCheck {
-  const requiredVars = ['ANTHROPIC_API_KEY']
+  const requiredVars = ['GOOGLE_AI_API_KEY']
   const missing: string[] = []
   
   requiredVars.forEach(varName => {
@@ -148,8 +129,8 @@ export async function GET() {
   
   try {
     // Run all checks in parallel
-    const [anthropicStatus, databaseStatus, envStatus] = await Promise.all([
-      checkAnthropic(),
+    const [aiStatus, databaseStatus, envStatus] = await Promise.all([
+      checkGoogleAI(),
       checkDatabase(),
       Promise.resolve(checkEnvironment())
     ])
@@ -158,7 +139,7 @@ export async function GET() {
     const totalTime = Date.now() - startTime
     
     // Determine overall status
-    const statuses = [anthropicStatus, databaseStatus, envStatus]
+    const statuses = [aiStatus, databaseStatus, envStatus]
     const hasDown = statuses.some(s => s.status === 'down')
     const hasDegraded = statuses.some(s => s.status === 'degraded')
     
@@ -174,7 +155,7 @@ export async function GET() {
       status: overallStatus,
       timestamp: new Date().toISOString(),
       checks: {
-        anthropic: anthropicStatus,
+        anthropic: aiStatus,
         database: databaseStatus,
         environment: envStatus
       },

@@ -5,3 +5,4 @@
 
 export * from './scoring'
 export * from './weights'
+export * from './india-benchmarks'

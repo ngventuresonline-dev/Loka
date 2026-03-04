@@ -1,16 +1,10 @@
 import { GET } from '../route'
 import { NextRequest } from 'next/server'
 
-// Mock Anthropic SDK
-jest.mock('@anthropic-ai/sdk', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    messages: {
-      create: jest.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'test' }],
-      }),
-    },
-  })),
+// Mock Google AI
+jest.mock('@/lib/google-ai', () => ({
+  isGoogleAIConfigured: jest.fn(() => true),
+  testConnection: jest.fn().mockResolvedValue({ ok: true, latencyMs: 100 }),
 }))
 
 // Mock mockDatabase
@@ -24,11 +18,11 @@ jest.mock('@/lib/mockDatabase', () => ({
 describe('/api/status', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    process.env.ANTHROPIC_API_KEY = 'test-api-key'
+    process.env.GOOGLE_AI_API_KEY = 'test-api-key'
   })
 
   afterEach(() => {
-    delete process.env.ANTHROPIC_API_KEY
+    delete process.env.GOOGLE_AI_API_KEY
   })
 
   it('should return 200 status', async () => {
@@ -95,13 +89,13 @@ describe('/api/status', () => {
     expect(data).toBeDefined()
   })
 
-  it('should check Anthropic API status', async () => {
+  it('should check Google AI API status', async () => {
     const request = new NextRequest('http://localhost:3000/api/status')
     const response = await GET(request)
     const data = await response.json()
 
     expect(data.checks.anthropic).toBeDefined()
-    expect(data.checks.anthropic.name).toBe('Anthropic Claude API')
+    expect(data.checks.anthropic.name).toBe('Google Gemini API')
     expect(['operational', 'degraded', 'down']).toContain(data.checks.anthropic.status)
   })
 

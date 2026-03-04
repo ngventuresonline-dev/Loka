@@ -15,6 +15,7 @@ import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 import { decodePropertySlug } from '@/lib/property-slug'
 import { trackInquiry, trackScheduleViewing } from '@/lib/tracking'
+import LocationIntelligenceDashboard from '@/components/LocationIntelligenceDashboard'
 
 // Heavy components are dynamically loaded to improve performance
 const MatchBreakdownChart = dynamic(
@@ -29,20 +30,13 @@ const MatchBreakdownChart = dynamic(
   }
 )
 
-const LocationIntelligence = dynamic(
-  () => import('@/components/LocationIntelligence'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-24 sm:h-32 flex items-center justify-center text-xs sm:text-sm text-gray-500">
-        Loading location intelligence...
-      </div>
-    ),
-  }
-)
-
 const SchedulePicker = dynamic(
   () => import('@/components/SchedulePicker'),
+  { ssr: false }
+)
+
+const LocationIntelligenceSection = dynamic(
+  () => import('@/components/LocationIntelligenceSection'),
   { ssr: false }
 )
 
@@ -53,6 +47,19 @@ const LOADING_PHRASES = [
   'Running brand–property compatibility checks...',
   'Finalizing your tailored match shortlist...'
 ]
+
+function deriveZone(address: string = '', city: string = ''): string {
+  const text = `${address} ${city}`.toLowerCase()
+  const zones = [
+    'Koramangala', 'Indiranagar', 'HSR', 'Jayanagar', 'BTM', 'JP Nagar',
+    'Whitefield', 'MG Road', 'Marathahalli', 'Bellandur', 'Electronic City',
+    'Brigade Road', 'Sarjapur', 'Banashankari', 'Malleswaram', 'Rajajinagar',
+  ]
+  for (const z of zones) {
+    if (text.includes(z.toLowerCase())) return z
+  }
+  return city || 'Bangalore'
+}
 
 const getPrimaryImageSrc = (property: Property): string | null => {
   if (property.images && property.images.length > 0) {
@@ -745,11 +752,12 @@ function MatchDetailsContent() {
           </div>
         </div>
 
-        {/* Location Intelligence - Full width section after Brand Fit & breakdown */}
-        <div className="mt-6 sm:mt-8">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
-            <LocationIntelligence property={property} businessType={searchParams.get('businessType') || undefined} />
-          </div>
+        {/* Location Intelligence Dashboard */}
+        <div
+          id="intelligence"
+          className="mt-6 sm:mt-8 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"
+        >
+          <LocationIntelligenceDashboard propertyId={propertyId} />
         </div>
       </div>
 

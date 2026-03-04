@@ -23,6 +23,19 @@ jest.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
+// Mock AI search (avoids real API calls in security tests)
+jest.mock('@/lib/ai-search/simple-search', () => ({
+  simpleSearch: jest.fn().mockResolvedValue({
+    message: 'Safe response',
+    entityType: 'brand',
+    collectedDetails: {},
+  }),
+}))
+
+jest.mock('@/lib/google-ai', () => ({
+  isGoogleAIConfigured: jest.fn(() => true),
+}))
+
 describe('Security Tests - Lokazen', () => {
   const mockPrisma = {
     user: {
@@ -207,17 +220,6 @@ describe('Security Tests - Lokazen', () => {
     test('should sanitize XSS in AI search query', async () => {
       const xssPayload = '<script>alert("XSS")</script>'
       
-      // Mock Anthropic API
-      jest.mock('@anthropic-ai/sdk', () => ({
-        Anthropic: jest.fn().mockImplementation(() => ({
-          messages: {
-            create: jest.fn().mockResolvedValue({
-              content: [{ type: 'text', text: 'Safe response' }],
-            }),
-          },
-        })),
-      }))
-
       const request = new NextRequest('http://localhost:3000/api/ai-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

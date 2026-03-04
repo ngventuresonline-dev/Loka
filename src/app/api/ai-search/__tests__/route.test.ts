@@ -6,20 +6,16 @@ jest.mock('@/lib/ai-search/simple-search', () => ({
   simpleSearch: jest.fn(),
 }))
 
-// Mock Anthropic SDK
-jest.mock('@anthropic-ai/sdk', () => ({
-  __esModule: true,
-  default: jest.fn(),
+// Mock Google AI - isGoogleAIConfigured
+jest.mock('@/lib/google-ai', () => ({
+  isGoogleAIConfigured: jest.fn(() => true),
 }))
 
 describe('/api/ai-search', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    process.env.ANTHROPIC_API_KEY = 'test-api-key'
-  })
-
-  afterEach(() => {
-    delete process.env.ANTHROPIC_API_KEY
+    const { isGoogleAIConfigured } = require('@/lib/google-ai')
+    isGoogleAIConfigured.mockReturnValue(true)
   })
 
   it('should return 200 with valid query', async () => {
@@ -143,8 +139,9 @@ describe('/api/ai-search', () => {
     expect(data.error).toBeDefined()
   })
 
-  it('should return 500 when ANTHROPIC_API_KEY is missing', async () => {
-    delete process.env.ANTHROPIC_API_KEY
+  it('should return 500 when Google AI is not configured', async () => {
+    const { isGoogleAIConfigured } = require('@/lib/google-ai')
+    isGoogleAIConfigured.mockReturnValueOnce(false)
 
     const request = new NextRequest('http://localhost:3000/api/ai-search', {
       method: 'POST',
@@ -159,7 +156,7 @@ describe('/api/ai-search', () => {
 
     expect(response.status).toBe(500)
     expect(data.success).toBe(false)
-    expect(data.error).toContain('API key')
+    expect(data.error).toBeDefined()
   })
 
   it('should handle owner redirect correctly', async () => {

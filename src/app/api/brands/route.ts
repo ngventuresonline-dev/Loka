@@ -7,9 +7,10 @@ export async function GET(request: NextRequest) {
   try {
     const prisma = await getPrisma()
     if (!prisma) {
+      // Return empty brands so the homepage can still load
       return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 503 }
+        { brands: [] },
+        { headers: getCacheHeaders({ maxAge: 60, staleWhileRevalidate: 120 }) }
       )
     }
 
@@ -99,10 +100,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ brands: sortedBrands }, { headers })
   } catch (error: any) {
     console.error('Public brands GET error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch brands' },
-      { status: 500 }
-    )
+    // Return empty brands instead of 500 so the homepage can still load
+    const headers = getCacheHeaders({ maxAge: 60, staleWhileRevalidate: 120 })
+    return NextResponse.json({ brands: [] }, { headers })
   }
 }
 

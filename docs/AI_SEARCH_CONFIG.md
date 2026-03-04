@@ -27,15 +27,23 @@ This document contains the current working configuration of the AI-powered prope
 
 ## AI Integration
 
-### Provider: Anthropic Claude
-- **Model**: `claude-3-5-sonnet-20241022`
-- **SDK**: `@anthropic-ai/sdk` v0.27.3
-- **API Key**: `ANTHROPIC_API_KEY` (environment variable)
+### Provider: Google Gemini
+- **Model**: `gemini-2.0-flash`
+- **SDK**: `@google/genai` v1.42+
+- **API Key**: `GOOGLE_AI_API_KEY` or `GEMINI_API_KEY` (environment variable)
 
 ### Configuration
 ```typescript
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
+import { generateText, isGoogleAIConfigured } from '@/lib/google-ai'
+
+// Check if configured
+isGoogleAIConfigured()  // true if GOOGLE_AI_API_KEY or GEMINI_API_KEY is set
+
+// Generate text
+const response = await generateText(prompt, {
+  systemInstruction: '...',
+  maxTokens: 300,
+  history: [{ role: 'user', content: '...' }, { role: 'model', content: '...' }],
 })
 ```
 
@@ -62,7 +70,7 @@ const anthropic = new Anthropic({
 - **No Repetition**: Checks if value was just collected before asking again
 
 ### 4. Response Generation
-- **Primary**: Uses Claude API for intelligent responses
+- **Primary**: Uses Google Gemini API for intelligent responses
 - **Fallback**: Rule-based responses when API fails or when value just collected
 - **System Prompts**: Entity-specific prompts for better responses
 
@@ -108,7 +116,7 @@ interface SimpleContext {
 ## Environment Variables
 
 Required:
-- `ANTHROPIC_API_KEY`: Your Anthropic API key
+- `GOOGLE_AI_API_KEY` or `GEMINI_API_KEY`: Your Google AI (Gemini) API key from https://aistudio.google.com/apikey
 
 ## Current Working Logic
 
@@ -122,7 +130,7 @@ Required:
 1. If just collected budget/rent → Use fallback to acknowledge and move forward
 2. If just collected size → Use fallback to acknowledge and move forward
 3. If just collected location → Use fallback to acknowledge and move forward
-4. Otherwise → Call Claude API for intelligent response
+4. Otherwise → Call Google Gemini API for intelligent response
 
 ### Owner Redirect Logic
 - Triggers when: `entityType === 'owner' && location && size && rent`

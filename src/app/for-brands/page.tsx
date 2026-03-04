@@ -8,10 +8,7 @@ import TrustedByLeadingBrands from '@/components/TrustedByLeadingBrands'
 import LogoImage from '@/components/LogoImage'
 import { getBrandLogo } from '@/lib/brand-logos'
 import { brandPlacements } from '@/lib/brand-placements'
-
-const CASHFREE_STARTER = process.env.NEXT_PUBLIC_CASHFREE_LINK_STARTER || 'https://payments.cashfree.com/forms/BrandRegistration'
-const CASHFREE_PRO = process.env.NEXT_PUBLIC_CASHFREE_LINK_PRO || 'https://payments.cashfree.com/forms/ProfessionalPackage'
-const CASHFREE_PREMIUM = process.env.NEXT_PUBLIC_CASHFREE_LINK_PREMIUM || '/onboarding/brand?plan=premium'
+import { PhonePeCheckout } from '@/components/PhonePeCheckout'
 
 const PRIME_ZONES = ['Indiranagar', 'Koramangala', 'Whitefield', 'MG Road', 'HSR Layout', 'Brigade Road']
 
@@ -59,6 +56,41 @@ export default function ForBrandsPage() {
   const pricingRef = useRef<HTMLDivElement>(null)
   const [faqOpen, setFaqOpen] = useState<number | null>(null)
   const [showPremiumSoon, setShowPremiumSoon] = useState(false)
+  const [phonepeOpen, setPhonepeOpen] = useState(false)
+  const [phonepeRedirectUrl, setPhonepeRedirectUrl] = useState<string | null>(null)
+  const [phonepeMerchantOrderId, setPhonepeMerchantOrderId] = useState<string | null>(null)
+  const [phonepePlan, setPhonepePlan] = useState<'starter' | 'professional' | 'premium'>('starter')
+  const [phonepeLoading, setPhonepeLoading] = useState(false)
+  const [phonepeError, setPhonepeError] = useState<string | null>(null)
+
+  const startPhonePePayment = async (plan: 'starter' | 'professional' | 'premium') => {
+    setPhonepePlan(plan)
+    setPhonepeLoading(true)
+    setPhonepeError(null)
+    setPhonepeRedirectUrl(null)
+    setPhonepeMerchantOrderId(null)
+    try {
+      const res = await fetch('/api/payments/phonepe/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flow: 'brand', referenceId: plan }),
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error || 'Payment creation failed')
+      setPhonepeRedirectUrl(json.redirectUrl)
+      setPhonepeMerchantOrderId(json.merchantOrderId || null)
+      setPhonepeOpen(true)
+    } catch (err) {
+      setPhonepeError(err instanceof Error ? err.message : 'Failed to start payment')
+    } finally {
+      setPhonepeLoading(false)
+    }
+  }
+
+  const onPhonePeConcluded = () => {
+    const q = phonepeMerchantOrderId ? `?merchantOrderId=${encodeURIComponent(phonepeMerchantOrderId)}` : '?state=COMPLETED'
+    window.location.href = `/payment/result${q}`
+  }
   const fullCount = Math.floor(brandPlacements.length / COLS_LG) * COLS_LG
   const lastRowItems = brandPlacements.slice(fullCount)
 
@@ -241,9 +273,14 @@ export default function ForBrandsPage() {
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Email support</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> 30 days validity</li>
               </ul>
-              <Link href={CASHFREE_STARTER} className="mt-8 w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 min-h-[48px] transition-all">
-                Get Started
-              </Link>
+              <button
+                type="button"
+                onClick={() => startPhonePePayment('starter')}
+                disabled={phonepeLoading}
+                className="mt-8 w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 min-h-[48px] transition-all disabled:opacity-70"
+              >
+                {phonepeLoading && phonepePlan === 'starter' ? 'Loading…' : 'Get Started'}
+              </button>
             </div>
 
             {/* Professional — highlighted */}
@@ -261,9 +298,14 @@ export default function ForBrandsPage() {
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> WhatsApp support</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> 60 days validity</li>
               </ul>
-              <Link href={CASHFREE_PRO} className="mt-8 w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-lg min-h-[48px] transition-all">
-                Get Started
-              </Link>
+              <button
+                type="button"
+                onClick={() => startPhonePePayment('professional')}
+                disabled={phonepeLoading}
+                className="mt-8 w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-lg min-h-[48px] transition-all disabled:opacity-70"
+              >
+                {phonepeLoading && phonepePlan === 'professional' ? 'Loading…' : 'Get Started'}
+              </button>
             </div>
 
             {/* Premium */}
@@ -583,19 +625,40 @@ export default function ForBrandsPage() {
             Join brands who secured their ideal locations with Lokazen.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center flex-wrap">
-            <Link href={CASHFREE_STARTER} className="w-full sm:w-auto min-w-[180px] inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-gray-800 bg-gray-200 hover:bg-gray-100 border border-gray-300 min-h-[48px] transition-all">
+            <button
+              type="button"
+              onClick={() => startPhonePePayment('starter')}
+              disabled={phonepeLoading}
+              className="w-full sm:w-auto min-w-[180px] inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-gray-800 bg-gray-200 hover:bg-gray-100 border border-gray-300 min-h-[48px] transition-all disabled:opacity-70"
+            >
               Starter — ₹4,999
-            </Link>
-            <Link href={CASHFREE_PRO} className="w-full sm:w-auto min-w-[180px] inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-lg min-h-[48px] transition-all">
+            </button>
+            <button
+              type="button"
+              onClick={() => startPhonePePayment('professional')}
+              disabled={phonepeLoading}
+              className="w-full sm:w-auto min-w-[180px] inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-lg min-h-[48px] transition-all disabled:opacity-70"
+            >
               Professional — ₹9,999
-            </Link>
+            </button>
             <button type="button" onClick={onPremiumClick} className="w-full sm:w-auto min-w-[180px] inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-gray-800 bg-gray-200 hover:bg-gray-100 border border-gray-300 min-h-[48px] transition-all">
               Premium — ₹19,999
             </button>
           </div>
           <p className="text-sm text-gray-400 mt-6">Secure payment • No hidden fees</p>
+          {phonepeError && (
+            <p className="mt-2 text-sm text-red-400">{phonepeError}</p>
+          )}
         </div>
       </section>
+
+      <PhonePeCheckout
+        redirectUrl={phonepeRedirectUrl}
+        open={phonepeOpen}
+        onClose={() => { setPhonepeOpen(false); setPhonepeRedirectUrl(null); setPhonepeMerchantOrderId(null) }}
+        onConcluded={onPhonePeConcluded}
+        onCancel={() => setPhonepeOpen(false)}
+      />
 
       <Footer />
     </main>

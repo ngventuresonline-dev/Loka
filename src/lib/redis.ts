@@ -26,9 +26,13 @@ async function getUpstashRedis(): Promise<{ get: (k: string) => Promise<string |
     },
     async set(k: string, v: string, px = CACHE_TTL_SECONDS * 1000) {
       try {
-        await fetch(`${url}/set/${encodeURIComponent(k)}/${encodeURIComponent(v)}/px/${px}`, {
+        const exSec = Math.round(px / 1000)
+        const res = await fetch(`${url}/set/${encodeURIComponent(k)}?EX=${exSec}`, {
+          method: 'POST',
+          body: v,
           headers: { Authorization: `Bearer ${token}` },
         })
+        if (!res.ok) throw new Error(`Redis SET failed: ${res.status}`)
         return 'OK'
       } catch {
         return 'OK'
