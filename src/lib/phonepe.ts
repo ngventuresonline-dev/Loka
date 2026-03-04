@@ -50,9 +50,9 @@ let cachedToken: string | null = null
 let tokenExpiresAt = 0
 
 async function getAccessToken(): Promise<string> {
-  const clientId = process.env.PHONEPE_CLIENT_ID
-  const clientVersionRaw = process.env.PHONEPE_CLIENT_VERSION
-  const clientSecret = process.env.PHONEPE_CLIENT_SECRET
+  const clientId = process.env.PHONEPE_CLIENT_ID?.trim()
+  const clientVersionRaw = process.env.PHONEPE_CLIENT_VERSION?.trim()
+  const clientSecret = process.env.PHONEPE_CLIENT_SECRET?.trim()
 
   if (!clientId || !clientVersionRaw || !clientSecret) {
     throw new Error('PhonePe credentials not configured (PHONEPE_CLIENT_ID, PHONEPE_CLIENT_VERSION, PHONEPE_CLIENT_SECRET)')
@@ -81,9 +81,7 @@ async function getAccessToken(): Promise<string> {
 
   if (!res.ok) {
     const text = await res.text()
-    const masked = clientId ? `${clientId.slice(0, 6)}...${clientId.slice(-4)}` : 'MISSING'
-    const secretMasked = clientSecret ? `${clientSecret.slice(0, 4)}...${clientSecret.slice(-4)}` : 'MISSING'
-    throw new Error(`PhonePe auth failed: ${res.status} ${text} [id=${masked}, ver=${clientVersion}, secret=${secretMasked}, sandbox=${isSandbox}, url=${authUrl}]`)
+    throw new Error(`PhonePe auth failed: ${res.status} ${text}`)
   }
 
   const json = await res.json()
