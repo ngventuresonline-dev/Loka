@@ -141,8 +141,8 @@ export function Intelligence2026View({ data }: Intelligence2026ViewProps) {
             {(infrastructure.metroImpact ?? 0) > 0 && (
               <li>• New metro station planned nearby (+{infrastructure.metroImpact}% footfall)</li>
             )}
-            {infrastructure.roadExpansion && (
-              <li>• Road expansion projects (+{infrastructure.roadImpact ?? 10}% accessibility)</li>
+            {(infrastructure.roadImpact ?? 0) > 0 && (
+              <li>• Road expansion projects (+{infrastructure.roadImpact}% accessibility)</li>
             )}
             {(infrastructure.commercialImpact ?? 0) > 0 && (
               <li>• New commercial development (+{infrastructure.commercialImpact}% activity)</li>
