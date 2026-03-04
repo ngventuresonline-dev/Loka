@@ -51,12 +51,15 @@ let tokenExpiresAt = 0
 
 async function getAccessToken(): Promise<string> {
   const clientId = process.env.PHONEPE_CLIENT_ID
-  const clientVersion = process.env.PHONEPE_CLIENT_VERSION
+  const clientVersionRaw = process.env.PHONEPE_CLIENT_VERSION
   const clientSecret = process.env.PHONEPE_CLIENT_SECRET
 
-  if (!clientId || !clientVersion || !clientSecret) {
+  if (!clientId || !clientVersionRaw || !clientSecret) {
     throw new Error('PhonePe credentials not configured (PHONEPE_CLIENT_ID, PHONEPE_CLIENT_VERSION, PHONEPE_CLIENT_SECRET)')
   }
+
+  // PhonePe requires client_version as integer (e.g. "1" not "1.0")
+  const clientVersion = String(parseInt(clientVersionRaw, 10) || 1)
 
   if (cachedToken && Date.now() / 1000 < tokenExpiresAt - 60) {
     return cachedToken
