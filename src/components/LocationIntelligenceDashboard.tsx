@@ -226,13 +226,16 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
         </div>
       </div>
 
-      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+      <div
+        className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2"
+        style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${
               activeTab === t.id
                 ? 'bg-[#FF5200] text-white'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
