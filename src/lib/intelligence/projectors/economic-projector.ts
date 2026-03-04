@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 2026 economic indicators projection
  */

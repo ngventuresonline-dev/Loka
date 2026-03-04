@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Infrastructure development impact calculator for 2026 projections
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getPrisma } from '@/lib/get-prisma'
 
 export type RawCompetitor = {

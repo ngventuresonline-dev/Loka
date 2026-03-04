@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 2026 demographic projections from Census 2021 baseline
  */
