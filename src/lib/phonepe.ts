@@ -81,7 +81,9 @@ async function getAccessToken(): Promise<string> {
 
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`PhonePe auth failed: ${res.status} ${text}`)
+    const masked = clientId ? `${clientId.slice(0, 6)}...${clientId.slice(-4)}` : 'MISSING'
+    const secretMasked = clientSecret ? `${clientSecret.slice(0, 4)}...${clientSecret.slice(-4)}` : 'MISSING'
+    throw new Error(`PhonePe auth failed: ${res.status} ${text} [id=${masked}, ver=${clientVersion}, secret=${secretMasked}, sandbox=${isSandbox}, url=${authUrl}]`)
   }
 
   const json = await res.json()
