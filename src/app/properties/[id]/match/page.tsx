@@ -742,12 +742,12 @@ function MatchDetailsContent() {
 
             {/* Action Buttons */}
             <div className="space-y-2 sm:space-y-3">
-              <button
-                onClick={() => setShowExpertModal(true)}
-                className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl"
+              <a
+                href="/for-brands#plans"
+                className="block w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl text-center"
               >
-                Connect with an Expert
-              </button>
+                Onboard Your Brand
+              </a>
             </div>
           </div>
         </div>
@@ -764,12 +764,12 @@ function MatchDetailsContent() {
       {/* Mobile Sticky Action Bar */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-lg safe-area-bottom">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
-          <button
-            onClick={() => setShowExpertModal(true)}
-            className="w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm hover:opacity-90 transition-opacity shadow-lg"
+          <a
+            href="/for-brands#plans"
+            className="block w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm hover:opacity-90 transition-opacity shadow-lg text-center"
           >
-            Connect with an Expert
-          </button>
+            Onboard Your Brand
+          </a>
         </div>
       </div>
 
