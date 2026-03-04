@@ -78,15 +78,15 @@ export async function enrichPropertyIntelligence(propertyId: string) {
 
   // Revenue model
   const weekendBoostPercent = 35
+  const priceNum = property.price != null ? Number(property.price) : null
+  const sizeNum = property.size != null ? Number(property.size) : null
   const monthlyRent =
-    property.price != null
-      ? Number(
-          property.priceType === 'yearly'
-            ? property.price / 12
-            : property.priceType === 'sqft' && property.size
-            ? property.price * property.size
-            : property.price,
-        )
+    priceNum != null
+      ? property.priceType === 'yearly'
+        ? priceNum / 12
+        : property.priceType === 'sqft' && sizeNum
+        ? priceNum * sizeNum
+        : priceNum
       : null
 
   const revenue = calculateRevenueFromBenchmarks({
