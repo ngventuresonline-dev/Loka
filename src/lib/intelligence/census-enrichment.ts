@@ -1,12 +1,14 @@
 /**
  * Census data enrichment for Location Intelligence
+ * Returns structured demographics from nearest census ward.
+ * Persistence is handled by the main enrichment pipeline (enrichment.ts).
  */
 
 import { getPrisma } from '@/lib/get-prisma'
 import { findNearestCensusWard } from './census-lookup'
 
 export async function enrichWithCensusData(
-  propertyId: string,
+  _propertyId: string,
   coordinates: { latitude: number; longitude: number }
 ) {
   const prisma = await getPrisma()
@@ -49,16 +51,6 @@ export async function enrichWithCensusData(
       diningOutFrequency: ward.diningOutFreq,
     },
   }
-
-  await prisma.locationIntelligence.upsert({
-    where: { propertyId },
-    update: { macroLocation: demo as object },
-    create: {
-      propertyId,
-      macroLocation: demo as object,
-      enrichmentStatus: 'processing',
-    },
-  })
 
   return demo
 }
