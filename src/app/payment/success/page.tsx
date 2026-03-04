@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-export default function PaymentSuccessPage() {
+function SuccessRedirect() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -16,5 +16,19 @@ export default function PaymentSuccessPage() {
     <div className="flex min-h-screen items-center justify-center">
       <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#FF5200] border-t-transparent" />
     </div>
+  )
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#FF5200] border-t-transparent" />
+        </div>
+      }
+    >
+      <SuccessRedirect />
+    </Suspense>
   )
 }
