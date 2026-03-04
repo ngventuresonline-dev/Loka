@@ -5,29 +5,11 @@ import { fetchTransportForLocation } from './fetch-transport'
 import { calculateRevenueFromBenchmarks } from './calculate-revenue'
 import { calculateScores } from './calculate-scores'
 import { findNearestWard } from './ward-lookup'
+import { findNearestCensusWard } from './census-lookup'
 
 export async function enrichPropertyIntelligence(propertyId: string) {
   const prisma = await getPrisma()
   if (!prisma) throw new Error('Prisma not available')
-
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      runId: 'pre-fix',
-      hypothesisId: 'H2',
-      location: 'src/lib/intelligence/enrichment.ts:13',
-      message: 'enrichPropertyIntelligence prisma models snapshot',
-      data: {
-        hasWardDemographics: typeof (prisma as any).wardDemographics !== 'undefined',
-        hasPropertyIntelligence: typeof (prisma as any).propertyIntelligence !== 'undefined',
-        hasCompetitor: typeof (prisma as any).competitor !== 'undefined',
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion agent log
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
@@ -71,6 +53,9 @@ export async function enrichPropertyIntelligence(propertyId: string) {
 
   // Nearest ward (Census 2021 + 2026 projection)
   const ward = await findNearestWard(prisma, { latitude: lat, longitude: lng })
+
+  // Census-level detailed demographics for the nearest ward (24 Bangalore wards)
+  const census = await findNearestCensusWard(prisma, { latitude: lat, longitude: lng })
 
   // Optional: locality-level area projections for infrastructure boost
   const area =
@@ -123,7 +108,7 @@ export async function enrichPropertyIntelligence(propertyId: string) {
       ? Math.min(25, (area.newMetroStations * 5 + area.newMalls * 3))
       : 0
 
-  // Scores
+  // Scores — pass census data for richer demographic scoring
   const scores = calculateScores({
     dailyFootfall: revenue.dailyFootfall,
     weekendBoostPercent: revenue.weekendBoostPercent,
@@ -135,12 +120,14 @@ export async function enrichPropertyIntelligence(propertyId: string) {
     monthlyRent,
     infrastructureBoostPercent: infraBoostPercent,
     ward,
+    census,
     propertyType: property.propertyType,
   })
 
   const dataQuality =
     70 +
     (ward ? 10 : 0) +
+    (census ? 3 : 0) +
     (area ? 5 : 0) +
     (transport.metroDistance != null ? 5 : 0) +
     (competitorCount > 0 ? 5 : 0)
@@ -220,6 +207,7 @@ export async function enrichPropertyIntelligence(propertyId: string) {
     transport,
     area,
     ward,
+    census,
   }
 }
 

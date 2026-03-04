@@ -21,24 +21,6 @@ export async function findNearestWard(
   prisma: PrismaClient,
   coords: { latitude: number; longitude: number },
 ): Promise<WardDemographics | null> {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      runId: 'pre-fix',
-      hypothesisId: 'H1',
-      location: 'src/lib/intelligence/ward-lookup.ts:24',
-      message: 'findNearestWard called',
-      data: {
-        hasWardDemographics: typeof (prisma as any).wardDemographics !== 'undefined',
-        wardDemographicsType: typeof (prisma as any).wardDemographics,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion agent log
-
   const wards = await prisma.wardDemographics.findMany()
   if (!wards.length) return null
 

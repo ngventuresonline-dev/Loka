@@ -1,6 +1,6 @@
 import type { TransportInfo } from './fetch-transport'
 import type { RawCompetitor } from './fetch-competitors'
-import type { AreaDemographics, WardDemographics } from '@prisma/client'
+import type { AreaDemographics, WardDemographics, CensusData } from '@prisma/client'
 
 export type ScoreInputs = {
   dailyFootfall: number
@@ -12,8 +12,9 @@ export type ScoreInputs = {
   monthlyRevenueMid: number
   monthlyRent?: number | null
   infrastructureBoostPercent: number
-   ward: WardDemographics | null
-   propertyType: string
+  ward: WardDemographics | null
+  census: CensusData | null
+  propertyType: string
 }
 
 export type ScoreOutputs = {
@@ -138,7 +139,7 @@ function computeAccessScore(input: ScoreInputs): number {
 }
 
 function computeDemographicScore(input: ScoreInputs): number {
-  const { ward, area, propertyType } = input
+  const { ward, census, area, propertyType } = input
 
   // Prefer ward-level demographics when available (Census + 2026 projection)
   if (ward) {
@@ -147,26 +148,47 @@ function computeDemographicScore(input: ScoreInputs): number {
 
     let score = 0
 
-    // Age match (30 points)
-    if (age25_44 > 60) score += 30
-    else if (age25_44 > 50) score += 25
-    else if (age25_44 > 40) score += 20
-    else score += 10
+    // Age match (25 points)
+    if (age25_44 > 60) score += 25
+    else if (age25_44 > 50) score += 20
+    else if (age25_44 > 40) score += 15
+    else score += 8
 
-    // Income match (35 points)
-    if (band === 'premium' && ward.medianIncome > 1_500_000) score += 35
-    else if (band === 'mid-range' && ward.medianIncome > 800_000) score += 35
-    else score += 20
+    // Income match (30 points)
+    if (band === 'premium' && ward.medianIncome > 1_500_000) score += 30
+    else if (band === 'mid-range' && ward.medianIncome > 800_000) score += 30
+    else score += 15
 
-    // Working population (15 points)
-    if (ward.workingPopulation > 75) score += 15
-    else if (ward.workingPopulation > 65) score += 10
+    // Working population (12 points)
+    if (ward.workingPopulation > 75) score += 12
+    else if (ward.workingPopulation > 65) score += 8
+    else score += 4
+
+    // Dining habits (13 points)
+    if (ward.diningOutPerWeek > 5) score += 13
+    else if (ward.diningOutPerWeek > 3.5) score += 10
     else score += 5
 
-    // Dining habits (20 points)
-    if (ward.diningOutPerWeek > 5) score += 20
-    else if (ward.diningOutPerWeek > 3.5) score += 15
-    else score += 8
+    // Census enrichment: education + lifestyle bonus (up to 20 points)
+    // This is the richer data pulled dynamically from census_data
+    if (census) {
+      // Education quality (0–8): graduates + postgrads indicate higher spending power
+      const educationPct = (census.graduatePercent ?? 0) + (census.postGradPercent ?? 0)
+      if (educationPct > 70) score += 8
+      else if (educationPct > 50) score += 6
+      else if (educationPct > 30) score += 3
+      else score += 1
+
+      // Lifestyle indicators (0–7): gym membership as health-consciousness proxy
+      if ((census.gymMembershipRate ?? 0) > 20) score += 7
+      else if ((census.gymMembershipRate ?? 0) > 12) score += 5
+      else score += 2
+
+      // Vehicle ownership / mobility (0–5): higher = more commuter footfall
+      if ((census.fourWheelerPercent ?? 0) > 35) score += 5
+      else if ((census.fourWheelerPercent ?? 0) > 20) score += 3
+      else score += 1
+    }
 
     return clamp(score, 0, 100)
   }
