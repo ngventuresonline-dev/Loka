@@ -53,7 +53,18 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
+  const [enrichStep, setEnrichStep] = useState(0)
   const [activeTab, setActiveTab] = useState('overview')
+
+  const enrichSteps = [
+    'Locating property coordinates…',
+    'Scanning nearby competitors…',
+    'Analyzing transport access…',
+    'Pulling ward demographics…',
+    'Calculating revenue projections…',
+    'Computing risk & opportunity scores…',
+    'Finalizing intelligence report…',
+  ]
 
   useEffect(() => {
     fetchIntelligence()
@@ -69,23 +80,8 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
         setCompetitors(json.competitors as CompetitorRow[])
         setWard(json.ward ?? null)
       } else if (res.status === 404 && autoEnrich) {
-        // No data yet — auto-trigger enrichment
-        setEnriching(true)
-        try {
-          const enrichRes = await fetch(`/api/intelligence/${propertyId}`, { method: 'POST' })
-          if (enrichRes.ok) {
-            // Re-fetch after enrichment completes
-            const res2 = await fetch(`/api/intelligence/${propertyId}`)
-            if (res2.ok) {
-              const json2 = await res2.json()
-              setData(json2.intelligence as IntelligenceData)
-              setCompetitors(json2.competitors as CompetitorRow[])
-              setWard(json2.ward ?? null)
-            }
-          }
-        } finally {
-          setEnriching(false)
-        }
+        // No data yet — auto-trigger enrichment with progress steps
+        await runEnrichmentWithProgress()
       } else {
         setData(null)
       }
@@ -96,27 +92,84 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
     }
   }
 
-  async function triggerEnrichment() {
+  async function runEnrichmentWithProgress() {
     setEnriching(true)
+    setEnrichStep(0)
+
+    // Animate through steps while enrichment runs in background
+    const stepInterval = setInterval(() => {
+      setEnrichStep((prev) => (prev < 6 ? prev + 1 : prev))
+    }, 1800)
+
     try {
-      const res = await fetch(`/api/intelligence/${propertyId}`, { method: 'POST' })
-      if (res.ok) {
-        await new Promise((r) => setTimeout(r, 2000))
-        await fetchIntelligence()
+      const enrichRes = await fetch(`/api/intelligence/${propertyId}`, { method: 'POST' })
+      clearInterval(stepInterval)
+      setEnrichStep(6) // Final step
+
+      if (enrichRes.ok) {
+        await new Promise((r) => setTimeout(r, 500))
+        const res2 = await fetch(`/api/intelligence/${propertyId}`)
+        if (res2.ok) {
+          const json2 = await res2.json()
+          setData(json2.intelligence as IntelligenceData)
+          setCompetitors(json2.competitors as CompetitorRow[])
+          setWard(json2.ward ?? null)
+        }
       }
+    } catch {
+      clearInterval(stepInterval)
     } finally {
       setEnriching(false)
+      setEnrichStep(0)
     }
+  }
+
+  async function triggerEnrichment() {
+    await runEnrichmentWithProgress()
   }
 
   if ((loading || enriching) && !data) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <div className="w-8 h-8 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
-        {enriching && (
-          <p className="text-sm text-slate-600 animate-pulse">
-            Analyzing location — competitors, demographics, revenue…
-          </p>
+      <div className="rounded-2xl border border-slate-200 bg-white p-8">
+        <h3 className="text-lg font-semibold text-slate-900 text-center mb-6">
+          {enriching ? 'Analyzing Location' : 'Loading Intelligence Data'}
+        </h3>
+        {enriching ? (
+          <div className="max-w-md mx-auto space-y-4">
+            {/* Progress bar */}
+            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-[#FF5200] to-[#FF8C00] h-2 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${Math.round(((enrichStep + 1) / enrichSteps.length) * 100)}%` }}
+              />
+            </div>
+            {/* Steps */}
+            <div className="space-y-2">
+              {enrichSteps.map((step, i) => (
+                <div key={step} className={`flex items-center gap-2 text-sm transition-opacity duration-300 ${
+                  i < enrichStep ? 'opacity-50' : i === enrichStep ? 'opacity-100' : 'opacity-30'
+                }`}>
+                  {i < enrichStep ? (
+                    <span className="text-green-500 font-bold text-xs">✓</span>
+                  ) : i === enrichStep ? (
+                    <div className="w-3 h-3 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span className="w-3 h-3 rounded-full bg-slate-200 inline-block" />
+                  )}
+                  <span className={i === enrichStep ? 'text-slate-900 font-medium' : 'text-slate-500'}>
+                    {step}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 text-center mt-4">
+              This takes about 10–15 seconds
+            </p>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <div className="w-8 h-8 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
+          </div>
         )}
       </div>
     )
