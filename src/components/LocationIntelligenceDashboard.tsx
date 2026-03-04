@@ -197,42 +197,42 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
     { id: 'revenue', label: 'Revenue' },
     { id: 'competition', label: 'Competition' },
     { id: 'demographics', label: 'Demographics' },
-    { id: 'transport', label: 'Transport & Access' },
-    { id: 'risks', label: 'Risks & Opportunities' },
+    { id: 'transport', label: 'Transport' },
+    { id: 'risks', label: 'Risks' },
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50 to-red-50 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Location Score</h2>
-            <p className="text-sm text-slate-600 mt-0.5">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50 to-red-50 p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Location Score</h2>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
               Footfall, revenue, competition, access, and demographics
             </p>
           </div>
-          <div className="text-center">
-            <div className="text-5xl font-bold text-[#FF5200]">{data.overallScore}</div>
-            <div className="text-sm text-slate-500">out of 100</div>
+          <div className="text-center flex-shrink-0">
+            <div className="text-4xl sm:text-5xl font-bold text-[#FF5200] leading-none">{data.overallScore}</div>
+            <div className="text-xs sm:text-sm text-slate-500">out of 100</div>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6">
           <ScoreCard title="Footfall" score={data.footfallScore} />
           <ScoreCard title="Revenue" score={data.revenueScore} />
           <ScoreCard title="Competition" score={data.competitionScore} />
-          <ScoreCard title="Accessibility" score={data.accessScore} />
+          <ScoreCard title="Access" score={data.accessScore} />
           <ScoreCard title="Demographics" score={data.demographicScore} />
           <ScoreCard title="Risk" score={data.riskScore} inverse />
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${
               activeTab === t.id
                 ? 'bg-[#FF5200] text-white'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -267,11 +267,11 @@ function ScoreCard({ title, score, inverse }: { title: string; score: number; in
   const v = inverse ? 100 - score : score
   const color = v >= 75 ? 'text-green-600' : v >= 50 ? 'text-amber-600' : 'text-red-600'
   return (
-    <div className="bg-white p-4 rounded-xl border border-slate-100">
-      <div className="text-xs text-slate-600">{title}</div>
-      <div className={`text-2xl font-bold mt-1 ${color}`}>{Math.round(score)}</div>
-      <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-        <div className="bg-[#FF5200] h-1.5 rounded-full" style={{ width: `${Math.min(100, score)}%` }} />
+    <div className="bg-white p-2.5 sm:p-4 rounded-xl border border-slate-100">
+      <div className="text-[10px] sm:text-xs text-slate-600 truncate">{title}</div>
+      <div className={`text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1 ${color}`}>{Math.round(score)}</div>
+      <div className="w-full bg-slate-100 rounded-full h-1 sm:h-1.5 mt-1.5 sm:mt-2">
+        <div className="bg-[#FF5200] h-1 sm:h-1.5 rounded-full" style={{ width: `${Math.min(100, score)}%` }} />
       </div>
     </div>
   )
