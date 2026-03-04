@@ -193,12 +193,12 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'revenue', label: 'Revenue' },
-    { id: 'competition', label: 'Competition' },
-    { id: 'demographics', label: 'Demographics' },
-    { id: 'transport', label: 'Transport' },
-    { id: 'risks', label: 'Risks' },
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'revenue', label: 'Revenue', icon: '💰' },
+    { id: 'competition', label: 'Competition', icon: '🏪' },
+    { id: 'demographics', label: 'Demographics', icon: '👥' },
+    { id: 'transport', label: 'Transport', icon: '🚇' },
+    { id: 'risks', label: 'Risks', icon: '⚠️' },
   ]
 
   return (
@@ -226,22 +226,22 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
         </div>
       </div>
 
-      <div
-        className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2"
-        style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
+      <div className="grid grid-cols-6 gap-1 sm:gap-2">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${
+            className={`py-2 sm:py-2.5 rounded-lg sm:rounded-full text-center transition-colors ${
               activeTab === t.id
                 ? 'bg-[#FF5200] text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {t.label}
+            <span className="block sm:hidden text-base leading-none">{t.icon}</span>
+            <span className="block text-[9px] sm:text-sm font-medium leading-tight mt-0.5 sm:mt-0 truncate px-0.5">
+              {t.label}
+            </span>
           </button>
         ))}
       </div>
