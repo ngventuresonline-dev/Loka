@@ -59,7 +59,7 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
     fetchIntelligence()
   }, [propertyId])
 
-  async function fetchIntelligence() {
+  async function fetchIntelligence(autoEnrich = true) {
     setLoading(true)
     try {
       const res = await fetch(`/api/intelligence/${propertyId}`)
@@ -68,6 +68,24 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
         setData(json.intelligence as IntelligenceData)
         setCompetitors(json.competitors as CompetitorRow[])
         setWard(json.ward ?? null)
+      } else if (res.status === 404 && autoEnrich) {
+        // No data yet — auto-trigger enrichment
+        setEnriching(true)
+        try {
+          const enrichRes = await fetch(`/api/intelligence/${propertyId}`, { method: 'POST' })
+          if (enrichRes.ok) {
+            // Re-fetch after enrichment completes
+            const res2 = await fetch(`/api/intelligence/${propertyId}`)
+            if (res2.ok) {
+              const json2 = await res2.json()
+              setData(json2.intelligence as IntelligenceData)
+              setCompetitors(json2.competitors as CompetitorRow[])
+              setWard(json2.ward ?? null)
+            }
+          }
+        } finally {
+          setEnriching(false)
+        }
       } else {
         setData(null)
       }
@@ -91,10 +109,15 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
     }
   }
 
-  if (loading && !data) {
+  if ((loading || enriching) && !data) {
     return (
-      <div className="flex items-center justify-center py-16">
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
         <div className="w-8 h-8 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
+        {enriching && (
+          <p className="text-sm text-slate-600 animate-pulse">
+            Analyzing location — competitors, demographics, revenue…
+          </p>
+        )}
       </div>
     )
   }
