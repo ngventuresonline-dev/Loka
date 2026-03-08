@@ -2,11 +2,15 @@
   "name": "commercial-real-estate-platform",
   "version": "0.1.1",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "vercel-install": "npm install --legacy-peer-deps",
     "postinstall": "prisma generate",
     "dev": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --webpack",
     "build": "next build --webpack",
+    "vercel-build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "test:performance": "node scripts/performance-test.js",
