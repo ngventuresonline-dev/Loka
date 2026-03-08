@@ -7,7 +7,7 @@ export type OwnerOnboardingMapProps = {
   mapCenter: { lat: number; lng: number }
   markerPosition: { lat: number; lng: number } | null
   onMapClick: (e: google.maps.MapMouseEvent) => void
-  onMarkerDragEnd: (e: { latLng: { lat: () => number; lng: () => number } }) => void
+  onMarkerDragEnd: (e: google.maps.MapMouseEvent) => void
   onLoad?: () => void
 }
 
