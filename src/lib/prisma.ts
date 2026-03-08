@@ -130,22 +130,6 @@ if (globalForPrisma.prisma) {
 // Always create a new client instance - wrap in try-catch to prevent module load failures
 try {
   prisma = createPrismaClient()
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      runId: 'pre-fix',
-      hypothesisId: 'H4',
-      location: 'src/lib/prisma.ts:132',
-      message: 'Prisma client created successfully (model keys snapshot)',
-      data: {
-        modelKeys: Object.keys(prisma).filter((k) => !k.startsWith('$')),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion agent log
 } catch (error: any) {
   console.error('[Prisma] Failed to create Prisma client:', error?.message || error)
   // Create a minimal client that will fail gracefully on queries

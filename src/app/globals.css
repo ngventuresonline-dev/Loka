@@ -235,18 +235,18 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
 
 /* Bangalore Map Mobile Centering - Optimized for visibility and centering */
 .bangalore-map-mobile-container {
-  transform: scale(1.2);
+  transform: scale(1.1);
 }
 
 @media (min-width: 640px) {
   .bangalore-map-mobile-container {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
 }
 
 @media (min-width: 768px) {
   .bangalore-map-mobile-container {
-    transform: scale(1.05);
+    transform: scale(1.02);
   }
 }
 

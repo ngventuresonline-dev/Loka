@@ -375,20 +375,43 @@ export async function PUT(
       )
     }
 
-    const data = validationResult.data
+    const data = validationResult.data as Record<string, unknown>
 
-    // Convert availableFrom string to Date if provided
-    const updateData: any = { ...data }
-    if (updateData.availableFrom) {
-      updateData.availableFrom = new Date(updateData.availableFrom)
-    } else if (updateData.availableFrom === null) {
-      updateData.availableFrom = null
+    // Build update payload with only fields that exist on the Property model.
+    // UpdatePropertySchema includes extra fields (condition, negotiable, availableFrom, isVerified,
+    // parking, publicTransport, accessibility, country, latitude, longitude) that are not columns.
+    const propertyTypeMap: Record<string, 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other'> = {
+      office: 'office', retail: 'retail', warehouse: 'warehouse', restaurant: 'restaurant',
+      qsr: 'restaurant', kiosk: 'other', commercial: 'other', mixed_use: 'other', other: 'other',
     }
+    const priceTypeMap = ['monthly', 'yearly', 'sqft'] as const
+    const updateData: Record<string, unknown> = {}
+    if (data.title !== undefined) updateData.title = data.title
+    if (data.description !== undefined) updateData.description = data.description
+    if (data.address !== undefined) updateData.address = data.address
+    if (data.city !== undefined) updateData.city = data.city
+    if (data.state !== undefined) updateData.state = data.state
+    if (data.zipCode !== undefined) updateData.zipCode = data.zipCode
+    if (data.size !== undefined) updateData.size = data.size
+    if (data.propertyType !== undefined) {
+      const raw = String(data.propertyType).toLowerCase()
+      updateData.propertyType = propertyTypeMap[raw] ?? 'other'
+    }
+    if (data.price !== undefined) updateData.price = data.price
+    if (data.priceType !== undefined) {
+      const raw = String(data.priceType).toLowerCase()
+      updateData.priceType = priceTypeMap.includes(raw as any) ? raw : 'monthly'
+    }
+    if (data.securityDeposit !== undefined) updateData.securityDeposit = data.securityDeposit
+    if (data.amenities !== undefined) updateData.amenities = data.amenities
+    if (data.images !== undefined) updateData.images = data.images
+    if (data.availability !== undefined) updateData.availability = data.availability
+    if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured
 
-    // Update property
+    // Update property (only known Prisma fields)
     const property = await prisma.property.update({
       where: { id: propertyId },
-      data: updateData,
+      data: updateData as any,
       include: {
         owner: {
           select: {

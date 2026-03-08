@@ -189,23 +189,16 @@ function calculateBudgetScore(property: Property, budgetMin: number, budgetMax: 
     return 100
   }
 
-  // Over budget - calculate percentage over
-  if (monthlyRent > budgetMax) {
+  // Over budget - calculate percentage over (still give some score so "in your area but expensive" can show)
+  if (monthlyRent > budgetMax && budgetMax > 0) {
     const overAmount = monthlyRent - budgetMax
     const overPercent = overAmount / budgetMax
 
-    // 10% over
-    if (overPercent <= 0.1) {
-      return 70
-    }
-
-    // 20% over
-    if (overPercent <= 0.2) {
-      return 40
-    }
-
-    // More than 20% over
-    return 0
+    if (overPercent <= 0.1) return 70
+    if (overPercent <= 0.2) return 40
+    if (overPercent <= 0.5) return 25  // 20–50% over: still show with lower score
+    if (overPercent <= 1) return 15    // 50–100% over: show so preferred-area options appear
+    return 10                           // 100%+ over: minimal score but still visible
   }
 
   return 0

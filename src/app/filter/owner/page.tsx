@@ -46,8 +46,8 @@ const otherPropertyTypes = [
 // Combined list for backward compatibility
 const propertyTypes = [...fnbPropertyTypes, ...otherPropertyTypes]
 
-// Popular areas shown first, then alphabetical
-const popularAreas = [
+// Prime areas (6–8) shown as capsules on the card
+const primeAreas = [
   'Koramangala',
   'Indiranagar',
   'Whitefield',
@@ -55,54 +55,28 @@ const popularAreas = [
   'Jayanagar',
   'BTM Layout',
   'MG Road',
-  'Brigade Road',
-  'Marathahalli',
-  'Hebbal',
-  'Banashankari',
-  'Electronic City'
+  'Marathahalli'
 ]
 
-const allLocations = [
-  'Koramangala',
-  'Indiranagar',
-  'Whitefield',
-  'HSR Layout',
-  'Jayanagar',
-  'BTM Layout',
-  'MG Road',
-  'Brigade Road',
-  'Marathahalli',
-  'Hebbal',
-  'Banashankari',
-  'Sarjapur Road',
-  'Electronic City',
-  'Bellandur',
-  'Bannerghatta Road',
-  'Rajajinagar',
-  'Malleshwaram',
-  'Basavanagudi',
-  'Vijayanagar',
-  'Yelahanka',
-  'Yeshwanthpur',
-  'RT Nagar',
-  'Frazer Town',
-  'Richmond Town',
-  'Ulsoor',
-  'Kanakapura Road',
-  'New Bel Road',
-  'Kalyan Nagar',
-  'Kamanahalli',
-  'Sahakar Nagar',
-  'Other'
+// All Bangalore areas (comprehensive list for type-ahead)
+const allBangaloreLocations = [
+  'Koramangala', 'Indiranagar', 'Whitefield', 'HSR Layout', 'Jayanagar', 'BTM Layout',
+  'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road',
+  'Electronic City', 'Bellandur', 'Bannerghatta Road', 'Rajajinagar', 'Malleshwaram',
+  'Basavanagudi', 'Vijayanagar', 'Yelahanka', 'Yeshwanthpur', 'RT Nagar', 'Frazer Town',
+  'Richmond Town', 'Ulsoor', 'Kanakapura Road', 'New Bel Road', 'Kalyan Nagar',
+  'Kamanahalli', 'Sahakar Nagar', 'JP Nagar', 'Jeevanbheemanagar', 'Kempegowda Nagar',
+  'Kengeri', 'Kodigehalli', 'Kumaraswamy Layout', 'Madivala', 'Mahadevapura', 'Mathikere',
+  'Nagarbhavi', 'Peenya', 'Rajarajeshwari Nagar', 'Sadashivanagar', 'Sanjay Nagar',
+  'Seshadripuram', 'Shivajinagar', 'T Dasarahalli', 'Vasanth Nagar', 'Wilson Garden', 'Other'
 ]
 
-// Sort all locations alphabetically (excluding popular ones and "Other")
-const otherLocations = allLocations
-  .filter(loc => !popularAreas.includes(loc) && loc !== 'Other')
+// Dedupe and sort (prime first, then rest alphabetically, Other last)
+const uniqueLocations = Array.from(new Set(allBangaloreLocations))
+const otherLocationsSorted = uniqueLocations
+  .filter(loc => !primeAreas.includes(loc) && loc !== 'Other')
   .sort((a, b) => a.localeCompare(b))
-
-// Combine: popular first, then alphabetical, then "Other"
-const locations = [...popularAreas, ...otherLocations, 'Other']
+const locations = [...primeAreas, ...otherLocationsSorted, 'Other']
 const featuresCategories = {
   'Floor': ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor+', 'Basement', 'Mezzanine'],
   'Location & Visibility': ['Corner Unit', 'Main Road', 'Street Facing', 'High Visibility'],
@@ -758,6 +732,7 @@ function FilterCard({
   visibleCount,
   compactCapsules = false,
   moreLabel,
+  searchableOptions = false,
 }: { 
   title: string
   items: string[]
@@ -772,14 +747,15 @@ function FilterCard({
   visibleCount?: number
   compactCapsules?: boolean
   moreLabel?: string
+  searchableOptions?: boolean
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [otherValue, setOtherValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const [customLocation, setCustomLocation] = useState('')
   
   // Calculate if dropdown should open upward
   useEffect(() => {
@@ -804,13 +780,14 @@ function FilterCard({
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false)
+        if (searchableOptions) setSearchQuery('')
       }
     }
     if (isDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [isDropdownOpen])
+  }, [isDropdownOpen, searchableOptions])
   
   const borderColors = [
     'border-[#E4002B]/30 hover:border-[#E4002B]',
@@ -865,14 +842,18 @@ function FilterCard({
   
   const handleOtherValueChange = (value: string) => {
     setOtherValue(value)
-    // Update selection with custom value
+    // Update selection with custom value and keep local state in sync
     if (selected.has('Other') || selected.has('Others')) {
       const next = new Set(selected)
       if (value.trim()) {
         next.delete('Other')
         next.delete('Others')
         next.add(value.trim())
+      } else {
+        next.clear()
+        next.add('Other')
       }
+      setSelected(next)
       if (onSelectionChange) {
         onSelectionChange(next)
       }
@@ -942,142 +923,183 @@ function FilterCard({
           </div>
           
           {useDropdown ? (
-            // Dropdown Mode
+            // Dropdown Mode: dropdown appears right below the trigger; capsules (quick options) below that
             <div className="relative w-full" ref={dropdownRef} style={{ zIndex: isDropdownOpen ? 9999 : 'auto' }}>
-              {/* Dropdown Button */}
-              <button
-                ref={buttonRef}
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`w-full px-4 py-3 bg-white border rounded-lg sm:rounded-xl text-left flex items-center justify-between transition-all duration-200 ${
-                  error && required && selected.size === 0
-                    ? 'border-red-300 focus:border-red-500'
-                    : isDropdownOpen
-                    ? 'border-[#E4002B]'
-                    : 'border-gray-200 hover:border-[#E4002B]/50'
-                }`}
-                style={{ fontFamily: plusJakarta.style.fontFamily }}
-              >
-                <div className="flex flex-wrap gap-2 flex-1 min-w-0">
-                  {selected.size === 0 ? (
-                    <span className="text-gray-500 text-sm sm:text-base">
-                      {title === 'Property Type'
-                        ? 'Choose your property type'
-                        : title.startsWith('Property Location')
-                        ? 'Select from other locations'
-                        : `Select ${title.toLowerCase()}...`}
-                    </span>
-                  ) : (
-                    Array.from(selected).slice(0, 2).map(item => (
-                      <span
-                        key={item}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white text-xs sm:text-sm rounded-md font-medium"
-                      >
-                        {item}
-                        {multi && (
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggle(item)
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
+              {/* Trigger + dropdown only in this wrapper so dropdown positions directly under the box */}
+              <div className="relative">
+                {/* Dropdown Button */}
+                <button
+                  ref={buttonRef}
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`w-full px-4 py-3 bg-white border rounded-lg sm:rounded-xl text-left flex items-center justify-between transition-all duration-200 ${
+                    error && required && selected.size === 0
+                      ? 'border-red-300 focus:border-red-500'
+                      : isDropdownOpen
+                      ? 'border-[#E4002B]'
+                      : 'border-gray-200 hover:border-[#E4002B]/50'
+                  }`}
+                  style={{ fontFamily: plusJakarta.style.fontFamily }}
+                >
+                  <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+                    {selected.size === 0 ? (
+                      <span className="text-gray-500 text-sm sm:text-base">
+                        {title === 'Property Type'
+                          ? 'Choose your property type'
+                          : title.startsWith('Property Location')
+                          ? 'Select from other locations'
+                          : `Select ${title.toLowerCase()}...`}
+                      </span>
+                    ) : (
+                      Array.from(selected).slice(0, 2).map(item => (
+                        <span
+                          key={item}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white text-xs sm:text-sm rounded-md font-medium"
+                        >
+                          {item}
+                          {multi && (
+                            <span
+                              onClick={(e) => {
                                 e.stopPropagation()
                                 toggle(item)
-                              }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                            className="hover:bg-white/20 rounded-full p-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50"
-                            aria-label={`Remove ${item}`}
-                          >
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </span>
-                        )}
-                      </span>
-                    ))
-                  )}
-                  {selected.size > 2 && (
-                    <span className="text-xs sm:text-sm text-gray-600 font-medium">
-                      +{selected.size - 2} more
-                    </span>
-                  )}
-                </div>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {/* Quick options row (first N capsules always visible) */}
-              {hasQuickOptions && quickItems.length > 0 && (
-                <div className="mt-3 mb-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                  {quickItems.map((item) => {
-                    const active = selected.has(item)
-                    return (
-                      <motion.button
-                        key={item}
-                        onClick={() => toggle(item)}
-                        className={`relative ${
-                          compactCapsules
-                            ? 'px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm'
-                            : 'px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base'
-                        } rounded-lg sm:rounded-xl font-medium transition-all duration-300 border-2 ${
-                          active
-                            ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
-                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
-                        }`}
-                        style={{ fontFamily: plusJakarta.style.fontFamily }}
-                        whileHover={{ scale: 1.03, y: -1 }}
-                        whileTap={{ scale: 0.97 }}
-                        initial={false}
-                      >
-                        {item}
-                      </motion.button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Dropdown Menu with Capsules */}
-              <AnimatePresence>
-                {isDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: openUpward ? 10 : -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: openUpward ? 10 : -10 }}
-                    transition={{ duration: 0.2 }}
-                    // Scrollable dropdown body - smart positioning (upward or downward), attached to input
-                    className="absolute z-[99999] w-full bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto"
-                    style={{ 
-                      position: 'absolute', 
-                      zIndex: 99999,
-                      ...(openUpward 
-                        ? { bottom: '100%', marginBottom: 0 }
-                        : { top: '100%', marginTop: 0 }
-                      ),
-                      left: 0, 
-                      right: 0,
-                      maxHeight: 'min(60vh, 400px)',
-                      maxWidth: '100%'
-                    } as React.CSSProperties}
-                  >
-                    {moreLabel && dropdownItems.length > 0 && (
-                      <p
-                        className="text-xs sm:text-sm text-gray-500 mb-3"
-                        style={{ fontFamily: plusJakarta.style.fontFamily }}
-                      >
-                        {moreLabel}
-                      </p>
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  toggle(item)
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              className="hover:bg-white/20 rounded-full p-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50"
+                              aria-label={`Remove ${item}`}
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                          )}
+                        </span>
+                      ))
                     )}
+                    {selected.size > 2 && (
+                      <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                        +{selected.size - 2} more
+                      </span>
+                    )}
+                  </div>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu: directly below the trigger (sibling of button in same relative wrapper) */}
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: openUpward ? 10 : -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: openUpward ? 10 : -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute z-[99999] w-full bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-2xl p-4 pb-6 overflow-y-auto"
+                      style={{ 
+                        position: 'absolute', 
+                        zIndex: 99999,
+                        ...(openUpward 
+                          ? { bottom: '100%', marginBottom: 4 }
+                          : { top: '100%', marginTop: 4 }
+                        ),
+                        left: 0, 
+                        right: 0,
+                        maxHeight: 'min(60vh, 400px)',
+                        maxWidth: '100%'
+                      } as React.CSSProperties}
+                    >
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex-1 min-w-0">
+                        {moreLabel && dropdownItems.length > 0 && (
+                          <p className="text-xs sm:text-sm text-gray-500" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                            {moreLabel}
+                          </p>
+                        )}
+                        {categories && (
+                          <p className="text-xs sm:text-sm font-medium text-gray-700" style={{ fontFamily: plusJakarta.style.fontFamily }}>
+                            Select features
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsDropdownOpen(false)
+                          if (searchableOptions) setSearchQuery('')
+                        }}
+                        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        aria-label="Close"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                     {/* Capsule Grid with Categories */}
-                    {categories ? (
+                    {searchableOptions ? (
+                      <div className="space-y-3 pb-2" onMouseDown={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Type to search or add location..."
+                          className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none"
+                          style={{ fontFamily: plusJakarta.style.fontFamily }}
+                        />
+                        <div className="max-h-48 overflow-y-auto space-y-1">
+                          {dropdownItems
+                            .filter(item => item.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+                            .map((item) => {
+                              const active = selected.has(item)
+                              return (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  onClick={() => {
+                                    toggle(item)
+                                    setIsDropdownOpen(false)
+                                    setSearchQuery('')
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    active ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white' : 'hover:bg-gray-100 text-gray-700'
+                                  }`}
+                                  style={{ fontFamily: plusJakarta.style.fontFamily }}
+                                >
+                                  {item}
+                                </button>
+                              )
+                            })}
+                          {searchQuery.trim() && !items.some(i => i.toLowerCase() === searchQuery.trim().toLowerCase()) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const custom = searchQuery.trim()
+                                setSelected(new Set([custom]))
+                                if (onSelectionChange) onSelectionChange(new Set([custom]))
+                                setIsDropdownOpen(false)
+                                setSearchQuery('')
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-[#E4002B] hover:bg-[#E4002B]/10 border border-dashed border-[#E4002B]/50"
+                              style={{ fontFamily: plusJakarta.style.fontFamily }}
+                            >
+                              Add &quot;{searchQuery.trim()}&quot;
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : categories ? (
                       <div className="space-y-4 pb-2">
                         {Object.entries(categories).map(([categoryName, categoryItems]) => (
                           <div key={categoryName}>
@@ -1186,23 +1208,56 @@ function FilterCard({
                         })}
                       </div>
                     )}
-                    {/* Show text input when "Other" is selected */}
+                    {/* Show text input when "Other" is selected - stop propagation so dropdown doesn't close */}
                     {(selected.has('Other') || selected.has('Others')) && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="mt-4 pt-4 border-t border-gray-200" onMouseDown={(e) => e.stopPropagation()}>
                         <input
                           type="text"
                           value={otherValue}
                           onChange={(e) => handleOtherValueChange(e.target.value)}
-                          placeholder="Please specify..."
+                          placeholder={title === 'Property Type' ? 'Type your property type' : title.startsWith('Property Location') ? 'Type area or location' : 'Please specify...'}
                           className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
                           style={{ fontFamily: plusJakarta.style.fontFamily }}
                           onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          autoFocus
                         />
                       </div>
                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
+              </div>
+
+              {/* Quick options (prime area capsules) — below the dropdown box */}
+              {hasQuickOptions && quickItems.length > 0 && (
+                <div className="mt-3 mb-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                  {quickItems.map((item) => {
+                    const active = selected.has(item)
+                    return (
+                      <motion.button
+                        key={item}
+                        onClick={() => toggle(item)}
+                        className={`relative ${
+                          compactCapsules
+                            ? 'px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm'
+                            : 'px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base'
+                        } rounded-lg sm:rounded-xl font-medium transition-all duration-300 border-2 ${
+                          active
+                            ? 'bg-gradient-to-r from-[#E4002B] to-[#FF5200] text-white border-transparent shadow-lg shadow-[#E4002B]/50'
+                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-[#E4002B]/50 hover:text-[#E4002B] hover:bg-white'
+                        }`}
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                        whileHover={{ scale: 1.03, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        initial={false}
+                      >
+                        {item}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             // Grid Mode (Original)
@@ -1538,20 +1593,19 @@ export default function OwnerFilterPage() {
           </div>
           <div data-field="location" className="overflow-visible relative z-20">
             <FilterCard 
-              title="Property Location" 
-              items={locations} 
-              /* Owners should choose a single primary location at a time */
-              index={2} 
+              title="Property Location"
+              items={locations}
+              index={2}
               required
               useDropdown={true}
-              visibleCount={popularAreas.length}
+              visibleCount={primeAreas.length}
               compactCapsules
-              instructionText="Popular areas shown first, then alphabetical order"
-              moreLabel="Choose more areas across the city"
+              instructionText="Select the primary location of your property"
+              moreLabel="Search or type to add another area"
+              searchableOptions={true}
               onSelectionChange={(set) => {
                 setLocationSelected(set)
                 scheduleOwnerLog('filter_change', { filter_step: buildOwnerFilterSessionPayload() })
-                // Progressive session tracking
                 sessionTracking.trackFilterUpdate({
                   location: Array.from(set)[0] || null
                 })

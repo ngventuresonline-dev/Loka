@@ -7,10 +7,18 @@ import DynamicBackground from '@/components/DynamicBackground'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import { getOrCreateSessionId } from '@/lib/session-utils'
 import { trackFormComplete, trackConversion } from '@/lib/tracking'
-import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api'
-import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
+import { getGoogleMapsApiKey } from '@/lib/google-maps-config'
+
+const OwnerOnboardingMap = dynamic(
+  () => import('@/components/OwnerOnboardingMap'),
+  { ssr: false }
+)
+const OnboardingBrandCard = dynamic(
+  () => import('@/components/OnboardingBrandCard'),
+  { ssr: false }
+)
 import { uploadPropertyImages } from '@/lib/supabase/storage'
 
 /* TODO: Re-enable auth when owner login is implemented
@@ -36,124 +44,6 @@ const areaCoordinates: Record<string, { lat: number; lng: number }> = {
   'sarjapur road': { lat: 12.9063, lng: 77.6834 },
   'electronic city': { lat: 12.8392, lng: 77.6778 },
   bellandur: { lat: 12.9314, lng: 77.676 },
-}
-
-function BrandCard({ brand }: { brand: any }) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  
-  const matchScore = brand.matchScore || Math.floor(Math.random() * 30) + 70 // Fallback for demo
-  
-  return (
-    <div className="group relative">
-      {/* Compact capsule/button style card */}
-      <button
-        type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="relative bg-white border border-gray-200 rounded-full px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-[#FF5200]/50 flex items-center gap-2 sm:gap-3 whitespace-nowrap"
-      >
-        {/* Gradient accent dot */}
-        <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] via-[#FF6B35] to-[#E4002B] flex-shrink-0"></div>
-        
-        {/* Brand logo/initial - smaller */}
-        {(() => {
-          const logoPath = getBrandLogo(brand.name)
-          const brandInitial = getBrandInitial(brand.name)
-          return logoPath ? (
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-white flex items-center justify-center flex-shrink-0">
-              <Image
-                src={logoPath}
-                alt={brand.name || 'Brand'}
-                width={32}
-                height={32}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  const parent = target.parentElement
-                  if (parent) {
-                    parent.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center text-white text-xs font-bold">${brandInitial}</div>`
-                  }
-                }}
-              />
-            </div>
-          ) : (
-            <div className="w-8 h-8 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {brandInitial}
-            </div>
-          )
-        })()}
-        
-        {/* Brand name - compact */}
-        <div className="flex-1 min-w-0 text-left">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-xs font-semibold text-gray-900 truncate">{brand.name || 'Brand Name'}</h3>
-            <div className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
-              matchScore >= 90 ? 'bg-green-100 text-green-700' :
-              matchScore >= 80 ? 'bg-blue-100 text-blue-700' :
-              'bg-yellow-100 text-yellow-700'
-            }`}>
-              {matchScore}%
-            </div>
-          </div>
-        </div>
-        
-        {/* Dropdown arrow */}
-        <svg 
-          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      
-      {/* Expandable requirements section - appears below */}
-      {isExpanded && (
-        <div className="mt-2 bg-white border border-gray-200 rounded-xl p-3 shadow-md animate-[fadeInUp_0.3s_ease-out]">
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center gap-2 text-gray-600 mb-2">
-              <span className="font-medium text-gray-900">{brand.businessType || 'Business Type'}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <svg className="w-3 h-3 text-[#FF5200] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-                <span className="truncate">{brand.sizeRange || 'N/A'}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <svg className="w-3 h-3 text-[#FF5200] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="truncate">{brand.budgetRange || 'N/A'}</span>
-              </div>
-            </div>
-            <div className="pt-2 border-t border-gray-100 space-y-1.5">
-              {brand.propertyTypes && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Property Type:</span>
-                  <span className="font-medium text-gray-900 text-right">{brand.propertyTypes.join(', ')}</span>
-                </div>
-              )}
-              {brand.locations && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Location:</span>
-                  <span className="font-medium text-gray-900 text-right">{brand.locations.join(', ')}</span>
-                </div>
-              )}
-              {brand.leaseTerm && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Lease Term:</span>
-                  <span className="font-medium text-gray-900">{brand.leaseTerm}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
 }
 
 function OwnerOnboardingContent() {
@@ -202,156 +92,6 @@ function OwnerOnboardingContent() {
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [mapApiError, setMapApiError] = useState<string | null>(null)
-
-  const { isLoaded: isMapLoaded, loadError: mapLoadError } = useLoadScript({
-    googleMapsApiKey: getGoogleMapsApiKey(),
-    libraries: GOOGLE_MAPS_LIBRARIES,
-  })
-
-  // Debug logging for map loading state
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[OwnerOnboarding] Map state:', {
-        isLoaded: isMapLoaded,
-        loadError: mapLoadError?.message || null,
-        apiKey: getGoogleMapsApiKey() ? 'Set' : 'Missing',
-        googleMapsAvailable: typeof window !== 'undefined' && window.google && window.google.maps ? 'Yes' : 'No',
-      })
-      
-      // Check if script loaded but API failed
-      if (isMapLoaded && !mapLoadError && typeof window !== 'undefined' && (!window.google || !window.google.maps)) {
-        console.error('[OwnerOnboarding] Script loaded but Google Maps API not available. Check API key restrictions and enabled APIs.')
-      }
-    }
-  }, [isMapLoaded, mapLoadError])
-  
-  // Monitor for InvalidKeyMapError - intercept console errors (with verification)
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    
-    // Intercept console.error to catch InvalidKeyMapError specifically
-    const originalError = console.error
-    const originalWarn = console.warn
-    
-    const errorHandler = (...args: any[]) => {
-      const message = args[0]?.toString() || ''
-      // Only catch actual InvalidKeyMapError, not generic "API key" messages
-      if (message.includes('InvalidKeyMapError') || 
-          (message.includes('Google Maps') && message.includes('invalid key')) ||
-          (message.includes('Google Maps JavaScript API error') && message.includes('InvalidKey'))) {
-        // Verify the error is real by testing map creation
-        // Don't set error immediately - verify first
-        setTimeout(() => {
-          if (typeof window !== 'undefined' && window.google && window.google.maps) {
-            try {
-              const testDiv = document.createElement('div')
-              testDiv.style.width = '1px'
-              testDiv.style.height = '1px'
-              testDiv.style.position = 'absolute'
-              testDiv.style.visibility = 'hidden'
-              document.body.appendChild(testDiv)
-              
-              const testMap = new window.google.maps.Map(testDiv, {
-                zoom: 1,
-                center: { lat: 0, lng: 0 },
-              })
-              
-              // Map creation succeeded - error was false positive, don't set error
-              setTimeout(() => {
-                if (document.body.contains(testDiv)) {
-                  document.body.removeChild(testDiv)
-                }
-              }, 100)
-            } catch (error: any) {
-              // Map creation failed - error is real
-              setMapApiError('Google Maps API key is invalid. Please check your API key configuration in Google Cloud Console.')
-            }
-          }
-        }, 500) // Wait 500ms to verify
-      }
-      originalError.apply(console, args)
-    }
-    
-    const warnHandler = (...args: any[]) => {
-      const message = args[0]?.toString() || ''
-      // Only catch actual InvalidKeyMapError, not generic "API key" messages
-      if (message.includes('InvalidKeyMapError') || 
-          (message.includes('Google Maps') && message.includes('invalid key')) ||
-          (message.includes('Google Maps JavaScript API error') && message.includes('InvalidKey'))) {
-        // Same verification logic as error handler
-        setTimeout(() => {
-          if (typeof window !== 'undefined' && window.google && window.google.maps) {
-            try {
-              const testDiv = document.createElement('div')
-              testDiv.style.width = '1px'
-              testDiv.style.height = '1px'
-              testDiv.style.position = 'absolute'
-              testDiv.style.visibility = 'hidden'
-              document.body.appendChild(testDiv)
-              
-              const testMap = new window.google.maps.Map(testDiv, {
-                zoom: 1,
-                center: { lat: 0, lng: 0 },
-              })
-              
-              // Map creation succeeded - error was false positive
-              setTimeout(() => {
-                if (document.body.contains(testDiv)) {
-                  document.body.removeChild(testDiv)
-                }
-              }, 100)
-            } catch (error: any) {
-              // Map creation failed - error is real
-              setMapApiError('Google Maps API key is invalid. Please check your API key configuration in Google Cloud Console.')
-            }
-          }
-        }, 500)
-      }
-      originalWarn.apply(console, args)
-    }
-    
-    console.error = errorHandler
-    console.warn = warnHandler
-    
-    return () => {
-      console.error = originalError
-      console.warn = originalWarn
-    }
-  }, [])
-  
-  // Clear error if map initializes successfully
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!isMapLoaded || mapLoadError || !mapApiError) return
-    if (!window.google || !window.google.maps) return
-    
-    // Test if map can actually be created
-    try {
-      const testDiv = document.createElement('div')
-      testDiv.style.width = '1px'
-      testDiv.style.height = '1px'
-      testDiv.style.position = 'absolute'
-      testDiv.style.visibility = 'hidden'
-      document.body.appendChild(testDiv)
-      
-      const testMap = new window.google.maps.Map(testDiv, {
-        zoom: 1,
-        center: { lat: 0, lng: 0 },
-      })
-      
-      // If test map succeeds, clear the error
-      setMapApiError(null)
-      
-      setTimeout(() => {
-        if (document.body.contains(testDiv)) {
-          document.body.removeChild(testDiv)
-        }
-      }, 100)
-    } catch (error) {
-      // Error persists, keep it
-    }
-  }, [isMapLoaded, mapLoadError, mapApiError])
-  
 
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
 
@@ -1021,10 +761,10 @@ function OwnerOnboardingContent() {
       ? window.localStorage.getItem('ownerId')
       : null
     
-    if (!existingOwnerId && (!formData.ownerName || !formData.ownerPhone || formData.ownerPhone.replace(/\D/g, '').length !== 10)) {
+    if (!existingOwnerId && (!formData.ownerPhone || formData.ownerPhone.replace(/\D/g, '').length !== 10)) {
       isSubmittingRef.current = false
       setIsSubmitting(false)
-      alert('Please add your name and a valid 10-digit contact number before listing your property.')
+      alert('Please add a valid 10-digit contact number before listing your property.')
       return
     }
 
@@ -1093,10 +833,10 @@ function OwnerOnboardingContent() {
             ownerId: existingOwnerId || undefined,
             sessionId, // Add sessionId for tracking
             owner: existingOwnerId ? undefined : {
-            name: formData.ownerName,
-            email: formData.ownerEmail,
-            phone: formData.ownerPhone,
-          },
+              name: 'Property Owner',
+              email: '',
+              phone: formData.ownerPhone,
+            },
           property: {
             propertyType: formData.propertyType,
             location: formData.location,
@@ -1472,7 +1212,7 @@ function OwnerOnboardingContent() {
               <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                 {matchingBrands.slice(0, 6).map((brand) => (
                   <div key={brand.id || `brand-${brand.name}-${Math.random()}`} className="flex-shrink-0">
-                    <BrandCard brand={brand} />
+                    <OnboardingBrandCard brand={brand} />
                   </div>
                 ))}
               </div>
@@ -1529,57 +1269,29 @@ function OwnerOnboardingContent() {
               {step === 1 && (
                 <div className="space-y-6 animate-[fadeInUp_0.5s_ease-out]">
                   {!hasExistingOwner && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Your Name <span className="text-red-500">*</span>
-                    </label>
-                        <input
-                          type="text"
-                          name="ownerName"
-                          value={formData.ownerName}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
-                          placeholder="Enter your full name"
-                        />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Email (optional)
-                    </label>
-                    <input
-                          type="email"
-                          name="ownerEmail"
-                          value={formData.ownerEmail}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
-                          placeholder="you@email.com"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Contact Number <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          name="ownerPhone"
-                          value={formData.ownerPhone}
-                          onChange={handleChange}
-                          required
-                          pattern="\d{10}"
-                          maxLength={10}
-                          className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
-                            phoneError
-                              ? 'border-red-400 focus:border-red-500'
-                              : 'border-gray-300 focus:border-[#FF5200]'
-                          }`}
-                          placeholder="Your mobile number"
-                        />
-                        {phoneError && (
-                          <p className="mt-1 text-xs text-red-600">{phoneError}</p>
-                        )}
-                  </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Contact Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        name="ownerPhone"
+                        value={formData.ownerPhone}
+                        onChange={handleChange}
+                        required
+                        pattern="\d{10}"
+                        maxLength={10}
+                        className={`w-full max-w-sm px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
+                          phoneError
+                            ? 'border-red-400 focus:border-red-500'
+                            : 'border-gray-300 focus:border-[#FF5200]'
+                        }`}
+                        placeholder="10-digit Indian mobile number"
+                      />
+                      {phoneError && (
+                        <p className="mt-1 text-xs text-red-600">{phoneError}</p>
+                      )}
+                      <p className="mt-1.5 text-xs text-gray-500">We’ll use this to connect you with interested brands.</p>
                     </div>
                   )}
                   {hasExistingOwner && (
@@ -1676,12 +1388,7 @@ function OwnerOnboardingContent() {
                     )}
 
                     <div className="mt-4 h-64 rounded-xl border border-gray-200 overflow-hidden">
-                      {!isMapLoaded && !mapLoadError && (
-                        <div className="flex items-center justify-center h-full text-sm text-gray-500">
-                          Loading map…
-                  </div>
-                      )}
-                      {(mapLoadError || mapApiError) && (
+                      {mapApiError && (
                         <div className="relative flex items-center justify-center h-full px-4 text-center overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/10 via-[#E4002B]/5 to-[#FFB199]/15 blur-sm" />
                           <div className="absolute inset-4 rounded-2xl border border-white/60 bg-white/60 backdrop-blur-xl shadow-[0_18px_45px_rgba(15,23,42,0.22)]" />
@@ -1693,7 +1400,7 @@ function OwnerOnboardingContent() {
                               Google Maps Error
                             </div>
                             <div className="text-xs text-gray-600 mb-2">
-                              {mapApiError || mapLoadError?.message || 'Failed to load Google Maps'}
+                              {mapApiError}
                             </div>
                             {process.env.NODE_ENV === 'development' && (
                               <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-[10px] text-red-800 text-left mb-3">
@@ -1701,7 +1408,7 @@ function OwnerOnboardingContent() {
                                 <br />
                                 API Key: {getGoogleMapsApiKey() ? 'Set ✓' : 'Missing ✗'}
                                 <br />
-                                Error: {mapApiError || mapLoadError?.message || 'Unknown'}
+                                Error: {mapApiError}
                                 <br />
                                 <br />
                                 <strong>Fix InvalidKeyMapError:</strong>
@@ -1724,36 +1431,15 @@ function OwnerOnboardingContent() {
                           </div>
                         </div>
                       )}
-                      {isMapLoaded && !mapLoadError && !mapApiError && (
-                        typeof window !== 'undefined' && window.google && window.google.maps ? (
-                          <>
-                            <GoogleMap
-                              mapContainerStyle={{ width: '100%', height: '100%' }}
-                              center={markerPosition || mapCenter}
-                              zoom={16}
-                              options={DEFAULT_MAP_OPTIONS}
-                              onClick={handleMapClick}
-                              onLoad={() => {
-                                // Clear any error state when map loads successfully
-                                if (mapApiError) {
-                                  setMapApiError(null)
-                                }
-                              }}
-                              >
-                              {markerPosition && (
-                                <Marker
-                                  position={markerPosition}
-                                  draggable
-                                  onDragEnd={handleMarkerDragEnd}
-                                />
-                              )}
-                            </GoogleMap>
-                          </>
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-sm text-gray-500">
-                            Google Maps API not available. Check browser console for details.
-                          </div>
-                        )
+                      {!mapApiError && (
+                        <OwnerOnboardingMap
+                          key={`map-${formData.latitude || '0'}-${formData.longitude || '0'}`}
+                          mapCenter={mapCenter}
+                          markerPosition={markerPosition}
+                          onMapClick={handleMapClick}
+                          onMarkerDragEnd={handleMarkerDragEnd}
+                          onLoad={() => setMapApiError(null)}
+                        />
                       )}
                   </div>
                   </div>

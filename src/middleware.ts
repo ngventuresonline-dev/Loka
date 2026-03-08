@@ -58,86 +58,52 @@ const RATE_LIMITS = {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  const isDev = process.env.NODE_ENV !== 'production'
+  try {
+    const { pathname } = request.nextUrl
+    const isDev = process.env.NODE_ENV !== 'production'
 
-  // Security headers
-  const response = NextResponse.next()
-  
-  // Security headers
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-  
-  // CSP header
-  const cspConnectSrc = "connect-src 'self' https://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.facebook.com https://www.clarity.ms https://scripts.clarity.ms https://f.clarity.ms https://v.clarity.ms https://*.clarity.ms https://mpc-prod-18-s6uit34pua-uc.a.run.app https://demo-1.conversionsapigateway.com;"
-  
-  response.headers.set(
-    'Content-Security-Policy',
-    `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://www.facebook.com; font-src 'self' data:; ${cspConnectSrc} frame-src 'self' https://*.google.com https://www.googletagmanager.com;`
-  )
+    const response = NextResponse.next()
 
-  // Rate limiting based on route (disabled in development for easier local testing)
-  if (!isDev) {
-    let rateLimitConfig = RATE_LIMITS.public
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-XSS-Protection', '1; mode=block')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
 
-    if (pathname.startsWith('/api/admin')) {
-      rateLimitConfig = RATE_LIMITS.admin
-    } else if (pathname.startsWith('/api/auth') || pathname.startsWith('/auth/')) {
-      rateLimitConfig = RATE_LIMITS.auth
-    } else if (pathname.startsWith('/api/')) {
-      rateLimitConfig = RATE_LIMITS.api
-    }
-
-    // Check rate limit
-    if (!checkRateLimit(request, rateLimitConfig.limit, rateLimitConfig.window)) {
-      return NextResponse.json(
-        { 
-          error: 'Too many requests', 
-          message: 'Rate limit exceeded. Please try again later.',
-          retryAfter: 60
-        },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': '60',
-            'X-RateLimit-Limit': rateLimitConfig.limit.toString(),
-            'X-RateLimit-Remaining': '0',
-          }
-        }
-      )
-    }
-  }
-
-  // Additional security for admin routes
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    // Check for admin authentication token in headers
-    const authHeader = request.headers.get('authorization')
-    const cookieAuth = request.cookies.get('sb-access-token') || request.cookies.get('sb-auth-token')
-    
-    // Allow if has auth token (actual auth check happens in route handlers)
-    // This middleware just adds rate limiting and security headers
-  }
-
-  // Block common attack patterns
-  const suspiciousPatterns = [
-    /\.\./, // Path traversal
-    /<script/i, // XSS attempts
-    /union.*select/i, // SQL injection
-    /exec\(/i, // Code execution
-  ]
-
-  const url = request.url.toLowerCase()
-  if (suspiciousPatterns.some(pattern => pattern.test(url))) {
-    return NextResponse.json(
-      { error: 'Invalid request' },
-      { status: 400 }
+    const cspConnectSrc = "connect-src 'self' https://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.facebook.com https://www.clarity.ms https://scripts.clarity.ms https://f.clarity.ms https://v.clarity.ms https://*.clarity.ms https://mpc-prod-18-s6uit34pua-uc.a.run.app https://demo-1.conversionsapigateway.com;"
+    response.headers.set(
+      'Content-Security-Policy',
+      `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://www.facebook.com; font-src 'self' data:; ${cspConnectSrc} frame-src 'self' https://*.google.com https://www.googletagmanager.com;`
     )
-  }
 
-  return response
+    if (!isDev) {
+      let rateLimitConfig = RATE_LIMITS.public
+      if (pathname.startsWith('/api/admin')) {
+        rateLimitConfig = RATE_LIMITS.admin
+      } else if (pathname.startsWith('/api/auth') || pathname.startsWith('/auth/')) {
+        rateLimitConfig = RATE_LIMITS.auth
+      } else if (pathname.startsWith('/api/')) {
+        rateLimitConfig = RATE_LIMITS.api
+      }
+      if (!checkRateLimit(request, rateLimitConfig.limit, rateLimitConfig.window)) {
+        return NextResponse.json(
+          { error: 'Too many requests', message: 'Rate limit exceeded. Please try again later.', retryAfter: 60 },
+          { status: 429, headers: { 'Retry-After': '60', 'X-RateLimit-Limit': rateLimitConfig.limit.toString(), 'X-RateLimit-Remaining': '0' } }
+        )
+      }
+    }
+
+    const suspiciousPatterns = [/\.\./, /<script/i, /union.*select/i, /exec\(/i]
+    const url = (request.url || '').toLowerCase()
+    if (suspiciousPatterns.some(pattern => pattern.test(url))) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    return response
+  } catch (err) {
+    console.error('[Middleware] Error:', err)
+    return NextResponse.next()
+  }
 }
 
 export const config = {

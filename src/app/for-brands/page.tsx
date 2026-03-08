@@ -50,7 +50,7 @@ function hasBlackBackground(brandName: string) {
   )
 }
 
-const COLS_LG = 12
+const COLS_PER_ROW = 3
 
 export default function ForBrandsPage() {
   const pricingRef = useRef<HTMLDivElement>(null)
@@ -91,7 +91,7 @@ export default function ForBrandsPage() {
     const q = phonepeMerchantOrderId ? `?merchantOrderId=${encodeURIComponent(phonepeMerchantOrderId)}` : '?state=COMPLETED'
     window.location.href = `/payment/result${q}`
   }
-  const fullCount = Math.floor(brandPlacements.length / COLS_LG) * COLS_LG
+  const fullCount = Math.floor(brandPlacements.length / COLS_PER_ROW) * COLS_PER_ROW
   const lastRowItems = brandPlacements.slice(fullCount)
 
   const scrollToPricing = () => pricingRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -425,8 +425,8 @@ export default function ForBrandsPage() {
             </h2>
             <p className="text-sm text-gray-400">Across Bangalore</p>
           </div>
-          {/* Full rows in grid; last row in flex so Wrapafella, Minibe, MPC stay on one line with no empty gap */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2 sm:gap-3">
+          {/* 3 per line; last row (if fewer than 3) is center-aligned */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {brandPlacements.slice(0, fullCount).map((p, idx) => (
               <div
                 key={`${p.brand}-${p.location}-${idx}`}
@@ -457,11 +457,11 @@ export default function ForBrandsPage() {
             ))}
           </div>
           {lastRowItems.length > 0 && (
-            <div className="flex flex-nowrap justify-center gap-2 sm:gap-3 mt-2 sm:mt-3">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-2 sm:mt-3">
               {lastRowItems.map((p, idx) => (
                 <div
                   key={`last-${p.brand}-${p.location}-${idx}`}
-                  className="group rounded-lg bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 hover:border-[#FF5200]/50 hover:bg-gray-800/80 transition-all duration-200 p-2 sm:p-2.5 min-w-0 flex-shrink-0 w-28 sm:w-32"
+                  className="group rounded-lg bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 hover:border-[#FF5200]/50 hover:bg-gray-800/80 transition-all duration-200 p-2 sm:p-2.5 min-w-0 w-full max-w-[calc((100%-1rem)/3)] sm:max-w-[calc((100%-1.5rem)/3)]"
                 >
                   <div className="flex flex-col items-center text-center min-w-0">
                     {getBrandLogo(p.brand) ? (

@@ -80,6 +80,10 @@ const brandLogoMap: Record<string, string | null> = {
   'GoRally': '/logos/GoRally Logo.png',
   'Klutch- Sports': null, // No logo available
   'Klutch Sports': null, // No logo available
+
+  // Ice cream & desserts
+  'Meltin Desires': '/logos/Meltin-Desires.png',
+  'Meltin\' Desires': '/logos/Meltin-Desires.png',
 }
 
 /**

@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
       availability: true // Only get available properties
     }
 
-    // Size filter - make it more flexible (allow ±50% range) but still filter
+    // Size filter - keep flexible so we don't exclude viable options; BFI will score
     if (sizeRange && sizeRange.min > 0) {
-      const sizeMinExpanded = Math.max(0, Math.floor(sizeRange.min * 0.5))
-      const sizeMaxExpanded = sizeRange.max ? Math.ceil(sizeRange.max * 1.5) : 1000000
+      const sizeMinExpanded = Math.max(0, Math.floor(sizeRange.min * 0.4))
+      const sizeMaxExpanded = sizeRange.max ? Math.ceil(sizeRange.max * 2) : 1000000
       
       where.size = {
         gte: sizeMinExpanded,
@@ -61,13 +61,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Budget filter - filter within range (allow small buffer for flexibility)
-    if (budgetRange && budgetRange.min > 0) {
+    // Budget: do NOT hard-cut by max. We want to show properties in preferred areas even if over budget (score will reflect it).
+    // Only enforce a minimum floor so we don't get irrelevant low-rent; allow up to 4x max so premium areas (e.g. Indiranagar) are included.
+    if (budgetRange && (budgetRange.min > 0 || budgetRange.max > 0)) {
       const minBudget = budgetRange.min || 0
       const maxBudget = budgetRange.max || 20000000
-      // Allow small buffer: 10% under min and 20% over max for flexibility
-      const minBudgetAdjusted = Math.max(0, Math.floor(minBudget * 0.9))
-      const maxBudgetAdjusted = Math.ceil(maxBudget * 1.2)
+      const minBudgetAdjusted = Math.max(0, Math.floor(minBudget * 0.8))
+      const maxBudgetAdjusted = Math.ceil(maxBudget * 4) // Include premium areas; BFI will score down over-budget
       
       where.price = {
         gte: minBudgetAdjusted,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       
       properties = property ? [property] : []
     } else {
-      // Fetch properties from database - limit to 30 for faster queries
+      // Fetch more properties so we include preferred locations even when over budget
       properties = await prisma.property.findMany({
         where,
         select: {
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
             }
           }
         },
-        take: 30,
+        take: 80,
         orderBy: {
           isFeatured: 'desc'
         }
@@ -290,52 +290,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Filter matches with >= 60% score (but show lower scores if no matches found)
-    let filteredMatches = matchResults.filter(result => result.bfiScore.score >= 60)
-    
-    // If no matches >= 60%, progressively lower threshold to find any matches
-    if (filteredMatches.length === 0 && matchResults.length > 0) {
-      console.log(`[API Match] No matches >= 60%, checking lower thresholds...`)
-      
-      // Try >= 50%
-      filteredMatches = matchResults.filter(result => result.bfiScore.score >= 50)
-      if (filteredMatches.length === 0) {
-        // Try >= 40%
-        filteredMatches = matchResults.filter(result => result.bfiScore.score >= 40)
-        if (filteredMatches.length === 0) {
-          // Show all matches >= 30% (original minimum in findMatches)
-          filteredMatches = matchResults.filter(result => result.bfiScore.score >= 30)
-          console.log(`[API Match] Showing matches >= 30% (${filteredMatches.length} found)`)
-        } else {
-          console.log(`[API Match] Showing matches >= 40% (${filteredMatches.length} found)`)
-        }
-      } else {
-        console.log(`[API Match] Showing matches >= 50% (${filteredMatches.length} found)`)
-      }
-    } else {
-      console.log(`[API Match] Found ${filteredMatches.length} matches >= 60%`)
-    }
+    // Show all matches >= 30% so user sees options in their preferred area even if over budget (score reflects fit)
+    const minScore = 30
+    let filteredMatches = matchResults.filter(result => result.bfiScore.score >= minScore)
+    console.log(`[API Match] Showing matches >= ${minScore}% (${filteredMatches.length} found)`)
 
-    // Sort by budget score first (to prioritize closest budget matches), then overall BFI score
-    const sortedByBudget = [...filteredMatches].sort((a, b) => {
-      // First sort by budget score (descending)
-      if (b.bfiScore.breakdown.budgetScore !== a.bfiScore.breakdown.budgetScore) {
-        return b.bfiScore.breakdown.budgetScore - a.bfiScore.breakdown.budgetScore
-      }
-      // Then by overall BFI score
-      return b.bfiScore.score - a.bfiScore.score
-    })
+    // Sort by highest match (BFI score) first; preferred-location properties still appear by score (we don't hide them)
+    const sortedByBudget = [...filteredMatches].sort((a, b) => b.bfiScore.score - a.bfiScore.score)
 
     // Generate match reasons for each match
     const matchesWithReasons = sortedByBudget.map(match => {
       const reasons: string[] = []
       const breakdown = match.bfiScore.breakdown
       
-      // Location reasons
+      // Location reasons (prioritize so user sees why we show this even if over budget)
       if (breakdown.locationScore === 100) {
-        reasons.push(`Perfect location match - in ${match.property.city}`)
+        reasons.push(`In your preferred area - ${match.property.city}`)
       } else if (breakdown.locationScore >= 70) {
-        reasons.push(`Good location - nearby your preferred areas`)
+        reasons.push(`Nearby your preferred areas - ${match.property.city}`)
       }
 
       // Budget reasons
@@ -344,6 +316,10 @@ export async function POST(request: NextRequest) {
         : match.property.price
       if (breakdown.budgetScore >= 80) {
         reasons.push(`Great value - ₹${Math.round(monthlyPrice).toLocaleString()}/month within your budget`)
+      } else if (breakdown.budgetScore >= 40) {
+        reasons.push(`₹${Math.round(monthlyPrice).toLocaleString()}/month – slightly above budget`)
+      } else if (breakdown.budgetScore >= 10) {
+        reasons.push(`₹${Math.round(monthlyPrice).toLocaleString()}/month – in your preferred area`)
       }
 
       // Size reasons
@@ -374,7 +350,7 @@ export async function POST(request: NextRequest) {
       success: true,
       matches: topMatches,
       totalMatches: matchesWithReasons.length,
-      minMatchScore: 60
+      minMatchScore: minScore
     }
     
     // Log query size for monitoring

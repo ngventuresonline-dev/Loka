@@ -94,7 +94,8 @@ export default function BangaloreMapIllustration({
     // Eastern areas
     { name: 'Indiranagar', x: 580, y: 320, labelX: 600, labelY: 305 },
     // Northeast
-    { name: 'Whitefield', x: 950, y: 230, labelX: 910, labelY: 215 },
+    { name: 'Hennur/Hebbal', x: 950, y: 230, labelX: 910, labelY: 215 },
+    { name: 'Whitefield', x: 900, y: 278, labelX: 880, labelY: 263 },
     // East-central
     { name: 'Marathahalli', x: 880, y: 420, labelX: 880, labelY: 405 },
     // Southeast cluster
@@ -411,7 +412,8 @@ export function getAreaCoordinates(areaName: string): { x: number; y: number } |
   const areas: Record<string, { x: number; y: number }> = {
     'Brigade Road': { x: 425, y: 310 },
     'Indiranagar': { x: 580, y: 320 },
-    'Whitefield': { x: 950, y: 230 },
+    'Whitefield': { x: 900, y: 278 },
+    'Hennur/Hebbal': { x: 950, y: 230 },
     'Marathahalli': { x: 880, y: 420 },
     'Koramangala': { x: 550, y: 480 },
     'HSR Layout': { x: 660, y: 520 },
@@ -433,6 +435,7 @@ export const BANGALORE_AREAS = [
   'Indiranagar',
   'Koramangala',
   'Whitefield',
+  'Hennur/Hebbal',
   'Marathahalli',
   'Bellandur',
   'HSR Layout',
