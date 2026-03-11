@@ -656,7 +656,7 @@ export default function PropertiesPage() {
                                 onClick={() => setShareMenuOpen(null)}
                                 aria-hidden="true"
                               />
-                              <div className="absolute right-0 mt-1 w-44 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20 py-1">
+                              <div className="absolute right-0 bottom-full mb-1 w-44 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20 py-1">
                                 <button
                                   onClick={() => handleShareWhatsApp(property)}
                                   className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
