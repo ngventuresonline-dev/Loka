@@ -7,7 +7,7 @@ import { calculateScores } from './calculate-scores'
 import { findNearestWard } from './ward-lookup'
 import { findNearestCensusWard } from './census-lookup'
 
-export async function enrichPropertyIntelligence(propertyId: string) {
+export async function enrichPropertyIntelligence(propertyId: string, businessType?: string) {
   const prisma = await getPrisma()
   if (!prisma) throw new Error('Prisma not available')
 
@@ -71,6 +71,7 @@ export async function enrichPropertyIntelligence(propertyId: string) {
       latitude: lat,
       longitude: lng,
       propertyType: property.propertyType,
+      businessType,
     }),
   ])
 

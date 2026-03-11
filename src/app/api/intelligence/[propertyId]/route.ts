@@ -3,10 +3,11 @@ import { getPrisma } from '@/lib/get-prisma'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ propertyId: string }> }
 ) {
   const { propertyId } = await params
+  const categoryFilter = req.nextUrl.searchParams.get('category') ?? undefined
   if (!propertyId) {
     return NextResponse.json({ error: 'Property ID required' }, { status: 400 })
   }
@@ -42,10 +43,26 @@ export async function GET(
     )
   }
 
-  const competitors = await prisma.competitor.findMany({
+  let competitors = await prisma.competitor.findMany({
     where: { propertyId },
     orderBy: { distance: 'asc' },
   })
+
+  if (categoryFilter) {
+    const normalized = categoryFilter.trim().toLowerCase()
+    const categoryMatch = (c: { category: string }) => {
+      const cat = (c.category || '').toLowerCase()
+      if (normalized.includes('cafe') || normalized === 'cafe') return cat === 'cafe'
+      if (normalized.includes('qsr')) return cat === 'qsr'
+      if (normalized.includes('restaurant') || normalized.includes('dining') || normalized.includes('casual') || normalized.includes('fine')) return cat === 'restaurant' || cat.includes('dining')
+      if (normalized.includes('brew') || normalized.includes('taproom') || normalized.includes('bar')) return cat === 'bar' || cat.includes('brew')
+      if (normalized.includes('retail')) return cat === 'retail' || cat.includes('store') || cat.includes('shop')
+      if (normalized.includes('bakery')) return cat === 'bakery'
+      if (normalized.includes('salon') || normalized.includes('wellness') || normalized.includes('spa')) return cat === 'salon' || cat.includes('spa') || cat.includes('beauty')
+      return true
+    }
+    competitors = competitors.filter(categoryMatch)
+  }
 
   const ward =
     intelligence.wardCode != null
@@ -63,7 +80,7 @@ export async function GET(
 }
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ propertyId: string }> }
 ) {
   const { propertyId } = await params
@@ -71,8 +88,16 @@ export async function POST(
     return NextResponse.json({ error: 'Property ID required' }, { status: 400 })
   }
 
+  let businessType: string | undefined
   try {
-    const result = await enrichPropertyIntelligence(propertyId)
+    const body = (await req.json().catch(() => null)) as { businessType?: string; targetCategory?: string } | null
+    businessType = body?.businessType ?? body?.targetCategory ?? undefined
+  } catch {
+    // ignore
+  }
+
+  try {
+    const result = await enrichPropertyIntelligence(propertyId, businessType)
     return NextResponse.json(
       {
         message: 'Enrichment completed',

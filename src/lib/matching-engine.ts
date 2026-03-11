@@ -206,9 +206,9 @@ function calculateBudgetScore(property: Property, budgetMin: number, budgetMax: 
 
 /**
  * Property Type Score (20% weight)
- * - Perfect match (e.g., QSR → Ground floor retail): 100 points
- * - Good match (e.g., Restaurant → Food court): 70 points
- * - Acceptable match: 40 points
+ * - Office → office only (no F&B). Fitness/Gym → gym-relevant (office, retail), NOT restaurant.
+ * - F&B → restaurant, retail. Retail → retail.
+ * - Perfect match: 100. Good: 70. Acceptable: 40. Wrong type: 0.
  */
 function calculatePropertyTypeScore(property: Property, businessType: string): number {
   if (!businessType) {
@@ -216,60 +216,64 @@ function calculatePropertyTypeScore(property: Property, businessType: string): n
   }
 
   const businessLower = businessType.toLowerCase()
-  const propertyType = property.propertyType.toLowerCase()
+  const propertyType = (property.propertyType || '').toLowerCase()
+  const rawAmenities = property.amenities
+  const amenitiesArr = Array.isArray(rawAmenities) ? rawAmenities : (rawAmenities && typeof rawAmenities === 'object' && Array.isArray((rawAmenities as any).features) ? (rawAmenities as any).features : [])
+  const amenityStr = amenitiesArr.map((a: any) => String(a || '').toLowerCase()).join(' ')
 
-  // Business type to property type mapping
-  const perfectMatches: { [key: string]: string[] } = {
-    'qsr': ['retail'],
-    'café': ['retail', 'restaurant'],
-    'cafe': ['retail', 'restaurant'],
-    'restaurant': ['restaurant'],
-    'bar': ['restaurant'],
-    'brewery': ['restaurant'],
-    'retail': ['retail'],
-    'fashion': ['retail'],
-    'boutique': ['retail'],
-    'gym': ['office', 'retail'],
-    'fitness': ['office', 'retail'],
-    'sports': ['office', 'retail'],
-    'sports facility': ['office', 'retail'],
-    'office': ['office'],
-    'warehouse': ['warehouse']
+  // STRICT: Office space → office only. Do NOT match restaurant/F&B.
+  if (businessLower.includes('office') || businessLower.includes('coworking') || businessLower.includes('it park') || businessLower.includes('business park')) {
+    return propertyType === 'office' ? 100 : 0
   }
 
-  // Check for perfect match
-  const compatibleTypes = perfectMatches[businessLower] || ['retail']
-  
-  if (compatibleTypes.includes(propertyType)) {
-    // Check for ground floor preference (for QSR/Retail/Café)
-    if (
-      (businessLower.includes('qsr') || 
-       businessLower.includes('café') || 
-       businessLower.includes('cafe') ||
-       businessLower.includes('retail')) &&
-      (property.amenities.some(a => a.toLowerCase().includes('ground')) ||
-       property.amenities.some(a => a.toLowerCase().includes('street facing')))
-    ) {
-      return 100 // Perfect match
+  // Fitness, Gym, Sports → office or retail (gym-friendly). NOT restaurant.
+  if (businessLower.includes('fitness') || businessLower.includes('gym') || businessLower.includes('sports facility') || businessLower.includes('yoga') || businessLower.includes('wellness')) {
+    if (propertyType === 'restaurant') return 0
+    if (propertyType === 'office' || propertyType === 'retail') return 100
+    if (propertyType === 'other' && (amenityStr.includes('parking') || amenityStr.includes('high ceiling'))) return 70
+    return propertyType === 'warehouse' ? 40 : 0
+  }
+
+  // F&B types → restaurant or retail (ground floor preferred)
+  const fnbTypes = ['restaurant', 'café', 'cafe', 'qsr', 'bar', 'brewery', 'food court', 'bakery', 'dessert']
+  const isFnb = fnbTypes.some(t => businessLower.includes(t))
+  if (isFnb) {
+    if (propertyType === 'restaurant') return 100
+    if (propertyType === 'retail') {
+      const hasGround = amenityStr.includes('ground') || amenityStr.includes('street facing')
+      return hasGround ? 100 : 70
     }
-    return 70 // Good match
+    if (propertyType === 'other') return 40
+    if (propertyType === 'office') return 20 // Office can sometimes work for café
+    return 0
   }
 
-  // Check for acceptable matches (related types)
-  const acceptableMatches: { [key: string]: string[] } = {
-    'qsr': ['restaurant'],
-    'restaurant': ['retail'],
-    'retail': ['restaurant', 'office'],
-    'office': ['retail']
+  // Retail, Fashion, Boutique → retail preferred
+  if (businessLower.includes('retail') || businessLower.includes('fashion') || businessLower.includes('boutique') || businessLower.includes('showroom')) {
+    if (propertyType === 'retail') return 100
+    if (propertyType === 'restaurant' || propertyType === 'office') return 40
+    return 0
   }
 
-  const acceptableTypes = acceptableMatches[businessLower] || []
-  if (acceptableTypes.includes(propertyType)) {
-    return 40 // Acceptable match
+  // Warehouse, Logistics → warehouse only
+  if (businessLower.includes('warehouse') || businessLower.includes('logistics') || businessLower.includes('storage')) {
+    return propertyType === 'warehouse' ? 100 : (propertyType === 'other' ? 40 : 0)
   }
 
-  // No match
-  return 0
+  // Entertainment → flexible (retail, office, restaurant)
+  if (businessLower.includes('entertainment') || businessLower.includes('gaming')) {
+    if (['retail', 'office', 'restaurant'].includes(propertyType)) return 70
+    return propertyType === 'other' ? 40 : 0
+  }
+
+  // Service, Salon, Clinic, etc. → retail or office
+  if (businessLower.includes('service') || businessLower.includes('salon') || businessLower.includes('clinic') || businessLower.includes('spa')) {
+    if (propertyType === 'retail' || propertyType === 'office') return 100
+    return propertyType === 'other' ? 40 : 0
+  }
+
+  // Fallback for custom/Other business types
+  return 50
 }
 
 /**

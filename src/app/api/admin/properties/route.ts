@@ -6,6 +6,7 @@ import { generatePropertyId } from '@/lib/property-id-generator'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import { formatPropertyForPlatform } from '@/lib/property-formatter'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
+import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
 
 export async function GET(request: NextRequest) {
   // Enhanced admin security check
@@ -510,7 +511,12 @@ export async function POST(request: NextRequest) {
     const address = formatted.address
     const city = formatted.city
     const state = formatted.state || rawState || ''
-    const zipCode = formatted.zipCode || rawZipCode || '000000'
+    // When Bangalore and no zipCode provided, derive from area/address so pincode isn't always 560001
+    const derivedZip =
+      city && String(city).toLowerCase().includes('bangalore') && !(formatted.zipCode || rawZipCode || '').trim()
+        ? getPincodeForBangaloreArea(rawArea || rawAddress) || null
+        : null
+    const zipCode = (formatted.zipCode || '').trim() || (rawZipCode || '').trim() || derivedZip || '000000'
     const amenitiesData = formatted.amenities // Already includes map_link if provided
 
     const prisma = await getPrisma()

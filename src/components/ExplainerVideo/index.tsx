@@ -24,12 +24,9 @@ export default function ExplainerVideo({
     ? VIDEO_VARIANTS[variant] 
     : variant
 
-  if (!variantConfig) {
-    console.warn(`Variant ${variant} not found, using default`)
-    return null
-  }
+  const safeVariantConfig = variantConfig || VIDEO_VARIANTS['complete-flow']
 
-  const { scenes, totalDuration } = variantConfig
+  const { scenes, totalDuration } = safeVariantConfig
 
   useEffect(() => {
     if (!isPlaying) return

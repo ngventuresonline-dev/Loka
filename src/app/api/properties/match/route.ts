@@ -75,10 +75,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Property type filter - optional, BFI will score type matches
-    // if (propertyType) {
-    //   where.propertyType = propertyType
-    // }
+    // Property type filter - map businessType to propertyType so Office shows office, Fitness shows gym-relevant, not F&B
+    const businessTypeStr = typeof businessType === 'string' ? businessType : (Array.isArray(businessType) ? businessType[0] : '')
+    const bizLower = (businessTypeStr || '').toLowerCase()
+    if (bizLower.includes('office') || bizLower.includes('coworking') || bizLower.includes('it park') || bizLower.includes('business park')) {
+      where.propertyType = 'office'
+    } else if (bizLower.includes('fitness') || bizLower.includes('gym') || bizLower.includes('sports facility') || bizLower.includes('yoga') || bizLower.includes('wellness')) {
+      where.propertyType = { in: ['office', 'retail', 'other'] } // Exclude restaurant
+    } else if (bizLower.includes('warehouse') || bizLower.includes('logistics') || bizLower.includes('storage')) {
+      where.propertyType = { in: ['warehouse', 'other'] }
+    }
 
     // Check if a specific propertyId is requested (for view match page optimization)
     const requestedPropertyId = body.propertyId

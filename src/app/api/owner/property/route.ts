@@ -3,6 +3,7 @@ import { getPrisma, executePrismaQuery } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import bcrypt from 'bcryptjs'
 import { generateSecurePassword, sendOwnerWelcomeEmail } from '@/lib/email-service'
+import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
 
 /* TODO: Add auth when owner registration enabled
 import { getAuthenticatedUser } from '@/lib/api-auth'
@@ -450,15 +451,22 @@ export async function POST(request: NextRequest) {
       anon_id: anonId
     })
 
+    // Pincode from location/area when Bangalore (avoid defaulting all to 560001)
+    const city = property.location || 'Bangalore'
+    const zipFromArea = city && (city.toLowerCase().includes('bangalore') || city === 'Bangalore')
+      ? getPincodeForBangaloreArea(property.location || '')
+      : null
+    const zipCode = zipFromArea || '560001'
+
     // Prepare property data
     const propertyData: any = {
       id: propertyId,
       title,
       description,
       address: property.location || 'Bangalore',
-      city: property.location || 'Bangalore',
+      city,
       state: 'Karnataka',
-      zipCode: '560001',
+      zipCode,
       price: rent,
       priceType: 'monthly',
       securityDeposit,

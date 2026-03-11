@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { getPrisma } from '@/lib/get-prisma'
+import { getBrandCategory } from './brand-category-map'
 
 export type RawCompetitor = {
   name: string
@@ -19,9 +20,11 @@ function mapToPlaceTypes(propertyType?: string, businessType?: string): { type: 
     /\b(qsr|quick service|fast food|burger|pizza|shawarma|biryani|momo|rolls?)\b/.test(raw) ||
     /\bdelivery\b/.test(raw)
   const isCafe = /\b(cafe|coffee|chai|tea)\b/.test(raw)
-  const isRestaurant = /\brestaurant\b/.test(raw)
-  const isBar = /\b(bar|pub|brew)\b/.test(raw)
+  const isRestaurant = /\b(restaurant|casual dining|fine dining|dining)\b/.test(raw)
+  const isBar = /\b(bar|pub|brew|brewery|taproom)\b/.test(raw)
   const isBakery = /\b(bakery|dessert|sweet|sweets|ice cream|cake)\b/.test(raw)
+  const isRetail = /\b(retail|store|shop|fashion|clothing)\b/.test(raw)
+  const isSalon = /\b(salon|spa|wellness|beauty|hair)\b/.test(raw)
 
   if (isCafe && isQsr) {
     return [
@@ -53,9 +56,26 @@ function mapToPlaceTypes(propertyType?: string, businessType?: string): { type: 
         category: 'Bakery',
       },
     ]
+  if (isRetail)
+    return [
+      {
+        type: 'clothing_store',
+        keyword: 'retail store shop fashion clothing',
+        category: 'Retail',
+      },
+    ]
+  if (isSalon)
+    return [
+      {
+        type: 'beauty_salon',
+        keyword: 'salon spa wellness beauty',
+        category: 'Salon',
+      },
+    ]
 
-  // Generic commercial competitors
-  return [{ type: 'point_of_interest', keyword: 'shop store restaurant cafe', category: 'Other' }]
+  // Generic: single broad search within 1km (cafes, restaurants, shops, etc.)
+  // No category = resolve from Place types + brand name fallback
+  return [{ type: 'point_of_interest', keyword: 'shop store restaurant cafe bar food', category: '' }]
 }
 
 const EARTH_RADIUS_M = 6371000
@@ -142,18 +162,20 @@ export async function fetchCompetitorsFromGooglePlaces(params: {
       // Only keep within 1km
       if (!Number.isFinite(distance) || distance < 0 || distance > 1000) continue
 
-      const typeLabels = place.types ?? []
-      const resolvedCategory =
-        category ||
-        (typeLabels.includes('cafe')
-          ? 'Cafe'
-          : typeLabels.includes('restaurant')
-          ? 'Restaurant'
-          : typeLabels.includes('bar')
-          ? 'Bar'
-          : typeLabels.includes('bakery')
-          ? 'Bakery'
-          : 'Other')
+      const typeLabels = (place.types ?? []).map((t: string) => t.toLowerCase())
+
+      // Resolve category: use search category, or infer from Place types / known brand names
+      let resolvedCategory = category
+      if (!resolvedCategory) {
+        if (typeLabels.includes('meal_takeaway') || typeLabels.includes('fast_food')) resolvedCategory = 'QSR'
+        else if (typeLabels.includes('cafe') || typeLabels.includes('coffee_shop')) resolvedCategory = 'Cafe'
+        else if (typeLabels.includes('restaurant')) resolvedCategory = 'Restaurant'
+        else if (typeLabels.includes('bar')) resolvedCategory = 'Bar'
+        else if (typeLabels.includes('bakery')) resolvedCategory = 'Bakery'
+        else if (typeLabels.includes('clothing_store') || typeLabels.includes('department_store') || typeLabels.includes('shopping_mall')) resolvedCategory = 'Retail'
+        else if (typeLabels.includes('beauty_salon') || typeLabels.includes('spa') || typeLabels.includes('hair_care')) resolvedCategory = 'Salon'
+        else resolvedCategory = getBrandCategory(place.name || '') ?? 'Other'
+      }
 
       all.push({
         name: place.name || 'Unknown',

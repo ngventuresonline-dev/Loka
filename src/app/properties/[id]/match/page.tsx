@@ -757,7 +757,11 @@ function MatchDetailsContent() {
           id="intelligence"
           className="mt-6 sm:mt-8 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"
         >
-          <LocationIntelligenceDashboard propertyId={propertyId} />
+          <LocationIntelligenceDashboard
+            propertyId={propertyId}
+            targetCategory={searchParams.get('businessType') || undefined}
+            propertyType={matchDetails?.property?.propertyType || searchParams.get('propertyType') || undefined}
+          />
         </div>
       </div>
 

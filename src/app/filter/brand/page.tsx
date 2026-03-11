@@ -11,64 +11,42 @@ import { getContextualInsight } from '@/lib/loading-insights'
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
-const businessTypes = [
-  'Café/QSR',
-  'Restaurant',
-  'Bar/Brewery',
-  'Retail',
-  'Gym',
-  'Sports Facility',
-  'Entertainment',
-  'Others',
-]
-const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
-const allLocations = [
-  'Koramangala',
-  'Indiranagar',
-  'Whitefield',
-  'HSR Layout',
-  'Jayanagar',
-  'BTM Layout',
-  'MG Road',
-  'Brigade Road',
-  'Marathahalli',
-  'Hebbal',
-  'Banashankari',
-  'Sarjapur Road',
-  'Electronic City',
-  'Bellandur',
-  'Bannerghatta Road',
-  'Rajajinagar',
-  'Malleshwaram',
-  'Basavanagudi',
-  'Vijayanagar',
-  'Yelahanka',
-  'Yeshwanthpur',
-  'RT Nagar',
-  'Frazer Town',
-  'Richmond Town',
-  'Commercial Street',
-  'Church Street',
-  'UB City',
-  'JP Nagar',
-  'Manyata Tech Park',
-  'Peenya',
-  'Magadi Road',
-  'Mysore Road',
-  'Lavelle Road',
-  'Sadashivanagar',
-  'RR Nagar',
-  'Kengeri',
-  'Devanahalli',
-  'Old Madras Road',
-  'KR Puram',
-  'Others'
-]
+// Business types categorized - F&B, Retail, Service, Office, Fitness, etc.
+const businessTypesCategories: Record<string, string[]> = {
+  'F&B': ['Café/QSR', 'Restaurant', 'Bar/Brewery', 'Food Court', 'Bakery', 'Dessert Shop', 'Cloud Kitchen'],
+  'Retail': ['Retail', 'Fashion Boutique', 'Showroom', 'Kiosk', 'Jewelry', 'Electronics'],
+  'Office': ['Office', 'Co-working', 'IT Park', 'Business Park', 'Studio'],
+  'Fitness & Wellness': ['Gym', 'Fitness Center', 'Yoga Studio', 'Sports Facility', 'Spa', 'Salon'],
+  'Service': ['Clinic', 'Medical', 'Bank', 'Salon', 'Beauty', 'Education', 'Training Center'],
+  'Entertainment': ['Entertainment', 'Gaming Zone', 'Cinema', 'Event Space'],
+  'Others': ['Warehouse', 'Logistics', 'Storage', 'Other'],
+}
+const allBusinessTypes = Object.values(businessTypesCategories).reduce<string[]>((acc, arr) => acc.concat(arr), [])
+const businessTypes = [...allBusinessTypes]
 
-// Popular locations (first 8)
-const popularLocations = allLocations.slice(0, 8)
-// Other locations (remaining)
-const otherLocations = allLocations.slice(8)
+const sizeRanges = ['100-500 sqft', '500-1,000 sqft', '1,000-2,000 sqft', '2,000-5,000 sqft', '5,000-10,000 sqft', '10,000+ sqft', 'Custom']
+
+// All Bangalore locations (comprehensive)
+const allBangaloreLocations = [
+  'Koramangala', 'Indiranagar', 'Whitefield', 'HSR Layout', 'Jayanagar', 'BTM Layout',
+  'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road',
+  'Electronic City', 'Bellandur', 'Bannerghatta Road', 'Rajajinagar', 'Malleshwaram',
+  'Basavanagudi', 'Vijayanagar', 'Yelahanka', 'Yeshwanthpur', 'RT Nagar', 'Frazer Town',
+  'Richmond Town', 'Ulsoor', 'Commercial Street', 'Church Street', 'UB City', 'JP Nagar',
+  'Manyata Tech Park', 'Peenya', 'Magadi Road', 'Mysore Road', 'Lavelle Road', 'Sadashivanagar',
+  'RR Nagar', 'Kengeri', 'Devanahalli', 'Old Madras Road', 'KR Puram', 'Kanakapura Road',
+  'New Bel Road', 'Kalyan Nagar', 'Kamanahalli', 'Sahakar Nagar', 'Kempegowda Nagar',
+  'Kodigehalli', 'Kumaraswamy Layout', 'Madivala', 'Mahadevapura', 'Mathikere',
+  'Nagarbhavi', 'Rajarajeshwari Nagar', 'Sanjay Nagar', 'Seshadripuram', 'Shivajinagar',
+  'T Dasarahalli', 'Vasanth Nagar', 'Wilson Garden', 'Jeevanbheemanagar', 'Others'
+]
+const primeLocations = ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR Layout', 'Jayanagar', 'BTM Layout', 'MG Road', 'Marathahalli']
+const popularLocations = primeLocations
+const otherLocationsSorted = Array.from(new Set(allBangaloreLocations))
+  .filter(loc => !primeLocations.includes(loc) && loc !== 'Others')
+  .sort((a, b) => a.localeCompare(b))
+const allLocations = [...primeLocations, ...otherLocationsSorted, 'Others']
+const otherLocations = otherLocationsSorted
 const timelines = ['Immediate', '1 month', '1-2 months', '2-3 months', 'Flexible']
 
 // Custom Location Selector Component with Popular Areas + Dropdown
@@ -91,29 +69,22 @@ function LocationSelector({
 }) {
   const [selected, setSelected] = useState<Set<string>>(initialSelected || new Set())
   const [showDropdown, setShowDropdown] = useState(false)
+  const [locationSearchQuery, setLocationSearchQuery] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const dropdownContentRef = useRef<HTMLDivElement>(null)
   
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
-      if (dropdownRef.current && !dropdownRef.current.contains(target) &&
-          dropdownContentRef.current && !dropdownContentRef.current.contains(target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setShowDropdown(false)
+        setLocationSearchQuery('')
       }
     }
-    
     if (showDropdown) {
-      // Use setTimeout to avoid immediate closure
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside)
-      }, 100)
+      document.addEventListener('mousedown', handleClickOutside)
     }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showDropdown])
   
   // Sync with parent state
@@ -235,8 +206,8 @@ function LocationSelector({
               This field is required
             </div>
           )}
-          
-          {/* Popular Locations Grid */}
+
+          {/* Prime area capsules */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
             {popularLocations.map((item) => {
               const active = selected.has(item)
@@ -245,9 +216,7 @@ function LocationSelector({
                   key={item}
                   onClick={() => toggle(item)}
                   className={`relative px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium transition-all duration-300 border-2 ${
-                    active
-                      ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-lg shadow-[#FF5200]/50'
-                      : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
+                    active ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-lg shadow-[#FF5200]/50' : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
                   }`}
                   style={{ fontFamily: plusJakarta.style.fontFamily }}
                   whileHover={{ scale: 1.05, y: -2 }}
@@ -256,82 +225,83 @@ function LocationSelector({
                 >
                   {item}
                   {active && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md"
-                    >
-                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md">
+                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                     </motion.div>
                   )}
                 </motion.button>
               )
             })}
           </div>
-          
-          {/* Dropdown for Other Locations */}
-          <div className="relative z-[60]" ref={dropdownRef}>
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="w-full px-4 py-3 bg-gray-800/40 border-2 border-gray-700/50 hover:border-[#FF5200]/50 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium text-gray-200 hover:text-white hover:bg-gray-800/60 transition-all duration-300 flex items-center justify-between"
-              style={{ fontFamily: plusJakarta.style.fontFamily }}
-            >
-              <span>Select from other areas</span>
-              <svg
-                className={`w-4 h-4 transition-transform duration-300 ${showDropdown ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+
+          {/* Trigger + Dropdown - dropdown appears right below trigger, not below capsules */}
+          <div className="relative" ref={dropdownRef}>
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="w-full px-4 py-3 bg-gray-800/40 border-2 border-gray-700/50 hover:border-[#FF5200]/50 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium text-gray-200 hover:text-white hover:bg-gray-800/60 transition-all duration-300 flex items-center justify-between"
+                style={{ fontFamily: plusJakarta.style.fontFamily }}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            <AnimatePresence>
-              {showDropdown && (
-                <motion.div
-                  ref={dropdownContentRef}
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute z-[9999] w-full mt-2 bg-gray-900 border-2 border-gray-700 rounded-lg sm:rounded-xl shadow-2xl max-h-96 overflow-y-auto"
-                  style={{ top: '100%', left: 0 }}
-                >
-                  <div className="p-2 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
-                    {otherLocations.map((item) => {
-                      const active = selected.has(item)
-                      return (
+                <span>{selected.size === 0 ? 'Select from other areas' : Array.from(selected).filter(l => !popularLocations.includes(l)).slice(0, 2).join(', ') + (selected.size > 2 ? '...' : '')}</span>
+                <svg className={`w-4 h-4 transition-transform duration-300 ${showDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <AnimatePresence>
+                {showDropdown && (
+                  <motion.div
+                    ref={dropdownContentRef}
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-[99999] w-full mt-2 bg-gray-900 border-2 border-gray-700 rounded-lg sm:rounded-xl shadow-2xl overflow-hidden"
+                    style={{ top: '100%', left: 0, maxHeight: 'min(60vh, 350px)' }}
+                  >
+                    <div className="p-2 border-b border-gray-700 flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={locationSearchQuery}
+                        onChange={(e) => setLocationSearchQuery(e.target.value)}
+                        placeholder="Type to search or add location..."
+                        className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:border-[#FF5200] outline-none"
+                        style={{ fontFamily: plusJakarta.style.fontFamily }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      />
+                      <button type="button" onClick={() => setShowDropdown(false)} className="p-1.5 rounded hover:bg-gray-700 text-gray-400" aria-label="Close">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                    <div className="overflow-y-auto p-2 max-h-48" onMouseDown={(e) => e.stopPropagation()}>
+                      {otherLocations
+                        .filter(item => !locationSearchQuery.trim() || item.toLowerCase().includes(locationSearchQuery.trim().toLowerCase()))
+                        .map((item) => {
+                          const active = selected.has(item)
+                          return (
+                            <button
+                              key={item}
+                              onClick={(e) => { e.stopPropagation(); toggle(item) }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white' : 'hover:bg-gray-700 text-gray-200'}`}
+                              style={{ fontFamily: plusJakarta.style.fontFamily }}
+                            >{item}</button>
+                          )
+                        })}
+                      {locationSearchQuery.trim() && !allLocations.some(l => l.toLowerCase() === locationSearchQuery.trim().toLowerCase()) && (
                         <button
-                          key={item}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggle(item)
+                          onClick={() => {
+                            const custom = locationSearchQuery.trim()
+                            toggle(custom)
+                            setShowDropdown(false)
+                            setLocationSearchQuery('')
                           }}
-                          className={`relative px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-300 border ${
-                            active
-                              ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-md shadow-[#FF5200]/50'
-                              : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
-                          }`}
-                          style={{ fontFamily: plusJakarta.style.fontFamily }}
-                        >
-                          <span className="truncate block text-center">{item}</span>
-                          {active && (
-                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-white rounded-full flex items-center justify-center shadow-md">
-                              <svg className="w-1.5 h-1.5 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                          className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-[#FF5200] hover:bg-[#FF5200]/10 border border-dashed border-[#FF5200]/50"
+                        >Add &quot;{locationSearchQuery.trim()}&quot;</button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
@@ -736,7 +706,10 @@ function FilterCard({
   required = false,
   initialSelected,
   initialOtherValue,
-  onSelectionChange
+  onSelectionChange,
+  useDropdown = false,
+  categories,
+  searchableOptions = false
 }: { 
   title: string
   items: string[]
@@ -746,9 +719,15 @@ function FilterCard({
   initialSelected?: Set<string>
   initialOtherValue?: string
   onSelectionChange?: (selected: Set<string>) => void
+  useDropdown?: boolean
+  categories?: Record<string, string[]>
+  searchableOptions?: boolean
 }) {
   const [selected, setSelected] = useState<Set<string>>(initialSelected || new Set())
   const [otherValue, setOtherValue] = useState(initialOtherValue || '')
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const dropdownRef = useRef<HTMLDivElement>(null)
   
   // Sync with parent state when initialSelected changes
   // Convert Set to string for stable dependency comparison
@@ -788,19 +767,30 @@ function FilterCard({
   
   useEffect(() => {
     if (initialSelected && initialSelected.size > 0) {
-      // Compare sets by converting to sorted arrays
       const currentArray = Array.from(selected).sort().join(',')
       const newArray = Array.from(initialSelected).sort().join(',')
       if (currentArray !== newArray) {
         setSelected(new Set(initialSelected))
       }
     } else if (!initialSelected || initialSelected.size === 0) {
-      // Only clear if we have selections but initialSelected is empty
       if (selected.size > 0 && initialSelectedStr === '') {
         setSelected(new Set())
       }
     }
   }, [initialSelectedStr, initialSelected, selected])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false)
+        if (searchableOptions) setSearchQuery('')
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isDropdownOpen, searchableOptions])
   
   const toggle = (item: string) => {
     const next = new Set(selected)
@@ -828,17 +818,18 @@ function FilterCard({
   
   const handleOtherValueChange = (value: string) => {
     setOtherValue(value)
-    // Update selection with custom value
     if (selected.has('Other') || selected.has('Others')) {
       const next = new Set(selected)
       if (value.trim()) {
         next.delete('Other')
         next.delete('Others')
         next.add(value.trim())
+      } else {
+        next.clear()
+        next.add('Others')
       }
-      if (onSelectionChange) {
-        onSelectionChange(next)
-      }
+      setSelected(next)
+      if (onSelectionChange) onSelectionChange(next)
     }
   }
   const borderColors = [
@@ -879,9 +870,9 @@ function FilterCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
-      className="relative group"
+      className={`relative group ${useDropdown && isDropdownOpen ? 'z-50' : ''}`}
     >
-      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 overflow-hidden shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
+      <div className={`relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 ${hasError ? 'border-red-500/50 hover:border-red-500' : borderColors[colorIndex]} transition-all duration-500 ${useDropdown ? 'overflow-visible' : 'overflow-hidden'} shadow-2xl ${shadowColors[colorIndex]} group-hover:-translate-y-2`}>
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
         
@@ -925,57 +916,154 @@ function FilterCard({
               This field is required
             </div>
           )}
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-            {items.map((item, itemIndex) => {
-              const active = selected.has(item)
-              return (
-                <motion.button
-                  key={item}
-                  onClick={() => toggle(item)}
-                  className={`relative px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium transition-all duration-300 border-2 ${
-                    active
-                      ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-lg shadow-[#FF5200]/50'
-                      : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
-                  }`}
+
+          {useDropdown && categories ? (
+            <div className="relative" ref={dropdownRef} style={{ zIndex: isDropdownOpen ? 9999 : 'auto' }}>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`w-full px-4 py-3 bg-gray-800/40 border-2 rounded-lg sm:rounded-xl text-left flex items-center justify-between transition-all ${
+                    hasError ? 'border-red-500/50' : isDropdownOpen ? 'border-[#FF5200]' : 'border-gray-700/50 hover:border-[#FF5200]/50'
+                  } text-gray-200 hover:text-white`}
                   style={{ fontFamily: plusJakarta.style.fontFamily }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={false}
                 >
-                  {item}
-                  {multi && active && (
+                  <span className="text-sm sm:text-base">
+                    {selected.size === 0 ? `Select ${title.toLowerCase()}...` : Array.from(selected).slice(0, 2).join(', ') + (selected.size > 2 ? ` +${selected.size - 2}` : '')}
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <AnimatePresence>
+                  {isDropdownOpen && (
                     <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md"
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="absolute z-[99999] w-full mt-2 bg-gray-900 border-2 border-gray-700 rounded-lg shadow-2xl overflow-hidden"
+                      style={{ top: '100%', left: 0, maxHeight: 'min(70vh, 400px)' }}
                     >
-                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
+                      <div className="p-2 border-b border-gray-700 flex items-center justify-between">
+                        {searchableOptions && (
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Type to search..."
+                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:border-[#FF5200] outline-none"
+                            style={{ fontFamily: plusJakarta.style.fontFamily }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          />
+                        )}
+                        <button type="button" onClick={() => { setIsDropdownOpen(false); setSearchQuery('') }} className="ml-2 p-1.5 rounded hover:bg-gray-700 text-gray-400" aria-label="Close">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                      <div className="overflow-y-auto p-2 max-h-64" onMouseDown={(e) => e.stopPropagation()}>
+                        {Object.entries(categories).map(([catName, catItems]) => {
+                          const filtered = searchableOptions && searchQuery.trim()
+                            ? catItems.filter(i => i.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+                            : catItems
+                          if (filtered.length === 0) return null
+                          return (
+                            <div key={catName} className="mb-3">
+                              <h4 className="text-[10px] uppercase tracking-wider text-gray-400 mb-1.5 px-1">{catName}</h4>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                {filtered.map((item) => {
+                                  const active = selected.has(item)
+                                  return (
+                                    <button
+                                      key={item}
+                                      type="button"
+                                      onClick={() => { toggle(item); if (!multi) setIsDropdownOpen(false) }}
+                                      className={`px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                                        active ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white' : 'bg-gray-800/40 text-gray-200 hover:bg-gray-700'
+                                      }`}
+                                      style={{ fontFamily: plusJakarta.style.fontFamily }}
+                                    >{item}</button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {searchableOptions && searchQuery.trim() && !items.some(i => i.toLowerCase() === searchQuery.trim().toLowerCase()) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const custom = searchQuery.trim()
+                              setSelected(new Set([custom]))
+                              if (onSelectionChange) onSelectionChange(new Set([custom]))
+                              setIsDropdownOpen(false)
+                              setSearchQuery('')
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-[#FF5200] hover:bg-[#FF5200]/10 border border-dashed border-[#FF5200]/50"
+                          >Add &quot;{searchQuery.trim()}&quot;</button>
+                        )}
+                      </div>
+                      {(selected.has('Other') || selected.has('Others')) && (
+                        <div className="p-2 border-t border-gray-700" onMouseDown={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={otherValue}
+                            onChange={(e) => handleOtherValueChange(e.target.value)}
+                            placeholder="Type your business type..."
+                            className="w-full px-4 py-2.5 bg-gray-800 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-[#FF5200] outline-none"
+                            style={{ fontFamily: plusJakarta.style.fontFamily }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                        </div>
+                      )}
                     </motion.div>
                   )}
-                  {active && (
-                    <motion.div
-                      className="absolute inset-0 rounded-xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"
-                    />
-                  )}
-                </motion.button>
-              )
-            })}
-          </div>
-          {/* Show text input when "Other" or "Others" is selected */}
-          {(selected.has('Other') || selected.has('Others')) && (
-            <div className="mt-4">
-              <input
-                type="text"
-                value={otherValue}
-                onChange={(e) => handleOtherValueChange(e.target.value)}
-                placeholder="Please specify..."
-                className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-[#FF5200] focus:ring-2 focus:ring-[#FF5200]/20 outline-none transition-all duration-200"
-                style={{ fontFamily: plusJakarta.style.fontFamily }}
-              />
+                </AnimatePresence>
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                {items.map((item) => {
+                  const active = selected.has(item)
+                  return (
+                    <motion.button
+                      key={item}
+                      onClick={() => toggle(item)}
+                      className={`relative px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium transition-all duration-300 border-2 ${
+                        active ? 'bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white border-transparent shadow-lg shadow-[#FF5200]/50' : 'bg-gray-800/40 text-gray-200 border-gray-700/50 hover:border-[#FF5200]/50 hover:text-white hover:bg-gray-800/60'
+                      }`}
+                      style={{ fontFamily: plusJakarta.style.fontFamily }}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      initial={false}
+                    >
+                      {item}
+                      {multi && active && (
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md">
+                          <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#FF5200]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                        </motion.div>
+                      )}
+                    </motion.button>
+                  )
+                })}
+              </div>
+              {(selected.has('Other') || selected.has('Others')) && (
+                <div className="mt-4" onMouseDown={(e) => e.stopPropagation()}>
+                  <input
+                    type="text"
+                    value={otherValue}
+                    onChange={(e) => handleOtherValueChange(e.target.value)}
+                    placeholder="Type your business type..."
+                    className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-[#FF5200] focus:ring-2 focus:ring-[#FF5200]/20 outline-none transition-all"
+                    style={{ fontFamily: plusJakarta.style.fontFamily }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -1455,6 +1543,9 @@ function BrandFilterPageContent() {
               setBusinessTypeSelected(set)
               scheduleBrandLog('filter_change', { filter_step: buildFilterStepPayload() })
             }}
+            useDropdown
+            categories={businessTypesCategories}
+            searchableOptions
           />
           <FilterCard 
             title="Size Range" 

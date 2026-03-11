@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import FileUpload from '@/components/admin/FileUpload'
+import AreaSelectCombobox from '@/components/admin/AreaSelectCombobox'
 import { useAuth } from '@/contexts/AuthContext'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
+import { getNearestPincodeFromCoords } from '@/lib/location-intelligence/bangalore-areas'
+import { extractLatLngFromMapLink } from '@/lib/property-coordinates'
 
 export default function EditPropertyPage() {
   const router = useRouter()
@@ -385,6 +388,32 @@ export default function EditPropertyPage() {
     }
   }
 
+  // Derive zipCode from map link or lat/lng when in Bangalore
+  useEffect(() => {
+    if (formData.city !== 'Bangalore') return
+    let lat: number | null = null
+    let lng: number | null = null
+    if (formData.mapLink) {
+      const coords = extractLatLngFromMapLink(formData.mapLink)
+      if (coords) {
+        lat = coords.lat
+        lng = coords.lng
+      }
+    }
+    if (lat == null && formData.latitude && formData.longitude) {
+      const la = parseFloat(formData.latitude)
+      const lo = parseFloat(formData.longitude)
+      if (!Number.isNaN(la) && !Number.isNaN(lo)) {
+        lat = la
+        lng = lo
+      }
+    }
+    if (lat != null && lng != null) {
+      const pincode = getNearestPincodeFromCoords(lat, lng)
+      setFormData((prev) => ({ ...prev, zipCode: pincode }))
+    }
+  }, [formData.city, formData.mapLink, formData.latitude, formData.longitude])
+
   const fetchOwners = async () => {
     if (!user?.id || !user?.email) return
     try {
@@ -606,17 +635,26 @@ export default function EditPropertyPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Area</label>
-                <select
-                  value={formData.area}
-                  onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                  disabled={!formData.city || !cityAreas[formData.city] || cityAreas[formData.city].length === 0}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select area</option>
-                  {formData.city && cityAreas[formData.city]?.map(area => (
-                    <option key={area} value={area}>{area}</option>
-                  ))}
-                </select>
+                {formData.city === 'Bangalore' ? (
+                  <AreaSelectCombobox
+                    value={formData.area}
+                    onChange={(area, pincode) => setFormData({ ...formData, area, zipCode: pincode })}
+                    disabled={!formData.city}
+                    placeholder="Type or select area"
+                  />
+                ) : (
+                  <select
+                    value={formData.area}
+                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                    disabled={!formData.city || !cityAreas[formData.city] || cityAreas[formData.city].length === 0}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select area</option>
+                    {formData.city && cityAreas[formData.city]?.map(area => (
+                      <option key={area} value={area}>{area}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">State</label>

@@ -1,7 +1,7 @@
 # BUILD TRUTH - Lokazen Commercial Real Estate Platform
 
 **Version:** 0.1.1  
-**Last Updated:** 2025-01-23  
+**Last Updated:** 2025-02-23  
 **Platform:** Next.js 16 AI‑Matched Commercial Real Estate Platform
 
 ---
@@ -21,6 +21,7 @@
 11. [Environment Configuration](#environment-configuration)
 12. [Development Workflow](#development-workflow)
 13. [Key Design Decisions](#key-design-decisions)
+14. [Key Integrations (for Clause / Prompts)](#-key-integrations-for-clause--prompts)
 
 ---
 
@@ -55,6 +56,7 @@
 
 ### AI & Machine Learning
 - **Anthropic Claude 3.5 Sonnet** (`@anthropic-ai/sdk: ^0.27.3`) - Primary AI engine
+- **Google Gemini** (`@google/genai: ^1.42.0`) - Alternative AI provider
 - **LangChain** (`^1.1.2`) - AI orchestration
 - **OpenAI SDK** (`@langchain/openai: ^1.1.3`) - Alternative AI provider
 
@@ -81,6 +83,18 @@
 - **Zod 4.1.13** - Schema validation
 - **AI SDK 5.0.106** - Vercel AI SDK
 - **@vercel/analytics 1.6.1** - Vercel Analytics integration
+- **@vercel/speed-insights 1.3.1** - Performance monitoring
+- **date-fns 4.1.0** - Date utilities
+- **date-fns-tz 3.2.0** - Timezone handling
+- **lucide-react 0.562.0** - Icon library
+- **recharts 3.5.1** - Charts and analytics
+- **sharp 0.34.5** - Image optimization
+- **clsx 2.1.1** - Conditional class names
+- **tailwind-merge 3.4.0** - Tailwind class merging
+
+### Maps & Location
+- **@react-google-maps/api 2.20.8** - Google Maps React integration
+- **Mappls (MapMyIndia)** - India mapping (REST API keys)
 
 ### Development Tools
 - **ESLint** - Code linting
@@ -101,116 +115,165 @@ Loka/
 │   │   │   ├── ai-search/            # AI search endpoint
 │   │   │   ├── admin/                # Admin API routes
 │   │   │   │   ├── analytics/        # Analytics endpoint
-│   │   │   │   ├── brands/           # Brand management
-│   │   │   │   ├── inquiries/        # Inquiry management
+│   │   │   │   ├── brands/           # Brand management (+ [id], bulk, bulk-upload)
+│   │   │   │   │   ├── [id]/         # Single brand CRUD
+│   │   │   │   │   └── bulk/         # Bulk operations
+│   │   │   │   ├── inquiries/        # Inquiry management (+ [id])
+│   │   │   │   ├── expert-requests/  # Expert visit requests (+ [id])
+│   │   │   │   ├── owners/           # Owner management
 │   │   │   │   ├── properties/       # Property management
+│   │   │   │   │   ├── [id]/         # approve, reject, bulk-delete
+│   │   │   │   │   ├── approve/      # Bulk approve
+│   │   │   │   │   ├── bulk/         # Bulk operations
+│   │   │   │   │   ├── bulk-delete/  # Bulk delete
+│   │   │   │   │   ├── describe/     # AI property description
+│   │   │   │   │   ├── migrate-titles/
+│   │   │   │   │   └── migrate-property-titles/
 │   │   │   │   ├── stats/            # Statistics
+│   │   │   │   ├── test-auth/        # Auth testing
 │   │   │   │   └── users/            # User management
+│   │   │   ├── brand/                # Brand match (singular)
 │   │   │   ├── brands/               # Brand endpoints
 │   │   │   │   ├── match/            # Brand matching
 │   │   │   │   └── matches/          # Match results
+│   │   │   ├── bulk/enrich/          # Bulk enrichment
+│   │   │   ├── contact-team/         # Contact form
+│   │   │   ├── expert/connect/       # Expert connect
 │   │   │   ├── health/               # Health check
+│   │   │   ├── intelligence/[propertyId]/ # Property intelligence
 │   │   │   ├── leads/                # Lead management
-│   │   │   ├── location-intelligence/ # Location intel
+│   │   │   │   ├── create/
+│   │   │   │   ├── owner/
+│   │   │   │   └── requirements/
+│   │   │   ├── location/             # Location intel by ID
+│   │   │   │   └── [id]/             # scores, commercial, demographics
+│   │   │   ├── location-intelligence/ # Location intel + compare
 │   │   │   ├── owner/                # Owner endpoints
+│   │   │   │   ├── property/         # Create property
+│   │   │   │   ├── property/[id]/    # Update property
+│   │   │   │   └── properties/       # List owner properties
 │   │   │   ├── platform-status/      # Platform status
+│   │   │   ├── profile/              # Profile lookup, brand, owner, session-type
+│   │   │   ├── property/description/ # AI property description
 │   │   │   ├── properties/           # Property endpoints
-│   │   │   ├── sessions/             # Session logging
-│   │   │   └── status/               # Status endpoint
+│   │   │   │   ├── [id]/             # Get, save
+│   │   │   │   └── match/            # Property matching
+│   │   │   ├── revenue/predict/      # Revenue prediction
+│   │   │   ├── sessions/              # Session log, create, update, [id]
+│   │   │   ├── status/               # Status endpoint
+│   │   │   ├── visits/schedule/      # Visit scheduling
+│   │   │   └── webhook/test-pabbly/  # Pabbly webhook test
 │   │   ├── about/                    # About page
-│   │   │   └── page.tsx
 │   │   ├── admin/                    # Admin dashboard
-│   │   │   └── page.tsx
-│   │   ├── auth/                     # Authentication
-│   │   │   ├── login/
-│   │   │   │   └── page.tsx
-│   │   │   └── register/
-│   │   │       └── page.tsx
+│   │   │   ├── analytics/            # Analytics page
+│   │   │   ├── brands/               # Brand management (+ [id], new, bulk-upload)
+│   │   │   ├── inquiries/             # Inquiries
+│   │   │   ├── matches/              # Matches
+│   │   │   ├── owners/               # Owners (+ new)
+│   │   │   ├── properties/           # Properties (+ [id], new, pending, bulk-upload)
+│   │   │   ├── settings/             # Settings
+│   │   │   ├── media/                # Media
+│   │   │   ├── activity/             # Activity log
+│   │   │   └── submissions/          # Submissions (inquiries, responses)
+│   │   ├── auth/                     # Authentication (login, register)
+│   │   ├── bangalore-map/            # Bangalore map page
+│   │   ├── blog/                     # Blog ([id])
+│   │   ├── brands/pricing/           # Brand pricing
+│   │   ├── cookies/                  # Cookie policy
+│   │   ├── dashboard/owner/          # Owner dashboard
 │   │   ├── demo/                     # Demo page
-│   │   │   └── page.tsx
+│   │   ├── explainer-video/          # Explainer video
+│   │   ├── filter/                   # Filter flows (brand, owner)
+│   │   ├── for-brands/               # For brands landing
+│   │   ├── investor-deck/             # Investor deck
 │   │   ├── location-intelligence/    # Location intel page
-│   │   │   └── page.tsx
 │   │   ├── onboarding/               # Onboarding flows
-│   │   │   ├── brand/
-│   │   │   │   └── page.tsx
-│   │   │   └── owner/
-│   │   │       └── page.tsx
+│   │   │   ├── brand/                # (+ thanks)
+│   │   │   └── owner/                # (+ success)
+│   │   ├── payment/                  # Payment (success, failure, result)
+│   │   ├── privacy/                  # Privacy policy
+│   │   ├── profile/                  # Profile (brand, owner)
 │   │   ├── properties/               # Properties listing
-│   │   │   └── page.tsx
+│   │   │   ├── [id]/match/           # Property match page
+│   │   │   └── results/              # Search results
 │   │   ├── status/                   # Status page (internal / admin only)
-│   │   │   └── page.tsx
+│   │   ├── terms/                    # Terms of service
 │   │   ├── globals.css               # Global styles
-│   │   ├── layout.tsx                # Root layout (with SEO, viewport, analytics)
-│   │   ├── page.tsx                   # Homepage
+│   │   ├── global-error.tsx          # Error boundary
+│   │   ├── layout.tsx                # Root layout (SEO, viewport, analytics)
+│   │   ├── page.tsx                  # Homepage
 │   │   ├── robots.ts                 # Dynamic robots.txt
 │   │   └── sitemap.ts                # Dynamic sitemap.xml
 │   │
 │   ├── components/                   # React Components
-│   │   ├── onboarding/               # Onboarding forms
-│   │   │   ├── BrandOnboardingForm.tsx
-│   │   │   └── PropertyOwnerOnboardingForm.tsx
-│   │   ├── ui/                       # UI components
-│   │   │   ├── 3d-orbit-gallery.tsx
-│   │   │   └── Button.tsx
+│   │   ├── admin/                    # Admin components
+│   │   │   ├── AdminLayout.tsx, AdminSidebar.tsx
+│   │   │   ├── PropertyManagementTable.tsx, InquiryManagementTable.tsx
+│   │   │   ├── UserManagementTable.tsx, RecentActivity.tsx
+│   │   │   └── FileUpload.tsx
+│   │   ├── ExplainerVideo/           # Explainer video variants
+│   │   ├── for-brands/               # HeroIllustration
+│   │   ├── onboarding/               # BrandOnboardingForm
+│   │   ├── ui/                       # 3d-folder, 3d-orbit-gallery, Button, marketing-badges
 │   │   ├── AiSearchModal.tsx         # AI search modal
+│   │   ├── BangaloreMapIllustration.tsx
+│   │   ├── BrandPlacementPin.tsx, BrandRequirementsModal.tsx
 │   │   ├── ButtonFlowModal.tsx       # Button-based flow
-│   │   ├── CityMapBackground.tsx     # City map background
+│   │   ├── CityMapBackground.tsx      # City map background
 │   │   ├── Dashboard.tsx             # User dashboard
 │   │   ├── DynamicBackground.tsx     # Dynamic backgrounds
-│   │   ├── Footer.tsx                # Site footer
+│   │   ├── Footer.tsx, Navbar.tsx
 │   │   ├── FuturisticBackground.tsx  # Futuristic bg effects
-│   │   ├── Icons.tsx                 # Icon components
-│   │   ├── IndustriesGallery.tsx     # Industries showcase
-│   │   ├── Navbar.tsx                # Navigation bar
-│   │   ├── PropertyCard.tsx         # Property card component
-│   │   └── ScrollingMapBackground.tsx # Scrolling map
+│   │   ├── HeroSearch.tsx, HeroSection.tsx
+│   │   ├── Intelligence2026View.tsx
+│   │   ├── LocationIntelligence.tsx, LocationIntelligenceSection.tsx
+│   │   ├── LocationIntelligenceDashboard.tsx
+│   │   ├── Logo.tsx, LogoImage.tsx
+│   │   ├── MatchBreakdownChart.tsx
+│   │   ├── OnboardingBrandCard.tsx
+│   │   ├── OwnerOnboardingMap.tsx
+│   │   ├── PhonePeCheckout.tsx
+│   │   ├── PrivateInternalLayout.tsx
+│   │   ├── ProfileModal.tsx, ProfileTypeModal.tsx
+│   │   ├── PropertyCard.tsx, PropertyDetailsModal.tsx
+│   │   ├── SchedulePicker.tsx
+│   │   ├── SupabaseInitializer.tsx
+│   │   ├── TrustedByLeadingBrands.tsx, TrustedBrandsRow.tsx
+│   │   ├── WhatsAppButton.tsx
+│   │   └── GoogleMapsErrorHandler.tsx
 │   │
-│   ├── contexts/                     # React Contexts
-│   │   └── AuthContext.tsx           # Auth context
-│   │
-│   ├── hooks/                        # Custom React Hooks
-│   │   └── useScrollAnimation.ts    # Scroll animation hook
-│   │
-│   ├── lib/                          # Library & Utilities
-│   │   ├── ai-search/                # AI Search System
-│   │   │   ├── button-flow.ts       # Button flow logic
-│   │   │   ├── normalization.ts     # Data normalization
-│   │   │   └── simple-search.ts     # Core AI search
-│   │   ├── auth.ts                  # Auth utilities
-│   │   ├── matching-engine.ts       # Matching algorithms
-│   │   ├── mockDatabase.ts          # Mock data
-│   │   ├── prisma.ts                # Prisma client
-│   │   └── theme.ts                 # Theme utilities
-│   │
-│   └── types/                        # TypeScript Types
-│       ├── index.ts                 # Common types
-│       └── workflow.ts              # Workflow types
+│   ├── contexts/                     # AuthContext.tsx
+│   ├── hooks/                        # useScrollAnimation.ts
+│   ├── lib/                          # ai-search/, auth.ts, matching-engine.ts, prisma.ts, theme.ts
+│   └── types/                        # index.ts, workflow.ts
 │
-├── prisma/                           # Prisma Configuration
-│   ├── schema.prisma                # Database schema
-│   └── seed.ts                      # Database seeding
+├── prisma/                           # schema.prisma, seed.ts
+├── scripts/                          # Build & DB scripts
+│   ├── run-prisma-with-env.js       # Prisma with env loading (db:push, db:migrate)
+│   ├── import-featured-properties.ts
+│   ├── import-featured-brands.ts
+│   ├── seed-gvs-properties.ts, seed-growth-patterns.ts, seed-census-data.ts
+│   ├── update-property-ids.ts, update-brand-ids.ts
+│   ├── convert-favicon-to-png.ts, check-timezone.ts
+│   ├── performance-test.js, load-test.js, click-test.js
+│   └── remove-debug-logs.js
 │
-├── public/                           # Static Assets
-│   ├── logos/                       # Brand logos
-│   ├── lokazen-favicon.svg          # Animated favicon
-│   └── robots.txt                   # Static robots.txt fallback
+├── public/                           # logos/, lokazen-favicon.svg, robots.txt
+├── database/                         # schema.sql
+├── next.config.js, tailwind.config.js, tsconfig.json, postcss.config.js
+├── package.json, vercel.json
 │
-├── database/                         # Database Scripts
-│   └── schema.sql                   # SQL schema
-│
-├── next.config.js                    # Next.js config
-├── tailwind.config.js                # Tailwind config
-├── tsconfig.json                     # TypeScript config
-├── postcss.config.js                 # PostCSS config
-├── package.json                      # Dependencies
-├── vercel.json                       # Vercel deployment config
-│
-└── Documentation/
+└── docs/                             # Documentation (not Documentation/)
     ├── BUILD.md                      # This file
-    ├── README.md                     # Project README
-    ├── AI_SEARCH_CONFIG.md           # AI search docs
+    ├── loka.md                       # Complete build truth
+    ├── AI_SEARCH_CONFIG.md
     ├── BRAND_QUERY_TRAINING_DATASET.md
-    └── OWNER_QUERY_TRAINING_DATASET.md
+    ├── OWNER_QUERY_TRAINING_DATASET.md
+    ├── PHONEPE_INTEGRATION.md
+    ├── LOCATION_INTELLIGENCE_1000.md
+    ├── GOOGLE_MAPS_SETUP.md
+    ├── PABBLY_INTEGRATION_GUIDE.md
+    └── (40+ other docs)
 ```
 
 ---
@@ -261,10 +324,26 @@ Loka/
 - Inquiries management
 
 ### 8. **Location Intelligence**
-- City-specific data
-- Zone-based filtering
-- Area recommendations
-- Footfall analysis
+- City-specific data (Bangalore focus)
+- Zone-based filtering, micro-market, ward-level
+- Area recommendations, demographics (Census 2021 + 2026 projections)
+- Footfall analysis, LocationScores (cafeFitScore, qsrFitScore, etc.)
+- PropertyIntelligence (2026-focused scores, revenue projections)
+- Competitor POIs from Google Places
+
+### 9. **Payments (PhonePe)**
+- Brand plans, location reports, visit scheduling
+- Payment model with flow, reference_id, status
+
+### 10. **Expert Requests**
+- Schedule expert visits for properties
+- ExpertRequest model with status (pending, contacted, scheduled, completed, cancelled)
+
+### 11. **Admin Dashboard**
+- Properties (approve/reject workflow, bulk ops)
+- Brands, Owners, Inquiries, Expert Requests
+- Analytics, Stats, Matches
+- Submissions, Activity, Settings, Media
 
 ---
 
@@ -356,7 +435,8 @@ Component Update
 - Details: `size`, `propertyType` (`office | retail | warehouse | restaurant | other`), power/utility flags, amenities (JSON)
 - Pricing: `price`, `priceType` (`monthly | yearly | sqft`), `securityDeposit`, `rentEscalation`
 - Flags: `availability`, `isFeatured`, `displayOrder`, `views_count`
-- Relations: `owner` (`users`), `inquiries`, `saved_properties`, `property_views`
+- **Status**: `property_status_enum` (`pending | approved | rejected`) – approval workflow
+- Relations: `owner` (`users`), `inquiries`, `saved_properties`, `property_views`, `PropertyIntelligence`, `Competitor`, `ExpertRequest`
 
 #### **SavedProperty**
 - Join table for users saving properties of interest (`saved_properties`)
@@ -380,15 +460,30 @@ Component Update
 - Event‑level tracking of property views
 - Fields: `property_id`, optional `user_id`, `ip_address`, `user_agent`, `viewed_at`
 
+#### **Location Intelligence (1000+ attributes)**
+- **`Location`** – Core location data (lat/lng, ward, micro-market, pinCode, bbmpZone, zoning, etc.)
+- **`LocationDemographics`** – Population at 100m/250m/500m/1km/3km, density, household count
+- **`LocationCommercial`** – Competitor presence, saturation indices
+- **`LocationMobility`** – Footfall (daily, weekday, weekend, peak hour), dwell time
+- **`LocationRealEstate`** – Rent per sqft, frontage, ceiling height, power capacity
+- **`LocationScores`** – cafeFitScore, qsrFitScore, luxuryFitScore, revenueProjectionMid, roi3yr, whitespaceScore
+
+#### **Property Intelligence (2026-focused)**
+- **`PropertyIntelligence`** – Per-property scores (overall, footfall, revenue, competition, access, demographic, risk), footfall data, revenue projections, competitors, demographics, accessibility
+- **`AreaDemographics`** – 2026 locality projections (population, income, lifestyle)
+- **`WardDemographics`** – Ward-level Census 2021 + 2026 for Bangalore
+- **`CensusData`** – Census-level ward data (25 Bangalore wards)
+- **`AreaGrowthPatterns`** – 2026 growth projections for localities
+- **`Competitor`** – Per-property competitor POIs from Google Places
+
+#### **Payment & Expert**
+- **`Payment`** – PhonePe payments (brand plans, location reports, visit scheduling)
+- **`ExpertRequest`** – Expert visit scheduling (propertyId, brandName, scheduleDateTime, status)
+
 #### **Sessions (DB‑level, used via raw SQL)**
 - **`brand_onboarding_sessions`** – snapshots of brand filter / quick sign‑in / onboarding form
-  - Columns (recommended): `id`, `user_id`, `flow_type`, `status`, `filter_step` (JSONB), `contact_step` (JSONB), `onboarding_form` (JSONB), `created_at`, `updated_at`
 - **`property_onboarding_sessions`** – snapshots of owner filter / property listing onboarding
-  - Columns (recommended): `id`, `user_id`, `flow_type`, `status`, `filter_step` (JSONB), `onboarding_form` (JSONB), `created_at`, `updated_at`
 - **Logging endpoint:** `POST /api/sessions/log` (raw SQL via Prisma `$executeRawUnsafe`)
-  - Payload: `{ sessionType: 'brand' | 'owner', userId: string, data: any }`
-  - Current behavior: simple `INSERT` per call (no `ON CONFLICT`); if `userId` is missing the request is skipped; DB errors are logged but a success response is still returned to avoid UX breaks.
-  - If de‑duplication is needed, add a unique constraint on `user_id` or implement an upsert; as of now duplicates are possible by design.
 
 ### Indexes
 - User: `email`, `user_type`
@@ -455,67 +550,84 @@ Component Update
 
 #### Core Endpoints
 
-**Route**: `/api/ai-search`  
-**Method**: POST  
-**Description**: AI-powered search endpoint using Claude 3.5 Sonnet
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/ai-search` | POST | AI-powered search (Claude 3.5 Sonnet) |
+| `/api/properties` | GET, POST | List and create properties with filtering |
+| `/api/properties/[id]` | GET | Get property details |
+| `/api/properties/[id]/save` | POST | Save property for user |
+| `/api/properties/match` | POST | Property matching algorithm |
+| `/api/brands` | GET, POST | Brand management |
+| `/api/brand/match` | POST | Brand match (singular) |
+| `/api/brands/match` | POST | Brand matching |
+| `/api/brands/matches` | GET | Match results |
+| `/api/owner/properties` | GET, POST | Owner property list |
+| `/api/owner/property` | POST | Create owner property |
+| `/api/owner/property/[id]` | GET, PATCH | Get/update owner property |
+| `/api/platform-status` | GET | Platform health and status |
+| `/api/status` | GET | System status |
+| `/api/health` | GET | Health check |
 
-**Route**: `/api/properties`  
-**Method**: GET, POST  
-**Description**: List and create properties with filtering and pagination
+#### Location & Intelligence
 
-**Route**: `/api/properties/[id]`  
-**Method**: GET  
-**Description**: Get individual property details
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/location-intelligence` | GET, POST | Location intelligence |
+| `/api/location-intelligence/compare` | POST | Compare locations |
+| `/api/location/[id]` | GET | Location by ID |
+| `/api/location/[id]/scores` | GET | Location scores |
+| `/api/location/[id]/demographics` | GET | Location demographics |
+| `/api/location/[id]/commercial` | GET | Location commercial data |
+| `/api/intelligence/[propertyId]` | GET | Property intelligence |
+| `/api/property/description` | POST | AI property description |
+| `/api/revenue/predict` | POST | Revenue prediction |
+| `/api/bulk/enrich` | POST | Bulk enrichment |
 
-**Route**: `/api/brands`  
-**Method**: GET, POST  
-**Description**: Brand management endpoints
+#### Profile, Sessions & Leads
 
-**Route**: `/api/brands/match`  
-**Method**: POST  
-**Description**: Brand matching algorithm
-
-**Route**: `/api/owner/properties`  
-**Method**: GET, POST  
-**Description**: Owner property management
-
-**Route**: `/api/inquiries`  
-**Method**: POST  
-**Description**: Create property inquiries
-
-**Route**: `/api/platform-status`  
-**Method**: GET  
-**Description**: Comprehensive platform health and status
-
-**Route**: `/api/status`  
-**Method**: GET  
-**Description**: System status check
-
-**Route**: `/api/health`  
-**Method**: GET  
-**Description**: Health check endpoint
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/profile/lookup` | POST | Profile lookup by phone/email |
+| `/api/profile/brand` | GET, POST | Brand profile |
+| `/api/profile/brand/[id]` | GET | Brand profile by ID |
+| `/api/profile/owner` | GET, POST | Owner profile |
+| `/api/profile/owner/[id]` | GET | Owner profile by ID |
+| `/api/profile/session-type` | GET | Session type |
+| `/api/sessions/log` | POST | Session logging |
+| `/api/sessions/create` | POST | Create session |
+| `/api/sessions/update` | POST | Update session |
+| `/api/sessions/[id]` | GET | Get session |
+| `/api/leads/create` | POST | Create lead |
+| `/api/leads/owner` | POST | Owner lead |
+| `/api/leads/requirements` | GET | Lead requirements |
+| `/api/contact-team` | POST | Contact form |
+| `/api/expert/connect` | POST | Expert connect |
+| `/api/visits/schedule` | POST | Schedule visit |
+| `/api/webhook/test-pabbly` | POST | Pabbly webhook test |
 
 #### Admin Endpoints
 
-**Route**: `/api/admin/properties`  
-**Method**: GET, POST, PATCH, DELETE  
-**Description**: Admin property management with approval workflow
-
-**Route**: `/api/admin/brands`  
-**Method**: GET, POST, PATCH  
-**Description**: Admin brand management
-
-**Route**: `/api/admin/users`  
-**Method**: GET, PATCH  
-**Description**: User management
-
-**Route**: `/api/admin/analytics`  
-**Method**: GET  
-**Description**: Platform analytics
-
-**Route**: `/api/admin/stats`  
-**Method**: GET  
-**Description**: Platform statistics
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/admin/properties` | GET, POST, PATCH, DELETE | Property management + approval |
+| `/api/admin/properties/[id]/approve` | POST | Approve property |
+| `/api/admin/properties/[id]/reject` | POST | Reject property |
+| `/api/admin/properties/bulk` | POST | Bulk property ops |
+| `/api/admin/properties/bulk-delete` | POST | Bulk delete |
+| `/api/admin/properties/describe` | POST | AI describe |
+| `/api/admin/properties/approve` | POST | Bulk approve |
+| `/api/admin/brands` | GET, POST, PATCH | Brand management |
+| `/api/admin/brands/[id]` | GET, PATCH | Single brand |
+| `/api/admin/brands/bulk` | POST | Bulk brands |
+| `/api/admin/users` | GET, PATCH | User management |
+| `/api/admin/owners` | GET | Owner management |
+| `/api/admin/inquiries` | GET | Inquiries |
+| `/api/admin/inquiries/[id]` | GET, PATCH | Single inquiry |
+| `/api/admin/expert-requests` | GET | Expert requests |
+| `/api/admin/expert-requests/[id]` | GET, PATCH | Single expert request |
+| `/api/admin/analytics` | GET | Platform analytics |
+| `/api/admin/stats` | GET | Platform statistics |
+| `/api/admin/matches` | GET | Matches |
 
 ---
 
@@ -589,6 +701,19 @@ Component Update
 
 #### **ScrollingMapBackground**
 - Scrolling map effect
+
+### Additional Components (recent)
+- **PhonePeCheckout** – PhonePe payment flow
+- **LocationIntelligence**, **LocationIntelligenceSection**, **LocationIntelligenceDashboard**
+- **Intelligence2026View** – 2026 projections view
+- **ProfileModal**, **ProfileTypeModal** – Profile selection
+- **BrandRequirementsModal** – Brand requirements
+- **PropertyDetailsModal** – Property detail view
+- **MatchBreakdownChart** – Recharts match breakdown
+- **SchedulePicker** – Visit scheduling
+- **WhatsAppButton** – WhatsApp contact
+- **TrustedByLeadingBrands**, **TrustedBrandsRow**
+- **ExplainerVideo** – Full platform explainers
 
 ---
 
@@ -673,21 +798,40 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 
 ```bash
 # Development
-npm run dev              # Start dev server (port 3000)
+npm run dev              # Start dev server (port 3000, --webpack, NODE_TLS_REJECT_UNAUTHORIZED=0)
 
 # Production Build
-npm run build           # Build for production
-npm run start           # Start production server
+npm run build            # Build for production (next build --webpack)
+npm run start            # Start production server
 
-# Database
+# Database (uses scripts/run-prisma-with-env.js for env loading)
 npm run db:generate      # Generate Prisma Client
 npm run db:push         # Push schema to database
-npm run db:migrate      # Run migrations
-npm run db:seed         # Seed database
-npm run db:studio       # Open Prisma Studio
+npm run db:migrate       # Run migrations
+npm run db:seed          # Seed database
+npm run db:studio        # Open Prisma Studio
+npm run db:import-featured        # Import featured properties
+npm run db:import-featured-brands  # Import featured brands
+npm run db:seed-gvs               # Seed GVS properties
+npm run db:seed-growth            # Seed growth patterns
+npm run db:seed-census            # Seed census data
+npm run db:setup-census           # Push + seed census
+npm run db:update-property-ids    # Update property IDs
+npm run db:update-brand-ids       # Update brand IDs
+
+# Testing
+npm run test:performance         # Performance test
+npm run test:load                # Load test
+npm run test:click               # Click test
+npm run test:all                 # All tests
+
+# Utilities
+npm run favicon:convert          # Convert favicon to PNG
+npm run check-timezone           # Check timezone config
+npm run debug:clear              # Remove debug logs
 
 # Code Quality
-npm run lint            # Run ESLint
+npm run lint                     # Run ESLint
 ```
 
 ### Build Process
@@ -699,9 +843,10 @@ npm run lint            # Run ESLint
 2. **Next.js Build**
    - Page optimization
    - Static generation
-   - Image optimization (enabled: AVIF/WebP formats, responsive sizes)
+   - Image optimization (AVIF/WebP, sharp, responsive sizes)
    - Webpack bundle splitting for optimal performance
-   - CSS optimization with experimental `optimizeCss`
+   - `optimizePackageImports` for framer-motion, recharts, @react-google-maps/api
+   - CSS optimization with experimental `optimizeCss` (critters)
 
 3. **CSS Processing**
    - Tailwind compilation
@@ -712,6 +857,8 @@ npm run lint            # Run ESLint
    - Optimized bundles with code splitting
    - Asset optimization
    - Security headers configured
+   - TZ: Asia/Kolkata (env)
+   - NEXT_PUBLIC_APP_URL (env)
 
 ### Deployment
 
@@ -721,16 +868,7 @@ npm run lint            # Run ESLint
 - Framework: Next.js
 - Build Command: `npm run build`
 - Install Command: `npm install --legacy-peer-deps`
-- Post-install: `prisma generate` (automatic)
-
-**Environment Variables Required**:
-- `ANTHROPIC_API_KEY` - Anthropic Claude API key
-- `DATABASE_URL` - PostgreSQL connection string
-- `NEXTAUTH_SECRET` - NextAuth.js secret
-- `NEXTAUTH_URL` - Application URL
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
-- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side)
+- Post-install: `prisma generate` (via package.json postinstall)
 
 ---
 
@@ -749,13 +887,42 @@ DATABASE_URL=postgresql://user:password@host:port/database
 NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 
-# Optional: OpenAI (if using)
-OPENAI_API_KEY=your_openai_key
-
 # Supabase (Required for auth and storage)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# App URL (optional, for links)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Optional Environment Variables
+
+```env
+# Development (bypass SSL for corporate firewalls - DO NOT use in production)
+NODE_TLS_REJECT_UNAUTHORIZED=0
+
+# Google Maps
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_key
+GOOGLE_AI_API_KEY=your_google_ai_key
+
+# Mappls (MapMyIndia) - India mapping
+MAPPLS_REST_API_KEY=your_mappls_rest_key
+NEXT_PUBLIC_MAPPLS_REST_API_KEY=your_mappls_rest_key
+MAPPLS_CLIENT_ID=your_client_id
+MAPPLS_CLIENT_SECRET=your_client_secret
+
+# PhonePe Payment Gateway
+PHONEPE_CLIENT_ID=your_phonepe_client_id
+PHONEPE_CLIENT_VERSION=1
+PHONEPE_CLIENT_SECRET=your_phonepe_secret
+PHONEPE_SANDBOX=false
+PHONEPE_WEBHOOK_USERNAME=
+PHONEPE_WEBHOOK_PASSWORD=
+NEXT_PUBLIC_PHONEPE_SANDBOX=false
+
+# Optional: OpenAI (if using)
+OPENAI_API_KEY=your_openai_key
 ```
 
 ### Development Setup
@@ -787,7 +954,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 4. **Setup Database**
    ```bash
    npm run db:generate  # Generate Prisma Client
-   npm run db:push      # Push schema to database
+   npm run db:push      # Push schema (uses run-prisma-with-env.js)
    npm run db:seed      # Seed database with initial data
    ```
 
@@ -795,7 +962,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    ```bash
    npm run dev
    ```
-   Note: Development server runs with `--webpack` flag and TLS rejection disabled for local development
+   Note: Dev server uses `--webpack`, `cross-env NODE_TLS_REJECT_UNAUTHORIZED=0` for local development
 
 6. **Open Browser**
    ```
@@ -1027,6 +1194,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 ### Current Integrations
 - **Vercel Analytics** - Integrated via `@vercel/analytics` package
+- **Vercel Speed Insights** - Performance monitoring via `@vercel/speed-insights`
 - **SEO Optimization** - Meta tags, Open Graph, Twitter Cards, JSON-LD structured data
 - **Sitemap & Robots** - Dynamic sitemap.ts and robots.ts for search engine optimization
 
@@ -1100,11 +1268,23 @@ For issues, questions, or contributions, contact the development team.
 
 ---
 
-**Document Version**: 1.2  
-**Last Updated**: 2025-01-23  
+**Document Version**: 1.3  
+**Last Updated**: 2025-02-23  
 **Maintained By**: Lokazen Development Team
 
 ---
 
-*This document represents the complete build truth of the N&G Ventures Commercial Real Estate Platform. Keep it updated as the platform evolves.*
+## 🔗 Key Integrations (for Clause / Prompts)
+
+- **PhonePe** – Payment gateway for brand plans, location reports, visit scheduling (`docs/PHONEPE_INTEGRATION.md`)
+- **Pabbly** – Webhook automation (`docs/PABBLY_INTEGRATION_GUIDE.md`, `/api/webhook/test-pabbly`)
+- **Google Maps** – Maps, Places, geocoding (`docs/GOOGLE_MAPS_SETUP.md`, `@react-google-maps/api`)
+- **Mappls (MapMyIndia)** – India mapping, REST API
+- **Supabase** – Auth, storage, PostgreSQL
+- **Anthropic Claude** – AI search, property description
+- **Google Gemini** – Alternative AI (`GOOGLE_AI_API_KEY`)
+
+---
+
+*This document represents the complete build truth of the Lokazen Commercial Real Estate Platform. Use it for Clause prompts and AI context. Keep it updated as the platform evolves.*
 

@@ -4,6 +4,14 @@ import nextConfig from 'eslint-config-next'
 export default [
   ...nextConfig,
   {
+    ignores: [
+      '**/__tests__/**',
+      '**/*.test.*',
+      '**/*.spec.*',
+      'k6-stress.js',
+    ],
+  },
+  {
     rules: {
       'react-hooks/purity': 'off',
       'react-hooks/set-state-in-effect': 'off',

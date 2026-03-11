@@ -59,3 +59,94 @@ export const BANGALORE_PINCODES: Array<{ pincode: string; name: string; lat: num
   { pincode: '560052', name: 'Cunningham Road', lat: 12.988, lng: 77.605 },
   { pincode: '560100', name: 'Electronic City', lat: 12.846, lng: 77.660 },
 ]
+
+/**
+ * All Bangalore areas for admin dropdown: label (display), value (stored), pincode.
+ * Sorted alphabetically. Used in admin property form "Select area".
+ */
+export interface BangaloreAreaOption {
+  label: string
+  value: string
+  pincode: string
+}
+
+const BANGALORE_AREAS_RAW: BangaloreAreaOption[] = [
+  { label: 'AECS Layout', value: 'AECS Layout', pincode: '560037' },
+  { label: 'Banashankari', value: 'Banashankari', pincode: '560070' },
+  { label: 'Bannerghatta Road', value: 'Bannerghatta Road', pincode: '560076' },
+  { label: 'Basavanagudi', value: 'Basavanagudi', pincode: '560004' },
+  { label: 'Bellandur', value: 'Bellandur', pincode: '560103' },
+  { label: 'Bommanahalli', value: 'Bommanahalli', pincode: '560068' },
+  { label: 'Brigade Road', value: 'Brigade Road', pincode: '560025' },
+  { label: 'Brookfield', value: 'Brookfield', pincode: '560037' },
+  { label: 'BTM Layout', value: 'BTM Layout', pincode: '560076' },
+  { label: 'Cunningham Road', value: 'Cunningham Road', pincode: '560052' },
+  { label: 'Domlur', value: 'Domlur', pincode: '560071' },
+  { label: 'Electronic City', value: 'Electronic City', pincode: '560100' },
+  { label: 'Frazer Town', value: 'Frazer Town', pincode: '560005' },
+  { label: 'Hebbal', value: 'Hebbal', pincode: '560024' },
+  { label: 'HSR Layout', value: 'HSR Layout', pincode: '560102' },
+  { label: 'Indiranagar', value: 'Indiranagar', pincode: '560038' },
+  { label: 'Jayanagar', value: 'Jayanagar', pincode: '560041' },
+  { label: 'JP Nagar', value: 'JP Nagar', pincode: '560078' },
+  { label: 'Kaikondrahalli', value: 'Kaikondrahalli', pincode: '560035' },
+  { label: 'Kalyan Nagar', value: 'Kalyan Nagar', pincode: '560043' },
+  { label: 'Kanakapura Road', value: 'Kanakapura Road', pincode: '560062' },
+  { label: 'Kempegowda Nagar', value: 'Kempegowda Nagar', pincode: '560079' },
+  { label: 'Koramangala', value: 'Koramangala', pincode: '560095' },
+  { label: 'Kumaraswamy Layout', value: 'Kumaraswamy Layout', pincode: '560078' },
+  { label: 'Lavelle Road', value: 'Lavelle Road', pincode: '560001' },
+  { label: 'MG Road', value: 'MG Road', pincode: '560001' },
+  { label: 'Mahadevapura', value: 'Mahadevapura', pincode: '560048' },
+  { label: 'Malleswaram', value: 'Malleswaram', pincode: '560055' },
+  { label: 'Malleshwaram', value: 'Malleshwaram', pincode: '560055' },
+  { label: 'Marathahalli', value: 'Marathahalli', pincode: '560037' },
+  { label: 'New Bel Road', value: 'New Bel Road', pincode: '560054' },
+  { label: 'Rajajinagar', value: 'Rajajinagar', pincode: '560010' },
+  { label: 'Richmond Town', value: 'Richmond Town', pincode: '560025' },
+  { label: 'RT Nagar', value: 'RT Nagar', pincode: '560032' },
+  { label: 'Sahakar Nagar', value: 'Sahakar Nagar', pincode: '560092' },
+  { label: 'Sarjapur Road', value: 'Sarjapur Road', pincode: '560035' },
+  { label: 'St Marks Road', value: 'St Marks Road', pincode: '560001' },
+  { label: 'UB City', value: 'UB City', pincode: '560001' },
+  { label: 'Ulsoor', value: 'Ulsoor', pincode: '560008' },
+  { label: 'Vijayanagar', value: 'Vijayanagar', pincode: '560040' },
+  { label: 'Whitefield', value: 'Whitefield', pincode: '560066' },
+  { label: 'Yelahanka', value: 'Yelahanka', pincode: '560064' },
+  { label: 'Yeshwanthpur', value: 'Yeshwanthpur', pincode: '560022' },
+]
+
+export const BANGALORE_AREAS_ADMIN: BangaloreAreaOption[] = BANGALORE_AREAS_RAW.sort((a, b) =>
+  a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+)
+
+/** Get pincode for a Bangalore area/location name (case-insensitive match). Returns null if no match. */
+export function getPincodeForBangaloreArea (areaName: string | null | undefined): string | null {
+  if (!areaName || typeof areaName !== 'string') return null
+  const q = areaName.trim().toLowerCase()
+  if (!q) return null
+  // Exact match first
+  let found = BANGALORE_AREAS_ADMIN.find(
+    (a) => a.value.toLowerCase() === q || a.label.toLowerCase() === q
+  )
+  if (found) return found.pincode
+  // Then match if area label appears in the input (e.g. "MG Road" in "123, MG Road, Bangalore")
+  found = BANGALORE_AREAS_ADMIN.find(
+    (a) => q.includes(a.label.toLowerCase()) || q.includes(a.value.toLowerCase())
+  )
+  return found ? found.pincode : null
+}
+
+/** Get nearest Bangalore pincode from coordinates (for map link / lat-lng). */
+export function getNearestPincodeFromCoords (lat: number, lng: number): string {
+  let nearest = BANGALORE_PINCODES[0]
+  let minDist = 1e9
+  for (const p of BANGALORE_PINCODES) {
+    const d = (p.lat - lat) ** 2 + (p.lng - lng) ** 2
+    if (d < minDist) {
+      minDist = d
+      nearest = p
+    }
+  }
+  return nearest.pincode
+}

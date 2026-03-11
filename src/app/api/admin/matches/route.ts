@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import { calculateBFI } from '@/lib/matching-engine'
+import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
 
 /**
  * Calculate Property Fit Index (PFI) - reverse of BFI
@@ -279,7 +280,7 @@ export async function GET(request: NextRequest) {
             address: property.address || '',
             city: property.city || '',
             state: (property as any).state || 'Karnataka', // Default state
-            zipCode: (property as any).zipCode || '560001', // Default zipCode
+            zipCode: (property as any).zipCode || getPincodeForBangaloreArea((property as any).area) || '560001',
             price: Number(property.price) || 0,
             priceType: (property.priceType || 'monthly') as 'monthly' | 'yearly' | 'sqft',
             size: property.size || 0,
