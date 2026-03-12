@@ -877,7 +877,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Split update to avoid statement timeout (57014): heavy JSON (images/amenities) can make
-    // a single update slow. Do scalars first (fast), then JSON in a transaction with longer timeout.
+    // a single update slow. Do scalars first (fast), then JSON in a second step.
     const { images: _im, amenities: _am, ...dataScalars } = data
     const hasJson = data.images !== undefined || data.amenities !== undefined
     const jsonPayload = hasJson ? { ...(data.images !== undefined && { images: data.images }), ...(data.amenities !== undefined && { amenities: data.amenities }) } : null
@@ -887,35 +887,59 @@ export async function PATCH(request: NextRequest) {
     if (hasJson && jsonPayload && Object.keys(jsonPayload).length > 0) {
       // 1) Update scalar columns only if any (fast, avoids timeout)
       if (Object.keys(dataScalars).length > 0) {
-        await prisma.property.update({
-          where: { id: propertyId },
-          data: dataScalars as any,
-        })
-      }
-      // 2) Update JSON columns in a transaction with extended statement timeout
-      await prisma.$transaction(
-        async (tx) => {
-          await tx.$executeRawUnsafe("SET LOCAL statement_timeout = '120000'")
+        await prisma.$transaction(async (tx) => {
+          await tx.$executeRaw`SET statement_timeout = '30000'`
           await tx.property.update({
             where: { id: propertyId },
-            data: jsonPayload,
+            data: dataScalars as any,
           })
-        },
-        { timeout: 125000 }
-      )
+        })
+      }
+      // 2) Update JSON columns (may be heavier)
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SET statement_timeout = '30000'`
+        await tx.property.update({
+          where: { id: propertyId },
+          data: jsonPayload,
+        })
+      })
       const found = await prisma.property.findUniqueOrThrow({
         where: { id: propertyId },
         include: { owner: { select: { id: true, name: true, email: true } } },
       })
       property = found
     } else {
-      property = await prisma.property.update({
-        where: { id: propertyId },
-        data: dataScalars as any,
-        include: {
-          owner: { select: { id: true, name: true, email: true } },
-        },
+      property = await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SET statement_timeout = '30000'`
+        return tx.property.update({
+          where: { id: propertyId },
+          data: dataScalars as any,
+          include: {
+            owner: { select: { id: true, name: true, email: true } },
+          },
+        })
       })
+    }
+
+    // Trigger intelligence refresh AFTER returning (non-blocking).
+    // This avoids heavy cascade work (competitors/ward/revenue scoring) inside the save request.
+    const shouldRecalcIntel =
+      updateData.address !== undefined ||
+      updateData.city !== undefined ||
+      updateData.state !== undefined ||
+      updateData.zipCode !== undefined ||
+      updateData.size !== undefined ||
+      updateData.price !== undefined ||
+      updateData.propertyType !== undefined ||
+      updateData.mapLink !== undefined ||
+      updateData.amenities !== undefined
+
+    if (shouldRecalcIntel) {
+      setTimeout(() => {
+        enrichPropertyIntelligence(propertyId).catch((err) => {
+          console.error('[Intelligence] Background enrichment failed after admin update', propertyId, err)
+        })
+      }, 0)
     }
 
     return NextResponse.json({

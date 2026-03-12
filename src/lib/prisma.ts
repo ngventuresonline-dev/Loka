@@ -72,12 +72,6 @@ const createPrismaClient = () => {
   if (!existingParams.has('connect_timeout')) {
     existingParams.set('connect_timeout', '30')
   }
-
-  // Prevent "canceling statement due to statement timeout" (Postgres 57014) on heavier ops (e.g. admin property update).
-  // Session-level timeout so updates with large JSON (images/amenities) can complete. 2 minutes.
-  if (!existingParams.has('options')) {
-    existingParams.set('options', '-c statement_timeout=120000')
-  }
   
   // Note: Prisma's connection pool timeout (10 seconds) cannot be configured via connection string
   // The solution is to:
