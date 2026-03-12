@@ -818,7 +818,6 @@ function MatchDetailsContent() {
                 type="button"
                 onClick={() => {
                   setShowVisitModal(true)
-                  setVisitPaymentUrl(null)
                   if (!visitNotes && matchDetails?.property?.title) {
                     const propTitle = matchDetails.property.title
                     setVisitNotes(`I would like to schedule a site visit for ${propTitle}.`)
@@ -859,7 +858,6 @@ function MatchDetailsContent() {
               type="button"
               onClick={() => {
                 setShowVisitModal(true)
-                setVisitPaymentUrl(null)
               }}
               className="w-full bg-white border border-gray-200 text-gray-900 py-2.5 rounded-lg font-semibold text-xs sm:text-sm hover:bg-gray-50 transition-colors"
             >
