@@ -134,6 +134,7 @@ export async function createVisitCalendarEvent(params: CreateVisitEventParams): 
 
   await calendar.events.insert({
     calendarId: 'primary',
+    sendUpdates: 'all',
     requestBody: {
       summary: `Site Visit - ${name}`,
       description: descriptionLines.join('\n'),
