@@ -117,7 +117,6 @@ function MatchDetailsContent() {
   const [visitDateTime, setVisitDateTime] = useState('')
   const [visitNotes, setVisitNotes] = useState('')
   const [visitSubmitting, setVisitSubmitting] = useState(false)
-  const [visitPaymentUrl, setVisitPaymentUrl] = useState<string | null>(null)
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
@@ -500,7 +499,6 @@ function MatchDetailsContent() {
     }
     try {
       setVisitSubmitting(true)
-      setVisitPaymentUrl(null)
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 60000)
@@ -533,8 +531,8 @@ function MatchDetailsContent() {
       if (visitDateTime) {
         trackScheduleViewing(propertyId || '', property?.title || 'Property')
       }
-
-      setVisitPaymentUrl(payload?.paymentUrl || null)
+      alert('Visit scheduled. Our team will contact you to confirm.')
+      setShowVisitModal(false)
     } catch (err: any) {
       console.error(err)
       if (err.name === 'AbortError') alert('Request timed out. Please try again.')
@@ -973,29 +971,14 @@ function MatchDetailsContent() {
                 />
               </div>
 
-              {visitPaymentUrl && (
-                <div className="p-3 rounded-lg border border-green-200 bg-green-50 text-sm text-green-800">
-                  Visit requested. Complete payment to confirm.
-                </div>
-              )}
-
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                {visitPaymentUrl ? (
-                  <a
-                    href={visitPaymentUrl}
-                    className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity disabled:opacity-60 text-center"
-                  >
-                    Proceed to Payment
-                  </a>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={visitSubmitting}
-                    className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity disabled:opacity-60"
-                  >
-                    {visitSubmitting ? 'Submitting...' : 'Request Visit'}
-                  </button>
-                )}
+                <button
+                  type="submit"
+                  disabled={visitSubmitting}
+                  className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {visitSubmitting ? 'Submitting...' : 'Request Visit'}
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowVisitModal(false)}

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendVisitScheduleWebhook } from '@/lib/pabbly-webhook'
-import { createPayment } from '@/lib/phonepe'
 import { getPrisma } from '@/lib/get-prisma'
+import { createVisitCalendarEvent } from '@/lib/google-calendar'
 
 /**
- * Schedule a visit with PhonePe payment for visit fee.
+ * Schedule a visit (no payment) and notify N&G.
  * Expects: { propertyId, dateTime, note, name, email, phone, company, userId? }
  */
 export async function POST(request: NextRequest) {
@@ -19,9 +19,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create visit reference id (visit_<propertyId>_<timestamp>)
-    const visitRefId = `visit_${propertyId}_${Date.now()}`
-
     // Send webhook to Pabbly
     sendVisitScheduleWebhook({
       propertyId,
@@ -33,15 +30,6 @@ export async function POST(request: NextRequest) {
       company,
     }).catch(err => console.warn('[Visit Schedule] Failed to send webhook:', err))
 
-    // Create PhonePe payment for visit fee (₹499)
-    const payment = await createPayment({
-      flow: 'visit',
-      referenceId: visitRefId,
-      userId: userId || undefined,
-      amountInr: 499,
-      meta: { propertyId, dateTime, name, email, phone },
-    })
-
     const prisma = await getPrisma()
     if (prisma) {
       try {
@@ -52,7 +40,7 @@ export async function POST(request: NextRequest) {
             email,
             phone,
             scheduleDateTime: new Date(dateTime),
-            notes: note || `Visit for property ${propertyId}. Payment: ${payment.merchantOrderId}`,
+            notes: note || `Visit scheduled for property ${propertyId}.`,
             status: 'pending',
           },
         })
@@ -61,11 +49,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create Google Calendar event (non-blocking for user flow)
+    createVisitCalendarEvent({
+      propertyId,
+      dateTime,
+      name,
+      email,
+      phone,
+      company,
+      note,
+    }).catch(err => {
+      console.warn('[Visit Schedule] Failed to create Google Calendar event:', err)
+    })
+
     return NextResponse.json({
       success: true,
-      message: 'Visit requested. Complete payment to confirm.',
-      paymentUrl: payment.redirectUrl,
-      merchantOrderId: payment.merchantOrderId,
+      message: 'Visit scheduled and N&G notified.',
     })
   } catch (error: any) {
     console.error('Error scheduling visit:', error)

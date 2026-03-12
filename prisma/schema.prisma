@@ -234,6 +234,20 @@ model Payment {
   @@map("payments")
 }
 
+model GoogleCalendarToken {
+  id          String   @id @db.VarChar(50)
+  email       String   @db.VarChar(255)
+  refreshToken String  @map("refresh_token") @db.Text
+  accessToken  String? @map("access_token") @db.Text
+  scope        String? @db.Text
+  tokenType    String? @map("token_type") @db.VarChar(50)
+  expiryDate   DateTime? @map("expiry_date") @db.Timestamp(6)
+  createdAt    DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+
+  @@map("google_calendar_tokens")
+}
+
 enum payment_status_enum {
   pending
   completed
