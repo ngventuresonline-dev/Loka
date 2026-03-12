@@ -836,13 +836,6 @@ function MatchDetailsContent() {
               >
                 Onboard Your Brand
               </a>
-              <button
-                type="button"
-                onClick={() => setShowExpertModal(true)}
-                className="block w-full bg-gray-900 text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-800 transition-colors shadow-sm text-center"
-              >
-                Connect with Expert
-              </button>
             </div>
           </div>
         </div>
