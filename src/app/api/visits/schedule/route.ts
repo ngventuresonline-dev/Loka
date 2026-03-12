@@ -49,22 +49,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create Google Calendar event (non-blocking for user flow)
-    createVisitCalendarEvent({
-      propertyId,
-      dateTime,
-      name,
-      email,
-      phone,
-      company,
-      note,
-    }).catch(err => {
+    // Create Google Calendar event (we await it so we can surface errors)
+    let calendarError: string | null = null
+    try {
+      await createVisitCalendarEvent({
+        propertyId,
+        dateTime,
+        name,
+        email,
+        phone,
+        company,
+        note,
+      })
+    } catch (err: any) {
       console.warn('[Visit Schedule] Failed to create Google Calendar event:', err)
-    })
+      calendarError = err?.message || 'Failed to create Google Calendar event'
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Visit scheduled and N&G notified.',
+      calendarError,
     })
   } catch (error: any) {
     console.error('Error scheduling visit:', error)
