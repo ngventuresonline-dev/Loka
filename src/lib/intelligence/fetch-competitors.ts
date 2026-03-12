@@ -208,24 +208,6 @@ export async function fetchAndStoreCompetitorsForProperty(params: {
   const { propertyId, latitude, longitude, propertyType, businessType } = params
   const prisma = await getPrisma()
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4e686af3-03c2-4da8-8d51-4d33695b9beb', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      runId: 'pre-fix',
-      hypothesisId: 'H3',
-      location: 'src/lib/intelligence/fetch-competitors.ts:186',
-      message: 'fetchAndStoreCompetitorsForProperty prisma snapshot',
-      data: {
-        hasCompetitorModel: !!prisma && typeof (prisma as any).competitor !== 'undefined',
-        competitorType: prisma ? typeof (prisma as any).competitor : 'no-prisma',
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion agent log
-
   const raw = await fetchCompetitorsFromGooglePlaces({
     latitude,
     longitude,
