@@ -876,19 +876,47 @@ export async function PATCH(request: NextRequest) {
       data.ownerId = updateData.ownerId
     }
 
-    const property = await prisma.property.update({
-      where: { id: propertyId },
-      data,
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          }
-        }
+    // Split update to avoid statement timeout (57014): heavy JSON (images/amenities) can make
+    // a single update slow. Do scalars first (fast), then JSON in a transaction with longer timeout.
+    const { images: _im, amenities: _am, ...dataScalars } = data
+    const hasJson = data.images !== undefined || data.amenities !== undefined
+    const jsonPayload = hasJson ? { ...(data.images !== undefined && { images: data.images }), ...(data.amenities !== undefined && { amenities: data.amenities }) } : null
+
+    let property: { id: string; title: string; address: string; city: string; size: number; price: unknown; priceType: string; availability: boolean | null; createdAt: Date | null; isFeatured: boolean | null; owner: { id: string; name: string | null; email: string } }
+
+    if (hasJson && jsonPayload && Object.keys(jsonPayload).length > 0) {
+      // 1) Update scalar columns only if any (fast, avoids timeout)
+      if (Object.keys(dataScalars).length > 0) {
+        await prisma.property.update({
+          where: { id: propertyId },
+          data: dataScalars as any,
+        })
       }
-    })
+      // 2) Update JSON columns in a transaction with extended statement timeout
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.$executeRawUnsafe("SET LOCAL statement_timeout = '120000'")
+          await tx.property.update({
+            where: { id: propertyId },
+            data: jsonPayload,
+          })
+        },
+        { timeout: 125000 }
+      )
+      const found = await prisma.property.findUniqueOrThrow({
+        where: { id: propertyId },
+        include: { owner: { select: { id: true, name: true, email: true } } },
+      })
+      property = found
+    } else {
+      property = await prisma.property.update({
+        where: { id: propertyId },
+        data: dataScalars as any,
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+        },
+      })
+    }
 
     return NextResponse.json({
       success: true,
