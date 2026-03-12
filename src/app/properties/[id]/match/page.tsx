@@ -102,6 +102,7 @@ function MatchDetailsContent() {
   const [matchDetails, setMatchDetails] = useState<MatchDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'location'>('overview')
   const [showExpertModal, setShowExpertModal] = useState(false)
+  const [showVisitModal, setShowVisitModal] = useState(false)
   const [expertBrandName, setExpertBrandName] = useState('')
   const [expertEmail, setExpertEmail] = useState('')
   const [expertPhone, setExpertPhone] = useState('')
@@ -109,6 +110,14 @@ function MatchDetailsContent() {
   const [expertNotes, setExpertNotes] = useState('')
   const [expertSubmitting, setExpertSubmitting] = useState(false)
   const [expertFeeAcknowledged, setExpertFeeAcknowledged] = useState(false)
+  const [visitName, setVisitName] = useState('')
+  const [visitCompany, setVisitCompany] = useState('')
+  const [visitEmail, setVisitEmail] = useState('')
+  const [visitPhone, setVisitPhone] = useState('')
+  const [visitDateTime, setVisitDateTime] = useState('')
+  const [visitNotes, setVisitNotes] = useState('')
+  const [visitSubmitting, setVisitSubmitting] = useState(false)
+  const [visitPaymentUrl, setVisitPaymentUrl] = useState<string | null>(null)
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
@@ -135,6 +144,12 @@ function MatchDetailsContent() {
       if (brandName) setExpertBrandName(brandName)
       if (email) setExpertEmail(email)
       if (phone) setExpertPhone(phone)
+
+      // Prefill site visit form as well
+      if (brandName) setVisitCompany(brandName)
+      if (details?.contactPerson) setVisitName(details.contactPerson)
+      if (email) setVisitEmail(email)
+      if (phone) setVisitPhone(phone)
     } catch (err) {
       console.error('Prefill expert form failed:', err)
     }
@@ -477,6 +492,58 @@ function MatchDetailsContent() {
     }
   }
 
+  const handleVisitSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!visitName || !visitEmail || !visitPhone || !visitDateTime) {
+      alert('Please fill in Name, Email, Phone, and Schedule Date & Time.')
+      return
+    }
+    try {
+      setVisitSubmitting(true)
+      setVisitPaymentUrl(null)
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000)
+
+      const response = await fetch('/api/visits/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId,
+          dateTime: visitDateTime,
+          note: visitNotes || null,
+          name: visitName,
+          email: visitEmail,
+          phone: visitPhone,
+          company: visitCompany || null,
+        }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to schedule site visit')
+      }
+
+      if (propertyId) {
+        trackInquiry(propertyId, property?.title || 'Property', 'site_visit')
+      }
+      if (visitDateTime) {
+        trackScheduleViewing(propertyId || '', property?.title || 'Property')
+      }
+
+      setVisitPaymentUrl(payload?.paymentUrl || null)
+    } catch (err: any) {
+      console.error(err)
+      if (err.name === 'AbortError') alert('Request timed out. Please try again.')
+      else alert(err.message || 'Could not schedule the visit. Please try again.')
+    } finally {
+      setVisitSubmitting(false)
+    }
+  }
+
   const formatPrice = (price: number, type: Property['priceType']) => {
     const formatted = new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -749,12 +816,33 @@ function MatchDetailsContent() {
 
             {/* Action Buttons */}
             <div className="space-y-2 sm:space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVisitModal(true)
+                  setVisitPaymentUrl(null)
+                  if (!visitNotes && matchDetails?.property?.title) {
+                    const propTitle = matchDetails.property.title
+                    setVisitNotes(`I would like to schedule a site visit for ${propTitle}.`)
+                  }
+                }}
+                className="block w-full bg-white border border-gray-200 text-gray-900 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-50 transition-colors shadow-sm text-center"
+              >
+                Schedule Site Visit
+              </button>
               <a
                 href="/for-brands#plans"
                 className="block w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl text-center"
               >
                 Onboard Your Brand
               </a>
+              <button
+                type="button"
+                onClick={() => setShowExpertModal(true)}
+                className="block w-full bg-gray-900 text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-800 transition-colors shadow-sm text-center"
+              >
+                Connect with Expert
+              </button>
             </div>
           </div>
         </div>
@@ -775,14 +863,158 @@ function MatchDetailsContent() {
       {/* Mobile Sticky Action Bar */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-lg safe-area-bottom">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
-          <a
-            href="/for-brands#plans"
-            className="block w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm hover:opacity-90 transition-opacity shadow-lg text-center"
-          >
-            Onboard Your Brand
-          </a>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowVisitModal(true)
+                setVisitPaymentUrl(null)
+              }}
+              className="w-full bg-white border border-gray-200 text-gray-900 py-2.5 rounded-lg font-semibold text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+            >
+              Schedule Visit
+            </button>
+            <a
+              href="/for-brands#plans"
+              className="block w-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 rounded-lg font-semibold text-xs sm:text-sm hover:opacity-90 transition-opacity shadow-lg text-center"
+            >
+              Brand Onboard
+            </a>
+          </div>
         </div>
       </div>
+
+      {/* Schedule Site Visit Modal */}
+      {showVisitModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-3 sm:px-4 py-4 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 relative my-auto max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowVisitModal(false)}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl leading-none w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center"
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 pr-6 sm:pr-8">Schedule a Site Visit</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-4 break-words">
+              Pick a date/time and share your brand details. We’ll confirm after payment.
+            </p>
+
+            <form className="space-y-3 sm:space-y-4" onSubmit={handleVisitSubmit}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={visitName}
+                    onChange={(e) => setVisitName(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    required
+                    placeholder="Your name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                    Brand / Company
+                  </label>
+                  <input
+                    type="text"
+                    value={visitCompany}
+                    onChange={(e) => setVisitCompany(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    placeholder="Your brand"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={visitEmail}
+                    onChange={(e) => setVisitEmail(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    required
+                    placeholder="you@company.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                    Phone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={visitPhone}
+                    onChange={(e) => setVisitPhone(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
+                    required
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                  Schedule Date & Time <span className="text-red-500">*</span>
+                </label>
+                <SchedulePicker
+                  value={visitDateTime}
+                  onChange={setVisitDateTime}
+                  minDate={new Date()}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                  Notes <span className="text-gray-400 text-xs">(optional)</span>
+                </label>
+                <textarea
+                  value={visitNotes}
+                  onChange={(e) => setVisitNotes(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200] resize-y"
+                  placeholder="Any details for the visit..."
+                />
+              </div>
+
+              {visitPaymentUrl && (
+                <div className="p-3 rounded-lg border border-green-200 bg-green-50 text-sm text-green-800">
+                  Visit requested. Complete payment to confirm.
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                {visitPaymentUrl ? (
+                  <a
+                    href={visitPaymentUrl}
+                    className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity disabled:opacity-60 text-center"
+                  >
+                    Proceed to Payment
+                  </a>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={visitSubmitting}
+                    className="flex-1 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:opacity-90 transition-opacity disabled:opacity-60"
+                  >
+                    {visitSubmitting ? 'Submitting...' : 'Request Visit'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowVisitModal(false)}
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg font-semibold text-sm sm:text-base text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Connect with Expert Modal */}
       {showExpertModal && (
