@@ -50,10 +50,17 @@ const LOADING_PHRASES = [
 
 function deriveZone(address: string = '', city: string = ''): string {
   const text = `${address} ${city}`.toLowerCase()
+  // Order matters: longer names first so "Rammurthy Nagar" matches before "Nagar"
   const zones = [
-    'Koramangala', 'Indiranagar', 'HSR', 'Jayanagar', 'BTM', 'JP Nagar',
+    'Rammurthy Nagar', 'Kasturi Nagar', 'Hegde Nagar', 'Hessarghatta', 'Hulimavu',
+    'Koramangala', 'Indiranagar', 'HSR Layout', 'HSR', 'Jayanagar', 'BTM Layout', 'BTM', 'JP Nagar',
     'Whitefield', 'MG Road', 'Marathahalli', 'Bellandur', 'Electronic City',
-    'Brigade Road', 'Sarjapur', 'Banashankari', 'Malleswaram', 'Rajajinagar',
+    'Brigade Road', 'Sarjapur Road', 'Banashankari', 'Malleswaram', 'Malleshwaram', 'Rajajinagar',
+    'Kalyan Nagar', 'Hebbal', 'Yelahanka', 'Yeshwanthpur', 'Vijayanagar', 'Ulsoor', 'RT Nagar',
+    'Richmond Town', 'Brookfield', 'Mahadevapura', 'Domlur', 'Frazer Town', 'Basavanagudi',
+    'Cunningham Road', 'Lavelle Road', 'Residency Road', 'St Marks Road', 'Commercial Street',
+    'AECS Layout', 'Kundalahalli', 'Varthur', 'Hoodi', 'CV Raman Nagar', 'Banaswadi',
+    'Peenya', 'Mathikere', 'Sadashivanagar', 'Shivajinagar', 'Nagarbhavi', 'Padmanabhanagar',
   ]
   for (const z of zones) {
     if (text.includes(z.toLowerCase())) return z

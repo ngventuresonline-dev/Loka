@@ -819,8 +819,11 @@ export async function PATCH(request: NextRequest) {
       }
     }
     
-    // Property details
-    if (updateData.size !== undefined) data.size = updateData.size
+    // Property details - ensure size is integer to avoid Prisma errors
+    if (updateData.size !== undefined) {
+      const sizeNum = typeof updateData.size === 'number' ? updateData.size : parseInt(String(updateData.size), 10)
+      data.size = Number.isNaN(sizeNum) ? 0 : Math.max(0, sizeNum)
+    }
     if (updateData.propertyType !== undefined) {
       // Normalise property type to match Prisma enum
       const rawType = String(updateData.propertyType || '').toLowerCase()
@@ -863,7 +866,10 @@ export async function PATCH(request: NextRequest) {
     }
     if (updateData.availability !== undefined) data.availability = updateData.availability
     if (updateData.isFeatured !== undefined) data.isFeatured = updateData.isFeatured
-    if (updateData.displayOrder !== undefined) data.displayOrder = updateData.displayOrder !== null ? parseInt(String(updateData.displayOrder)) : null
+    if (updateData.displayOrder !== undefined) {
+      const orderVal = updateData.displayOrder !== null && updateData.displayOrder !== '' ? parseInt(String(updateData.displayOrder), 10) : NaN
+      data.displayOrder = Number.isNaN(orderVal) ? null : orderVal
+    }
     
     // Owner (only if provided and different)
     if (updateData.ownerId !== undefined && updateData.ownerId) {

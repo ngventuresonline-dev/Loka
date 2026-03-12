@@ -16,6 +16,8 @@ const RESIDENTIAL_LOCALITIES = [
   'jayanagar', 'jp nagar', 'btm layout', 'hsr layout', 'electronic city',
   'marathahalli', 'sarakki', 'banashankari', 'basavanagudi', 'malleshwaram',
   'rajajinagar', 'yeshwanthpur', 'hebbal', 'yelahanka', 'vijayanagar',
+  'kasturi nagar', 'rammurthy nagar', 'ramamurthy nagar', 'hegde nagar',
+  'hessarghatta', 'hulimavu', 'kalyan nagar', 'thanisandra',
 ]
 
 export function getLocationProfile(locality: string): LocationProfile {
