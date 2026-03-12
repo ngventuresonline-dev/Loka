@@ -273,7 +273,7 @@ function OwnerProfileContent() {
                   Connect with our team via WhatsApp for quick assistance with your properties.
                 </p>
                 <WhatsAppButton
-                  phone="919876543210"
+                  phone="+919686613899"
                   message={`Hi Lokazen Team,\n\nI'm ${data.name || 'a property owner'}, phone: ${data.phone}.\n\nI need help with my property listings.`}
                 />
               </div>
