@@ -33,6 +33,7 @@ function OwnerProfileContent() {
   const userIdFromQuery = searchParams.get('userId')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<OwnerProfileData | null>(null)
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,6 +73,9 @@ function OwnerProfileContent() {
         }
         
         setData(normalizedData)
+        if (normalizedData.properties?.length) {
+          setSelectedPropertyId((prev) => prev || normalizedData.properties[0].id)
+        }
       } catch (error) {
         console.error('Failed to fetch owner profile:', error)
         router.push('/profile')
@@ -178,9 +182,8 @@ function OwnerProfileContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-white">
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button
@@ -192,148 +195,180 @@ function OwnerProfileContent() {
               </svg>
               Back
             </button>
-            <h1 className="text-xl font-bold text-gray-900">Owner Profile</h1>
-            <div className="w-20"></div>
+            <div className="text-center">
+              <div className="text-[11px] font-medium text-gray-500">Hello {data.name || 'Owner'}.</div>
+              <div className="text-lg font-bold text-gray-900">Your Property Matches</div>
+            </div>
+            <Link
+              href="/filter/owner"
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-[#FF5200] border border-[#FF5200] rounded-lg hover:bg-[#FF5200]/5 transition-colors"
+            >
+              + Add Property
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Status Summary */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {data.name && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Welcome, {data.name}!</h2>
-            {data.companyName && (
-              <p className="text-gray-600">{data.companyName}</p>
-            )}
+      <div className="max-w-7xl mx-auto px-4 py-6 pb-16">
+        <p className="text-sm text-gray-600 mb-5">
+          Manage your listed properties, track brand interest and keep your site details up to date.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Left: properties */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-gray-900">Your Properties</h2>
+                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                  <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">{data.propertiesByStatus.approved}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200">{data.propertiesByStatus.pending}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">{data.propertiesByStatus.rejected}</span>
+                </div>
+              </div>
+
+              {data.properties.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-sm text-gray-600 mb-3">No properties uploaded yet</p>
+                  <Link
+                    href="/filter/owner"
+                    className="inline-block px-4 py-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg text-sm font-medium hover:shadow-lg transition-shadow"
+                  >
+                    List Your First Property
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                  {data.properties.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedPropertyId(p.id)}
+                      className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                        selectedPropertyId === p.id
+                          ? 'border-[#FF5200] bg-[#FF5200]/5 shadow-sm'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="font-semibold text-sm text-gray-900 line-clamp-1">{p.title}</div>
+                        <div className="flex-shrink-0">{getStatusBadge(p.status)}</div>
+                      </div>
+                      <div className="text-xs text-gray-600 line-clamp-1">{p.address}, {p.city}</div>
+                      <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
+                        <span>{p.size.toLocaleString()} sq ft</span>
+                        <span>•</span>
+                        <span>{formatPrice(Number(p.price), p.priceType)}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* WhatsApp Connect (kept functionality, improved presentation) */}
             {data.phone && (
-              <p className="text-sm text-gray-500 mt-1">Phone: {data.phone}</p>
+              <div className="mt-4 bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1.5">Need Help?</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Connect with our team via WhatsApp for quick assistance with your properties.
+                </p>
+                <WhatsAppButton
+                  phone="919876543210"
+                  message={`Hi Lokazen Team,\n\nI'm ${data.name || 'a property owner'}, phone: ${data.phone}.\n\nI need help with my property listings.`}
+                />
+              </div>
             )}
           </div>
-        )}
-        
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Property Status Summary</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{data.propertiesByStatus.approved}</div>
-              <div className="text-sm text-gray-600 mt-1">Approved</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-yellow-600">{data.propertiesByStatus.pending}</div>
-              <div className="text-sm text-gray-600 mt-1">Pending</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-red-600">{data.propertiesByStatus.rejected}</div>
-              <div className="text-sm text-gray-600 mt-1">Rejected</div>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{data.totalProperties}</div>
-              <div className="text-sm text-gray-600 mt-1">Total Properties</div>
-            </div>
-          </div>
-        </div>
 
-        {/* WhatsApp Connect */}
-        {data.phone && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Need Help?</h3>
-            <p className="text-gray-600 mb-4 text-sm">
-              Connect with our team via WhatsApp for quick assistance with your properties.
-            </p>
-            <WhatsAppButton
-              phone="919876543210"
-              message={`Hi Lokazen Team,\n\nI'm ${data.name || 'a property owner'}, phone: ${data.phone}.\n\nI need help with my property listings.`}
-            />
-          </div>
-        )}
+          {/* Right: selected property details */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              {(() => {
+                const property = data.properties.find((p) => p.id === selectedPropertyId) ?? data.properties[0]
+                if (!property) return (
+                  <div className="p-10 text-center text-sm text-gray-600">Select a property to view details.</div>
+                )
 
-        {/* Properties List */}
-        <div className="space-y-4">
-          {data.properties.length === 0 ? (
-            <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
-              <p className="text-gray-600 mb-4">No properties uploaded yet</p>
-              <Link
-                href="/filter/owner"
-                className="inline-block px-6 py-3 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg font-medium hover:shadow-lg transition-shadow"
-              >
-                List Your First Property
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {data.properties.map((property) => (
-                <div
-                  key={property.id}
-                  className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200"
-                >
-                  <div className="flex flex-col md:flex-row">
-                    <div className="relative w-full md:w-48 h-48 bg-gray-100 flex-shrink-0">
-                      {property.images && Array.isArray(property.images) && property.images.length > 0 ? (
-                        <Image
-                          src={property.images[0] as string}
-                          alt={property.title}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <Suspense fallback={<div className="h-full w-full bg-gray-100 flex items-center justify-center text-gray-400">Loading...</div>}>
-                          <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="square" />
-                        </Suspense>
-                      )}
-                    </div>
-                    <div className="flex-1 p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-1">{property.title}</h3>
-                          <p className="text-sm text-gray-600 mb-2">{property.address}</p>
+                return (
+                  <>
+                    <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="min-w-0">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 line-clamp-1">{property.title}</h2>
+                        <p className="text-sm text-gray-600 line-clamp-1">{property.address}, {property.city}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                          <span>{property.size.toLocaleString()} sq ft</span>
+                          <span>•</span>
+                          <span className="font-semibold text-[#FF5200]">{formatPrice(Number(property.price), property.priceType)}</span>
+                          <span>•</span>
+                          <span>{getPropertyTypeLabel(property.propertyType, property.title, property.description || '')}</span>
                         </div>
-                        {getStatusBadge(property.status)}
                       </div>
-                      <div className="flex items-center gap-4 mb-4">
-                        <span className="text-lg font-bold text-[#FF5200]">
-                          {formatPrice(Number(property.price), property.priceType)}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          {property.size.toLocaleString()} sq ft
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          {getPropertyTypeLabel(property.propertyType, property.title, property.description || '')}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                         {(property.status === 'pending' || property.status === 'rejected') && (
                           <Link
                             href={`/properties/${encodePropertyId(property.id)}/edit`}
-                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg text-sm font-medium transition-colors"
+                            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                           >
-                            Edit
+                            Edit Property
                           </Link>
                         )}
                         {property.status === 'pending' && (
                           <button
                             onClick={() => handleDelete(property.id)}
-                            className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
+                            className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                           >
                             Delete
                           </button>
                         )}
                         <Link
                           href={`/properties/${encodePropertyId(property.id)}`}
-                          className="px-4 py-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg text-sm font-medium hover:shadow-lg transition-shadow ml-auto"
+                          className="px-3 py-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-lg text-xs sm:text-sm font-medium hover:shadow-lg transition-shadow"
                         >
                           View
                         </Link>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+
+                    <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div className="text-xs font-semibold text-gray-700 mb-2">Property Image</div>
+                        <div className="relative w-full h-44 rounded-lg overflow-hidden bg-gray-100">
+                          {property.images && Array.isArray(property.images) && property.images.length > 0 ? (
+                            <Image
+                              src={property.images[0] as string}
+                              alt={property.title}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <Suspense fallback={<div className="h-full w-full bg-gray-100 flex items-center justify-center text-gray-400">Loading...</div>}>
+                              <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
+                            </Suspense>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-gray-200 bg-white p-4">
+                        <div className="text-xs font-semibold text-gray-700 mb-2">Status</div>
+                        <div className="flex items-center gap-2 mb-3">
+                          {getStatusBadge(property.status)}
+                          <span className="text-xs text-gray-500">Total properties: {data.totalProperties}</span>
+                        </div>
+                        <div className="text-xs text-gray-600 leading-relaxed">
+                          {property.status === 'approved'
+                            ? 'Your property is live and visible to brands.'
+                            : property.status === 'rejected'
+                            ? 'This property listing was rejected. Please contact support for more information.'
+                            : 'Our team will contact you within 24-48 hours.'}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
