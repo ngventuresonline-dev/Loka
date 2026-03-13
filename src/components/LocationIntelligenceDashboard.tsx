@@ -79,14 +79,6 @@ interface PropertyData {
   size?: number
   price?: number
   priceType?: string
-  latitude?: number | string | null
-  longitude?: number | string | null
-}
-
-function toNum(v: number | string | null | undefined): number | undefined {
-  if (v == null) return undefined
-  const n = typeof v === 'string' ? parseFloat(v) : v
-  return Number.isFinite(n) ? n : undefined
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -449,13 +441,13 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
           breakEvenMonths={data.breakEvenMonths} property={property} />
       )}
       {activeTab === 'competition' && (
-        <CompetitionTab competitors={competitors} data={data} property={property} mapsLoaded={mapsLoaded} />
+        <CompetitionTab competitors={competitors} data={data} ward={ward} mapsLoaded={mapsLoaded} />
       )}
       {activeTab === 'demographics' && (
-        <DemographicsTab data={data} ward={ward} property={property} mapsLoaded={mapsLoaded} />
+        <DemographicsTab data={data} ward={ward} mapsLoaded={mapsLoaded} />
       )}
       {activeTab === 'transport' && (
-        <TransportTab data={data} property={property} mapsLoaded={mapsLoaded} />
+        <TransportTab data={data} ward={ward} mapsLoaded={mapsLoaded} />
       )}
       {activeTab === 'risks' && (
         <RisksTab data={data} ward={ward} competitors={competitors} targetCategory={targetCategory || ''} property={property} locality={locality} />
@@ -536,20 +528,17 @@ function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
 
 // ─── TAB 2: COMPETE (MAP) ─────────────────────────────────────────────────────
 
-function CompetitionTab({ competitors, data, property, mapsLoaded }: {
+function CompetitionTab({ competitors, data, ward, mapsLoaded }: {
   competitors: CompetitorRow[]; data: IntelligenceData
-  property: PropertyData | null; mapsLoaded: boolean
+  ward: WardData | null; mapsLoaded: boolean
 }) {
   const [selected, setSelected] = useState<CompetitorRow | null>(null)
   const apiKey = getGoogleMapsApiKey()
 
-  // Derive center from property coords or a Bangalore default
   const center = useMemo(() => {
-    const lat = toNum(property?.latitude)
-    const lng = toNum(property?.longitude)
-    if (lat && lng) return { lat, lng }
+    if (ward?.latitude && ward?.longitude) return { lat: ward.latitude, lng: ward.longitude }
     return { lat: 12.9716, lng: 77.5946 }
-  }, [property])
+  }, [ward])
 
   // Group counts
   const grouped = useMemo(() => {
@@ -630,18 +619,14 @@ function CompetitionTab({ competitors, data, property, mapsLoaded }: {
 
 // ─── TAB 3: DEMOGRAPHICS ─────────────────────────────────────────────────────
 
-function DemographicsTab({ data, ward, property, mapsLoaded }: {
-  data: IntelligenceData; ward: WardData | null
-  property: PropertyData | null; mapsLoaded: boolean
+function DemographicsTab({ data, ward, mapsLoaded }: {
+  data: IntelligenceData; ward: WardData | null; mapsLoaded: boolean
 }) {
   const apiKey = getGoogleMapsApiKey()
   const center = useMemo(() => {
-    const lat = toNum(property?.latitude)
-    const lng = toNum(property?.longitude)
-    if (lat && lng) return { lat, lng }
     if (ward?.latitude && ward?.longitude) return { lat: ward.latitude, lng: ward.longitude }
     return { lat: 12.9716, lng: 77.5946 }
-  }, [property, ward])
+  }, [ward])
 
   const heatmapData = useMemo(() => {
     if (typeof window === 'undefined') return []
@@ -742,16 +727,14 @@ function DemographicsTab({ data, ward, property, mapsLoaded }: {
 
 // ─── TAB 4: TRANSIT ──────────────────────────────────────────────────────────
 
-function TransportTab({ data, property, mapsLoaded }: {
-  data: IntelligenceData; property: PropertyData | null; mapsLoaded: boolean
+function TransportTab({ data, ward, mapsLoaded }: {
+  data: IntelligenceData; ward: WardData | null; mapsLoaded: boolean
 }) {
   const apiKey = getGoogleMapsApiKey()
   const center = useMemo(() => {
-    const lat = toNum(property?.latitude)
-    const lng = toNum(property?.longitude)
-    if (lat && lng) return { lat, lng }
+    if (ward?.latitude && ward?.longitude) return { lat: ward.latitude, lng: ward.longitude }
     return { lat: 12.9716, lng: 77.5946 }
-  }, [property])
+  }, [ward])
 
   const hasMetro = data.metroDistance != null && data.metroName
 

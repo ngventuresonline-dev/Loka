@@ -31,8 +31,6 @@ export async function GET(
           size: true,
           price: true,
           priceType: true,
-          latitude: true,
-          longitude: true,
         },
       },
     },
