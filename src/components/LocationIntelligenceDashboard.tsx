@@ -67,6 +67,11 @@ interface WardData {
   populationGrowth?: number
   latitude?: number
   longitude?: number
+  // 99acres real-estate data
+  avgApptSqft?: number | null
+  avgLandSqft?: number | null
+  combinedAvgSqft?: number | null
+  spendingPowerIndex?: number | null
 }
 
 type ViewMode = 'office' | 'retail' | 'fnb' | 'wellness' | 'general'
@@ -119,35 +124,141 @@ function computeMonthlyRent(property: PropertyData | null | undefined): number {
   return Math.round(price)
 }
 
-// ─── footfall chart data ─────────────────────────────────────────────────────
+// ─── footfall chart data — category + locality aware ─────────────────────────
 
-const BASE_HOURLY: Record<string, number> = {
-  '6': 10, '7': 18, '8': 25, '9': 30, '10': 35,
-  '11': 45, '12': 72, '13': 85, '14': 78, '15': 55,
-  '16': 48, '17': 52, '18': 65, '19': 82, '20': 90,
-  '21': 88, '22': 70, '23': 40,
+type CategoryKey = 'cafe' | 'qsr' | 'casual_dining' | 'fine_dining' | 'retail' | 'salon' | 'gym' | 'grocery' | 'default'
+type LocalityTier = 'A' | 'B' | 'C' | 'D' | 'E'
+
+// Base hourly scores 0–100 for hours 6..25 (25 = 1am)
+const CATEGORY_BASES: Record<CategoryKey, number[]> = {
+  cafe:         [30,70,90,75,50,45, 65,60,45,40,60,75, 80,70,55,40,25,15, 10,5],
+  qsr:          [10,15,20,20,30,50, 90,85,70,35,30,40, 55,80,90,85,65,40, 20,10],
+  casual_dining:[5, 10,15,15,20,40, 70,85,75,35,25,35, 55,75,95,90,70,45, 20,10],
+  fine_dining:  [0, 0, 5, 5, 5, 10, 30,55,50,15,10,15, 35,65,90,100,90,65,35,15],
+  retail:       [5, 10,15,20,35,65, 80,75,65,60,65,80, 90,85,70,50,25,10, 5, 0],
+  salon:        [0, 5, 15,30,55,80, 85,75,65,60,70,85, 80,65,40,20,10,5,  0, 0],
+  gym:          [80,90,70,45,30,25, 35,30,20,20,30,55, 85,90,75,50,25,10, 5, 0],
+  grocery:      [20,40,65,70,60,55, 60,55,45,40,45,60, 80,85,80,70,45,25, 15,5],
+  default:      [10,18,25,30,35,45, 72,85,78,55,48,52, 65,82,90,88,70,40, 20,10],
 }
 
-function buildFootfallData(ward: WardData | null, viewMode: ViewMode) {
-  const density = ward?.populationDensity ?? 18000
-  const densityMod = density > 30000 ? 1.2 : density > 20000 ? 1.1 : 1.0
-  const weekendMult = 1.35
+// Hours array: 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 0 1
+const CHART_HOURS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]
 
-  const peakFnb = [12, 13, 19, 20, 21]
-  const peakRetail = [11, 12, 13, 17, 18, 19, 20]
-  const peaks = viewMode === 'retail' ? peakRetail : peakFnb
+function hourLabel(h: number): string {
+  if (h < 12)  return `${h}am`
+  if (h === 12) return '12pm'
+  if (h === 24) return '12am'
+  if (h === 25) return '1am'
+  return `${h - 12}pm`
+}
 
-  const hours = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
-  return hours.map(h => {
-    const base = (BASE_HOURLY[String(h)] ?? 5) * densityMod
-    return {
-      hour: h < 12 ? `${h}am` : h === 12 ? '12pm' : h === 24 ? '12am' : `${h - 12}pm`,
-      hourNum: h,
-      weekday: Math.round(base),
-      weekend: Math.round(base * weekendMult),
-      isPeak: peaks.includes(h),
+function getLocalityTier(locality?: string): LocalityTier {
+  const loc = (locality || '').toLowerCase()
+  const tierA = ['indiranagar', 'koramangala', 'mg road', 'brigade road', 'church street', 'ub city', 'vittal mallya', 'richmond town']
+  const tierB = ['hsr layout', 'btm layout', 'jp nagar', 'sarjapur road', 'bellandur', 'yeshwanthpur', 'whitefield']
+  const tierC = ['jayanagar', 'basavanagudi', 'malleshwaram', 'rajajinagar', 'yelahanka', 'banashankari', 'cunningham']
+  const tierD = ['electronic city', 'marathahalli', 'kr puram', 'hoodi', 'varthur', 'whitefield']
+  const tierE = ['devanahalli', 'hoskote', 'attibele', 'chandapura', 'nelamangala', 'doddaballapur']
+  if (tierA.some(t => loc.includes(t))) return 'A'
+  if (tierB.some(t => loc.includes(t))) return 'B'
+  if (tierC.some(t => loc.includes(t))) return 'C'
+  if (tierD.some(t => loc.includes(t))) return 'D'
+  if (tierE.some(t => loc.includes(t))) return 'E'
+  return 'B' // default
+}
+
+function getCategoryKey(viewMode: ViewMode, targetCategory?: string): CategoryKey {
+  const cat = (targetCategory || '').toLowerCase()
+  if (cat.includes('fine') || cat.includes('fine_dining')) return 'fine_dining'
+  if (cat.includes('cafe') || cat.includes('coffee') || cat.includes('boba')) return 'cafe'
+  if (cat.includes('qsr') || cat.includes('fast food') || cat.includes('quick')) return 'qsr'
+  if (cat.includes('casual') || cat.includes('dining') || cat.includes('restaurant') || viewMode === 'fnb') return 'casual_dining'
+  if (cat.includes('salon') || cat.includes('spa') || cat.includes('wellness') || viewMode === 'wellness') return 'salon'
+  if (cat.includes('gym') || cat.includes('fitness')) return 'gym'
+  if (cat.includes('grocery') || cat.includes('convenience')) return 'grocery'
+  if (viewMode === 'retail') return 'retail'
+  return 'default'
+}
+
+function applyLocalityMultipliers(scores: number[], tier: LocalityTier): number[] {
+  return scores.map((s, i) => {
+    const h = CHART_HOURS[i]
+    let v = s
+    if (tier === 'A') {
+      if (h === 22) v *= 1.3
+      if (h === 23) v *= 1.5
+      if (h === 24) v *= 1.6
+      if (h === 25) v *= 1.4
+    } else if (tier === 'B') {
+      if (h === 22) v *= 1.1
+      if (h === 23) v *= 1.2
+      if (h === 24) v *= 1.1
+      if (h === 25) v *= 0.8
+    } else if (tier === 'C') {
+      if (h === 22) v *= 0.8
+      if (h === 23) v *= 0.5
+      if (h === 24) v *= 0.2
+      if (h === 25) v *= 0.1
+    } else if (tier === 'D') {
+      // Weekday lunch spike handled separately; weekend drop applied in buildFootfallData
+      if (h >= 22) v *= 0.5
+    } else if (tier === 'E') {
+      v = Math.min(v, 60)
+      if (h >= 21) v *= 0.3
+      if (h === 25) v = 0
     }
+    return Math.round(Math.min(100, Math.max(0, v)))
   })
+}
+
+function getWeekendMult(tier: LocalityTier, viewMode: ViewMode): number {
+  if (tier === 'A') return 1.4
+  if (tier === 'B') return 1.25
+  if (tier === 'D') return 0.65 // IT areas quiet on weekends
+  return 1.2
+}
+
+function buildPeakCaption(weekdayScores: number[], tier: LocalityTier, weekendMult: number, viewMode: ViewMode): string {
+  const peaks: string[] = []
+  let inPeak = false
+  let peakStart = 0
+  const threshold = 70
+  for (let i = 0; i < weekdayScores.length; i++) {
+    const h = CHART_HOURS[i]
+    if (weekdayScores[i] >= threshold && !inPeak) { inPeak = true; peakStart = h }
+    if ((weekdayScores[i] < threshold || i === weekdayScores.length - 1) && inPeak) {
+      inPeak = false
+      const end = CHART_HOURS[i]
+      if (peakStart !== end) peaks.push(`${hourLabel(peakStart)}–${hourLabel(end)}`)
+    }
+  }
+  const boostPct = Math.round((weekendMult - 1) * 100)
+  let caption = peaks.length > 0 ? `Peak: ${peaks.slice(0, 3).join(' · ')}` : 'Peak: midday & evening'
+  if (tier === 'D' && (viewMode === 'fnb' || viewMode === 'retail')) caption += ' (weekdays)'
+  if (boostPct > 0) caption += ` · Weekends +${boostPct}%`
+  if (tier === 'A') caption += ' · Active till 1am'
+  return caption
+}
+
+function buildFootfallData(ward: WardData | null, viewMode: ViewMode, targetCategory?: string) {
+  const tier = getLocalityTier(ward?.locality)
+  const catKey = getCategoryKey(viewMode, targetCategory)
+  const base = CATEGORY_BASES[catKey]
+  const weekdayRaw = applyLocalityMultipliers(base, tier)
+  const weekendMult = getWeekendMult(tier, viewMode)
+
+  return {
+    points: CHART_HOURS.map((h, i) => ({
+      hour: hourLabel(h),
+      hourNum: h,
+      weekday: weekdayRaw[i],
+      weekend: Math.round(Math.min(100, weekdayRaw[i] * weekendMult)),
+      isPeak: weekdayRaw[i] >= 70,
+    })),
+    caption: buildPeakCaption(weekdayRaw, tier, weekendMult, viewMode),
+    weekendBoost: Math.round((weekendMult - 1) * 100),
+  }
 }
 
 // ─── competitor colours ───────────────────────────────────────────────────────
@@ -433,7 +544,7 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
       </div>
 
       {activeTab === 'overview' && (
-        <OverviewTab data={data} ward={ward} property={property} viewMode={viewMode} isOffice={isOffice} locality={locality} />
+        <OverviewTab data={data} ward={ward} property={property} viewMode={viewMode} isOffice={isOffice} locality={locality} targetCategory={targetCategory} />
       )}
       {activeTab === 'revenue' && !isOffice && (
         <RevenueTab dailyFootfall={data.dailyFootfall} weekendBoost={data.weekendBoost}
@@ -458,13 +569,11 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
 
 // ─── TAB 1: OVERVIEW ─────────────────────────────────────────────────────────
 
-function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
+function OverviewTab({ data, ward, property, viewMode, isOffice, locality, targetCategory }: {
   data: IntelligenceData; ward: WardData | null; property: PropertyData | null
-  viewMode: ViewMode; isOffice: boolean; locality: string
+  viewMode: ViewMode; isOffice: boolean; locality: string; targetCategory?: string
 }) {
-  const chartData = useMemo(() => buildFootfallData(ward, viewMode), [ward, viewMode])
-
-  const peakLabel = viewMode === 'retail' ? '11am–2pm, 5pm–9pm' : '12–2pm, 7–10pm'
+  const footfall = useMemo(() => buildFootfallData(ward, viewMode, targetCategory), [ward, viewMode, targetCategory])
 
   return (
     <div className="space-y-4">
@@ -499,7 +608,7 @@ function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
         <div className="bg-white rounded-xl border border-slate-100 p-4 sm:p-5">
           <div className="text-sm font-semibold text-slate-800 mb-3">Footfall Pattern — Typical Day</div>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <BarChart data={footfall.points} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <XAxis dataKey="hour" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval={2} />
               <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} domain={[0, 110]} />
               <Tooltip
@@ -507,7 +616,7 @@ function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
                 contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e2e8f0' }}
               />
               <Bar dataKey="weekday" name="weekday" radius={[3, 3, 0, 0]} maxBarSize={18}>
-                {chartData.map((entry, i) => (
+                {footfall.points.map((entry, i) => (
                   <Cell key={i} fill={entry.isPeak ? '#FF5200' : '#fbbf9a'} />
                 ))}
               </Bar>
@@ -518,7 +627,7 @@ function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#FF5200] inline-block" /> Weekday peak</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#fbbf9a] inline-block" /> Weekday off-peak</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#fed7aa] inline-block" /> Weekend</span>
-            <span className="ml-auto font-medium text-slate-600">Peak: {peakLabel} · Weekend +{data.weekendBoost}%</span>
+            <span className="ml-auto font-medium text-slate-600">{footfall.caption}</span>
           </div>
         </div>
       )}
@@ -749,6 +858,7 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
   const [nearbyWards, setNearbyWards] = useState<NearbyWard[]>([])
   const [heatmapPts, setHeatmapPts] = useState<any[]>([])
   const [marketPins, setMarketPins] = useState<LivePin[]>([])
+  const [apartmentPins, setApartmentPins] = useState<LivePin[]>([])
 
   const center = useMemo(() => {
     if (ward?.latitude && ward?.longitude) return { lat: ward.latitude, lng: ward.longitude }
@@ -763,9 +873,18 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
       .catch(() => {})
   }, [center.lat, center.lng])
 
-  // Fetch nearby markets (shopping_mall, supermarket)
+  // Fetch nearby apartments for heatmap (FIX 5) + markets
   useEffect(() => {
     if (!apiKey) return
+    // Apartments — used as heatmap data points
+    fetch(`/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=apartment&radius=1500`)
+      .then(r => r.json())
+      .then((j: { places?: (LivePin & { reviewCount?: number | null })[] }) => {
+        const places = j.places ?? []
+        setApartmentPins(places.slice(0, 30).map(p => ({ ...p, category: 'Apartment' })))
+      })
+      .catch(() => {})
+    // Markets
     fetch(`/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=shopping_mall&radius=3000`)
       .then(r => r.json())
       .then((j: { places?: LivePin[] }) =>
@@ -774,35 +893,43 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
       .catch(() => {})
   }, [center.lat, center.lng, apiKey])
 
-  // Build heatmap points inside onLoad so google.maps.LatLng is available
-  const onMapLoad = useCallback((map: any) => {
-    const g = (window as any).google
-    if (!g?.maps?.LatLng) return
+  function buildHeatmapPoints(g: any) {
+    // Prefer apartment results — weight = (rating ?? 3) × (reviews ?? 50) / 100
+    if (apartmentPins.length > 0) {
+      return apartmentPins.map(a => ({
+        location: new g.maps.LatLng(a.lat, a.lng),
+        weight: Math.max(0.2, ((a.rating ?? 3) * (a.reviewCount ?? 50)) / 100),
+      }))
+    }
+    // Fall back to ward density
     const wards = nearbyWards.length > 0 ? nearbyWards : (ward ? [{ latitude: ward.latitude!, longitude: ward.longitude!, populationDensity: ward.populationDensity ?? 15000 }] : [])
-    const pts = wards.map((w: any) => ({
+    return wards.map((w: any) => ({
       location: new g.maps.LatLng(w.latitude, w.longitude),
       weight: Math.max(0.1, (w.populationDensity ?? 10000) / 1000),
     }))
+  }
+
+  const onMapLoad = useCallback((map: any) => {
+    const g = (window as any).google
+    if (!g?.maps?.LatLng) return
+    const pts = buildHeatmapPoints(g)
     if (pts.length > 0) setHeatmapPts(pts)
-    // fitBounds to show all wards
+    const wards = nearbyWards.length > 0 ? nearbyWards : []
     if (wards.length > 1) {
       const bounds = new g.maps.LatLngBounds()
       wards.forEach((w: any) => bounds.extend({ lat: w.latitude, lng: w.longitude }))
       map.fitBounds(bounds, 30)
     }
-  }, [nearbyWards, ward])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearbyWards, ward, apartmentPins])
 
-  // Re-build heatmap points when nearbyWards loads after map
+  // Rebuild when apartment pins or wards arrive
   useEffect(() => {
-    if (nearbyWards.length === 0) return
     const g = (window as any).google
     if (!g?.maps?.LatLng) return
-    const pts = nearbyWards.map(w => ({
-      location: new g.maps.LatLng(w.latitude, w.longitude),
-      weight: Math.max(0.1, w.populationDensity / 1000),
-    }))
-    setHeatmapPts(pts)
-  }, [nearbyWards])
+    setHeatmapPts(buildHeatmapPoints(g))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apartmentPins, nearbyWards])
 
   // Aggregate stats from nearby wards
   const totalCatchmentPop = nearbyWards.reduce((s, w) => s + (w.population2026 ?? 0), 0)
@@ -833,9 +960,9 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
         <div className="bg-white rounded-xl border border-slate-100 p-4">
           <div className="text-xs text-slate-500">Median Income</div>
           <div className="text-xl font-bold text-slate-900 mt-0.5">
-            ₹{ward?.medianIncome ? (ward.medianIncome / 100000).toFixed(1) : (data.medianIncome / 100000).toFixed(1)}L
+            ₹{ward?.medianIncome ? (ward.medianIncome / 1000).toFixed(0) : (data.medianIncome / 1000).toFixed(0)}K
           </div>
-          <div className="text-xs text-slate-400">per year</div>
+          <div className="text-xs text-slate-400">per month</div>
         </div>
         {ward?.diningOutPerWeek != null && (
           <div className="bg-white rounded-xl border border-slate-100 p-4">
@@ -858,6 +985,20 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             <div className="text-xs text-slate-400">5km catchment · 2026</div>
           </div>
         )}
+        {ward?.avgApptSqft != null && (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Avg Apartment Rate</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">₹{ward.avgApptSqft.toLocaleString('en-IN')}</div>
+            <div className="text-xs text-slate-400">per sqft</div>
+          </div>
+        )}
+        {ward?.avgLandSqft != null && (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Avg Land Rate</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">₹{ward.avgLandSqft.toLocaleString('en-IN')}</div>
+            <div className="text-xs text-slate-400">per sqft</div>
+          </div>
+        )}
       </div>
 
       {/* Population density heatmap */}
@@ -874,6 +1015,14 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             >
               {/* Property pin */}
               <Marker position={center} icon={svgYouPin()} zIndex={100} />
+              {/* Apartment pins (grey dots) */}
+              {apartmentPins.map((p, i) => (
+                <Marker key={`apt-${i}`} position={{ lat: p.lat, lng: p.lng }}
+                  icon={svgDot('#9CA3AF', 14)}
+                  title={p.name}
+                  zIndex={4}
+                />
+              ))}
               {/* Market area pins */}
               {marketPins.map((p, i) => (
                 <Marker key={i} position={{ lat: p.lat, lng: p.lng }}
@@ -911,7 +1060,10 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
           {catchmentLabel && <span><span className="font-semibold text-slate-800">{catchmentLabel}</span> in 5km</span>}
           {avgHighIncome && <span><span className="font-semibold text-slate-800">{avgHighIncome}%</span> high income households</span>}
         </div>
-        <p className="text-xs text-slate-400 mt-1">Residential density within 5km · darker = higher density · grey pins = market zones</p>
+        {apartmentPins.length > 0 && (
+          <p className="text-xs text-slate-600 mt-2 font-medium">{apartmentPins.length} residential complexes within 1.5km</p>
+        )}
+        <p className="text-xs text-slate-400 mt-1">Residential density within 5km · hotter zones = more residents · grey = market areas</p>
       </div>
     </div>
   )

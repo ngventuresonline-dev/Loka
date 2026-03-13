@@ -295,6 +295,9 @@ model Property {
   isFeatured           Boolean?           @map("is_featured") @default(false)
   views                Int?               @map("views_count") @default(0)
   displayOrder         Int?               @map("display_order")
+  bfiScore             Float?             @map("bfi_score") @db.DoublePrecision
+  pfiScore             Float?             @map("pfi_score") @db.DoublePrecision
+  scoredAt             DateTime?          @map("scored_at") @db.Timestamp(6)
   createdAt            DateTime?          @map("created_at") @default(now()) @db.Timestamp(6)
   updatedAt            DateTime?          @map("updated_at") @default(now()) @db.Timestamp(6)
   inquiries            Inquiry[]
@@ -558,6 +561,12 @@ model WardDemographics {
   carOwnership       Float    @db.DoublePrecision
 
   diningOutPerWeek   Float    @db.DoublePrecision
+
+  // 99acres real-estate price data (proxy for locality affluence)
+  avgApptSqft        Int?     @map("avg_appt_sqft")
+  avgLandSqft        Int?     @map("avg_land_sqft")
+  combinedAvgSqft    Int?     @map("combined_avg_sqft")
+  spendingPowerIndex Int?     @map("spending_power_index")
 
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
