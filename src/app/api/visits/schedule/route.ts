@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendVisitScheduleWebhook } from '@/lib/pabbly-webhook'
 import { getPrisma } from '@/lib/get-prisma'
 import { createVisitCalendarEvent } from '@/lib/google-calendar'
+import { sendNgVisitNotification } from '@/lib/visit-email'
 
 /**
  * Schedule a visit (no payment) and notify N&G.
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
     }).catch(err => console.warn('[Visit Schedule] Failed to send webhook:', err))
 
     const prisma = await getPrisma()
+    let propertyTitle: string | undefined
     if (prisma) {
       try {
         await prisma.expertRequest.create({
@@ -44,10 +46,27 @@ export async function POST(request: NextRequest) {
             status: 'pending',
           },
         })
+        const prop = await prisma.property.findUnique({
+          where: { id: propertyId },
+          select: { title: true },
+        })
+        if (prop?.title) propertyTitle = prop.title
       } catch (dbErr) {
         console.warn('[Visit Schedule] DB create failed:', dbErr)
       }
     }
+
+    // Email N&G (ngventuresonline@gmail.com)
+    sendNgVisitNotification({
+      brandName: name,
+      brandEmail: email,
+      brandPhone: phone,
+      company: company || null,
+      dateTime,
+      propertyTitle,
+      propertyId,
+      notes: note || null,
+    }).catch(err => console.warn('[Visit Schedule] N&G email failed:', err))
 
     // Create Google Calendar event (we await it so we can surface errors)
     let calendarError: string | null = null

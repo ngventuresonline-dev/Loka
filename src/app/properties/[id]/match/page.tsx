@@ -491,10 +491,24 @@ function MatchDetailsContent() {
     }
   }
 
+  const isValidIndianPhone = (s: string) => {
+    const digits = s.replace(/\D/g, '')
+    return /^[6-9]\d{9}$/.test(digits) || (digits.length === 12 && digits.startsWith('91') && /^[6-9]/.test(digits.slice(2)))
+  }
+  const isValidEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim())
+
   const handleVisitSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!visitName || !visitEmail || !visitPhone || !visitDateTime) {
       alert('Please fill in Name, Email, Phone, and Schedule Date & Time.')
+      return
+    }
+    if (!isValidEmail(visitEmail)) {
+      alert('Please enter a valid email address (e.g. name@company.com).')
+      return
+    }
+    if (!isValidIndianPhone(visitPhone)) {
+      alert('Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).')
       return
     }
     try {
@@ -928,7 +942,7 @@ function MatchDetailsContent() {
                     onChange={(e) => setVisitEmail(e.target.value)}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                     required
-                    placeholder="you@company.com"
+                    placeholder="e.g. name@company.com"
                   />
                 </div>
                 <div>
@@ -941,7 +955,7 @@ function MatchDetailsContent() {
                     onChange={(e) => setVisitPhone(e.target.value)}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                     required
-                    placeholder="+91 98765 43210"
+                    placeholder="10-digit mobile, e.g. 9876543210"
                   />
                 </div>
               </div>
@@ -1042,7 +1056,7 @@ function MatchDetailsContent() {
                     onChange={(e) => setExpertPhone(e.target.value)}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                     required
-                    placeholder="+91 98765 43210"
+                    placeholder="10-digit mobile, e.g. 9876543210"
                   />
                 </div>
               </div>

@@ -48,7 +48,7 @@ export async function saveGoogleCalendarTokens(tokens: {
 
   const now = new Date()
 
-  await prisma.googleCalendarToken.upsert({
+  await (prisma as any).googleCalendarToken.upsert({
     where: { id: 'primary' },
     create: {
       id: 'primary',
@@ -78,7 +78,7 @@ async function getGoogleCalendarAuthClient(): Promise<OAuth2Client> {
     throw new Error('Prisma client not available')
   }
 
-  const tokenRecord = await prisma.googleCalendarToken.findUnique({
+  const tokenRecord = await (prisma as any).googleCalendarToken.findUnique({
     where: { id: 'primary' },
   })
 
