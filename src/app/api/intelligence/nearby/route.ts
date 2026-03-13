@@ -40,6 +40,12 @@ export async function GET(req: NextRequest) {
       const dLng = (pLng - refLng) * 111320 * Math.cos(refLat * Math.PI / 180)
       const distance = Math.round(Math.sqrt(dLat * dLat + dLng * dLng))
 
+      // icon_mask_base_uri gives the exact Google Maps pinlet icon (e.g. restaurant_pinlet)
+      // icon_background_color is the hex color Google Maps uses for that category
+      const iconMask: string = (p.icon_mask_base_uri as string) ?? ''
+      const iconBg: string = (p.icon_background_color as string) ?? '#FF5200'
+      const iconUrl: string = (p.icon as string) ?? ''
+
       return {
         id: p.place_id as string,
         name: p.name as string,
@@ -51,6 +57,10 @@ export async function GET(req: NextRequest) {
         priceLevel: (p.price_level as number) ?? null,
         vicinity: (p.vicinity as string) ?? '',
         distance,
+        // Google Maps native icon data
+        iconMask: iconMask ? `${iconMask}.png` : '',
+        iconBg,
+        iconUrl,
       }
     })
 
