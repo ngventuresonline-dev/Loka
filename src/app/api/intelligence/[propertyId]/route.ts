@@ -77,9 +77,6 @@ export async function GET(
             income6to10L: true, income10to15L: true, incomeAbove15L: true, medianIncome: true,
             workingPopulation: true, itProfessionals: true, businessOwners: true,
             apartments: true, carOwnership: true, diningOutPerWeek: true,
-            avgApptSqft: true, avgLandSqft: true, combinedAvgSqft: true,
-            spendingPowerIndex: true, commercialRentMin: true, commercialRentMax: true,
-            dominantAgeGroup: true, primaryResidentType: true,
           },
         })
       : null
