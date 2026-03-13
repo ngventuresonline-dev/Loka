@@ -25,6 +25,7 @@
     "db:seed-gvs": "tsx scripts/seed-gvs-properties.ts",
     "db:seed-growth": "tsx scripts/seed-growth-patterns.ts",
     "db:seed-census": "tsx scripts/seed-census-data.ts",
+    "db:seed-wards": "tsx scripts/seed-wards.ts",
     "db:setup-census": "node scripts/run-prisma-with-env.js db push && npm run db:seed-census",
     "db:import-featured-brands": "tsx scripts/import-featured-brands.ts",
     "db:update-property-ids": "tsx scripts/update-property-ids.ts",
