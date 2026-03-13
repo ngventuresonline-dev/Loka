@@ -67,6 +67,15 @@ interface WardData {
   populationGrowth?: number
   latitude?: number
   longitude?: number
+  // Real-estate & commercial (populated after db:push + seed)
+  avgApptSqft?: number | null
+  avgLandSqft?: number | null
+  combinedAvgSqft?: number | null
+  spendingPowerIndex?: number | null
+  commercialRentMin?: number | null
+  commercialRentMax?: number | null
+  dominantAgeGroup?: string | null
+  primaryResidentType?: string | null
 }
 
 type ViewMode = 'office' | 'retail' | 'fnb' | 'wellness' | 'general'
@@ -256,27 +265,62 @@ function buildFootfallData(ward: WardData | null, viewMode: ViewMode, targetCate
   }
 }
 
-// ─── competitor colours ───────────────────────────────────────────────────────
+// ─── competitor colours (keyed to category search labels) ────────────────────
 
-const CAT_COLORS: Record<string, string> = {
-  'Coffee shops': '#3B82F6',
-  'cafe': '#3B82F6',
-  'QSR': '#EF4444',
-  'Restaurants': '#EF4444',
-  'restaurant': '#EF4444',
-  'Retail': '#8B5CF6',
-  'retail': '#8B5CF6',
-  'Desserts & bakery': '#EC4899',
-  'bakery': '#EC4899',
-  'Bars & pubs': '#F59E0B',
-  'bar': '#F59E0B',
-  'Salon & wellness': '#14B8A6',
-  'salon': '#14B8A6',
+interface CategorySearch {
+  keyword: string
+  label: string
+  color: string
 }
 
-function catColor(cat: string) {
-  const c = (cat || '').toLowerCase()
-  return CAT_COLORS[cat] || CAT_COLORS[c] || '#64748B'
+const CATEGORY_SEARCHES_FNB: CategorySearch[] = [
+  { keyword: 'restaurant',       label: 'Restaurant / Dining', color: '#FF5200' },
+  { keyword: 'cafe coffee',      label: 'Café / Coffee',       color: '#6F4E37' },
+  { keyword: 'bar pub',          label: 'Bar / Pub',           color: '#7B2D8B' },
+  { keyword: 'salon spa',        label: 'Salon / Spa',         color: '#E91E8C' },
+  { keyword: 'gym fitness',      label: 'Gym / Fitness',       color: '#1565C0' },
+]
+const CATEGORY_SEARCHES_CAFE: CategorySearch[] = [
+  { keyword: 'cafe coffee',      label: 'Café / Coffee',       color: '#6F4E37' },
+  { keyword: 'restaurant',       label: 'Restaurant / Dining', color: '#FF5200' },
+  { keyword: 'bar pub',          label: 'Bar / Pub',           color: '#7B2D8B' },
+  { keyword: 'bakery dessert',   label: 'Dessert / Bakery',    color: '#E91E8C' },
+]
+const CATEGORY_SEARCHES_SALON: CategorySearch[] = [
+  { keyword: 'salon spa beauty', label: 'Salon / Spa',         color: '#E91E8C' },
+  { keyword: 'gym fitness',      label: 'Gym / Fitness',       color: '#1565C0' },
+]
+const CATEGORY_SEARCHES_GYM: CategorySearch[] = [
+  { keyword: 'gym fitness yoga', label: 'Gym / Fitness',       color: '#1565C0' },
+  { keyword: 'salon spa',        label: 'Salon / Spa',         color: '#E91E8C' },
+]
+const CATEGORY_SEARCHES_RETAIL: CategorySearch[] = [
+  { keyword: 'clothing store fashion', label: 'Retail / Fashion',        color: '#00897B' },
+  { keyword: 'supermarket grocery',    label: 'Supermarket / Grocery',   color: '#388E3C' },
+  { keyword: 'restaurant',             label: 'Restaurant / Dining',     color: '#FF5200' },
+]
+const CATEGORY_SEARCH_COLORS: Record<string, string> = {
+  'Café / Coffee':        '#6F4E37',
+  'Restaurant / Dining':  '#FF5200',
+  'Bar / Pub':            '#7B2D8B',
+  'Dessert / Bakery':     '#E91E8C',
+  'Salon / Spa':          '#E91E8C',
+  'Gym / Fitness':        '#1565C0',
+  'Retail / Fashion':     '#00897B',
+  'Supermarket / Grocery':'#388E3C',
+}
+
+function getCategorySearches(category?: string): CategorySearch[] {
+  const cat = (category || '').toLowerCase()
+  if (cat.includes('cafe') || cat.includes('coffee')) return CATEGORY_SEARCHES_CAFE
+  if (cat.includes('salon') || cat.includes('spa') || cat.includes('beauty')) return CATEGORY_SEARCHES_SALON
+  if (cat.includes('gym') || cat.includes('fitness')) return CATEGORY_SEARCHES_GYM
+  if (cat.includes('retail') || cat.includes('store') || cat.includes('shop')) return CATEGORY_SEARCHES_RETAIL
+  return CATEGORY_SEARCHES_FNB
+}
+
+function catColor(cat: string): string {
+  return CATEGORY_SEARCH_COLORS[cat] || '#757575'
 }
 
 // ─── risk engine ─────────────────────────────────────────────────────────────
@@ -644,32 +688,19 @@ function svgYouPin(): string {
   )}`
 }
 
-function getCategoryFetchTypes(category?: string): { type: string; label: string }[] {
-  const cat = (category || '').toLowerCase()
-  if (cat.includes('cafe') || cat.includes('coffee')) return [
-    { type: 'cafe', label: 'Coffee shops' },
-    { type: 'meal_takeaway', label: 'QSR' },
-    { type: 'restaurant', label: 'Restaurants' },
-  ]
-  if (cat.includes('salon') || cat.includes('wellness') || cat.includes('spa')) return [
-    { type: 'beauty_salon', label: 'Salon & wellness' },
-    { type: 'spa', label: 'Salon & wellness' },
-    { type: 'gym', label: 'Fitness' },
-  ]
-  if (cat.includes('retail') || cat.includes('store') || cat.includes('shop')) return [
-    { type: 'clothing_store', label: 'Retail' },
-    { type: 'shoe_store', label: 'Retail' },
-    { type: 'shopping_mall', label: 'Retail' },
-  ]
-  // Default F&B
-  return [
-    { type: 'restaurant', label: 'Restaurants' },
-    { type: 'cafe', label: 'Coffee shops' },
-    { type: 'meal_takeaway', label: 'QSR' },
-    { type: 'bar', label: 'Bars & pubs' },
-    { type: 'bakery', label: 'Desserts & bakery' },
-  ]
+function svgApartmentDot(): string {
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="#90A4AE" stroke="#455A64" stroke-width="2"/></svg>`
+  )}`
 }
+
+function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000, p = Math.PI / 180
+  const a = Math.sin((lat2 - lat1) * p / 2) ** 2 +
+    Math.cos(lat1 * p) * Math.cos(lat2 * p) * Math.sin((lng2 - lng1) * p / 2) ** 2
+  return Math.round(2 * R * Math.asin(Math.sqrt(a)))
+}
+
 
 interface LivePin {
   id: string; name: string; lat: number; lng: number
@@ -694,50 +725,60 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
     return { lat: 12.9716, lng: 77.5946 }
   }, [ward])
 
-  // Convert DB competitors (which have lat/lng) to LivePin format
+  // DB pins (from stored competitors with coordinates)
   const dbPins = useMemo((): LivePin[] =>
     competitors
       .filter(c => c.latitude != null && c.longitude != null)
       .map(c => ({
-        id: c.id,
-        name: c.name,
-        lat: c.latitude!,
-        lng: c.longitude!,
-        category: c.category,
-        rating: c.rating,
-        reviewCount: c.reviewCount,
-        priceLevel: c.priceLevel,
-        distance: c.distance,
+        id: c.id, name: c.name, lat: c.latitude!, lng: c.longitude!,
+        category: c.category, rating: c.rating, reviewCount: c.reviewCount,
+        priceLevel: c.priceLevel, distance: c.distance,
       })),
     [competitors]
   )
 
-  // If DB has no pins with coordinates → fetch live from Google Places
+  // Always fetch live from Google Places via multi-keyword sequential search
   useEffect(() => {
-    if (dbPins.length > 0) { setLivePins(dbPins); return }
-    if (!mapsLoaded || !apiKey) return
-    const types = getCategoryFetchTypes(targetCategory)
+    if (!mapsLoaded || !apiKey) {
+      if (dbPins.length > 0) setLivePins(dbPins)
+      return
+    }
+    const searches = getCategorySearches(targetCategory)
     setFetchingLive(true)
-    Promise.all(
-      types.map(t =>
-        fetch(`/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=${t.type}&radius=1000`)
-          .then(r => r.json())
-          .then((j: { places?: LivePin[] }) =>
-            (j.places ?? []).map((p: LivePin) => ({ ...p, category: t.label }))
-          )
-          .catch(() => [] as LivePin[])
-      )
-    ).then(results => {
-      const all = results.flat()
-      const seen = new Set<string>()
-      const deduped = all.filter(p => {
-        const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
-        if (seen.has(key)) return false
-        seen.add(key); return true
-      })
-      setLivePins(deduped)
-    }).finally(() => setFetchingLive(false))
-  }, [dbPins, mapsLoaded, apiKey, center, targetCategory])
+    const seen = new Set<string>()
+    const allPins: LivePin[] = []
+
+    // Add DB pins first (deduplicated)
+    dbPins.forEach(p => {
+      const key = p.id || `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
+      if (!seen.has(key)) { seen.add(key); allPins.push(p) }
+    })
+
+    // Sequential keyword searches — each keyword adds new unique results
+    const runSearches = async () => {
+      for (const s of searches) {
+        try {
+          const url = `/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&keyword=${encodeURIComponent(s.keyword)}&radius=800`
+          const j = await fetch(url).then(r => r.json()) as { places?: LivePin[] }
+          const places = j.places ?? []
+          if (places.length === 0) continue
+          places.forEach(p => {
+            const key = p.id || `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
+            if (!seen.has(key)) {
+              seen.add(key)
+              allPins.push({ ...p, category: s.label })
+            }
+          })
+        } catch {
+          // silent — try next keyword
+        }
+      }
+      setLivePins([...allPins])
+    }
+
+    runSearches().finally(() => setFetchingLive(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapsLoaded, apiKey, center.lat, center.lng, targetCategory])
 
   // fitBounds once pins load
   useEffect(() => {
@@ -751,37 +792,37 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
 
   const onMapLoad = useCallback((map: any) => { mapRef.current = map }, [])
 
-  // Group counts for summary
+  // Group counts for summary + dynamic legend
   const grouped = useMemo(() =>
     livePins.reduce<Record<string, number>>((acc, c) => {
       const k = c.category?.trim() || 'Other'
       acc[k] = (acc[k] ?? 0) + 1; return acc
     }, {}), [livePins])
-  const groupSummary = Object.entries(grouped).map(([k, n]) => `${n} ${k}`).join(' · ')
 
-  const legend = [
-    { label: 'Coffee shops', color: '#3B82F6' },
-    { label: 'QSR / Restaurant', color: '#EF4444' },
-    { label: 'Retail', color: '#8B5CF6' },
-    { label: 'Desserts & bakery', color: '#EC4899' },
-    { label: 'Bars & pubs', color: '#F59E0B' },
-    { label: 'Salon & wellness', color: '#14B8A6' },
-  ]
+  const presentCategories = Object.keys(grouped)
+  const groupSummary = Object.entries(grouped).map(([k, n]) => `${n} ${k}`).join(' · ')
 
   return (
     <div className="space-y-4">
+      {/* Count label */}
+      {livePins.length > 0 && (
+        <p className="text-sm font-semibold text-slate-700">
+          {livePins.length} brands found within 800m
+        </p>
+      )}
+
       {mapsLoaded && apiKey ? (
         <div className="rounded-xl overflow-hidden border border-slate-100">
           <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '320px' }}
+            mapContainerStyle={{ width: '100%', height: '360px' }}
             center={center}
             zoom={15}
             options={MAP_OPTS}
             onLoad={onMapLoad}
           >
-            {/* 500m radius circle */}
-            <Circle center={center} radius={500}
-              options={{ strokeColor: '#FF5200', strokeOpacity: 0.8, strokeWeight: 2, fillOpacity: 0 }} />
+            {/* 800m radius circle */}
+            <Circle center={center} radius={800}
+              options={{ strokeColor: '#FF5200', strokeOpacity: 0.6, strokeWeight: 1.5, fillOpacity: 0 }} />
             {/* Property "You" pin */}
             <Marker position={center} icon={svgYouPin()} zIndex={100} />
             {/* Competitor pins — colored by category */}
@@ -789,7 +830,7 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
               <Marker
                 key={p.id || i}
                 position={{ lat: p.lat, lng: p.lng }}
-                icon={svgDot(catColor(p.category))}
+                icon={svgDot(catColor(p.category), 22)}
                 onClick={() => setSelected(p)}
                 zIndex={10}
               />
@@ -799,13 +840,13 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
                 position={{ lat: selected.lat, lng: selected.lng }}
                 onCloseClick={() => setSelected(null)}
               >
-                <div className="text-xs space-y-0.5 min-w-[140px]">
+                <div className="text-xs space-y-0.5 min-w-[150px]">
                   <div className="font-semibold text-slate-900">{selected.name}</div>
                   <div className="text-slate-500">{selected.category}</div>
                   {selected.rating != null && (
-                    <div>★ {selected.rating.toFixed(1)}{selected.reviewCount ? ` (${selected.reviewCount})` : ''}</div>
+                    <div>⭐ {selected.rating.toFixed(1)}{selected.reviewCount ? ` · ${selected.reviewCount} reviews` : ''}</div>
                   )}
-                  {selected.distance > 0 && <div>{selected.distance}m away</div>}
+                  {selected.distance > 0 && <div className="text-slate-400">{selected.distance}m away</div>}
                 </div>
               </InfoWindow>
             )}
@@ -820,19 +861,22 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
       {fetchingLive && (
         <p className="text-xs text-slate-500 flex items-center gap-1">
           <span className="w-3 h-3 border border-[#FF5200] border-t-transparent rounded-full animate-spin inline-block" />
-          Fetching nearby competitors…
+          Fetching nearby brands…
         </p>
       )}
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {legend.map(l => (
-          <span key={l.label} className="flex items-center gap-1.5 text-xs text-slate-600">
-            <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" style={{ background: l.color }} />
-            {l.label}
-          </span>
-        ))}
-      </div>
+      {/* Dynamic legend — only categories that are actually present */}
+      {presentCategories.length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {presentCategories.map(label => (
+            <span key={label} className="flex items-center gap-1.5 text-xs text-slate-600">
+              <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
+                style={{ background: catColor(label) }} />
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {groupSummary && <p className="text-sm text-slate-600 font-medium">{groupSummary}</p>}
     </div>
@@ -854,6 +898,7 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
   const [heatmapPts, setHeatmapPts] = useState<any[]>([])
   const [marketPins, setMarketPins] = useState<LivePin[]>([])
   const [apartmentPins, setApartmentPins] = useState<LivePin[]>([])
+  const [selectedApt, setSelectedApt] = useState<LivePin | null>(null)
 
   const center = useMemo(() => {
     if (ward?.latitude && ward?.longitude) return { lat: ward.latitude, lng: ward.longitude }
@@ -868,18 +913,15 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
       .catch(() => {})
   }, [center.lat, center.lng])
 
-  // Fetch nearby apartments for heatmap (FIX 5) + markets
+  // Fetch nearby apartments (heatmap + markers) + markets
   useEffect(() => {
     if (!apiKey) return
-    // Apartments — used as heatmap data points
     fetch(`/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=apartment&radius=1500`)
       .then(r => r.json())
-      .then((j: { places?: (LivePin & { reviewCount?: number | null })[] }) => {
-        const places = j.places ?? []
-        setApartmentPins(places.slice(0, 30).map(p => ({ ...p, category: 'Apartment' })))
+      .then((j: { places?: LivePin[] }) => {
+        setApartmentPins((j.places ?? []).slice(0, 30).map(p => ({ ...p, category: 'Apartment' })))
       })
       .catch(() => {})
-    // Markets
     fetch(`/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=shopping_mall&radius=3000`)
       .then(r => r.json())
       .then((j: { places?: LivePin[] }) =>
@@ -889,15 +931,15 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
   }, [center.lat, center.lng, apiKey])
 
   function buildHeatmapPoints(g: any) {
-    // Prefer apartment results — weight = (rating ?? 3) × (reviews ?? 50) / 100
     if (apartmentPins.length > 0) {
       return apartmentPins.map(a => ({
         location: new g.maps.LatLng(a.lat, a.lng),
         weight: Math.max(0.2, ((a.rating ?? 3) * (a.reviewCount ?? 50)) / 100),
       }))
     }
-    // Fall back to ward density
-    const wards = nearbyWards.length > 0 ? nearbyWards : (ward ? [{ latitude: ward.latitude!, longitude: ward.longitude!, populationDensity: ward.populationDensity ?? 15000 }] : [])
+    const wards = nearbyWards.length > 0
+      ? nearbyWards
+      : ward ? [{ latitude: ward.latitude!, longitude: ward.longitude!, populationDensity: ward.populationDensity ?? 15000 }] : []
     return wards.map((w: any) => ({
       location: new g.maps.LatLng(w.latitude, w.longitude),
       weight: Math.max(0.1, (w.populationDensity ?? 10000) / 1000),
@@ -918,23 +960,12 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nearbyWards, ward, apartmentPins])
 
-  // Rebuild when apartment pins or wards arrive
   useEffect(() => {
     const g = (window as any).google
     if (!g?.maps?.LatLng) return
     setHeatmapPts(buildHeatmapPoints(g))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apartmentPins, nearbyWards])
-
-  // Aggregate stats from nearby wards
-  const totalCatchmentPop = nearbyWards.reduce((s, w) => s + (w.population2026 ?? 0), 0)
-  const avgHighIncome = nearbyWards.length > 0
-    ? (nearbyWards.reduce((s, w) => s + (w.incomeAbove15L ?? 0), 0) / nearbyWards.length).toFixed(0)
-    : ward?.incomeAbove15L?.toFixed(0)
-
-  const catchmentLabel = totalCatchmentPop > 0
-    ? totalCatchmentPop >= 100000 ? `${(totalCatchmentPop / 100000).toFixed(1)}L residents` : `${(totalCatchmentPop / 1000).toFixed(0)}K residents`
-    : ward?.population2026 ? `${(ward.population2026 / 1000).toFixed(0)}K residents` : null
 
   return (
     <div className="space-y-5 overflow-hidden">
@@ -950,15 +981,26 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
         <p className="text-xs text-slate-500 mt-2">Prime consumer age bracket · India urban benchmark ~42%</p>
       </div>
 
-      {/* Stats row */}
+      {/* Stats grid — FIX 3: replaced median income & catchment pop */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <div className="text-xs text-slate-500">Median Income</div>
-          <div className="text-xl font-bold text-slate-900 mt-0.5">
-            ₹{ward?.medianIncome ? (ward.medianIncome / 1000).toFixed(0) : (data.medianIncome / 1000).toFixed(0)}K
+        {/* Commercial Rent */}
+        {ward?.commercialRentMin != null && ward?.commercialRentMax != null ? (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Commercial Rent</div>
+            <div className="text-base font-bold text-slate-900 mt-0.5">
+              ₹{ward.commercialRentMin}–₹{ward.commercialRentMax}
+            </div>
+            <div className="text-xs text-slate-400">/sqft/mo · ground floor, road-facing</div>
           </div>
-          <div className="text-xs text-slate-400">per month</div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Commercial Rent</div>
+            <div className="text-base font-bold text-slate-900 mt-0.5">—</div>
+            <div className="text-xs text-slate-400">data loading</div>
+          </div>
+        )}
+
+        {/* Dining out */}
         {ward?.diningOutPerWeek != null && (
           <div className="bg-white rounded-xl border border-slate-100 p-4">
             <div className="text-xs text-slate-500">Dining Out</div>
@@ -966,21 +1008,53 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             <div className="text-xs text-slate-400">per week</div>
           </div>
         )}
-        {ward?.incomeAbove15L != null && (
+
+        {/* Property Rates (from seed) */}
+        {ward?.avgApptSqft != null ? (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Property Rates</div>
+            <div className="text-sm font-bold text-slate-900 mt-0.5">
+              Apts: ₹{ward.avgApptSqft.toLocaleString('en-IN')}/sqft
+            </div>
+            {ward?.avgLandSqft != null && (
+              <div className="text-xs font-semibold text-slate-600">
+                Land: ₹{ward.avgLandSqft.toLocaleString('en-IN')}/sqft
+              </div>
+            )}
+          </div>
+        ) : (
           <div className="bg-white rounded-xl border border-slate-100 p-4">
             <div className="text-xs text-slate-500">High Income (15L+)</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">{ward.incomeAbove15L}%</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{ward?.incomeAbove15L ?? '—'}%</div>
             <div className="text-xs text-slate-400">of households</div>
           </div>
         )}
-        {catchmentLabel && (
+
+        {/* Key Demographic */}
+        {ward?.dominantAgeGroup ? (
           <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-xs text-slate-500">Catchment Pop.</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">{catchmentLabel.split(' ')[0]}</div>
-            <div className="text-xs text-slate-400">5km catchment · 2026</div>
+            <div className="text-xs text-slate-500">Key Demographic</div>
+            <div className="text-sm font-bold text-slate-900 mt-0.5 leading-tight">{ward.dominantAgeGroup}</div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">IT Professionals</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{ward?.itProfessionals ?? '—'}%</div>
+            <div className="text-xs text-slate-400">of workforce</div>
           </div>
         )}
       </div>
+
+      {/* Resident Profile — full width */}
+      {ward?.primaryResidentType && (
+        <div className="bg-slate-50 rounded-xl border border-slate-100 px-4 py-3 flex items-center gap-3">
+          <span className="text-lg">👥</span>
+          <div>
+            <div className="text-xs text-slate-500">Resident Profile</div>
+            <div className="text-sm font-semibold text-slate-800">{ward.primaryResidentType}</div>
+          </div>
+        </div>
+      )}
 
       {/* Population density heatmap */}
       <div>
@@ -996,38 +1070,47 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             >
               {/* Property pin */}
               <Marker position={center} icon={svgYouPin()} zIndex={100} />
-              {/* Apartment pins (grey dots) */}
+              {/* Apartment pins — larger clickable dots (FIX 2) */}
               {apartmentPins.map((p, i) => (
-                <Marker key={`apt-${i}`} position={{ lat: p.lat, lng: p.lng }}
-                  icon={svgDot('#9CA3AF', 14)}
-                  title={p.name}
-                  zIndex={4}
+                <Marker
+                  key={`apt-${i}`}
+                  position={{ lat: p.lat, lng: p.lng }}
+                  icon={svgApartmentDot()}
+                  onClick={() => setSelectedApt(prev => prev?.id === p.id ? null : p)}
+                  zIndex={6}
                 />
               ))}
+              {/* Apartment InfoWindow — one at a time (FIX 2) */}
+              {selectedApt && (
+                <InfoWindow
+                  position={{ lat: selectedApt.lat, lng: selectedApt.lng }}
+                  onCloseClick={() => setSelectedApt(null)}
+                >
+                  <div className="text-xs space-y-0.5 min-w-[160px]">
+                    <div className="font-semibold text-slate-900">{selectedApt.name}</div>
+                    {selectedApt.rating != null && (
+                      <div>⭐ {selectedApt.rating.toFixed(1)}</div>
+                    )}
+                    <div className="text-slate-500">
+                      {haversineM(center.lat, center.lng, selectedApt.lat, selectedApt.lng)}m away
+                    </div>
+                  </div>
+                </InfoWindow>
+              )}
               {/* Market area pins */}
               {marketPins.map((p, i) => (
-                <Marker key={i} position={{ lat: p.lat, lng: p.lng }}
-                  icon={svgDot('#6B7280', 18)}
-                  title={p.name}
-                  zIndex={5}
-                />
+                <Marker key={`mkt-${i}`} position={{ lat: p.lat, lng: p.lng }}
+                  icon={svgDot('#6B7280', 18)} title={p.name} zIndex={5} />
               ))}
               {/* Heatmap */}
               {heatmapPts.length > 0 && (
-                <HeatmapLayer
-                  data={heatmapPts}
-                  options={{
-                    radius: 80,
-                    opacity: 0.7,
-                    gradient: [
-                      'rgba(255,255,0,0)',
-                      'rgba(255,200,0,0.8)',
-                      'rgba(255,120,0,0.9)',
-                      'rgba(255,82,0,1)',
-                      'rgba(180,0,0,1)',
-                    ],
-                  }}
-                />
+                <HeatmapLayer data={heatmapPts} options={{
+                  radius: 80, opacity: 0.7,
+                  gradient: [
+                    'rgba(255,255,0,0)', 'rgba(255,200,0,0.8)',
+                    'rgba(255,120,0,0.9)', 'rgba(255,82,0,1)', 'rgba(180,0,0,1)',
+                  ],
+                }} />
               )}
             </GoogleMap>
           </div>
@@ -1036,15 +1119,13 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             {mapsLoaded ? 'Google Maps API key not configured' : 'Loading map…'}
           </div>
         )}
-        {/* Below-map stats */}
-        <div className="flex items-center gap-4 mt-3 flex-wrap text-xs text-slate-600">
-          {catchmentLabel && <span><span className="font-semibold text-slate-800">{catchmentLabel}</span> in 5km</span>}
-          {avgHighIncome && <span><span className="font-semibold text-slate-800">{avgHighIncome}%</span> high income households</span>}
-        </div>
-        {apartmentPins.length > 0 && (
-          <p className="text-xs text-slate-600 mt-2 font-medium">{apartmentPins.length} residential complexes within 1.5km</p>
+        {apartmentPins.length > 0 ? (
+          <p className="text-xs text-slate-600 mt-2 font-medium">
+            {apartmentPins.length} residential complexes within 1.5km — click any to see details
+          </p>
+        ) : (
+          <p className="text-xs text-slate-400 mt-2">Residential density within 5km · hotter zones = more residents</p>
         )}
-        <p className="text-xs text-slate-400 mt-1">Residential density within 5km · hotter zones = more residents · grey = market areas</p>
       </div>
     </div>
   )

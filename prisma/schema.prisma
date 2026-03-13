@@ -559,6 +559,16 @@ model WardDemographics {
 
   diningOutPerWeek   Float    @db.DoublePrecision
 
+  // Real-estate & commercial data (populated by seed-wards.ts after db:push)
+  avgApptSqft        Int?     @map("avg_appt_sqft")
+  avgLandSqft        Int?     @map("avg_land_sqft")
+  combinedAvgSqft    Int?     @map("combined_avg_sqft")
+  spendingPowerIndex Int?     @map("spending_power_index")
+  commercialRentMin  Int?     @map("commercial_rent_min")
+  commercialRentMax  Int?     @map("commercial_rent_max")
+  dominantAgeGroup   String?  @map("dominant_age_group") @db.VarChar(100)
+  primaryResidentType String? @map("primary_resident_type") @db.VarChar(150)
+
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@index([wardCode])

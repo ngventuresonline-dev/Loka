@@ -2,6 +2,86 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+// Commercial rent lookup — ground floor road-facing rates (₹/sqft/mo)
+const COMMERCIAL_RENTS: Record<string, { min: number; max: number }> = {
+  'Indiranagar':          { min: 150, max: 350 },
+  'Koramangala':          { min: 120, max: 280 },
+  'HSR Layout':           { min: 100, max: 360 },
+  'Jayanagar':            { min: 80,  max: 220 },
+  'JP Nagar':             { min: 70,  max: 180 },
+  'BTM Layout':           { min: 70,  max: 160 },
+  'Marathahalli':         { min: 60,  max: 130 },
+  'MG Road':              { min: 120, max: 300 },
+  'Richmond Town':        { min: 100, max: 220 },
+  'Malleshwaram':         { min: 80,  max: 180 },
+  'Rajajinagar':          { min: 80,  max: 200 },
+  'Basavanagudi':         { min: 70,  max: 160 },
+  'Ulsoor':               { min: 80,  max: 180 },
+  'Frazer Town':          { min: 80,  max: 160 },
+  'Domlur':               { min: 80,  max: 160 },
+  'Bellandur':            { min: 60,  max: 140 },
+  'Whitefield':           { min: 60,  max: 150 },
+  'Sarjapur Road':        { min: 80,  max: 180 },
+  'Hebbal':               { min: 60,  max: 130 },
+  'Yeshwanthpur':         { min: 60,  max: 130 },
+  'Bannerghatta Road':    { min: 55,  max: 120 },
+  'Banashankari':         { min: 55,  max: 110 },
+  'KR Puram':             { min: 40,  max: 90  },
+  'Thanisandra':          { min: 40,  max: 90  },
+  'Manyata Tech Park':    { min: 80,  max: 160 },
+  'Hennur Road':          { min: 45,  max: 95  },
+  'Horamavu':             { min: 35,  max: 75  },
+  'Nagawara':             { min: 40,  max: 85  },
+  'Banaswadi':            { min: 40,  max: 85  },
+  'HBR Layout':           { min: 40,  max: 90  },
+  'RT Nagar':             { min: 35,  max: 75  },
+  'Yelahanka':            { min: 35,  max: 80  },
+  'Hoodi':                { min: 40,  max: 90  },
+  'Varthur':              { min: 30,  max: 75  },
+  'Old Madras Road':      { min: 35,  max: 80  },
+  'Mysore Road':          { min: 30,  max: 70  },
+  'Kanakapura Road':      { min: 30,  max: 75  },
+  'Jalahalli':            { min: 30,  max: 70  },
+  'Rajarajeshwari Nagar': { min: 28,  max: 65  },
+  'Electronic City':      { min: 35,  max: 80  },
+  'Devanahalli':          { min: 20,  max: 55  },
+  'Hoskote':              { min: 15,  max: 40  },
+  'Ramamurthy Nagar':     { min: 25,  max: 60  },
+  'Attibele':             { min: 12,  max: 35  },
+  'Chandapura':           { min: 12,  max: 35  },
+  'Nelamangala':          { min: 15,  max: 40  },
+  'Kengeri':              { min: 20,  max: 50  },
+  'Uttarahalli':          { min: 20,  max: 50  },
+  'Jigani':               { min: 15,  max: 40  },
+  'Doddaballapur':        { min: 10,  max: 30  },
+}
+
+function getCommercialRent(locality: string, combinedAvgSqft: number) {
+  const r = COMMERCIAL_RENTS[locality]
+  if (r) return r
+  return {
+    min: Math.round(combinedAvgSqft * 0.005),
+    max: Math.round(combinedAvgSqft * 0.012),
+  }
+}
+
+function getDominantAgeGroup(itProfessionals: number, medianIncome: number): string {
+  if (itProfessionals > 55) return '25–35 (Young professionals)'
+  if (itProfessionals > 35) return '28–38 (Mixed professionals)'
+  if (medianIncome > 150000) return '35–50 (Established residents)'
+  if (medianIncome > 80000) return '30–45 (Working families)'
+  return '25–40 (Young families)'
+}
+
+function getPrimaryResidentType(itProfessionals: number, medianIncome: number, locality: string): string {
+  if (itProfessionals > 60) return 'Tech professionals & startup founders'
+  if (itProfessionals > 40) return 'IT workforce & mid-senior professionals'
+  if (medianIncome > 160000) return 'Established business owners & executives'
+  if (medianIncome > 100000) return 'Salaried professionals & business owners'
+  if (medianIncome > 70000) return 'Mixed salaried & small business owners'
+  return 'Working class & small traders'
+}
+
 // Bangalore ward data — 99acres real estate rates + demographic estimates
 // medianIncome = monthly household income (₹)
 // catchmentPopulation → population2026
@@ -99,33 +179,44 @@ async function main() {
     const pop2021 = Math.round(w.catchment * 0.95)
     const pop2026 = w.catchment
 
+    const rent = getCommercialRent(w.locality, w.combinedAvgSqft)
+
     const row = {
-      wardCode:          code,
-      wardName:          w.locality,
-      locality:          w.locality,
-      city:              'Bangalore',
-      latitude:          w.lat,
-      longitude:         w.lng,
-      population2021:    pop2021,
-      population2026:    pop2026,
-      populationDensity: w.populationDensity,
-      populationGrowth:  1.1,
-      age18_24:          16,
-      age25_34:          34,
-      age35_44:          28,
-      age45_54:          14,
-      age55Plus:          8,
-      medianAge:         33,
-      income6to10L:      20,
-      income10to15L:     30,
-      incomeAbove15L:    Math.min(50, Math.round(w.spendingPowerIndex * 0.45)),
-      medianIncome:      w.medianIncome,
-      workingPopulation: Math.min(85, w.itProfessionals + 32),
-      itProfessionals:   w.itProfessionals,
-      businessOwners:    12,
-      apartments:        65,
-      carOwnership:      40,
-      diningOutPerWeek:  w.diningOut,
+      wardCode:            code,
+      wardName:            w.locality,
+      locality:            w.locality,
+      city:                'Bangalore',
+      latitude:            w.lat,
+      longitude:           w.lng,
+      population2021:      pop2021,
+      population2026:      pop2026,
+      populationDensity:   w.populationDensity,
+      populationGrowth:    1.1,
+      age18_24:            16,
+      age25_34:            34,
+      age35_44:            28,
+      age45_54:            14,
+      age55Plus:            8,
+      medianAge:           33,
+      income6to10L:        20,
+      income10to15L:       30,
+      incomeAbove15L:      Math.min(50, Math.round(w.spendingPowerIndex * 0.45)),
+      medianIncome:        w.medianIncome,
+      workingPopulation:   Math.min(85, w.itProfessionals + 32),
+      itProfessionals:     w.itProfessionals,
+      businessOwners:      12,
+      apartments:          65,
+      carOwnership:        40,
+      diningOutPerWeek:    w.diningOut,
+      // New real-estate & commercial fields
+      avgApptSqft:         w.avgApptSqft,
+      avgLandSqft:         w.avgLandSqft,
+      combinedAvgSqft:     w.combinedAvgSqft,
+      spendingPowerIndex:  w.spendingPowerIndex,
+      commercialRentMin:   rent.min,
+      commercialRentMax:   rent.max,
+      dominantAgeGroup:    getDominantAgeGroup(w.itProfessionals, w.medianIncome),
+      primaryResidentType: getPrimaryResidentType(w.itProfessionals, w.medianIncome, w.locality),
     }
 
     await prisma.wardDemographics.upsert({

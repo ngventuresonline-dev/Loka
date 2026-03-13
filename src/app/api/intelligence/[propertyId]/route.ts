@@ -68,6 +68,19 @@ export async function GET(
     intelligence.wardCode != null
       ? await prisma.wardDemographics.findUnique({
           where: { wardCode: intelligence.wardCode },
+          select: {
+            wardCode: true, wardName: true, locality: true, city: true,
+            latitude: true, longitude: true,
+            population2021: true, population2026: true,
+            populationDensity: true, populationGrowth: true,
+            age18_24: true, age25_34: true, age35_44: true, age45_54: true, age55Plus: true, medianAge: true,
+            income6to10L: true, income10to15L: true, incomeAbove15L: true, medianIncome: true,
+            workingPopulation: true, itProfessionals: true, businessOwners: true,
+            apartments: true, carOwnership: true, diningOutPerWeek: true,
+            avgApptSqft: true, avgLandSqft: true, combinedAvgSqft: true,
+            spendingPowerIndex: true, commercialRentMin: true, commercialRentMax: true,
+            dominantAgeGroup: true, primaryResidentType: true,
+          },
         })
       : null
 

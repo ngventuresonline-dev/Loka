@@ -6,8 +6,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const lat = searchParams.get('lat')
   const lng = searchParams.get('lng')
-  const type = searchParams.get('type') || 'restaurant'
-  const radius = searchParams.get('radius') || '1000'
+  const type = searchParams.get('type') || ''
+  const radius = searchParams.get('radius') || '800'
   const keyword = searchParams.get('keyword') || ''
 
   if (!lat || !lng) {
@@ -23,12 +23,22 @@ export async function GET(req: NextRequest) {
     const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
     url.searchParams.set('location', `${lat},${lng}`)
     url.searchParams.set('radius', radius)
-    url.searchParams.set('type', type)
+    // Only set type if it's a specific type (not generic keyword searches)
+    if (type && type !== 'any') url.searchParams.set('type', type)
     if (keyword) url.searchParams.set('keyword', keyword)
     url.searchParams.set('key', apiKey)
 
     const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
     const data = await res.json()
+
+    if (data.status === 'REQUEST_DENIED' || data.status === 'INVALID_REQUEST') {
+      console.error('[nearby] Google API error:', data.status, data.error_message)
+      return NextResponse.json({ places: [], error: data.status })
+    }
+
+    if (data.status === 'ZERO_RESULTS') {
+      return NextResponse.json({ places: [] })
+    }
 
     const refLat = parseFloat(lat)
     const refLng = parseFloat(lng)
@@ -45,7 +55,7 @@ export async function GET(req: NextRequest) {
         name: p.name as string,
         lat: pLat,
         lng: pLng,
-        category: type,
+        category: keyword || type,
         rating: (p.rating as number) ?? null,
         reviewCount: (p.user_ratings_total as number) ?? null,
         priceLevel: (p.price_level as number) ?? null,
