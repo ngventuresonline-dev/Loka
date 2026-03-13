@@ -567,7 +567,7 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded }: {
           <GoogleMap mapContainerStyle={{ width: '100%', height: '320px' }} center={center} zoom={15} options={MAP_OPTS}>
             {/* 500m dashed circle */}
             <Circle center={center} radius={500}
-              options={{ strokeColor: '#FF5200', strokeOpacity: 0.6, strokeWeight: 2, strokeDashArray: [5, 5], fillOpacity: 0 }} />
+              options={{ strokeColor: '#FF5200', strokeOpacity: 0.6, strokeWeight: 2, fillOpacity: 0 }} />
             {/* Property pin */}
             <Marker position={center} label={{ text: 'You', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
               icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 14, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
