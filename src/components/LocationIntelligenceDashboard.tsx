@@ -67,11 +67,6 @@ interface WardData {
   populationGrowth?: number
   latitude?: number
   longitude?: number
-  // 99acres real-estate data
-  avgApptSqft?: number | null
-  avgLandSqft?: number | null
-  combinedAvgSqft?: number | null
-  spendingPowerIndex?: number | null
 }
 
 type ViewMode = 'office' | 'retail' | 'fnb' | 'wellness' | 'general'
@@ -983,20 +978,6 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             <div className="text-xs text-slate-500">Catchment Pop.</div>
             <div className="text-xl font-bold text-slate-900 mt-0.5">{catchmentLabel.split(' ')[0]}</div>
             <div className="text-xs text-slate-400">5km catchment · 2026</div>
-          </div>
-        )}
-        {ward?.avgApptSqft != null && (
-          <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-xs text-slate-500">Avg Apartment Rate</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">₹{ward.avgApptSqft.toLocaleString('en-IN')}</div>
-            <div className="text-xs text-slate-400">per sqft</div>
-          </div>
-        )}
-        {ward?.avgLandSqft != null && (
-          <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-xs text-slate-500">Avg Land Rate</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">₹{ward.avgLandSqft.toLocaleString('en-IN')}</div>
-            <div className="text-xs text-slate-400">per sqft</div>
           </div>
         )}
       </div>

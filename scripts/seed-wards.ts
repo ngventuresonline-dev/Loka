@@ -126,10 +126,6 @@ async function main() {
       apartments:        65,
       carOwnership:      40,
       diningOutPerWeek:  w.diningOut,
-      avgApptSqft:       w.avgApptSqft,
-      avgLandSqft:       w.avgLandSqft,
-      combinedAvgSqft:   w.combinedAvgSqft,
-      spendingPowerIndex: w.spendingPowerIndex,
     }
 
     await prisma.wardDemographics.upsert({
