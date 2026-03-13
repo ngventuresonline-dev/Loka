@@ -526,33 +526,12 @@ function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
   )
 }
 
-// SVG dot fallback — used when no Google pin is available
+// SVG dot icon — colored by category, works on all devices
 function svgDot(color: string, size = 22): string {
   const r = size / 2
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r - 2}" fill="${color}" stroke="white" stroke-width="2.5"/></svg>`
   )}`
-}
-
-// Build a Google Maps–style pinlet icon using the place's own iconMask + bg color.
-// Renders a colored teardrop pin with the category icon mask on top — identical
-// to how Google Maps renders places.
-function gPlaceIcon(pin: LivePin): string {
-  if (pin.iconMask) {
-    // Use icon_mask_base_uri.png — Google provides these masked icons
-    // We embed it inside an SVG pin shape so it looks like the real Maps pin
-    const bg = pin.iconBg || '#FF5200'
-    const size = 36
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size + 6}" viewBox="0 0 ${size} ${size + 6}">
-      <defs><clipPath id="c"><circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}"/></clipPath></defs>
-      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="${bg}"/>
-      <image href="${pin.iconMask}" x="6" y="6" width="${size - 12}" height="${size - 12}" clip-path="url(#c)" style="filter:brightness(10)"/>
-      <polygon points="${size / 2 - 5},${size} ${size / 2 + 5},${size} ${size / 2},${size + 6}" fill="${bg}"/>
-    </svg>`
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
-  }
-  // Fallback to category-colored dot
-  return svgDot(catColor(pin.category))
 }
 
 function svgYouPin(): string {
@@ -592,10 +571,6 @@ interface LivePin {
   id: string; name: string; lat: number; lng: number
   category: string; rating: number | null; reviewCount: number | null
   priceLevel: number | null; distance: number
-  // Google Maps native icon fields
-  iconMask?: string   // e.g. https://…/restaurant_pinlet.png
-  iconBg?: string     // e.g. #FF9E67
-  iconUrl?: string    // fallback category icon
 }
 
 // ─── TAB 2: COMPETE (MAP) ─────────────────────────────────────────────────────
@@ -705,12 +680,12 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
               options={{ strokeColor: '#FF5200', strokeOpacity: 0.8, strokeWeight: 2, fillOpacity: 0 }} />
             {/* Property "You" pin */}
             <Marker position={center} icon={svgYouPin()} zIndex={100} />
-            {/* Competitor pins — Google native pinlet icons when available */}
+            {/* Competitor pins — colored by category */}
             {livePins.map((p, i) => (
               <Marker
                 key={p.id || i}
                 position={{ lat: p.lat, lng: p.lng }}
-                icon={gPlaceIcon(p)}
+                icon={svgDot(catColor(p.category))}
                 onClick={() => setSelected(p)}
                 zIndex={10}
               />
@@ -899,10 +874,10 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             >
               {/* Property pin */}
               <Marker position={center} icon={svgYouPin()} zIndex={100} />
-              {/* Market area pins — use Google's native icon if available */}
+              {/* Market area pins */}
               {marketPins.map((p, i) => (
                 <Marker key={i} position={{ lat: p.lat, lng: p.lng }}
-                  icon={p.iconMask ? gPlaceIcon(p) : svgDot('#6B7280', 18)}
+                  icon={svgDot('#6B7280', 18)}
                   title={p.name}
                   zIndex={5}
                 />
