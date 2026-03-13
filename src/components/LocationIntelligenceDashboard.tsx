@@ -421,13 +421,13 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className={`grid gap-1 sm:gap-2 grid-cols-${tabs.length}`}>
+      {/* Tab bar — horizontal scrollable */}
+      <div className="flex flex-row overflow-x-auto scrollbar-hide border-b border-slate-200 gap-0 mb-6">
         {tabs.map(t => (
           <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
-            className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${activeTab === t.id ? 'bg-[#FF5200] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
-            <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
-            <span className="text-[9px] sm:text-xs font-medium leading-none w-full text-center truncate px-1">{t.label}</span>
+            className={`flex flex-col items-center gap-1 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${activeTab === t.id ? 'border-[#FF5200] text-[#FF5200]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+            <t.Icon className="w-4 h-4" strokeWidth={1.8} />
+            {t.label}
           </button>
         ))}
       </div>
@@ -441,7 +441,7 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
           breakEvenMonths={data.breakEvenMonths} property={property} />
       )}
       {activeTab === 'competition' && (
-        <CompetitionTab competitors={competitors} data={data} ward={ward} mapsLoaded={mapsLoaded} />
+        <CompetitionTab competitors={competitors} data={data} ward={ward} mapsLoaded={mapsLoaded} targetCategory={targetCategory} />
       )}
       {activeTab === 'demographics' && (
         <DemographicsTab data={data} ward={ward} mapsLoaded={mapsLoaded} />
@@ -526,13 +526,63 @@ function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
   )
 }
 
+// SVG data-URL icon — no google object needed at render time
+function svgDot(color: string, size = 22): string {
+  const r = size / 2
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r - 2}" fill="${color}" stroke="white" stroke-width="2.5"/></svg>`
+  )}`
+}
+
+function svgYouPin(): string {
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="#FF5200"/><circle cx="18" cy="18" r="8" fill="white"/></svg>`
+  )}`
+}
+
+function getCategoryFetchTypes(category?: string): { type: string; label: string }[] {
+  const cat = (category || '').toLowerCase()
+  if (cat.includes('cafe') || cat.includes('coffee')) return [
+    { type: 'cafe', label: 'Coffee shops' },
+    { type: 'meal_takeaway', label: 'QSR' },
+    { type: 'restaurant', label: 'Restaurants' },
+  ]
+  if (cat.includes('salon') || cat.includes('wellness') || cat.includes('spa')) return [
+    { type: 'beauty_salon', label: 'Salon & wellness' },
+    { type: 'spa', label: 'Salon & wellness' },
+    { type: 'gym', label: 'Fitness' },
+  ]
+  if (cat.includes('retail') || cat.includes('store') || cat.includes('shop')) return [
+    { type: 'clothing_store', label: 'Retail' },
+    { type: 'shoe_store', label: 'Retail' },
+    { type: 'shopping_mall', label: 'Retail' },
+  ]
+  // Default F&B
+  return [
+    { type: 'restaurant', label: 'Restaurants' },
+    { type: 'cafe', label: 'Coffee shops' },
+    { type: 'meal_takeaway', label: 'QSR' },
+    { type: 'bar', label: 'Bars & pubs' },
+    { type: 'bakery', label: 'Desserts & bakery' },
+  ]
+}
+
+interface LivePin {
+  id: string; name: string; lat: number; lng: number
+  category: string; rating: number | null; reviewCount: number | null
+  priceLevel: number | null; distance: number
+}
+
 // ─── TAB 2: COMPETE (MAP) ─────────────────────────────────────────────────────
 
-function CompetitionTab({ competitors, data, ward, mapsLoaded }: {
+function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }: {
   competitors: CompetitorRow[]; data: IntelligenceData
-  ward: WardData | null; mapsLoaded: boolean
+  ward: WardData | null; mapsLoaded: boolean; targetCategory?: string
 }) {
-  const [selected, setSelected] = useState<CompetitorRow | null>(null)
+  const [selected, setSelected] = useState<LivePin | null>(null)
+  const [livePins, setLivePins] = useState<LivePin[]>([])
+  const [fetchingLive, setFetchingLive] = useState(false)
+  const mapRef = useRef<any>(null)
   const apiKey = getGoogleMapsApiKey()
 
   const center = useMemo(() => {
@@ -540,125 +590,239 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded }: {
     return { lat: 12.9716, lng: 77.5946 }
   }, [ward])
 
-  // Group counts
-  const grouped = useMemo(() => {
-    return competitors.reduce<Record<string, number>>((acc, c) => {
-      const k = c.category?.trim() || 'Other'
-      acc[k] = (acc[k] ?? 0) + 1
-      return acc
-    }, {})
-  }, [competitors])
+  // Convert DB competitors (which have lat/lng) to LivePin format
+  const dbPins = useMemo((): LivePin[] =>
+    competitors
+      .filter(c => c.latitude != null && c.longitude != null)
+      .map(c => ({
+        id: c.id,
+        name: c.name,
+        lat: c.latitude!,
+        lng: c.longitude!,
+        category: c.category,
+        rating: c.rating,
+        reviewCount: c.reviewCount,
+        priceLevel: c.priceLevel,
+        distance: c.distance,
+      })),
+    [competitors]
+  )
 
+  // If DB has no pins with coordinates → fetch live from Google Places
+  useEffect(() => {
+    if (dbPins.length > 0) { setLivePins(dbPins); return }
+    if (!mapsLoaded || !apiKey) return
+    const types = getCategoryFetchTypes(targetCategory)
+    setFetchingLive(true)
+    Promise.all(
+      types.map(t =>
+        fetch(`/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=${t.type}&radius=1000`)
+          .then(r => r.json())
+          .then((j: { places?: LivePin[] }) =>
+            (j.places ?? []).map((p: LivePin) => ({ ...p, category: t.label }))
+          )
+          .catch(() => [] as LivePin[])
+      )
+    ).then(results => {
+      const all = results.flat()
+      const seen = new Set<string>()
+      const deduped = all.filter(p => {
+        const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
+        if (seen.has(key)) return false
+        seen.add(key); return true
+      })
+      setLivePins(deduped)
+    }).finally(() => setFetchingLive(false))
+  }, [dbPins, mapsLoaded, apiKey, center, targetCategory])
+
+  // fitBounds once pins load
+  useEffect(() => {
+    if (!mapRef.current || livePins.length === 0) return
+    if (typeof window === 'undefined' || !(window as any).google?.maps) return
+    const bounds = new (window as any).google.maps.LatLngBounds()
+    bounds.extend(center)
+    livePins.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }))
+    mapRef.current.fitBounds(bounds, 50)
+  }, [livePins, center])
+
+  const onMapLoad = useCallback((map: any) => { mapRef.current = map }, [])
+
+  // Group counts for summary
+  const grouped = useMemo(() =>
+    livePins.reduce<Record<string, number>>((acc, c) => {
+      const k = c.category?.trim() || 'Other'
+      acc[k] = (acc[k] ?? 0) + 1; return acc
+    }, {}), [livePins])
   const groupSummary = Object.entries(grouped).map(([k, n]) => `${n} ${k}`).join(' · ')
 
   const legend = [
     { label: 'Coffee shops', color: '#3B82F6' },
     { label: 'QSR / Restaurant', color: '#EF4444' },
     { label: 'Retail', color: '#8B5CF6' },
-    { label: 'Dessert / Bakery', color: '#EC4899' },
-    { label: 'Bar / Brewery', color: '#F59E0B' },
-    { label: 'Salon / Spa', color: '#14B8A6' },
+    { label: 'Desserts & bakery', color: '#EC4899' },
+    { label: 'Bars & pubs', color: '#F59E0B' },
+    { label: 'Salon & wellness', color: '#14B8A6' },
   ]
 
   return (
     <div className="space-y-4">
       {mapsLoaded && apiKey ? (
         <div className="rounded-xl overflow-hidden border border-slate-100">
-          <GoogleMap mapContainerStyle={{ width: '100%', height: '320px' }} center={center} zoom={15} options={MAP_OPTS}>
-            {/* 500m dashed circle */}
+          <GoogleMap
+            mapContainerStyle={{ width: '100%', height: '320px' }}
+            center={center}
+            zoom={15}
+            options={MAP_OPTS}
+            onLoad={onMapLoad}
+          >
+            {/* 500m radius circle */}
             <Circle center={center} radius={500}
-              options={{ strokeColor: '#FF5200', strokeOpacity: 0.6, strokeWeight: 2, fillOpacity: 0 }} />
-            {/* Property pin */}
-            <Marker position={center} label={{ text: 'You', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
-              icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 14, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
+              options={{ strokeColor: '#FF5200', strokeOpacity: 0.8, strokeWeight: 2, fillOpacity: 0 }} />
+            {/* Property "You" pin */}
+            <Marker position={center} icon={svgYouPin()} zIndex={100} />
             {/* Competitor pins */}
-            {competitors.filter(c => c.latitude && c.longitude).map((c, i) => (
-              <Marker key={i} position={{ lat: c.latitude!, lng: c.longitude! }}
-                onClick={() => setSelected(c)}
-                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 9, fillColor: catColor(c.category), fillOpacity: 1, strokeColor: '#fff', strokeWeight: 1.5 }} />
+            {livePins.map((p, i) => (
+              <Marker
+                key={p.id || i}
+                position={{ lat: p.lat, lng: p.lng }}
+                icon={svgDot(catColor(p.category))}
+                onClick={() => setSelected(p)}
+                zIndex={10}
+              />
             ))}
-            {selected && selected.latitude && selected.longitude && (
-              <InfoWindow position={{ lat: selected.latitude, lng: selected.longitude }} onCloseClick={() => setSelected(null)}>
+            {selected && (
+              <InfoWindow
+                position={{ lat: selected.lat, lng: selected.lng }}
+                onCloseClick={() => setSelected(null)}
+              >
                 <div className="text-xs space-y-0.5 min-w-[140px]">
                   <div className="font-semibold text-slate-900">{selected.name}</div>
                   <div className="text-slate-500">{selected.category}</div>
-                  {selected.rating != null && <div>★ {selected.rating.toFixed(1)}{selected.reviewCount ? ` (${selected.reviewCount})` : ''}</div>}
-                  <div>{selected.distance}m away</div>
+                  {selected.rating != null && (
+                    <div>★ {selected.rating.toFixed(1)}{selected.reviewCount ? ` (${selected.reviewCount})` : ''}</div>
+                  )}
+                  {selected.distance > 0 && <div>{selected.distance}m away</div>}
                 </div>
               </InfoWindow>
             )}
           </GoogleMap>
         </div>
       ) : (
-        <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">
+        <div className="rounded-xl bg-slate-100 h-64 flex items-center justify-center text-slate-500 text-sm">
           {mapsLoaded ? 'Google Maps API key not configured' : 'Loading map…'}
         </div>
       )}
 
+      {fetchingLive && (
+        <p className="text-xs text-slate-500 flex items-center gap-1">
+          <span className="w-3 h-3 border border-[#FF5200] border-t-transparent rounded-full animate-spin inline-block" />
+          Fetching nearby competitors…
+        </p>
+      )}
+
       {/* Legend */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
         {legend.map(l => (
-          <span key={l.label} className="flex items-center gap-1 text-xs text-slate-600">
+          <span key={l.label} className="flex items-center gap-1.5 text-xs text-slate-600">
             <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" style={{ background: l.color }} />
             {l.label}
           </span>
         ))}
       </div>
 
-      {/* Summary counts */}
-      {groupSummary && (
-        <p className="text-sm text-slate-600 font-medium">{groupSummary}</p>
-      )}
-
-      {competitors.filter(c => !c.latitude || !c.longitude).length > 0 && (
-        <p className="text-xs text-slate-400">Some competitors missing coordinates — re-run enrichment to update</p>
-      )}
+      {groupSummary && <p className="text-sm text-slate-600 font-medium">{groupSummary}</p>}
     </div>
   )
 }
 
 // ─── TAB 3: DEMOGRAPHICS ─────────────────────────────────────────────────────
 
+interface NearbyWard {
+  wardName: string; locality: string; latitude: number; longitude: number
+  populationDensity: number; population2026: number; incomeAbove15L: number; distance: number
+}
+
 function DemographicsTab({ data, ward, mapsLoaded }: {
   data: IntelligenceData; ward: WardData | null; mapsLoaded: boolean
 }) {
   const apiKey = getGoogleMapsApiKey()
+  const [nearbyWards, setNearbyWards] = useState<NearbyWard[]>([])
+  const [heatmapPts, setHeatmapPts] = useState<any[]>([])
+  const [marketPins, setMarketPins] = useState<LivePin[]>([])
+
   const center = useMemo(() => {
     if (ward?.latitude && ward?.longitude) return { lat: ward.latitude, lng: ward.longitude }
     return { lat: 12.9716, lng: 77.5946 }
   }, [ward])
 
-  const heatmapData = useMemo(() => {
-    if (typeof window === 'undefined') return []
+  // Fetch nearby wards for heatmap
+  useEffect(() => {
+    fetch(`/api/intelligence/ward-density?lat=${center.lat}&lng=${center.lng}`)
+      .then(r => r.json())
+      .then((j: { wards?: NearbyWard[] }) => setNearbyWards(j.wards ?? []))
+      .catch(() => {})
+  }, [center.lat, center.lng])
+
+  // Fetch nearby markets (shopping_mall, supermarket)
+  useEffect(() => {
+    if (!apiKey) return
+    fetch(`/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=shopping_mall&radius=3000`)
+      .then(r => r.json())
+      .then((j: { places?: LivePin[] }) =>
+        setMarketPins((j.places ?? []).slice(0, 6).map((p: LivePin) => ({ ...p, category: 'Market Area' })))
+      )
+      .catch(() => {})
+  }, [center.lat, center.lng, apiKey])
+
+  // Build heatmap points inside onLoad so google.maps.LatLng is available
+  const onMapLoad = useCallback((map: any) => {
     const g = (window as any).google
-    if (!g?.maps?.LatLng) return []
-    const pts = []
-    if (ward?.latitude && ward?.longitude && ward?.populationDensity) {
-      pts.push({ location: new g.maps.LatLng(ward.latitude, ward.longitude), weight: ward.populationDensity / 10000 })
+    if (!g?.maps?.LatLng) return
+    const wards = nearbyWards.length > 0 ? nearbyWards : (ward ? [{ latitude: ward.latitude!, longitude: ward.longitude!, populationDensity: ward.populationDensity ?? 15000 }] : [])
+    const pts = wards.map((w: any) => ({
+      location: new g.maps.LatLng(w.latitude, w.longitude),
+      weight: Math.max(0.1, (w.populationDensity ?? 10000) / 1000),
+    }))
+    if (pts.length > 0) setHeatmapPts(pts)
+    // fitBounds to show all wards
+    if (wards.length > 1) {
+      const bounds = new g.maps.LatLngBounds()
+      wards.forEach((w: any) => bounds.extend({ lat: w.latitude, lng: w.longitude }))
+      map.fitBounds(bounds, 30)
     }
-    // Surrounding points for heatmap density
-    const deltas = [0.005, 0.008, -0.005, -0.008, 0.005]
-    deltas.forEach((d, i) => {
-      pts.push({
-        location: new g.maps.LatLng(center.lat + d, center.lng + deltas[(i + 2) % deltas.length]),
-        weight: (ward?.populationDensity ?? 15000) / 20000,
-      })
-    })
-    pts.push({ location: new g.maps.LatLng(center.lat, center.lng), weight: 1.5 })
-    return pts
-  }, [ward, center, mapsLoaded])
+  }, [nearbyWards, ward])
+
+  // Re-build heatmap points when nearbyWards loads after map
+  useEffect(() => {
+    if (nearbyWards.length === 0) return
+    const g = (window as any).google
+    if (!g?.maps?.LatLng) return
+    const pts = nearbyWards.map(w => ({
+      location: new g.maps.LatLng(w.latitude, w.longitude),
+      weight: Math.max(0.1, w.populationDensity / 1000),
+    }))
+    setHeatmapPts(pts)
+  }, [nearbyWards])
+
+  // Aggregate stats from nearby wards
+  const totalCatchmentPop = nearbyWards.reduce((s, w) => s + (w.population2026 ?? 0), 0)
+  const avgHighIncome = nearbyWards.length > 0
+    ? (nearbyWards.reduce((s, w) => s + (w.incomeAbove15L ?? 0), 0) / nearbyWards.length).toFixed(0)
+    : ward?.incomeAbove15L?.toFixed(0)
+
+  const catchmentLabel = totalCatchmentPop > 0
+    ? totalCatchmentPop >= 100000 ? `${(totalCatchmentPop / 100000).toFixed(1)}L residents` : `${(totalCatchmentPop / 1000).toFixed(0)}K residents`
+    : ward?.population2026 ? `${(ward.population2026 / 1000).toFixed(0)}K residents` : null
 
   return (
     <div className="space-y-5 overflow-hidden">
       {/* Age distribution */}
       <div className="bg-white rounded-xl border border-slate-100 p-4">
         <div className="text-sm font-semibold text-slate-800 mb-3">Age Distribution (25–44)</div>
-        <div className="flex items-center gap-3">
-          <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
-            <div className="bg-[#FF5200] h-6 rounded-full flex items-center justify-end pr-2"
-              style={{ width: `${Math.min(100, data.age25_44Percent)}%` }}>
-              <span className="text-xs font-semibold text-white">{Math.round(data.age25_44Percent)}%</span>
-            </div>
+        <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
+          <div className="bg-[#FF5200] h-6 rounded-full flex items-center justify-end pr-2"
+            style={{ width: `${Math.min(100, data.age25_44Percent)}%` }}>
+            <span className="text-xs font-semibold text-white">{Math.round(data.age25_44Percent)}%</span>
           </div>
         </div>
         <p className="text-xs text-slate-500 mt-2">Prime consumer age bracket · India urban benchmark ~42%</p>
@@ -687,30 +851,53 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             <div className="text-xs text-slate-400">of households</div>
           </div>
         )}
-        {ward?.population2026 != null && (
+        {catchmentLabel && (
           <div className="bg-white rounded-xl border border-slate-100 p-4">
             <div className="text-xs text-slate-500">Catchment Pop.</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">{(ward.population2026 / 1000).toFixed(0)}K</div>
-            <div className="text-xs text-slate-400">2026 projection</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{catchmentLabel.split(' ')[0]}</div>
+            <div className="text-xs text-slate-400">5km catchment · 2026</div>
           </div>
         )}
       </div>
 
       {/* Population density heatmap */}
       <div>
-        <div className="text-sm font-semibold text-slate-800 mb-2">Population Density & Market Zones</div>
+        <div className="text-sm font-semibold text-slate-800 mb-2">Residential Density within 5km</div>
         {mapsLoaded && apiKey ? (
           <div className="rounded-xl overflow-hidden border border-slate-100">
-            <GoogleMap mapContainerStyle={{ width: '100%', height: '300px' }} center={center} zoom={14} options={MAP_OPTS}>
-              <Marker position={center}
-                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
-              {heatmapData.length > 0 && (
-                <HeatmapLayer data={heatmapData}
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '300px' }}
+              center={center}
+              zoom={13}
+              options={MAP_OPTS}
+              onLoad={onMapLoad}
+            >
+              {/* Property pin */}
+              <Marker position={center} icon={svgYouPin()} zIndex={100} />
+              {/* Market area pins */}
+              {marketPins.map((p, i) => (
+                <Marker key={i} position={{ lat: p.lat, lng: p.lng }}
+                  icon={svgDot('#6B7280', 18)}
+                  title={p.name}
+                  zIndex={5}
+                />
+              ))}
+              {/* Heatmap */}
+              {heatmapPts.length > 0 && (
+                <HeatmapLayer
+                  data={heatmapPts}
                   options={{
-                    radius: 60,
+                    radius: 80,
                     opacity: 0.7,
-                    gradient: ['rgba(0,0,0,0)', 'rgba(255, 235, 59, 0.8)', 'rgba(255, 152, 0, 0.9)', 'rgba(255, 82, 0, 1)'],
-                  }} />
+                    gradient: [
+                      'rgba(255,255,0,0)',
+                      'rgba(255,200,0,0.8)',
+                      'rgba(255,120,0,0.9)',
+                      'rgba(255,82,0,1)',
+                      'rgba(180,0,0,1)',
+                    ],
+                  }}
+                />
               )}
             </GoogleMap>
           </div>
@@ -719,7 +906,12 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
             {mapsLoaded ? 'Google Maps API key not configured' : 'Loading map…'}
           </div>
         )}
-        <p className="text-xs text-slate-500 mt-2">Population density and nearby market zones within 3km</p>
+        {/* Below-map stats */}
+        <div className="flex items-center gap-4 mt-3 flex-wrap text-xs text-slate-600">
+          {catchmentLabel && <span><span className="font-semibold text-slate-800">{catchmentLabel}</span> in 5km</span>}
+          {avgHighIncome && <span><span className="font-semibold text-slate-800">{avgHighIncome}%</span> high income households</span>}
+        </div>
+        <p className="text-xs text-slate-400 mt-1">Residential density within 5km · darker = higher density · grey pins = market zones</p>
       </div>
     </div>
   )
