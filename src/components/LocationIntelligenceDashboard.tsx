@@ -1,50 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { BarChart3, DollarSign, Store, Users, Train, ShieldAlert } from 'lucide-react'
-import { estimateCategorySpend } from '@/lib/intelligence/spend-estimator'
 import {
-  SPEND_BENCHMARKS,
-  SPEND_DISPLAY_CATEGORIES,
-  TIER_LABELS,
-  type BrandCategory,
-} from '@/lib/intelligence/spend-benchmarks'
-import { getLocationAdjustedBenchmarks } from '@/lib/intelligence/location-spend-profile'
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
+} from 'recharts'
+import {
+  GoogleMap, Marker, Circle, HeatmapLayer, useLoadScript, InfoWindow,
+} from '@react-google-maps/api'
+import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
 
-function filterCompetitorsByCategory(competitors: CompetitorRow[], targetCategory: string): CompetitorRow[] {
-  if (!targetCategory?.trim()) return competitors
-  const key = targetCategory.trim().toLowerCase()
-  const filtered = competitors.filter((c) => {
-    const cat = (c.category || '').toLowerCase()
-    if (key.includes('cafe') || key === 'cafe') return cat === 'cafe'
-    if (key.includes('qsr')) return cat === 'qsr'
-    if (key.includes('restaurant') || key.includes('dining') || key.includes('casual') || key.includes('fine')) return cat === 'restaurant' || cat.includes('dining')
-    if (key.includes('brew') || key.includes('taproom') || key.includes('bar')) return cat === 'bar' || cat.includes('brew')
-    if (key.includes('retail')) return cat === 'retail' || cat.includes('store') || cat.includes('shop')
-    if (key.includes('bakery')) return cat === 'bakery'
-    if (key.includes('salon') || key.includes('wellness') || key.includes('spa') || key.includes('beauty')) return cat === 'salon' || cat.includes('spa') || cat.includes('beauty')
-    return true
-  })
-  // If filter returns empty, show all (better than showing nothing)
-  return filtered.length > 0 ? filtered : competitors
-}
+// ─── types ──────────────────────────────────────────────────────────────────
 
-function mapBrandCategory(profileCategory: string): BrandCategory {
-  if (!profileCategory?.trim()) return 'casual_dining'
-  const key = profileCategory.trim().toLowerCase()
-  const map: Record<string, BrandCategory> = {
-    'qsr': 'qsr',
-    'cafe': 'cafe',
-    'casual dining': 'casual_dining',
-    'fine dining': 'fine_dining',
-    'brewery': 'brewery_taproom',
-    'taproom': 'brewery_taproom',
-    'brewery / taproom': 'brewery_taproom',
-    'retail': 'retail',
-    'salon': 'salon',
-  }
-  return map[key] ?? 'casual_dining'
-}
 interface IntelligenceData {
   overallScore: number
   footfallScore: number
@@ -81,9 +48,48 @@ interface CompetitorRow {
   rating: number | null
   reviewCount: number | null
   priceLevel: number | null
+  latitude?: number
+  longitude?: number
+}
+
+interface WardData {
+  wardName: string
+  locality: string
+  medianIncome: number
+  age25_34: number
+  age35_44: number
+  workingPopulation: number
+  diningOutPerWeek: number
+  populationDensity?: number
+  population2026?: number
+  incomeAbove15L?: number
+  itProfessionals?: number
+  populationGrowth?: number
+  latitude?: number
+  longitude?: number
 }
 
 type ViewMode = 'office' | 'retail' | 'fnb' | 'wellness' | 'general'
+
+interface PropertyData {
+  title?: string
+  address?: string
+  city?: string
+  propertyType?: string
+  size?: number
+  price?: number
+  priceType?: string
+  latitude?: number | string | null
+  longitude?: number | string | null
+}
+
+function toNum(v: number | string | null | undefined): number | undefined {
+  if (v == null) return undefined
+  const n = typeof v === 'string' ? parseFloat(v) : v
+  return Number.isFinite(n) ? n : undefined
+}
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
 function getViewMode(propertyType?: string, targetCategory?: string): ViewMode {
   const pt = (propertyType || '').toLowerCase()
@@ -95,31 +101,198 @@ function getViewMode(propertyType?: string, targetCategory?: string): ViewMode {
   return 'general'
 }
 
+function deriveLocalityFromAddress(address?: string | null): string | null {
+  if (!address) return null
+  const text = address.toLowerCase()
+  const known = [
+    'kasturi nagar', 'hrbr layout', 'kalyan nagar', 'banaswadi',
+    'indiranagar', 'koramangala', 'whitefield', 'jayanagar', 'hsr layout',
+    'bellandur', 'marathahalli', 'mg road', 'brigade road', 'btm layout',
+    'jp nagar', 'malleshwaram', 'rajajinagar', 'yeshwanthpur', 'electronic city',
+    'sarjapur', 'banashankari', 'basavanagudi',
+  ]
+  for (const k of known) {
+    if (text.includes(k)) return k.replace(/\b\w/g, m => m.toUpperCase())
+  }
+  return null
+}
+
+function computeMonthlyRent(property: PropertyData | null | undefined): number {
+  if (!property?.price) return 0
+  const price = Number(property.price)
+  if (!Number.isFinite(price) || price === 0) return 0
+  const size = property.size != null ? Number(property.size) : null
+  if (property.priceType === 'yearly') return Math.round(price / 12)
+  if (property.priceType === 'sqft' && size && size > 0) return Math.round(price * size)
+  return Math.round(price)
+}
+
+// ─── footfall chart data ─────────────────────────────────────────────────────
+
+const BASE_HOURLY: Record<string, number> = {
+  '6': 10, '7': 18, '8': 25, '9': 30, '10': 35,
+  '11': 45, '12': 72, '13': 85, '14': 78, '15': 55,
+  '16': 48, '17': 52, '18': 65, '19': 82, '20': 90,
+  '21': 88, '22': 70, '23': 40,
+}
+
+function buildFootfallData(ward: WardData | null, viewMode: ViewMode) {
+  const density = ward?.populationDensity ?? 18000
+  const densityMod = density > 30000 ? 1.2 : density > 20000 ? 1.1 : 1.0
+  const weekendMult = 1.35
+
+  const peakFnb = [12, 13, 19, 20, 21]
+  const peakRetail = [11, 12, 13, 17, 18, 19, 20]
+  const peaks = viewMode === 'retail' ? peakRetail : peakFnb
+
+  const hours = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+  return hours.map(h => {
+    const base = (BASE_HOURLY[String(h)] ?? 5) * densityMod
+    return {
+      hour: h < 12 ? `${h}am` : h === 12 ? '12pm' : h === 24 ? '12am' : `${h - 12}pm`,
+      hourNum: h,
+      weekday: Math.round(base),
+      weekend: Math.round(base * weekendMult),
+      isPeak: peaks.includes(h),
+    }
+  })
+}
+
+// ─── competitor colours ───────────────────────────────────────────────────────
+
+const CAT_COLORS: Record<string, string> = {
+  'Coffee shops': '#3B82F6',
+  'cafe': '#3B82F6',
+  'QSR': '#EF4444',
+  'Restaurants': '#EF4444',
+  'restaurant': '#EF4444',
+  'Retail': '#8B5CF6',
+  'retail': '#8B5CF6',
+  'Desserts & bakery': '#EC4899',
+  'bakery': '#EC4899',
+  'Bars & pubs': '#F59E0B',
+  'bar': '#F59E0B',
+  'Salon & wellness': '#14B8A6',
+  'salon': '#14B8A6',
+}
+
+function catColor(cat: string) {
+  const c = (cat || '').toLowerCase()
+  return CAT_COLORS[cat] || CAT_COLORS[c] || '#64748B'
+}
+
+// ─── risk engine ─────────────────────────────────────────────────────────────
+
+type RiskItem = {
+  type: 'risk' | 'opportunity'
+  severity: 'high' | 'medium' | 'low'
+  title: string
+  detail: string
+}
+
+function calculateRisks(
+  property: PropertyData | null,
+  ward: WardData | null,
+  competitors: CompetitorRow[],
+  targetCategory: string,
+  data: IntelligenceData,
+): RiskItem[] {
+  const items: RiskItem[] = []
+  const cat = (targetCategory || '').toLowerCase()
+  const isFnb = cat.includes('cafe') || cat.includes('qsr') || cat.includes('restaurant') || cat.includes('dining')
+  const within500 = competitors.filter(c => (c.distance ?? 1000) <= 500)
+  const sameCategory = within500.filter(c => {
+    const cc = (c.category || '').toLowerCase()
+    if (cat.includes('cafe')) return cc.includes('cafe') || cc.includes('coffee')
+    if (cat.includes('qsr')) return cc.includes('qsr')
+    if (cat.includes('restaurant') || cat.includes('dining')) return cc.includes('restaurant') || cc.includes('dining')
+    if (cat.includes('retail')) return cc.includes('retail')
+    return false
+  })
+  const premiumNearby = competitors.filter(c =>
+    (c.name || '').match(/starbucks|blue tokai|third wave|matteo|corridor seven|subko/i)
+  ).length
+  const rent = computeMonthlyRent(property)
+
+  // RISKS
+  if (within500.length > 12) {
+    items.push({ type: 'risk', severity: 'high', title: 'High competitor density', detail: `${within500.length} direct competitors within 500m — customer acquisition cost will be higher` })
+  }
+  if (rent > 0 && ward?.medianIncome && rent > (ward.medianIncome / 12) * 0.4) {
+    items.push({ type: 'risk', severity: 'high', title: 'Rent burden risk', detail: 'Rent is high relative to area income — requires strong brand pull to sustain' })
+  }
+  if ((ward?.populationDensity ?? 18000) < 15000 && (ward?.diningOutPerWeek ?? 3) < 3) {
+    items.push({ type: 'risk', severity: 'medium', title: 'Low organic footfall', detail: 'Area has low population density and infrequent dining-out habits — marketing spend will need to compensate' })
+  }
+  if (isFnb && ward && ward.age25_34 < 25) {
+    items.push({ type: 'risk', severity: 'medium', title: 'Young audience underrepresented', detail: `Only ${ward.age25_34}% of area population is 25–34 — core café/QSR audience is limited here` })
+  }
+  if (sameCategory.length > 8) {
+    items.push({ type: 'risk', severity: 'high', title: 'Category saturated', detail: 'Too many similar concepts nearby — differentiation will be critical to survive' })
+  }
+
+  // OPPORTUNITIES
+  if ((ward?.incomeAbove15L ?? 0) > 35 && premiumNearby < 3) {
+    items.push({ type: 'opportunity', severity: 'high', title: 'Underserved premium demand', detail: `${ward!.incomeAbove15L}% high-income households with limited premium options — first-mover advantage` })
+  }
+  if ((ward?.diningOutPerWeek ?? 0) > 4.5) {
+    items.push({ type: 'opportunity', severity: 'high', title: 'Frequent diners area', detail: `Residents dine out ${ward!.diningOutPerWeek}x/week on average — strong repeat customer potential` })
+  }
+  if ((ward?.itProfessionals ?? 0) > 40) {
+    items.push({ type: 'opportunity', severity: 'medium', title: 'High IT workforce density', detail: `${ward!.itProfessionals}% IT professionals — strong weekday lunch trade and after-work crowd` })
+  }
+  if (sameCategory.length < 3) {
+    items.push({ type: 'opportunity', severity: 'medium', title: 'Low direct competition', detail: 'Few direct competitors nearby — strong opportunity to capture category demand' })
+  }
+  if ((ward?.populationGrowth ?? 0) > 1.2) {
+    items.push({ type: 'opportunity', severity: 'low', title: 'High-growth locality', detail: `Area growing at ${ward!.populationGrowth}% annually — early entry advantage before market fills` })
+  }
+
+  // Sort: high risks first, medium, low, then opportunities
+  const severityOrder = { high: 0, medium: 1, low: 2 }
+  return items.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'risk' ? -1 : 1
+    return severityOrder[a.severity] - severityOrder[b.severity]
+  })
+}
+
+// ─── main component ───────────────────────────────────────────────────────────
+
 interface LocationIntelligenceDashboardProps {
   propertyId: string
   targetCategory?: string
   propertyType?: string
 }
 
+const MAP_OPTS = {
+  ...DEFAULT_MAP_OPTIONS,
+  zoomControl: true,
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
+  styles: [
+    { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  ],
+}
+
 export default function LocationIntelligenceDashboard({ propertyId, targetCategory, propertyType }: LocationIntelligenceDashboardProps) {
   const viewMode = getViewMode(propertyType, targetCategory)
   const isOffice = viewMode === 'office'
+
   const [data, setData] = useState<IntelligenceData | null>(null)
-  const [property, setProperty] = useState<{ title?: string; address?: string; city?: string; propertyType?: string; size?: number; price?: number } | null>(null)
+  const [property, setProperty] = useState<PropertyData | null>(null)
   const [competitors, setCompetitors] = useState<CompetitorRow[]>([])
-  const [ward, setWard] = useState<{
-    wardName: string
-    locality: string
-    medianIncome: number
-    age25_34: number
-    age35_44: number
-    workingPopulation: number
-    diningOutPerWeek: number
-  } | null>(null)
+  const [ward, setWard] = useState<WardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [enrichStep, setEnrichStep] = useState(0)
   const [activeTab, setActiveTab] = useState('overview')
+
+  const { isLoaded: mapsLoaded } = useLoadScript({
+    googleMapsApiKey: getGoogleMapsApiKey(),
+    libraries: GOOGLE_MAPS_LIBRARIES,
+  })
 
   const enrichSteps = [
     'Locating property coordinates…',
@@ -131,74 +304,47 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
     'Finalizing intelligence report…',
   ]
 
-  useEffect(() => {
-    fetchIntelligence()
-  }, [propertyId])
+  useEffect(() => { fetchIntelligence() }, [propertyId])
 
   async function fetchIntelligence(autoEnrich = true) {
     setLoading(true)
     try {
-      // Always fetch all competitors (1km radius); filter by category client-side
       const res = await fetch(`/api/intelligence/${propertyId}`)
       if (res.ok) {
         const json = await res.json()
         setData(json.intelligence as IntelligenceData)
         setProperty(json.property ?? null)
-        const comps = json.competitors as CompetitorRow[]
-        setCompetitors(targetCategory ? filterCompetitorsByCategory(comps, targetCategory) : comps)
+        setCompetitors(json.competitors as CompetitorRow[])
         setWard(json.ward ?? null)
       } else if (res.status === 404 && autoEnrich) {
         await runEnrichmentWithProgress()
       } else {
         setData(null)
       }
-    } catch {
-      setData(null)
-    } finally {
-      setLoading(false)
-    }
+    } catch { setData(null) }
+    finally { setLoading(false) }
   }
 
   async function runEnrichmentWithProgress() {
-    setEnriching(true)
-    setEnrichStep(0)
-
-    // Animate through steps while enrichment runs in background
-    const stepInterval = setInterval(() => {
-      setEnrichStep((prev) => (prev < 6 ? prev + 1 : prev))
-    }, 1800)
-
+    setEnriching(true); setEnrichStep(0)
+    const interval = setInterval(() => setEnrichStep(p => p < 6 ? p + 1 : p), 1800)
     try {
-      const enrichRes = await fetch(`/api/intelligence/${propertyId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessType: targetCategory ?? undefined }),
+      const r = await fetch(`/api/intelligence/${propertyId}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessType: targetCategory }),
       })
-      clearInterval(stepInterval)
-      setEnrichStep(6) // Final step
-
-      if (enrichRes.ok) {
-        await new Promise((r) => setTimeout(r, 500))
-        const res2 = await fetch(`/api/intelligence/${propertyId}`)
-        if (res2.ok) {
-          const json2 = await res2.json()
-          setData(json2.intelligence as IntelligenceData)
-          setProperty(json2.property ?? null)
-          const comps = json2.competitors as CompetitorRow[]
-          setCompetitors(targetCategory ? filterCompetitorsByCategory(comps, targetCategory) : comps)
-          setWard(json2.ward ?? null)
+      clearInterval(interval); setEnrichStep(6)
+      if (r.ok) {
+        await new Promise(res => setTimeout(res, 500))
+        const r2 = await fetch(`/api/intelligence/${propertyId}`)
+        if (r2.ok) {
+          const j = await r2.json()
+          setData(j.intelligence); setProperty(j.property ?? null)
+          setCompetitors(j.competitors); setWard(j.ward ?? null)
         }
       }
-    } catch {
-      clearInterval(stepInterval)
-    } finally {
-      setEnriching(false)
-      setEnrichStep(0)
-    }
-  }
-
-  async function triggerEnrichment() {
-    await runEnrichmentWithProgress()
+    } catch { clearInterval(interval) }
+    finally { setEnriching(false); setEnrichStep(0) }
   }
 
   if ((loading || enriching) && !data) {
@@ -209,35 +355,21 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
         </h3>
         {enriching ? (
           <div className="max-w-md mx-auto space-y-4">
-            {/* Progress bar */}
             <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-[#FF5200] to-[#FF8C00] h-2 rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${Math.round(((enrichStep + 1) / enrichSteps.length) * 100)}%` }}
-              />
+              <div className="bg-gradient-to-r from-[#FF5200] to-[#FF8C00] h-2 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${Math.round(((enrichStep + 1) / enrichSteps.length) * 100)}%` }} />
             </div>
-            {/* Steps */}
             <div className="space-y-2">
               {enrichSteps.map((step, i) => (
-                <div key={step} className={`flex items-center gap-2 text-sm transition-opacity duration-300 ${
-                  i < enrichStep ? 'opacity-50' : i === enrichStep ? 'opacity-100' : 'opacity-30'
-                }`}>
-                  {i < enrichStep ? (
-                    <span className="text-green-500 font-bold text-xs">✓</span>
-                  ) : i === enrichStep ? (
-                    <div className="w-3 h-3 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span className="w-3 h-3 rounded-full bg-slate-200 inline-block" />
-                  )}
-                  <span className={i === enrichStep ? 'text-slate-900 font-medium' : 'text-slate-500'}>
-                    {step}
-                  </span>
+                <div key={step} className={`flex items-center gap-2 text-sm transition-opacity ${i < enrichStep ? 'opacity-40' : i === enrichStep ? 'opacity-100' : 'opacity-25'}`}>
+                  {i < enrichStep ? <span className="text-green-500 font-bold text-xs">✓</span>
+                    : i === enrichStep ? <div className="w-3 h-3 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
+                    : <span className="w-3 h-3 rounded-full bg-slate-200 inline-block" />}
+                  <span className={i === enrichStep ? 'text-slate-900 font-medium' : 'text-slate-500'}>{step}</span>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-slate-400 text-center mt-4">
-              This takes about 10–15 seconds
-            </p>
+            <p className="text-xs text-slate-400 text-center mt-4">This takes about 10–15 seconds</p>
           </div>
         ) : (
           <div className="flex justify-center">
@@ -253,12 +385,8 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
         <h3 className="text-lg font-semibold text-slate-900">Location Intelligence</h3>
         <p className="mt-2 text-sm text-slate-600">No enriched data yet. Run enrichment to analyze this location.</p>
-        <button
-          type="button"
-          onClick={triggerEnrichment}
-          disabled={enriching}
-          className="mt-4 px-5 py-2.5 rounded-xl bg-[#FF5200] text-white font-medium text-sm hover:bg-[#E44A00] disabled:opacity-60"
-        >
+        <button type="button" onClick={() => runEnrichmentWithProgress()} disabled={enriching}
+          className="mt-4 px-5 py-2.5 rounded-xl bg-[#FF5200] text-white font-medium text-sm hover:bg-[#E44A00] disabled:opacity-60">
           {enriching ? 'Enriching…' : 'Run Enrichment'}
         </button>
       </div>
@@ -274,625 +402,581 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
     { id: 'risks', label: 'Risks', Icon: ShieldAlert },
   ]
 
-  const scoreCards = [
-    ...(isOffice ? [] : [
-      { title: 'Footfall', score: data.footfallScore, inverse: false },
-      { title: 'Revenue', score: data.revenueScore, inverse: false },
-    ]),
-    { title: 'Competition', score: data.competitionScore, inverse: false },
-    { title: 'Access', score: data.accessScore, inverse: false },
-    { title: 'Demographics', score: data.demographicScore, inverse: false },
-    { title: 'Risk', score: data.riskScore, inverse: true },
-  ]
-
   const headerDesc = isOffice
     ? 'Transit, accessibility, demographics & competition for office'
-    : viewMode === 'retail'
-      ? 'Footfall, retail competition, access & demographics'
-      : viewMode === 'wellness'
-        ? 'Footfall, wellness competition, access & demographics'
-        : 'Footfall, revenue, competition, access, and demographics'
+    : viewMode === 'retail' ? 'Footfall, retail competition, access & demographics'
+    : viewMode === 'wellness' ? 'Footfall, wellness competition, access & demographics'
+    : 'Footfall, revenue, competition, access, and demographics'
+
+  const locality = deriveLocalityFromAddress(property?.address) ?? ward?.locality ?? ward?.wardName ?? property?.city ?? 'this area'
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Score card — unchanged */}
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50 to-red-50 p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">Location Score</h2>
-            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-              {headerDesc}
-            </p>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{headerDesc}</p>
+            {ward && (
+              <p className="text-xs text-slate-500 mt-1">{locality} · {ward.workingPopulation}% working population</p>
+            )}
           </div>
           <div className="text-center flex-shrink-0">
             <div className="text-4xl sm:text-5xl font-bold text-[#FF5200] leading-none">{data.overallScore}</div>
             <div className="text-xs sm:text-sm text-slate-500">out of 100</div>
           </div>
         </div>
-        <div className={`grid gap-2 sm:gap-3 mt-4 sm:mt-6 ${scoreCards.length === 4 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-          {scoreCards.map((c) => (
-            <ScoreCard key={c.title} title={c.title} score={c.score} inverse={c.inverse} />
-          ))}
-        </div>
       </div>
 
-      <div className={`grid gap-1 sm:gap-2 ${tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-6'}`}>
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setActiveTab(t.id)}
-            className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${
-              activeTab === t.id
-                ? 'bg-[#FF5200] text-white'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            }`}
-          >
+      {/* Tab bar */}
+      <div className={`grid gap-1 sm:gap-2 grid-cols-${tabs.length}`}>
+        {tabs.map(t => (
+          <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${activeTab === t.id ? 'bg-[#FF5200] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
             <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
-            <span className="text-[9px] sm:text-xs font-medium leading-none">
-              {t.label}
-            </span>
+            <span className="text-[9px] sm:text-xs font-medium leading-none w-full text-center truncate px-1">{t.label}</span>
           </button>
         ))}
       </div>
 
       {activeTab === 'overview' && (
-        <OverviewTab
-          data={data}
-          ward={ward}
-          property={property}
-          competitors={competitors}
-          targetCategory={targetCategory}
-          viewMode={viewMode}
-          isOffice={isOffice}
-        />
+        <OverviewTab data={data} ward={ward} property={property} viewMode={viewMode} isOffice={isOffice} locality={locality} />
       )}
       {activeTab === 'revenue' && !isOffice && (
-        <RevenueTab
-          dailyFootfall={data.dailyFootfall}
-          weekendBoost={data.weekendBoost}
-          monthlyLow={data.monthlyRevenueLow}
-          monthlyHigh={data.monthlyRevenueHigh}
-          breakEvenMonths={data.breakEvenMonths}
-          property={property}
-        />
+        <RevenueTab dailyFootfall={data.dailyFootfall} weekendBoost={data.weekendBoost}
+          monthlyLow={data.monthlyRevenueLow} monthlyHigh={data.monthlyRevenueHigh}
+          breakEvenMonths={data.breakEvenMonths} property={property} />
       )}
       {activeTab === 'competition' && (
-        <CompetitionTab
-          competitors={competitors}
-          competitorCount={targetCategory ? competitors.length : data.competitorCount}
-          targetCategory={targetCategory}
-          totalUnfilteredCount={data.competitorCount}
-        />
+        <CompetitionTab competitors={competitors} data={data} property={property} mapsLoaded={mapsLoaded} />
       )}
       {activeTab === 'demographics' && (
-        <DemographicsTab
-          data={data}
-          ward={ward}
-          competitors={competitors}
-          targetCategory={targetCategory}
-        />
+        <DemographicsTab data={data} ward={ward} property={property} mapsLoaded={mapsLoaded} />
       )}
-      {activeTab === 'transport' && <TransportTab data={data} />}
+      {activeTab === 'transport' && (
+        <TransportTab data={data} property={property} mapsLoaded={mapsLoaded} />
+      )}
       {activeTab === 'risks' && (
-        <RisksTab
-          data={data}
-          ward={ward}
-          competitors={competitors}
-          targetCategory={targetCategory}
-        />
+        <RisksTab data={data} ward={ward} competitors={competitors} targetCategory={targetCategory || ''} property={property} locality={locality} />
       )}
     </div>
   )
 }
 
-function ScoreCard({ title, score, inverse }: { title: string; score: number; inverse?: boolean }) {
-  const v = inverse ? 100 - score : score
-  const color = v >= 75 ? 'text-green-600' : v >= 50 ? 'text-amber-600' : 'text-red-600'
+// ─── TAB 1: OVERVIEW ─────────────────────────────────────────────────────────
+
+function OverviewTab({ data, ward, property, viewMode, isOffice, locality }: {
+  data: IntelligenceData; ward: WardData | null; property: PropertyData | null
+  viewMode: ViewMode; isOffice: boolean; locality: string
+}) {
+  const chartData = useMemo(() => buildFootfallData(ward, viewMode), [ward, viewMode])
+
+  const peakLabel = viewMode === 'retail' ? '11am–2pm, 5pm–9pm' : '12–2pm, 7–10pm'
+
   return (
-    <div className="bg-white p-2.5 sm:p-4 rounded-xl border border-slate-100">
-      <div className="text-[10px] sm:text-xs text-slate-600 truncate">{title}</div>
-      <div className={`text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1 ${color}`}>{Math.round(score)}</div>
-      <div className="w-full bg-slate-100 rounded-full h-1 sm:h-1.5 mt-1.5 sm:mt-2">
-        <div className="bg-[#FF5200] h-1 sm:h-1.5 rounded-full" style={{ width: `${Math.min(100, score)}%` }} />
+    <div className="space-y-4">
+      {/* Area strip */}
+      <div className="flex gap-3">
+        {ward && (
+          <div className="flex-1 bg-white rounded-xl border border-slate-100 p-3 sm:p-4">
+            <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide">Area</div>
+            <div className="text-sm sm:text-base font-semibold text-slate-900 mt-0.5">{locality}</div>
+            <div className="text-xs text-slate-500">{ward.workingPopulation}% working population</div>
+          </div>
+        )}
+        {isOffice ? (
+          <div className="flex-1 bg-white rounded-xl border border-slate-100 p-3 sm:p-4">
+            <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide">Transit</div>
+            <div className="text-sm sm:text-base font-semibold text-slate-900 mt-0.5">
+              {data.metroName ? `${data.metroDistance}m · ${data.metroName}` : `${data.mainRoadDistance}m to main road`}
+            </div>
+            <div className="text-xs text-slate-500">{data.metroName ? 'Metro station' : 'Nearest arterial road'}</div>
+          </div>
+        ) : (
+          <div className="flex-1 bg-white rounded-xl border border-slate-100 p-3 sm:p-4">
+            <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide">Daily Footfall</div>
+            <div className="text-sm sm:text-base font-semibold text-[#FF5200] mt-0.5">{data.dailyFootfall.toLocaleString('en-IN')}</div>
+            <div className="text-xs text-slate-500">+{data.weekendBoost}% weekends</div>
+          </div>
+        )}
+      </div>
+
+      {/* Footfall chart — only for non-office */}
+      {!isOffice && (
+        <div className="bg-white rounded-xl border border-slate-100 p-4 sm:p-5">
+          <div className="text-sm font-semibold text-slate-800 mb-3">Footfall Pattern — Typical Day</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <XAxis dataKey="hour" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval={2} />
+              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} domain={[0, 110]} />
+              <Tooltip
+                formatter={(val: number, name: string) => [`${val}`, name === 'weekday' ? 'Weekday' : 'Weekend']}
+                contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e2e8f0' }}
+              />
+              <Bar dataKey="weekday" name="weekday" radius={[3, 3, 0, 0]} maxBarSize={18}>
+                {chartData.map((entry, i) => (
+                  <Cell key={i} fill={entry.isPeak ? '#FF5200' : '#fbbf9a'} />
+                ))}
+              </Bar>
+              <Bar dataKey="weekend" name="weekend" radius={[3, 3, 0, 0]} fill="#fed7aa" maxBarSize={14} />
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 flex-wrap">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#FF5200] inline-block" /> Weekday peak</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#fbbf9a] inline-block" /> Weekday off-peak</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#fed7aa] inline-block" /> Weekend</span>
+            <span className="ml-auto font-medium text-slate-600">Peak: {peakLabel} · Weekend +{data.weekendBoost}%</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── TAB 2: COMPETE (MAP) ─────────────────────────────────────────────────────
+
+function CompetitionTab({ competitors, data, property, mapsLoaded }: {
+  competitors: CompetitorRow[]; data: IntelligenceData
+  property: PropertyData | null; mapsLoaded: boolean
+}) {
+  const [selected, setSelected] = useState<CompetitorRow | null>(null)
+  const apiKey = getGoogleMapsApiKey()
+
+  // Derive center from property coords or a Bangalore default
+  const center = useMemo(() => {
+    const lat = toNum(property?.latitude)
+    const lng = toNum(property?.longitude)
+    if (lat && lng) return { lat, lng }
+    return { lat: 12.9716, lng: 77.5946 }
+  }, [property])
+
+  // Group counts
+  const grouped = useMemo(() => {
+    return competitors.reduce<Record<string, number>>((acc, c) => {
+      const k = c.category?.trim() || 'Other'
+      acc[k] = (acc[k] ?? 0) + 1
+      return acc
+    }, {})
+  }, [competitors])
+
+  const groupSummary = Object.entries(grouped).map(([k, n]) => `${n} ${k}`).join(' · ')
+
+  const legend = [
+    { label: 'Coffee shops', color: '#3B82F6' },
+    { label: 'QSR / Restaurant', color: '#EF4444' },
+    { label: 'Retail', color: '#8B5CF6' },
+    { label: 'Dessert / Bakery', color: '#EC4899' },
+    { label: 'Bar / Brewery', color: '#F59E0B' },
+    { label: 'Salon / Spa', color: '#14B8A6' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {mapsLoaded && apiKey ? (
+        <div className="rounded-xl overflow-hidden border border-slate-100">
+          <GoogleMap mapContainerStyle={{ width: '100%', height: '320px' }} center={center} zoom={15} options={MAP_OPTS}>
+            {/* 500m dashed circle */}
+            <Circle center={center} radius={500}
+              options={{ strokeColor: '#FF5200', strokeOpacity: 0.6, strokeWeight: 2, strokeDashArray: [5, 5], fillOpacity: 0 }} />
+            {/* Property pin */}
+            <Marker position={center} label={{ text: 'You', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
+              icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 14, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
+            {/* Competitor pins */}
+            {competitors.filter(c => c.latitude && c.longitude).map((c, i) => (
+              <Marker key={i} position={{ lat: c.latitude!, lng: c.longitude! }}
+                onClick={() => setSelected(c)}
+                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 9, fillColor: catColor(c.category), fillOpacity: 1, strokeColor: '#fff', strokeWeight: 1.5 }} />
+            ))}
+            {selected && selected.latitude && selected.longitude && (
+              <InfoWindow position={{ lat: selected.latitude, lng: selected.longitude }} onCloseClick={() => setSelected(null)}>
+                <div className="text-xs space-y-0.5 min-w-[140px]">
+                  <div className="font-semibold text-slate-900">{selected.name}</div>
+                  <div className="text-slate-500">{selected.category}</div>
+                  {selected.rating != null && <div>★ {selected.rating.toFixed(1)}{selected.reviewCount ? ` (${selected.reviewCount})` : ''}</div>}
+                  <div>{selected.distance}m away</div>
+                </div>
+              </InfoWindow>
+            )}
+          </GoogleMap>
+        </div>
+      ) : (
+        <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">
+          {mapsLoaded ? 'Google Maps API key not configured' : 'Loading map…'}
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2">
+        {legend.map(l => (
+          <span key={l.label} className="flex items-center gap-1 text-xs text-slate-600">
+            <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" style={{ background: l.color }} />
+            {l.label}
+          </span>
+        ))}
+      </div>
+
+      {/* Summary counts */}
+      {groupSummary && (
+        <p className="text-sm text-slate-600 font-medium">{groupSummary}</p>
+      )}
+
+      {competitors.filter(c => !c.latitude || !c.longitude).length > 0 && (
+        <p className="text-xs text-slate-400">Some competitors missing coordinates — re-run enrichment to update</p>
+      )}
+    </div>
+  )
+}
+
+// ─── TAB 3: DEMOGRAPHICS ─────────────────────────────────────────────────────
+
+function DemographicsTab({ data, ward, property, mapsLoaded }: {
+  data: IntelligenceData; ward: WardData | null
+  property: PropertyData | null; mapsLoaded: boolean
+}) {
+  const apiKey = getGoogleMapsApiKey()
+  const center = useMemo(() => {
+    const lat = toNum(property?.latitude)
+    const lng = toNum(property?.longitude)
+    if (lat && lng) return { lat, lng }
+    if (ward?.latitude && ward?.longitude) return { lat: ward.latitude, lng: ward.longitude }
+    return { lat: 12.9716, lng: 77.5946 }
+  }, [property, ward])
+
+  const heatmapData = useMemo(() => {
+    if (typeof window === 'undefined') return []
+    const g = (window as any).google
+    if (!g?.maps?.LatLng) return []
+    const pts = []
+    if (ward?.latitude && ward?.longitude && ward?.populationDensity) {
+      pts.push({ location: new g.maps.LatLng(ward.latitude, ward.longitude), weight: ward.populationDensity / 10000 })
+    }
+    // Surrounding points for heatmap density
+    const deltas = [0.005, 0.008, -0.005, -0.008, 0.005]
+    deltas.forEach((d, i) => {
+      pts.push({
+        location: new g.maps.LatLng(center.lat + d, center.lng + deltas[(i + 2) % deltas.length]),
+        weight: (ward?.populationDensity ?? 15000) / 20000,
+      })
+    })
+    pts.push({ location: new g.maps.LatLng(center.lat, center.lng), weight: 1.5 })
+    return pts
+  }, [ward, center, mapsLoaded])
+
+  return (
+    <div className="space-y-5 overflow-hidden">
+      {/* Age distribution */}
+      <div className="bg-white rounded-xl border border-slate-100 p-4">
+        <div className="text-sm font-semibold text-slate-800 mb-3">Age Distribution (25–44)</div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
+            <div className="bg-[#FF5200] h-6 rounded-full flex items-center justify-end pr-2"
+              style={{ width: `${Math.min(100, data.age25_44Percent)}%` }}>
+              <span className="text-xs font-semibold text-white">{Math.round(data.age25_44Percent)}%</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">Prime consumer age bracket · India urban benchmark ~42%</p>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white rounded-xl border border-slate-100 p-4">
+          <div className="text-xs text-slate-500">Median Income</div>
+          <div className="text-xl font-bold text-slate-900 mt-0.5">
+            ₹{ward?.medianIncome ? (ward.medianIncome / 100000).toFixed(1) : (data.medianIncome / 100000).toFixed(1)}L
+          </div>
+          <div className="text-xs text-slate-400">per year</div>
+        </div>
+        {ward?.diningOutPerWeek != null && (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Dining Out</div>
+            <div className="text-xl font-bold text-[#FF5200] mt-0.5">{ward.diningOutPerWeek}x</div>
+            <div className="text-xs text-slate-400">per week</div>
+          </div>
+        )}
+        {ward?.incomeAbove15L != null && (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">High Income (15L+)</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{ward.incomeAbove15L}%</div>
+            <div className="text-xs text-slate-400">of households</div>
+          </div>
+        )}
+        {ward?.population2026 != null && (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Catchment Pop.</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{(ward.population2026 / 1000).toFixed(0)}K</div>
+            <div className="text-xs text-slate-400">2026 projection</div>
+          </div>
+        )}
+      </div>
+
+      {/* Population density heatmap */}
+      <div>
+        <div className="text-sm font-semibold text-slate-800 mb-2">Population Density & Market Zones</div>
+        {mapsLoaded && apiKey ? (
+          <div className="rounded-xl overflow-hidden border border-slate-100">
+            <GoogleMap mapContainerStyle={{ width: '100%', height: '300px' }} center={center} zoom={14} options={MAP_OPTS}>
+              <Marker position={center}
+                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
+              {heatmapData.length > 0 && (
+                <HeatmapLayer data={heatmapData}
+                  options={{
+                    radius: 60,
+                    opacity: 0.7,
+                    gradient: ['rgba(0,0,0,0)', 'rgba(255, 235, 59, 0.8)', 'rgba(255, 152, 0, 0.9)', 'rgba(255, 82, 0, 1)'],
+                  }} />
+              )}
+            </GoogleMap>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">
+            {mapsLoaded ? 'Google Maps API key not configured' : 'Loading map…'}
+          </div>
+        )}
+        <p className="text-xs text-slate-500 mt-2">Population density and nearby market zones within 3km</p>
       </div>
     </div>
   )
 }
 
-function OverviewTab({
-  data,
-  ward,
-  property,
-  competitors,
-  targetCategory,
-  viewMode,
-  isOffice,
-}: {
-  data: IntelligenceData
-  ward: any | null
-  property: { title?: string; address?: string; city?: string; propertyType?: string; size?: number; price?: number } | null
-  competitors: CompetitorRow[]
-  targetCategory?: string
-  viewMode?: ViewMode
-  isOffice?: boolean
-}) {
-  const locality = ward?.locality ?? ward?.wardName ?? property?.city ?? 'this area'
-  const categoryLabel = targetCategory ? `${targetCategory} ` : ''
-  const compCount = targetCategory ? competitors.length : data.competitorCount
+// ─── TAB 4: TRANSIT ──────────────────────────────────────────────────────────
 
-  const summaryPoints: string[] = []
-  if (ward) {
-    summaryPoints.push(`${ward.locality} (Ward ${ward.wardName}) — ${ward.workingPopulation}% working population`)
-  }
-  if (!isOffice) {
-    const footfallLabel = viewMode === 'retail' ? 'retail footfall' : viewMode === 'wellness' ? 'footfall' : 'daily footfall'
-    summaryPoints.push(`~${data.dailyFootfall.toLocaleString('en-IN')} ${footfallLabel} potential · Peak ${data.peakHours} · +${data.weekendBoost}% weekends`)
-  }
-  summaryPoints.push(`${compCount} ${categoryLabel}competitors within 1 km`)
-  if (data.metroName && data.metroDistance != null) {
-    summaryPoints.push(`${data.metroName} — ${data.metroDistance}m · ${data.busStops} bus stops nearby`)
-  } else {
-    summaryPoints.push(`${data.busStops} bus stops · ${data.mainRoadDistance}m to main road`)
-  }
-  summaryPoints.push(`Population ${data.population.toLocaleString('en-IN')} · Median income ₹${(data.medianIncome / 100000).toFixed(1)}L/year`)
-  if (property?.size) summaryPoints.push(`${property.size} sq ft · ${property.propertyType ?? 'commercial'}`)
-  if (property?.price != null && property.price > 0) {
-    const p = Number(property.price)
-    const priceStr = p >= 100000 ? `₹${(p / 100000).toFixed(1)}L` : `₹${p.toLocaleString('en-IN')}`
-    summaryPoints.push(`Rent ${priceStr}/mo`)
+function TransportTab({ data, property, mapsLoaded }: {
+  data: IntelligenceData; property: PropertyData | null; mapsLoaded: boolean
+}) {
+  const apiKey = getGoogleMapsApiKey()
+  const center = useMemo(() => {
+    const lat = toNum(property?.latitude)
+    const lng = toNum(property?.longitude)
+    if (lat && lng) return { lat, lng }
+    return { lat: 12.9716, lng: 77.5946 }
+  }, [property])
+
+  const hasMetro = data.metroDistance != null && data.metroName
+
+  const circleColor = !data.metroDistance ? '#EF4444'
+    : data.metroDistance <= 500 ? '#22C55E'
+    : data.metroDistance <= 1000 ? '#F59E0B'
+    : '#EF4444'
+
+  const circleRadius = data.metroDistance ?? 1000
+
+  const metroPin = useMemo(() => {
+    if (!hasMetro || !data.metroDistance) return null
+    const angle = 1.2
+    return {
+      lat: center.lat + (data.metroDistance / 111320) * Math.cos(angle),
+      lng: center.lng + (data.metroDistance / (111320 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle),
+    }
+  }, [hasMetro, data.metroDistance, center])
+
+  if (!hasMetro) {
+    return (
+      <div className="space-y-4">
+        {mapsLoaded && apiKey ? (
+          <div className="rounded-xl overflow-hidden border border-slate-100">
+            <GoogleMap mapContainerStyle={{ width: '100%', height: '300px' }} center={center} zoom={14} options={MAP_OPTS}>
+              <Marker position={center}
+                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
+              <Circle center={center} radius={2000}
+                options={{ strokeColor: '#EF4444', strokeOpacity: 0.6, strokeWeight: 2, fillOpacity: 0 }} />
+            </GoogleMap>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">Loading map…</div>
+        )}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+          No metro station within 2km — auto-rickshaw and cab primary access
+        </div>
+        {data.mainRoadDistance != null && (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <div className="text-xs text-slate-500">Main Road Access</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{data.mainRoadDistance}m</div>
+            <div className="text-xs text-slate-400">to nearest arterial road</div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {isOffice ? (
-          <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-            <div className="text-xs text-slate-600">Transit & Accessibility</div>
-            <div className="text-2xl font-bold text-slate-900">
-              {data.metroName ? `${data.metroDistance}m to ${data.metroName}` : `${data.busStops} bus stops`}
-            </div>
-            <div className="text-xs text-slate-500">
-              {data.metroName && data.metroDistance != null
-                ? `${data.busStops} bus stops · ${data.mainRoadDistance}m to main road`
-                : `${data.mainRoadDistance}m to main road`}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-            <div className="text-xs text-slate-600">
-              {viewMode === 'retail' ? 'Retail' : viewMode === 'wellness' ? 'Footfall' : 'Daily'} Footfall (est.)
-            </div>
-            <div className="text-2xl font-bold text-slate-900">
-              {data.dailyFootfall.toLocaleString('en-IN')}
-            </div>
-            <div className="text-xs text-slate-500">
-              Peak hours: {data.peakHours} · +{data.weekendBoost}% weekends
-            </div>
-          </div>
-        )}
-        {ward && (
-          <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-            <div className="text-xs text-slate-600">Area</div>
-            <div className="text-sm font-medium text-slate-900">
-              {ward.locality} ({ward.wardName})
-            </div>
-            <div className="text-xs text-slate-500">
-              {isOffice ? 'Workforce & commuter base' : `Working pop ${ward.workingPopulation}%`}
-            </div>
-          </div>
-        )}
+      {mapsLoaded && apiKey ? (
+        <div className="rounded-xl overflow-hidden border border-slate-100">
+          <GoogleMap mapContainerStyle={{ width: '100%', height: '300px' }} center={center} zoom={15} options={MAP_OPTS}>
+            {/* Walking-distance circle */}
+            <Circle center={center} radius={circleRadius}
+              options={{ strokeColor: circleColor, strokeOpacity: 0.7, strokeWeight: 2, fillOpacity: 0 }} />
+            {/* Property pin */}
+            <Marker position={center}
+              icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
+            {/* Approximate metro pin */}
+            {metroPin && (
+              <Marker position={metroPin}
+                label={{ text: 'M', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
+                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#7C3AED', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
+            )}
+          </GoogleMap>
+        </div>
+      ) : (
+        <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">Loading map…</div>
+      )}
+
+      {/* Metro detail */}
+      <div className="bg-white rounded-xl border border-slate-100 p-4 space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#7C3AED] inline-block flex-shrink-0" />
+          <span className="font-semibold text-slate-900">{data.metroName}</span>
+        </div>
+        <div className="text-sm text-slate-600">{data.metroDistance}m · {data.metroDistance! <= 500 ? 'Walking distance' : data.metroDistance! <= 1000 ? '~10 min walk' : '~15+ min walk / ride needed'}</div>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: circleColor }} />
+          <span className="text-xs text-slate-500">
+            {data.metroDistance! <= 500 ? 'Within easy walking distance' : data.metroDistance! <= 1000 ? 'Moderate walk' : 'Over 1km — reduced accessibility'}
+          </span>
+        </div>
       </div>
 
-      <div className="bg-white p-4 rounded-xl border border-slate-100">
-        <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">
-          Property Summary
+      {data.mainRoadDistance != null && (
+        <div className="bg-white rounded-xl border border-slate-100 p-4">
+          <div className="text-xs text-slate-500">Main Road Access</div>
+          <div className="text-lg font-bold text-slate-900 mt-0.5">{data.mainRoadDistance}m</div>
+          <div className="text-xs text-slate-400">to nearest arterial road</div>
         </div>
-        <ul className="space-y-2 text-sm text-slate-700">
-          {summaryPoints.map((point, i) => (
-            <li key={i} className="flex items-start gap-2">
-              <span className="text-[#FF5200] mt-0.5">•</span>
-              <span>{point}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      )}
     </div>
   )
 }
 
-function computeMonthlyRent(property: {
-  price?: number | string
-  priceType?: string
-  size?: number
-} | null | undefined): number {
-  if (!property?.price) return 0
-  const price = Number(property.price)
-  if (!Number.isFinite(price)) return 0
-  const size = property.size != null ? Number(property.size) : null
-  if (property.priceType === 'yearly') return Math.round(price / 12)
-  if (property.priceType === 'sqft' && size && size > 0) return Math.round(price * size)
-  return Math.round(price)
+// ─── TAB 5: RISKS ────────────────────────────────────────────────────────────
+
+function RisksTab({ data, ward, competitors, targetCategory, property, locality }: {
+  data: IntelligenceData; ward: WardData | null; competitors: CompetitorRow[]
+  targetCategory: string; property: PropertyData | null; locality: string
+}) {
+  const items = useMemo(() =>
+    calculateRisks(property, ward, competitors, targetCategory, data),
+    [property, ward, competitors, targetCategory, data]
+  )
+
+  const risks = items.filter(i => i.type === 'risk')
+  const opps = items.filter(i => i.type === 'opportunity')
+
+  const severityBadge = (s: string) => {
+    if (s === 'high') return 'bg-red-100 text-red-700'
+    if (s === 'medium') return 'bg-amber-100 text-amber-700'
+    return 'bg-slate-100 text-slate-600'
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Score header */}
+      <div className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white p-5 rounded-xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium text-white/80">Risk Score · {locality}</div>
+            <div className="text-4xl font-bold mt-1">{data.riskScore}/100</div>
+          </div>
+          <div className="text-right text-sm text-white/80">
+            {risks.filter(r => r.severity === 'high').length} high risks<br />
+            {opps.length} opportunities
+          </div>
+        </div>
+      </div>
+
+      {/* Risks */}
+      {risks.length > 0 ? (
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Risks</h4>
+          {risks.map((r, i) => (
+            <div key={i} className="bg-red-50 border border-red-100 rounded-xl p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-semibold text-slate-900 text-sm">{r.title}</div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${severityBadge(r.severity)}`}>
+                  {r.severity.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1.5 break-words">{r.detail}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-sm text-green-800">
+          No significant risks identified for this location
+        </div>
+      )}
+
+      {/* Opportunities */}
+      {opps.length > 0 ? (
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Opportunities</h4>
+          {opps.map((r, i) => (
+            <div key={i} className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-semibold text-slate-900 text-sm">{r.title}</div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${severityBadge(r.severity)}`}>
+                  {r.severity.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1.5 break-words">{r.detail}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600">
+          Market is mature — focus on differentiation over first-mover advantage
+        </div>
+      )}
+    </div>
+  )
 }
 
-function RevenueTab({
-  dailyFootfall,
-  weekendBoost,
-  monthlyLow,
-  monthlyHigh,
-  breakEvenMonths,
-  property,
-}: {
-  dailyFootfall: number
-  weekendBoost: number
-  monthlyLow: number
-  monthlyHigh: number
-  breakEvenMonths: number
-  property?: { price?: number; priceType?: string; size?: number } | null
+// ─── Revenue tab (unchanged) ─────────────────────────────────────────────────
+
+function RevenueTab({ dailyFootfall, weekendBoost, monthlyLow, monthlyHigh, breakEvenMonths, property }: {
+  dailyFootfall: number; weekendBoost: number; monthlyLow: number; monthlyHigh: number
+  breakEvenMonths: number; property?: PropertyData | null
 }) {
   const [captureRate, setCaptureRate] = useState(12)
   const [avgTicket, setAvgTicket] = useState(100)
-
   const captureDecimal = captureRate / 100
   const customersPerDay = Math.round(dailyFootfall * captureDecimal)
   const dailyRevenue = customersPerDay * avgTicket
-  const monthlyRevenue = Math.round(
-    dailyRevenue * 21 + dailyRevenue * (1 + weekendBoost / 100) * 9,
-  )
+  const monthlyRevenue = Math.round(dailyRevenue * 21 + dailyRevenue * (1 + weekendBoost / 100) * 9)
   const operatingCosts = Math.round(monthlyRevenue * 0.6)
   const monthlyRent = computeMonthlyRent(property)
   const netProfit = Math.round(monthlyRevenue - operatingCosts - monthlyRent)
 
   return (
     <div className="space-y-4">
-      <div className="bg-white p-5 rounded-xl border border-slate-100 space-y-2">
-        <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-          Revenue Calculator (interactive)
-        </div>
-        <div className="text-sm text-slate-600">
-          Footfall ~{dailyFootfall.toLocaleString('en-IN')}/day · Weekend boost +{weekendBoost}%.
-        </div>
-        <div className="grid grid-cols-2 gap-4 mt-2">
+      <div className="bg-white p-5 rounded-xl border border-slate-100 space-y-4">
+        <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Revenue Calculator (interactive)</div>
+        <div className="text-sm text-slate-600">Footfall ~{dailyFootfall.toLocaleString('en-IN')}/day · Weekend boost +{weekendBoost}%</div>
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-xs text-slate-600 mb-1">Capture Rate</div>
             <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={2}
-                max={15}
-                value={captureRate}
-                onChange={(e) => setCaptureRate(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-xs font-semibold text-slate-800 w-10 text-right">
-                {captureRate}%
-              </span>
+              <input type="range" min={2} max={15} value={captureRate} onChange={e => setCaptureRate(Number(e.target.value))} className="flex-1" />
+              <span className="text-xs font-semibold text-slate-800 w-10 text-right">{captureRate}%</span>
             </div>
           </div>
           <div>
             <div className="text-xs text-slate-600 mb-1">Avg Ticket (₹)</div>
             <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={100}
-                max={600}
-                step={10}
-                value={avgTicket}
-                onChange={(e) => setAvgTicket(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-xs font-semibold text-slate-800 w-12 text-right">
-                ₹{avgTicket}
-              </span>
+              <input type="range" min={100} max={600} step={10} value={avgTicket} onChange={e => setAvgTicket(Number(e.target.value))} className="flex-1" />
+              <span className="text-xs font-semibold text-slate-800 w-12 text-right">₹{avgTicket}</span>
             </div>
           </div>
         </div>
-        <div className="mt-3 space-y-1 text-sm text-slate-800">
+        <div className="space-y-1 text-sm text-slate-800 border-t border-slate-100 pt-3">
           <div>Customers: {customersPerDay.toLocaleString('en-IN')}/day</div>
           <div>Daily Revenue: ₹{dailyRevenue.toLocaleString('en-IN')}</div>
-          <div>
-            Monthly Revenue: ₹{(monthlyRevenue / 100000).toFixed(1)}L · Est. Net Profit:{' '}
-            ₹{(netProfit / 100000).toFixed(1)}L
-          </div>
+          <div>Monthly Revenue: ₹{(monthlyRevenue / 100000).toFixed(1)}L · Est. Net Profit: ₹{(netProfit / 100000).toFixed(1)}L</div>
         </div>
         {breakEvenMonths != null && breakEvenMonths > 0 && (
-          <div className="text-xs text-slate-500 mt-2">
-            Break-even in ~{breakEvenMonths} months
-          </div>
+          <div className="text-xs text-slate-500">Break-even in ~{breakEvenMonths} months</div>
         )}
-      </div>
-    </div>
-  )
-}
-
-function CompetitionTab({
-  competitors,
-  competitorCount,
-  targetCategory,
-  totalUnfilteredCount,
-}: {
-  competitors: CompetitorRow[]
-  competitorCount: number
-  targetCategory?: string
-  totalUnfilteredCount?: number
-}) {
-  const showAllFallback = targetCategory && competitorCount === 0 && (totalUnfilteredCount ?? 0) > 0
-
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-bold text-slate-900">
-        Nearby {targetCategory ? `${targetCategory} ` : ''}Competition
-      </h3>
-      {showAllFallback && (
-        <p className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-          No {targetCategory} competitors found. Run enrichment with your brand type to fetch category-specific competitors.
-        </p>
-      )}
-      <div className="space-y-3">
-        {competitors.slice(0, 10).map((c, i) => (
-          <div key={i} className="bg-white p-4 rounded-xl border border-slate-100">
-            <div className="flex items-start justify-between gap-2">
-              <div className="font-semibold text-slate-900">{c.name}</div>
-              {c.category && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
-                  {c.category}
-                </span>
-              )}
-            </div>
-            <div className="flex gap-4 mt-1 text-sm text-slate-600">
-              {c.rating != null && <span>★ {c.rating.toFixed(1)}</span>}
-              {c.reviewCount != null && <span>({c.reviewCount} reviews)</span>}
-              <span>{c.distance}m away</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="text-sm text-slate-500">
-        {competitorCount} {targetCategory ? 'matching ' : ''}competitors within 1 km
-      </p>
-    </div>
-  )
-}
-
-function DemographicsTab({
-  data,
-  ward,
-  competitors,
-  targetCategory = 'Casual Dining',
-}: {
-  data: IntelligenceData
-  ward: any | null
-  competitors: CompetitorRow[]
-  targetCategory?: string
-}) {
-  const locality = ward?.locality ?? ward?.wardName ?? ''
-  const brandCategory = mapBrandCategory(targetCategory)
-  const spendEstimate = estimateCategorySpend(
-    competitors.map((c) => ({ name: c.name, category: c.category })),
-    brandCategory,
-    ward?.medianIncome ?? data.medianIncome,
-    locality
-  )
-  const locationBenchmarks = getLocationAdjustedBenchmarks(locality, SPEND_BENCHMARKS)
-
-  // Display tier: always show Mid-Range for most locations,
-  // only show Premium tier label in premium markets
-  const displayTier = spendEstimate.spendTier === 'premium' ? 'premium' : 'mid'
-  const benchmarksForLocation = locationBenchmarks[brandCategory]
-  const displayRange = benchmarksForLocation[displayTier]
-
-  const tierColor = {
-    budget: 'text-blue-600',
-    mid: 'text-orange-500',
-    premium: 'text-green-600',
-  }[displayTier]
-
-  const tierBg: Record<'budget' | 'mid' | 'premium', string> = {
-    budget: 'bg-blue-50 border-blue-200 text-blue-800',
-    mid: 'bg-orange-50 border-orange-200 text-orange-800',
-    premium: 'bg-green-50 border-green-200 text-green-800',
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Age Distribution</h3>
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-            <span className="w-28 text-sm text-slate-600">25–44</span>
-            <div className="flex-1 bg-slate-100 rounded-full h-5">
-              <div
-                className="bg-[#FF5200] h-5 rounded-full flex items-center justify-end pr-2"
-                style={{ width: `${data.age25_44Percent}%` }}
-              >
-                <span className="text-xs font-medium text-white">
-                  {Math.round(data.age25_44Percent)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Income & Lifestyle</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 bg-white p-4 rounded-xl border border-slate-100">
-            <div className="text-sm text-slate-600">Est. Spend Per Customer</div>
-            <div className={`text-lg sm:text-xl font-semibold mt-1 ${tierColor}`}>
-              {TIER_LABELS[displayTier]}: ₹{displayRange.min}–₹{displayRange.max}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              Based on local brand mix & income · {spendEstimate.confidence} confidence
-            </div>
-
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {spendEstimate.brandMixBreakdown.premium > 0 && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                  {spendEstimate.brandMixBreakdown.premium} premium nearby
-                </span>
-              )}
-              {spendEstimate.brandMixBreakdown.mid > 0 && (
-                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                  {spendEstimate.brandMixBreakdown.mid} mid-range nearby
-                </span>
-              )}
-              {spendEstimate.brandMixBreakdown.budget > 0 && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                  {spendEstimate.brandMixBreakdown.budget} budget nearby
-                </span>
-              )}
-            </div>
-
-            {spendEstimate.marketGap && (
-              <div className="mt-2 text-xs bg-yellow-50 border border-yellow-200 text-yellow-800 rounded px-3 py-2">
-                ⚡ {spendEstimate.marketGapNote}
-              </div>
-            )}
-          </div>
-          {ward && (
-            <div className="bg-white p-4 rounded-xl border border-slate-100">
-              <div className="text-xs text-slate-600">Dining Out</div>
-              <div className="text-xl font-bold text-[#FF5200]">
-                {ward.diningOutPerWeek}x/week
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-white p-4 rounded-xl border border-slate-100">
-        <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">
-          Category-wise Est. Spend / Visit
-        </div>
-        <div className="space-y-4">
-          {SPEND_DISPLAY_CATEGORIES.map(({ key, label }) => {
-            const benchmarks = locationBenchmarks[key]
-            return (
-              <div key={key}>
-                <div className="text-sm font-semibold text-slate-800 mb-2">{label}</div>
-                <div className="flex flex-wrap gap-2">
-                  {(['budget', 'mid', 'premium'] as const).map((tier) => (
-                    <span
-                      key={tier}
-                      className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-xs font-medium ${tierBg[tier]}`}
-                    >
-                      {TIER_LABELS[tier]}: ₹{benchmarks[tier].min}–₹{benchmarks[tier].max}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
-          {locality ? `Location-adjusted for ${locality} · ` : ''}
-          Based on nearby brand mix · {spendEstimate.brandMixBreakdown.premium} premium,{' '}
-          {spendEstimate.brandMixBreakdown.mid} mid, {spendEstimate.brandMixBreakdown.budget} budget
-          {spendEstimate.marketGap && (
-            <span className="block mt-1 text-amber-600">⚡ {spendEstimate.marketGapNote}</span>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function TransportTab({ data }: { data: IntelligenceData }) {
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-bold text-slate-900">Transport Accessibility</h3>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-100">
-          <div className="text-sm text-slate-600">Nearest Metro</div>
-          <div className="text-lg font-bold mt-2">{data.metroName ?? 'N/A'}</div>
-          <div className="text-sm text-[#FF5200] mt-1">
-            {data.metroDistance != null ? `${data.metroDistance}m` : 'No metro nearby'}
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-100">
-          <div className="text-sm text-slate-600">Bus & Road Access</div>
-          <div className="text-3xl font-bold text-[#FF5200] mt-2">
-            {data.busStops} stops · {data.mainRoadDistance}m to main road
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function RisksTab({
-  data,
-  ward,
-  competitors,
-  targetCategory,
-}: {
-  data: IntelligenceData
-  ward: any | null
-  competitors: CompetitorRow[]
-  targetCategory?: string
-}) {
-  const locality = ward?.locality ?? ward?.wardName ?? 'this area'
-  const categoryLabel = targetCategory ? `${targetCategory} ` : ''
-  const compCount = targetCategory ? competitors.length : data.competitorCount
-
-  const riskPointers: string[] = []
-  if (compCount > 15) riskPointers.push(`In ${locality}, ${compCount} ${categoryLabel}competitors within 1 km — differentiation critical for this concept`)
-  else if (compCount > 8) riskPointers.push(`${locality} has moderate ${categoryLabel}competition — strong concept and execution needed`)
-  if (data.metroDistance == null || data.metroDistance > 800) riskPointers.push(`${locality}: metro access limited (${data.metroDistance != null ? `${data.metroDistance}m` : 'none'}) — may affect weekday footfall for ${targetCategory || 'F&B'}`)
-  if (data.busStops < 3) riskPointers.push(`Only ${data.busStops} bus stops nearby — catchment may be car-dependent; consider for ${targetCategory || 'driven traffic'}`)
-  if (data.mainRoadDistance > 200) riskPointers.push(`Property ${data.mainRoadDistance}m from main road — visibility and walk-in may be lower in ${locality}`)
-  if (data.demographicScore < 50) riskPointers.push(`${locality} demographic fit below average for ${targetCategory || 'target'} — verify audience presence`)
-  if (ward && ward.workingPopulation < 60) riskPointers.push(`${locality} working population ${ward.workingPopulation}% — weekday demand may be softer for ${targetCategory || 'daytime'} concepts`)
-  if (data.footfallScore < 40) riskPointers.push(`Footfall potential below benchmark in ${locality} — consider secondary catchment or delivery`)
-  if (data.revenueScore < 45) riskPointers.push(`Revenue projection conservative for ${locality} — ensure rent-to-revenue ratio is viable for ${targetCategory || 'this'} format`)
-  if (riskPointers.length === 0) riskPointers.push(`No major red flags identified for ${locality} — standard due diligence recommended`)
-
-  const strengthPointers: string[] = []
-  if (compCount <= 5) strengthPointers.push(`${locality} has low ${categoryLabel}competition — whitespace opportunity for this concept`)
-  if (data.metroDistance != null && data.metroDistance <= 500) strengthPointers.push(`${data.metroName ?? 'Metro'} ${data.metroDistance}m away — strong weekday footfall potential for ${targetCategory || 'F&B'}`)
-  if (data.busStops >= 5) strengthPointers.push(`${data.busStops} bus stops in ${locality} — broad catchment accessibility`)
-  if (data.demographicScore >= 70) strengthPointers.push(`${locality} has strong demographic fit for ${targetCategory || 'target'} — audience well-represented`)
-  if (ward && ward.workingPopulation >= 65) strengthPointers.push(`${locality} working population ${ward.workingPopulation}% — weekday demand supported for ${targetCategory || 'F&B'}`)
-  if (data.footfallScore >= 60) strengthPointers.push(`Above-average footfall potential in ${locality} for ${targetCategory || 'this'} format`)
-  if (ward && ward.diningOutPerWeek > 2) strengthPointers.push(`${locality} dining-out frequency ${ward.diningOutPerWeek}x/week — strong F&B demand`)
-  if (strengthPointers.length === 0) strengthPointers.push(`Solid transport and demographic base in ${locality} — execution will drive success for ${targetCategory || 'this'} concept`)
-
-  const riskScore = 100 - data.riskScore
-  const isHighRisk = riskScore > 50
-  const isModerateRisk = riskScore > 25 && riskScore <= 50
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white p-6 rounded-xl">
-        <h3 className="text-lg font-bold">Risk Assessment</h3>
-        <p className="text-sm text-white/80 mt-1">
-          {locality}{targetCategory ? ` · ${targetCategory}` : ''}
-        </p>
-        <div className="text-5xl font-bold mt-4">{data.riskScore}/100</div>
-        <p className="text-sm text-white/90 mt-2">
-          {isHighRisk ? 'Higher risk — review pointers below' : isModerateRisk ? 'Moderate risk — due diligence advised' : 'Lower risk — favourable conditions'}
-        </p>
-      </div>
-      <div className="bg-white p-6 rounded-xl border border-slate-100 space-y-3">
-        <h4 className="font-semibold text-slate-900">Strengths</h4>
-        <ul className="space-y-1.5 text-sm text-slate-600">
-          {strengthPointers.map((p, i) => (
-            <li key={i} className="flex items-start gap-2">
-              <span className="text-green-500 mt-0.5">✓</span>
-              <span>{p}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="bg-white p-6 rounded-xl border border-slate-100 space-y-3">
-        <h4 className="font-semibold text-slate-900">Challenges & Risks</h4>
-        <ul className="space-y-1.5 text-sm text-slate-600">
-          {riskPointers.map((p, i) => (
-            <li key={i} className="flex items-start gap-2">
-              <span className="text-amber-500 mt-0.5">•</span>
-              <span>{p}</span>
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   )
