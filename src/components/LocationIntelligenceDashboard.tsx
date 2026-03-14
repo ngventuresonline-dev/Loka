@@ -128,25 +128,24 @@ function computeMonthlyRent(property: PropertyData | null | undefined): number {
   return Math.round(price)
 }
 
-// ─── footfall chart data — category + locality aware ─────────────────────────
+// ─── footfall chart — driven by real ward data (itProfessionals, diningOutPerWeek, etc.) ──
 
 type CategoryKey = 'cafe' | 'qsr' | 'casual_dining' | 'fine_dining' | 'retail' | 'salon' | 'gym' | 'grocery' | 'default'
-type LocalityTier = 'A' | 'B' | 'C' | 'D' | 'E'
 
-// Base hourly scores 0–100 for hours 6..25 (25 = 1am)
+// Base hourly shape 0–100 for hours [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]
+//                                     6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23  0  1
 const CATEGORY_BASES: Record<CategoryKey, number[]> = {
-  cafe:         [30,70,90,75,50,45, 65,60,45,40,60,75, 80,70,55,40,25,15, 10,5],
+  cafe:         [30,70,90,75,50,45, 65,60,45,40,60,75, 80,70,55,40,25,15, 10, 5],
   qsr:          [10,15,20,20,30,50, 90,85,70,35,30,40, 55,80,90,85,65,40, 20,10],
   casual_dining:[5, 10,15,15,20,40, 70,85,75,35,25,35, 55,75,95,90,70,45, 20,10],
-  fine_dining:  [0, 0, 5, 5, 5, 10, 30,55,50,15,10,15, 35,65,90,100,90,65,35,15],
-  retail:       [5, 10,15,20,35,65, 80,75,65,60,65,80, 90,85,70,50,25,10, 5, 0],
-  salon:        [0, 5, 15,30,55,80, 85,75,65,60,70,85, 80,65,40,20,10,5,  0, 0],
-  gym:          [80,90,70,45,30,25, 35,30,20,20,30,55, 85,90,75,50,25,10, 5, 0],
-  grocery:      [20,40,65,70,60,55, 60,55,45,40,45,60, 80,85,80,70,45,25, 15,5],
+  fine_dining:  [0,  0, 5, 5, 5,10, 30,55,50,15,10,15, 35,65,90,100,90,65,35,15],
+  retail:       [5, 10,15,20,35,65, 80,75,65,60,65,80, 90,85,70,50,25,10,  5, 0],
+  salon:        [0,  5,15,30,55,80, 85,75,65,60,70,85, 80,65,40,20,10, 5,  0, 0],
+  gym:          [80,90,70,45,30,25, 35,30,20,20,30,55, 85,90,75,50,25,10,  5, 0],
+  grocery:      [20,40,65,70,60,55, 60,55,45,40,45,60, 80,85,80,70,45,25, 15, 5],
   default:      [10,18,25,30,35,45, 72,85,78,55,48,52, 65,82,90,88,70,40, 20,10],
 }
 
-// Hours array: 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 0 1
 const CHART_HOURS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]
 
 function hourLabel(h: number): string {
@@ -157,111 +156,125 @@ function hourLabel(h: number): string {
   return `${h - 12}pm`
 }
 
-function getLocalityTier(locality?: string): LocalityTier {
-  const loc = (locality || '').toLowerCase()
-  const tierA = ['indiranagar', 'koramangala', 'mg road', 'brigade road', 'church street', 'ub city', 'vittal mallya', 'richmond town']
-  const tierB = ['hsr layout', 'btm layout', 'jp nagar', 'sarjapur road', 'bellandur', 'yeshwanthpur', 'whitefield']
-  const tierC = ['jayanagar', 'basavanagudi', 'malleshwaram', 'rajajinagar', 'yelahanka', 'banashankari', 'cunningham']
-  const tierD = ['electronic city', 'marathahalli', 'kr puram', 'hoodi', 'varthur', 'whitefield']
-  const tierE = ['devanahalli', 'hoskote', 'attibele', 'chandapura', 'nelamangala', 'doddaballapur']
-  if (tierA.some(t => loc.includes(t))) return 'A'
-  if (tierB.some(t => loc.includes(t))) return 'B'
-  if (tierC.some(t => loc.includes(t))) return 'C'
-  if (tierD.some(t => loc.includes(t))) return 'D'
-  if (tierE.some(t => loc.includes(t))) return 'E'
-  return 'B' // default
-}
-
 function getCategoryKey(viewMode: ViewMode, targetCategory?: string): CategoryKey {
   const cat = (targetCategory || '').toLowerCase()
-  if (cat.includes('fine') || cat.includes('fine_dining')) return 'fine_dining'
-  if (cat.includes('cafe') || cat.includes('coffee') || cat.includes('boba')) return 'cafe'
-  if (cat.includes('qsr') || cat.includes('fast food') || cat.includes('quick')) return 'qsr'
+  if (cat.includes('fine') || cat.includes('fine_dining'))                           return 'fine_dining'
+  if (cat.includes('cafe') || cat.includes('coffee') || cat.includes('boba'))        return 'cafe'
+  if (cat.includes('qsr') || cat.includes('fast food') || cat.includes('quick'))     return 'qsr'
   if (cat.includes('casual') || cat.includes('dining') || cat.includes('restaurant') || viewMode === 'fnb') return 'casual_dining'
   if (cat.includes('salon') || cat.includes('spa') || cat.includes('wellness') || viewMode === 'wellness') return 'salon'
-  if (cat.includes('gym') || cat.includes('fitness')) return 'gym'
-  if (cat.includes('grocery') || cat.includes('convenience')) return 'grocery'
-  if (viewMode === 'retail') return 'retail'
+  if (cat.includes('gym') || cat.includes('fitness'))                                return 'gym'
+  if (cat.includes('grocery') || cat.includes('convenience'))                        return 'grocery'
+  if (viewMode === 'retail')                                                          return 'retail'
   return 'default'
 }
 
-function applyLocalityMultipliers(scores: number[], tier: LocalityTier): number[] {
-  return scores.map((s, i) => {
-    const h = CHART_HOURS[i]
-    let v = s
-    if (tier === 'A') {
-      if (h === 22) v *= 1.3
-      if (h === 23) v *= 1.5
-      if (h === 24) v *= 1.6
-      if (h === 25) v *= 1.4
-    } else if (tier === 'B') {
-      if (h === 22) v *= 1.1
-      if (h === 23) v *= 1.2
-      if (h === 24) v *= 1.1
-      if (h === 25) v *= 0.8
-    } else if (tier === 'C') {
-      if (h === 22) v *= 0.8
-      if (h === 23) v *= 0.5
-      if (h === 24) v *= 0.2
-      if (h === 25) v *= 0.1
-    } else if (tier === 'D') {
-      // Weekday lunch spike handled separately; weekend drop applied in buildFootfallData
-      if (h >= 22) v *= 0.5
-    } else if (tier === 'E') {
-      v = Math.min(v, 60)
-      if (h >= 21) v *= 0.3
-      if (h === 25) v = 0
+/**
+ * Build footfall chart driven by REAL ward data.
+ * Each field shapes a different part of the curve:
+ *  - itProfessionals  → lunch spike + early evening drop + quiet weekends
+ *  - diningOutPerWeek → evening peak strength + late-night duration
+ *  - medianIncome     → late-night premium (affluent areas stay out later)
+ *  - populationDensity → overall volume / mid-morning activity
+ */
+function buildFootfallData(ward: WardData | null, viewMode: ViewMode, targetCategory?: string) {
+  const catKey   = getCategoryKey(viewMode, targetCategory)
+  const base     = CATEGORY_BASES[catKey]
+
+  // Real ward signals — fallback to Bangalore urban averages
+  const itPct    = ward?.itProfessionals  ?? 30    // % IT workforce
+  const dining   = ward?.diningOutPerWeek ?? 2.5   // times/week
+  const income   = ward?.medianIncome     ?? 70000  // monthly INR
+  const density  = ward?.populationDensity ?? 15000 // per sq km
+
+  // Boolean thresholds for readability
+  const hiIT      = itPct   > 55    // e.g. Bellandur, Electronic City, Whitefield
+  const veryHiIT  = itPct   > 68    // e.g. Electronic City, Manyata
+  const hiDining  = dining  > 4.0   // e.g. Indiranagar, Koramangala, BTM
+  const loDining  = dining  < 2.0   // e.g. Devanahalli, Hoskote
+  const hiIncome  = income  > 130000 // e.g. Indiranagar, Jayanagar, MG Road
+  const hiDensity = density > 20000  // e.g. Electronic City, RT Nagar, KR Puram
+
+  const weekday = CHART_HOURS.map((h, i) => {
+    let v = base[i]
+
+    // ── Lunch hours 12–2pm: IT areas have strong corporate lunch ──
+    if (h >= 12 && h <= 14) {
+      if (veryHiIT) v = Math.min(100, v * 1.35)
+      else if (hiIT) v = Math.min(100, v * 1.18)
+      else           v *= 0.88  // non-IT areas: gentler lunch
     }
+
+    // ── Evening 7–10pm: dining frequency drives social night-out ──
+    if (h >= 19 && h <= 22) {
+      if (hiDining)  v = Math.min(100, v * 1.30)
+      else if (loDining) v *= 0.60
+      else            v *= 0.90
+    }
+
+    // ── Post-10pm: income drives late-night culture ──
+    if (h >= 22) {
+      if (hiIncome && hiDining) v = Math.min(100, v * 1.30)
+      else if (hiIncome)        v = Math.min(100, v * 1.10)
+      else if (loDining)        v *= 0.25
+      else                      v *= 0.55
+    }
+    // 1am: only truly late-night areas
+    if (h === 25) {
+      if (!(hiIncome && hiDining)) v *= 0.3
+    }
+
+    // ── Pure IT areas drop sharply after work — but NOT high-dining social hubs ──
+    // Koramangala/Indiranagar have IT workers AND strong nightlife — dining culture wins evenings
+    if (veryHiIT && !hiDining && h >= 20) v *= 0.55
+    else if (hiIT && !hiDining && h >= 21) v *= 0.65
+
+    // ── High density: busier mid-morning (offices, transit, markets) ──
+    if (hiDensity && h >= 9 && h <= 11) v = Math.min(100, v * 1.12)
+
+    // ── Low-dining areas: wrap up early ──
+    if (loDining && h >= 20) v *= 0.40
+    if (loDining && h >= 22) v = 0
+
     return Math.round(Math.min(100, Math.max(0, v)))
   })
-}
 
-function getWeekendMult(tier: LocalityTier, viewMode: ViewMode): number {
-  if (tier === 'A') return 1.4
-  if (tier === 'B') return 1.25
-  if (tier === 'D') return 0.65 // IT areas quiet on weekends
-  return 1.2
-}
+  // ── Weekend multiplier: IT areas quiet; high-dining social areas packed ──
+  let weekendMult: number
+  if (veryHiIT && !hiDining) weekendMult = 0.70   // e.g. Electronic City
+  else if (hiIT && !hiDining)  weekendMult = 0.82  // e.g. Whitefield
+  else if (hiDining && hiIncome) weekendMult = 1.45 // e.g. Indiranagar, Koramangala
+  else if (hiDining)             weekendMult = 1.30  // e.g. BTM, HSR
+  else if (loDining)             weekendMult = 1.05  // rural fringe
+  else                           weekendMult = 1.18
 
-function buildPeakCaption(weekdayScores: number[], tier: LocalityTier, weekendMult: number, viewMode: ViewMode): string {
+  // ── Peak caption ──
   const peaks: string[] = []
-  let inPeak = false
-  let peakStart = 0
-  const threshold = 70
-  for (let i = 0; i < weekdayScores.length; i++) {
+  let inPeak = false; let peakStart = 0
+  for (let i = 0; i < weekday.length; i++) {
     const h = CHART_HOURS[i]
-    if (weekdayScores[i] >= threshold && !inPeak) { inPeak = true; peakStart = h }
-    if ((weekdayScores[i] < threshold || i === weekdayScores.length - 1) && inPeak) {
+    if (weekday[i] >= 70 && !inPeak) { inPeak = true; peakStart = h }
+    if ((weekday[i] < 70 || i === weekday.length - 1) && inPeak) {
       inPeak = false
-      const end = CHART_HOURS[i]
-      if (peakStart !== end) peaks.push(`${hourLabel(peakStart)}–${hourLabel(end)}`)
+      if (peakStart !== CHART_HOURS[i]) peaks.push(`${hourLabel(peakStart)}–${hourLabel(CHART_HOURS[i])}`)
     }
   }
   const boostPct = Math.round((weekendMult - 1) * 100)
-  let caption = peaks.length > 0 ? `Peak: ${peaks.slice(0, 3).join(' · ')}` : 'Peak: midday & evening'
-  if (tier === 'D' && (viewMode === 'fnb' || viewMode === 'retail')) caption += ' (weekdays)'
-  if (boostPct > 0) caption += ` · Weekends +${boostPct}%`
-  if (tier === 'A') caption += ' · Active till 1am'
-  return caption
-}
-
-function buildFootfallData(ward: WardData | null, viewMode: ViewMode, targetCategory?: string) {
-  const tier = getLocalityTier(ward?.locality)
-  const catKey = getCategoryKey(viewMode, targetCategory)
-  const base = CATEGORY_BASES[catKey]
-  const weekdayRaw = applyLocalityMultipliers(base, tier)
-  const weekendMult = getWeekendMult(tier, viewMode)
+  let caption = peaks.length > 0 ? `Peak: ${peaks.slice(0, 3).join(' · ')}` : 'Moderate all-day footfall'
+  if (boostPct > 0)  caption += ` · Weekends +${boostPct}%`
+  if (boostPct < 0)  caption += ` · Weekends ${boostPct}% (IT area)`
+  if (hiIncome && hiDining) caption += ' · Active till late'
 
   return {
     points: CHART_HOURS.map((h, i) => ({
       hour: hourLabel(h),
       hourNum: h,
-      weekday: weekdayRaw[i],
-      weekend: Math.round(Math.min(100, weekdayRaw[i] * weekendMult)),
-      isPeak: weekdayRaw[i] >= 70,
+      weekday: weekday[i],
+      weekend: Math.round(Math.min(100, weekday[i] * weekendMult)),
+      isPeak: weekday[i] >= 70,
     })),
-    caption: buildPeakCaption(weekdayRaw, tier, weekendMult, viewMode),
-    weekendBoost: Math.round((weekendMult - 1) * 100),
+    caption,
+    weekendBoost: boostPct,
   }
 }
 
@@ -276,33 +289,37 @@ interface CategorySearch {
   color: string
 }
 
+// Keyword-only searches (no type restriction) give MUCH better coverage in India.
+// Google Places type+keyword uses AND logic which is too restrictive for Indian listings.
 const CATEGORY_SEARCHES_FNB: CategorySearch[] = [
-  { type: 'restaurant',    keyword: 'restaurant',  label: 'Restaurant / Dining', color: '#FF5200' },
-  { type: 'cafe',          keyword: 'cafe coffee',  label: 'Café / Coffee',       color: '#6F4E37' },
-  { type: 'bar',           keyword: 'bar pub',      label: 'Bar / Pub',           color: '#7B2D8B' },
-  { type: 'meal_takeaway', keyword: 'qsr fast food',label: 'QSR / Takeaway',      color: '#F97316' },
-  { type: 'bakery',        keyword: 'bakery',       label: 'Dessert / Bakery',    color: '#F472B6' },
+  { type: '',  keyword: 'restaurant',   label: 'Restaurant / Dining', color: '#FF5200' },
+  { type: '',  keyword: 'cafe',         label: 'Café / Coffee',       color: '#6F4E37' },
+  { type: '',  keyword: 'bar',          label: 'Bar / Pub',           color: '#7B2D8B' },
+  { type: '',  keyword: 'fast food',    label: 'QSR / Takeaway',      color: '#F97316' },
+  { type: '',  keyword: 'bakery',       label: 'Dessert / Bakery',    color: '#F472B6' },
 ]
 const CATEGORY_SEARCHES_CAFE: CategorySearch[] = [
-  { type: 'cafe',          keyword: 'cafe coffee',  label: 'Café / Coffee',       color: '#6F4E37' },
-  { type: 'restaurant',    keyword: 'restaurant',   label: 'Restaurant / Dining', color: '#FF5200' },
-  { type: 'bar',           keyword: 'bar pub',      label: 'Bar / Pub',           color: '#7B2D8B' },
-  { type: 'bakery',        keyword: 'bakery dessert',label: 'Dessert / Bakery',   color: '#F472B6' },
+  { type: '',  keyword: 'cafe',         label: 'Café / Coffee',       color: '#6F4E37' },
+  { type: '',  keyword: 'coffee',       label: 'Café / Coffee',       color: '#6F4E37' },
+  { type: '',  keyword: 'restaurant',   label: 'Restaurant / Dining', color: '#FF5200' },
+  { type: '',  keyword: 'bar',          label: 'Bar / Pub',           color: '#7B2D8B' },
+  { type: '',  keyword: 'bakery',       label: 'Dessert / Bakery',    color: '#F472B6' },
 ]
 const CATEGORY_SEARCHES_SALON: CategorySearch[] = [
-  { type: 'beauty_salon',  keyword: 'salon',        label: 'Salon / Spa',         color: '#E91E8C' },
-  { type: 'spa',           keyword: 'spa wellness',  label: 'Salon / Spa',         color: '#E91E8C' },
-  { type: 'gym',           keyword: 'gym fitness',   label: 'Gym / Fitness',       color: '#1565C0' },
+  { type: '',  keyword: 'salon',        label: 'Salon / Spa',         color: '#E91E8C' },
+  { type: '',  keyword: 'spa',          label: 'Salon / Spa',         color: '#E91E8C' },
+  { type: '',  keyword: 'gym',          label: 'Gym / Fitness',       color: '#1565C0' },
 ]
 const CATEGORY_SEARCHES_GYM: CategorySearch[] = [
-  { type: 'gym',           keyword: 'gym fitness',   label: 'Gym / Fitness',       color: '#1565C0' },
-  { type: 'beauty_salon',  keyword: 'salon',         label: 'Salon / Spa',         color: '#E91E8C' },
+  { type: '',  keyword: 'gym',          label: 'Gym / Fitness',       color: '#1565C0' },
+  { type: '',  keyword: 'fitness',      label: 'Gym / Fitness',       color: '#1565C0' },
+  { type: '',  keyword: 'salon',        label: 'Salon / Spa',         color: '#E91E8C' },
 ]
 const CATEGORY_SEARCHES_RETAIL: CategorySearch[] = [
-  { type: 'clothing_store',keyword: 'clothing',      label: 'Retail / Fashion',    color: '#00897B' },
-  { type: 'grocery_or_supermarket', keyword: 'supermarket', label: 'Supermarket', color: '#388E3C' },
-  { type: 'shoe_store',    keyword: 'shoes',         label: 'Retail / Fashion',    color: '#00897B' },
-  { type: 'restaurant',    keyword: 'restaurant',    label: 'Restaurant / Dining', color: '#FF5200' },
+  { type: '',  keyword: 'clothing',     label: 'Retail / Fashion',    color: '#00897B' },
+  { type: '',  keyword: 'supermarket',  label: 'Supermarket',         color: '#388E3C' },
+  { type: '',  keyword: 'shoes',        label: 'Retail / Fashion',    color: '#00897B' },
+  { type: '',  keyword: 'restaurant',   label: 'Restaurant / Dining', color: '#FF5200' },
 ]
 
 function getCategorySearches(category?: string): CategorySearch[] {
@@ -365,9 +382,17 @@ function calculateRisks(
   // RISKS
   if (within500.length > 12) {
     items.push({ type: 'risk', severity: 'high', title: 'High competitor density', detail: `${within500.length} direct competitors within 500m — customer acquisition cost will be higher` })
+  } else if (within500.length > 8) {
+    items.push({ type: 'risk', severity: 'medium', title: 'Moderate competitor density', detail: `${within500.length} competitors within 500m — differentiation in positioning will be key` })
+  }
+  // Market saturation by category — most critical for non-office spaces
+  if (sameCategory.length > 8) {
+    items.push({ type: 'risk', severity: 'high', title: 'Category saturated', detail: `${sameCategory.length} similar concepts within 500m — the category is saturated here, strong brand differentiation is essential` })
+  } else if (sameCategory.length > 5) {
+    items.push({ type: 'risk', severity: 'medium', title: 'Category crowded', detail: `${sameCategory.length} similar businesses within 500m — moderate saturation, positioning must be clear` })
   }
   if (rent > 0 && ward?.medianIncome && rent > (ward.medianIncome / 12) * 0.4) {
-    items.push({ type: 'risk', severity: 'high', title: 'Rent burden risk', detail: 'Rent is high relative to area income — requires strong brand pull to sustain' })
+    items.push({ type: 'risk', severity: 'high', title: 'Rent burden risk', detail: `Monthly rent is high relative to area median income (₹${(ward.medianIncome / 12).toLocaleString('en-IN')}/mo) — requires strong brand pull to sustain` })
   }
   if ((ward?.populationDensity ?? 18000) < 15000 && (ward?.diningOutPerWeek ?? 3) < 3) {
     items.push({ type: 'risk', severity: 'medium', title: 'Low organic footfall', detail: 'Area has low population density and infrequent dining-out habits — marketing spend will need to compensate' })
@@ -375,8 +400,9 @@ function calculateRisks(
   if (isFnb && ward && ward.age25_34 < 25) {
     items.push({ type: 'risk', severity: 'medium', title: 'Young audience underrepresented', detail: `Only ${ward.age25_34}% of area population is 25–34 — core café/QSR audience is limited here` })
   }
-  if (sameCategory.length > 8) {
-    items.push({ type: 'risk', severity: 'high', title: 'Category saturated', detail: 'Too many similar concepts nearby — differentiation will be critical to survive' })
+  // Low dining frequency risk for FnB
+  if (isFnb && (ward?.diningOutPerWeek ?? 3) < 2.5) {
+    items.push({ type: 'risk', severity: 'medium', title: 'Low dining-out frequency', detail: `Area residents dine out only ${ward?.diningOutPerWeek?.toFixed(1) ?? '<2.5'}x per week — demand for F&B will be structurally limited` })
   }
 
   // OPPORTUNITIES
@@ -762,8 +788,8 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
     const runSearches = async () => {
       for (const s of searches) {
         try {
-          // Pass both type AND keyword — Google Places returns more accurate results
-          const url = `/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=${encodeURIComponent(s.type)}&keyword=${encodeURIComponent(s.keyword)}&radius=800`
+          // Keyword-only gives the broadest coverage in India (no AND restriction with type)
+          const url = `/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=${encodeURIComponent(s.type)}&keyword=${encodeURIComponent(s.keyword)}&radius=1200`
           const j = await fetch(url).then(r => r.json()) as { places?: LivePin[] }
           ;(j.places ?? []).forEach(p => {
             const key = p.id || `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
@@ -1149,6 +1175,25 @@ function DemographicsTab({ data, ward, mapsLoaded, property }: {
 
 // ─── TAB 4: TRANSIT ──────────────────────────────────────────────────────────
 
+// Namma Metro line lookup by station name substring
+const METRO_LINE_LOOKUP: Array<{ keys: string[]; line: string; color: string }> = [
+  { keys: ['baiyappanahalli', 'indiranagar', 'halasuru', 'trinity', 'mg road', 'cubbon', 'vidhana', 'visvesvaraya', 'city railway', 'magadi', 'vijayanagar', 'attiguppe', 'hosahalli', 'mysuru road', 'whitefield', 'kadugodi', 'hoodi', 'garudacharpalya', 'benniganahalli', 'byappanahalli'], line: 'Purple Line', color: '#6D28D9' },
+  { keys: ['nagasandra', 'dasarahalli', 'jalahalli', 'peenya', 'yeshwanthpur', 'goraguntepalya', 'sandal soap', 'mahalakshmi', 'rajajinagar', 'kuvempu', 'srirampura', 'sampige', 'majestic', 'kempegowda', 'chickpete', 'krishnarajapuram', 'national college', 'lalbagh', 'south end', 'jayadeva', 'btm', 'jp nagar', 'puttenahalli', 'banashankari', 'silk', 'yelachenahalli', 'konanakunte', 'doddakallasandra', 'vajahalli', 'thalaghattapura'], line: 'Green Line', color: '#16A34A' },
+  { keys: ['bommasandra', 'hebbagodi', 'hosa road', 'electronic city', 'konappana', 'begur', 'gottigere', 'hulimavu', 'dairy circle', 'langford', 'shivajinagar', 'nagawara', 'HBR', 'tannery', 'pottery town', 'cantonment', 'mekhri circle', 'hebbal', 'kempapura'], line: 'Yellow Line', color: '#CA8A04' },
+]
+
+function getMetroLineInfo(stationName: string): { line: string; color: string } {
+  const n = stationName.toLowerCase()
+  for (const entry of METRO_LINE_LOOKUP) {
+    if (entry.keys.some(k => n.includes(k))) return { line: entry.line, color: entry.color }
+  }
+  return { line: 'Namma Metro', color: '#7C3AED' }
+}
+
+interface MetroStation {
+  name: string; lat: number; lng: number; distance: number
+}
+
 function TransportTab({ data, ward, mapsLoaded }: {
   data: IntelligenceData; ward: WardData | null; mapsLoaded: boolean
 }) {
@@ -1158,90 +1203,121 @@ function TransportTab({ data, ward, mapsLoaded }: {
     return { lat: 12.9716, lng: 77.5946 }
   }, [ward])
 
-  const hasMetro = data.metroDistance != null && data.metroName
+  const [stations, setStations] = useState<MetroStation[]>([])
+  const [selectedStation, setSelectedStation] = useState<MetroStation | null>(null)
+  const [fetchingMetro, setFetchingMetro] = useState(false)
 
-  const circleColor = !data.metroDistance ? '#EF4444'
-    : data.metroDistance <= 500 ? '#22C55E'
-    : data.metroDistance <= 1000 ? '#F59E0B'
+  useEffect(() => {
+    if (!mapsLoaded || !ward?.latitude || !ward?.longitude) return
+    setFetchingMetro(true)
+    fetch(`/api/intelligence/nearby?lat=${ward.latitude}&lng=${ward.longitude}&type=subway_station&radius=2500`)
+      .then(r => r.json())
+      .then(j => {
+        const found: MetroStation[] = (j.places ?? []).map((p: { name: string; lat: number; lng: number; distance: number }) => ({
+          name: p.name, lat: p.lat, lng: p.lng, distance: p.distance,
+        }))
+        found.sort((a, b) => a.distance - b.distance)
+        setStations(found)
+      })
+      .catch(() => {})
+      .finally(() => setFetchingMetro(false))
+  }, [mapsLoaded, ward?.latitude, ward?.longitude])
+
+  const nearest = stations[0] ?? null
+  const nearestDist = nearest?.distance ?? null
+  const hasMetro = stations.length > 0
+
+  const circleColor = !nearestDist ? '#EF4444'
+    : nearestDist <= 500  ? '#22C55E'
+    : nearestDist <= 1000 ? '#F59E0B'
     : '#EF4444'
-
-  const circleRadius = data.metroDistance ?? 1000
-
-  const metroPin = useMemo(() => {
-    if (!hasMetro || !data.metroDistance) return null
-    const angle = 1.2
-    return {
-      lat: center.lat + (data.metroDistance / 111320) * Math.cos(angle),
-      lng: center.lng + (data.metroDistance / (111320 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle),
-    }
-  }, [hasMetro, data.metroDistance, center])
-
-  if (!hasMetro) {
-    return (
-      <div className="space-y-4">
-        {mapsLoaded && apiKey ? (
-          <div className="rounded-xl overflow-hidden border border-slate-100">
-            <GoogleMap mapContainerStyle={{ width: '100%', height: '300px' }} center={center} zoom={14} options={MAP_OPTS}>
-              <Marker position={center}
-                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
-              <Circle center={center} radius={2000}
-                options={{ strokeColor: '#EF4444', strokeOpacity: 0.6, strokeWeight: 2, fillOpacity: 0 }} />
-            </GoogleMap>
-          </div>
-        ) : (
-          <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">Loading map…</div>
-        )}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-          No metro station within 2km — auto-rickshaw and cab primary access
-        </div>
-        {data.mainRoadDistance != null && (
-          <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-xs text-slate-500">Main Road Access</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">{data.mainRoadDistance}m</div>
-            <div className="text-xs text-slate-400">to nearest arterial road</div>
-          </div>
-        )}
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-4">
       {mapsLoaded && apiKey ? (
         <div className="rounded-xl overflow-hidden border border-slate-100">
-          <GoogleMap mapContainerStyle={{ width: '100%', height: '300px' }} center={center} zoom={15} options={MAP_OPTS}>
-            {/* Walking-distance circle */}
-            <Circle center={center} radius={circleRadius}
-              options={{ strokeColor: circleColor, strokeOpacity: 0.7, strokeWeight: 2, fillOpacity: 0 }} />
+          <GoogleMap
+            mapContainerStyle={{ width: '100%', height: '340px' }}
+            center={center} zoom={15} options={MAP_OPTS}
+          >
+            {/* Walking circle to nearest station */}
+            {nearestDist != null && (
+              <Circle center={center} radius={nearestDist}
+                options={{ strokeColor: circleColor, strokeOpacity: 0.7, strokeWeight: 2, fillColor: circleColor, fillOpacity: 0.06 }} />
+            )}
             {/* Property pin */}
             <Marker position={center}
-              icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
-            {/* Approximate metro pin */}
-            {metroPin && (
-              <Marker position={metroPin}
-                label={{ text: 'M', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
-                icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#7C3AED', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} />
-            )}
+              icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }}
+              zIndex={100} />
+            {/* Metro station pins */}
+            {stations.map((s, i) => {
+              const lineInfo = getMetroLineInfo(s.name)
+              return (
+                <Marker key={i}
+                  position={{ lat: s.lat, lng: s.lng }}
+                  label={{ text: 'M', color: 'white', fontWeight: 'bold', fontSize: '10px' }}
+                  icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 13, fillColor: lineInfo.color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }}
+                  onClick={() => setSelectedStation(selectedStation?.name === s.name ? null : s)}
+                  zIndex={50}
+                />
+              )
+            })}
+            {/* InfoWindow for selected station */}
+            {selectedStation && (() => {
+              const lineInfo = getMetroLineInfo(selectedStation.name)
+              return (
+                <InfoWindow position={{ lat: selectedStation.lat, lng: selectedStation.lng }} onCloseClick={() => setSelectedStation(null)}>
+                  <div className="text-xs space-y-0.5 min-w-[140px]">
+                    <div className="font-semibold text-slate-900">{selectedStation.name}</div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ background: lineInfo.color }} />
+                      <span className="text-slate-600">{lineInfo.line}</span>
+                    </div>
+                    <div className="text-slate-500">{selectedStation.distance}m from property</div>
+                  </div>
+                </InfoWindow>
+              )
+            })()}
           </GoogleMap>
         </div>
       ) : (
-        <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">Loading map…</div>
+        <div className="rounded-xl bg-slate-100 h-48 flex items-center justify-center text-slate-500 text-sm">
+          {mapsLoaded ? 'Google Maps API key not configured' : 'Loading map…'}
+        </div>
       )}
 
-      {/* Metro detail */}
-      <div className="bg-white rounded-xl border border-slate-100 p-4 space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#7C3AED] inline-block flex-shrink-0" />
-          <span className="font-semibold text-slate-900">{data.metroName}</span>
+      {fetchingMetro && (
+        <p className="text-xs text-slate-400 text-center">Searching for metro stations…</p>
+      )}
+
+      {!fetchingMetro && !hasMetro && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+          No metro station found within 2.5km — auto-rickshaw and cab are primary access modes for this location
         </div>
-        <div className="text-sm text-slate-600">{data.metroDistance}m · {data.metroDistance! <= 500 ? 'Walking distance' : data.metroDistance! <= 1000 ? '~10 min walk' : '~15+ min walk / ride needed'}</div>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: circleColor }} />
-          <span className="text-xs text-slate-500">
-            {data.metroDistance! <= 500 ? 'Within easy walking distance' : data.metroDistance! <= 1000 ? 'Moderate walk' : 'Over 1km — reduced accessibility'}
-          </span>
-        </div>
-      </div>
+      )}
+
+      {/* Station list */}
+      {stations.map((s, i) => {
+        const lineInfo = getMetroLineInfo(s.name)
+        const walkLabel = s.distance <= 500 ? 'Walking distance' : s.distance <= 1000 ? '~10 min walk' : '~15+ min walk'
+        const dotColor = s.distance <= 500 ? '#22C55E' : s.distance <= 1000 ? '#F59E0B' : '#EF4444'
+        return (
+          <div key={i} className="bg-white rounded-xl border border-slate-100 p-4 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: lineInfo.color }} />
+              <span className="font-semibold text-slate-900 text-sm">{s.name}</span>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white flex-shrink-0" style={{ background: lineInfo.color }}>{lineInfo.line}</span>
+            </div>
+            <div className="text-sm text-slate-600">{s.distance}m · {walkLabel}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+              <span className="text-xs text-slate-400">
+                {s.distance <= 500 ? 'Strong accessibility advantage' : s.distance <= 1000 ? 'Moderate walk' : 'Reduced accessibility — ride likely needed'}
+              </span>
+            </div>
+          </div>
+        )
+      })}
 
       {data.mainRoadDistance != null && (
         <div className="bg-white rounded-xl border border-slate-100 p-4">
@@ -1268,6 +1344,11 @@ function RisksTab({ data, ward, competitors, targetCategory, property, locality 
   const risks = items.filter(i => i.type === 'risk')
   const opps = items.filter(i => i.type === 'opportunity')
 
+  // Compute risk score from actual evaluated items — never use the stale DB value (always 0)
+  const computedRiskScore = Math.min(100,
+    risks.reduce((sum, r) => sum + (r.severity === 'high' ? 30 : r.severity === 'medium' ? 15 : 8), 0)
+  )
+
   const severityBadge = (s: string) => {
     if (s === 'high') return 'bg-red-100 text-red-700'
     if (s === 'medium') return 'bg-amber-100 text-amber-700'
@@ -1281,7 +1362,7 @@ function RisksTab({ data, ward, competitors, targetCategory, property, locality 
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm font-medium text-white/80">Risk Score · {locality}</div>
-            <div className="text-4xl font-bold mt-1">{data.riskScore}/100</div>
+            <div className="text-4xl font-bold mt-1">{computedRiskScore}/100</div>
           </div>
           <div className="text-right text-sm text-white/80">
             {risks.filter(r => r.severity === 'high').length} high risks<br />

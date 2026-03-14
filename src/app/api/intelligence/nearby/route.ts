@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     if (keyword) url.searchParams.set('keyword', keyword)
     url.searchParams.set('key', apiKey)
 
-    const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
+    const res = await fetch(url.toString(), { cache: 'no-store' })
     const data = await res.json()
 
     if (data.status === 'REQUEST_DENIED' || data.status === 'INVALID_REQUEST') {
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     const refLat = parseFloat(lat)
     const refLng = parseFloat(lng)
 
-    const places = (data.results || []).slice(0, 20).map((p: Record<string, any>) => {
+    const places = (data.results || []).slice(0, 30).map((p: Record<string, any>) => {
       const pLat: number = p.geometry?.location?.lat ?? 0
       const pLng: number = p.geometry?.location?.lng ?? 0
       const dLat = (pLat - refLat) * 111320
