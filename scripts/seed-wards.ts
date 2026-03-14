@@ -58,6 +58,19 @@ const COMMERCIAL_RENTS: Record<string, { min: number; max: number }> = {
   'Uttarahalli':          { min: 20,  max: 50  },
   'Jigani':               { min: 15,  max: 40  },
   'Doddaballapur':        { min: 10,  max: 30  },
+  // Additional localities
+  'Kasturi Nagar':        { min: 50,  max: 120 },
+  'HRBR Layout':          { min: 40,  max: 90  },
+  'Kalyan Nagar':         { min: 45,  max: 100 },
+  'Kammanahalli':         { min: 40,  max: 90  },
+  'New BEL Road':         { min: 60,  max: 150 },
+  'Brigade Road':         { min: 130, max: 320 },
+  'Cunningham Road':      { min: 100, max: 220 },
+  'Cooke Town':           { min: 80,  max: 160 },
+  'Cox Town':             { min: 75,  max: 150 },
+  'Ulsoor':               { min: 80,  max: 180 },
+  'Shivajinagar':         { min: 80,  max: 170 },
+  'Dollars Colony':       { min: 50,  max: 110 },
 }
 
 function getCommercialRent(locality: string, combinedAvgSqft: number) {
@@ -152,6 +165,21 @@ const wardData = [
   { locality: 'Uttarahalli',          lat: 12.8901, lng: 77.5377, avgApptSqft:  6000, avgLandSqft:  4500, combinedAvgSqft:  5400, medianIncome:  50000, spendingPowerIndex: 40,  catchment: 148000, itProfessionals: 18,  populationDensity: 20000, diningOut: 2.0 },
   { locality: 'Gottigere',            lat: 12.8697, lng: 77.5971, avgApptSqft:  6000, avgLandSqft:  4500, combinedAvgSqft:  5400, medianIncome:  50000, spendingPowerIndex: 40,  catchment: 130000, itProfessionals: 20,  populationDensity: 18000, diningOut: 2.0 },
   { locality: 'Bikasipura',           lat: 12.9124, lng: 77.5248, avgApptSqft:  5800, avgLandSqft:  4000, combinedAvgSqft:  5080, medianIncome:  47000, spendingPowerIndex: 37,  catchment: 145000, itProfessionals: 14,  populationDensity: 21000, diningOut: 1.8 },
+
+  // ADDITIONAL — commonly matched areas not in original set
+  { locality: 'Kasturi Nagar',        lat: 13.0162, lng: 77.6552, avgApptSqft:  7800, avgLandSqft:  7000, combinedAvgSqft:  7480, medianIncome:  68000, spendingPowerIndex: 54,  catchment: 145000, itProfessionals: 35,  populationDensity: 20000, diningOut: 3.0 },
+  { locality: 'HRBR Layout',          lat: 13.0317, lng: 77.6416, avgApptSqft:  7400, avgLandSqft:  6500, combinedAvgSqft:  7040, medianIncome:  66000, spendingPowerIndex: 53,  catchment: 150000, itProfessionals: 35,  populationDensity: 19000, diningOut: 2.8 },
+  { locality: 'Kalyan Nagar',         lat: 13.0268, lng: 77.6452, avgApptSqft:  7500, avgLandSqft:  6500, combinedAvgSqft:  7100, medianIncome:  67000, spendingPowerIndex: 53,  catchment: 148000, itProfessionals: 33,  populationDensity: 20000, diningOut: 2.9 },
+  { locality: 'Kammanahalli',         lat: 13.0168, lng: 77.6469, avgApptSqft:  7200, avgLandSqft:  6200, combinedAvgSqft:  6800, medianIncome:  64000, spendingPowerIndex: 51,  catchment: 140000, itProfessionals: 30,  populationDensity: 19000, diningOut: 2.8 },
+  { locality: 'New BEL Road',         lat: 13.0218, lng: 77.5685, avgApptSqft:  8000, avgLandSqft:  7000, combinedAvgSqft:  7600, medianIncome:  70000, spendingPowerIndex: 55,  catchment: 135000, itProfessionals: 28,  populationDensity: 18000, diningOut: 3.0 },
+  { locality: 'Brigade Road',         lat: 12.9718, lng: 77.6074, avgApptSqft: 13500, avgLandSqft: 26000, combinedAvgSqft: 18500, medianIncome: 150000, spendingPowerIndex: 87,  catchment:  80000, itProfessionals: 35,  populationDensity: 11000, diningOut: 4.8 },
+  { locality: 'Cunningham Road',      lat: 12.9847, lng: 77.5983, avgApptSqft: 14000, avgLandSqft: 26000, combinedAvgSqft: 18800, medianIncome: 155000, spendingPowerIndex: 87,  catchment:  80000, itProfessionals: 22,  populationDensity: 11000, diningOut: 4.0 },
+  { locality: 'Dollars Colony',       lat: 13.0408, lng: 77.5766, avgApptSqft:  9000, avgLandSqft:  8500, combinedAvgSqft:  8800, medianIncome:  82000, spendingPowerIndex: 63,  catchment: 100000, itProfessionals: 28,  populationDensity: 14000, diningOut: 3.2 },
+  { locality: 'Cooke Town',           lat: 12.9851, lng: 77.6194, avgApptSqft: 10500, avgLandSqft: 16000, combinedAvgSqft: 12700, medianIncome: 110000, spendingPowerIndex: 75,  catchment:  90000, itProfessionals: 25,  populationDensity: 13000, diningOut: 3.8 },
+  { locality: 'Cox Town',             lat: 12.9838, lng: 77.6250, avgApptSqft: 10000, avgLandSqft: 15000, combinedAvgSqft: 12000, medianIncome: 105000, spendingPowerIndex: 73,  catchment:  85000, itProfessionals: 24,  populationDensity: 14000, diningOut: 3.6 },
+  { locality: 'Ulsoor',               lat: 12.9789, lng: 77.6155, avgApptSqft: 14000, avgLandSqft: 20000, combinedAvgSqft: 16400, medianIncome: 140000, spendingPowerIndex: 84,  catchment: 110000, itProfessionals: 30,  populationDensity: 16000, diningOut: 4.0 },
+  { locality: 'Shivajinagar',         lat: 12.9848, lng: 77.5964, avgApptSqft: 10000, avgLandSqft: 16000, combinedAvgSqft: 12400, medianIncome: 108000, spendingPowerIndex: 74,  catchment:  90000, itProfessionals: 22,  populationDensity: 14000, diningOut: 3.8 },
+  { locality: 'Rajiv Gandhi Nagar',   lat: 12.9728, lng: 77.5215, avgApptSqft:  6000, avgLandSqft:  5000, combinedAvgSqft:  5600, medianIncome:  52000, spendingPowerIndex: 41,  catchment: 130000, itProfessionals: 16,  populationDensity: 20000, diningOut: 2.2 },
 
   // TIER 4 AFFORDABLE
   { locality: 'Electronic City',      lat: 12.8399, lng: 77.6770, avgApptSqft:  6500, avgLandSqft:  4500, combinedAvgSqft:  5700, medianIncome:  54000, spendingPowerIndex: 43,  catchment: 280000, itProfessionals: 75,  populationDensity: 28000, diningOut: 3.2 },

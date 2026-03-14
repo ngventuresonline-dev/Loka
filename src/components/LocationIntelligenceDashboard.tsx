@@ -982,11 +982,15 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
 
       {/* Stats grid — replaced median income & catchment pop */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Commercial Rent — use DB values or derive from medianIncome */}
+        {/* Commercial Rent — use seeded DB values; fall back to ward.medianIncome (monthly) only */}
         {(() => {
-          const income = ward?.medianIncome ?? data.medianIncome
-          const rentMin = ward?.commercialRentMin ?? (income ? Math.round(income / 1000 / 5) * 5 : null)
-          const rentMax = ward?.commercialRentMax ?? (income ? Math.round(income / 500 / 5) * 5 : null)
+          // ward.medianIncome is monthly (seeded in INR/month e.g. 66000)
+          // data.medianIncome is annual from census — do NOT use it here (gives 12× wrong result)
+          const monthlyIncome = ward?.medianIncome  // only monthly ward income as proxy
+          const rentMin = ward?.commercialRentMin
+            ?? (monthlyIncome ? Math.max(20, Math.min(400, Math.round(monthlyIncome / 1000 / 5) * 5)) : null)
+          const rentMax = ward?.commercialRentMax
+            ?? (monthlyIncome ? Math.max(40, Math.min(800, Math.round(monthlyIncome / 500 / 5) * 5)) : null)
           const isEstimate = !ward?.commercialRentMin
           return rentMin && rentMax ? (
             <div className="bg-white rounded-xl border border-slate-100 p-4">
@@ -995,7 +999,7 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
                 ₹{rentMin}–₹{rentMax}
               </div>
               <div className="text-xs text-slate-400">
-                {isEstimate ? '/sqft/mo · estimated' : '/sqft/mo · ground floor, road-facing'}
+                {isEstimate ? '/sqft/mo · approx.' : '/sqft/mo · ground floor, road-facing'}
               </div>
             </div>
           ) : null
