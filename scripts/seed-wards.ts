@@ -58,19 +58,14 @@ const COMMERCIAL_RENTS: Record<string, { min: number; max: number }> = {
   'Uttarahalli':          { min: 20,  max: 50  },
   'Jigani':               { min: 15,  max: 40  },
   'Doddaballapur':        { min: 10,  max: 30  },
-  // Additional localities
-  'Kasturi Nagar':        { min: 50,  max: 120 },
-  'HRBR Layout':          { min: 40,  max: 90  },
-  'Kalyan Nagar':         { min: 45,  max: 100 },
-  'Kammanahalli':         { min: 40,  max: 90  },
+  // From user-specified data
+  'Kalyan Nagar':         { min: 70,  max: 160 },
   'New BEL Road':         { min: 60,  max: 150 },
   'Brigade Road':         { min: 130, max: 320 },
   'Cunningham Road':      { min: 100, max: 220 },
-  'Cooke Town':           { min: 80,  max: 160 },
-  'Cox Town':             { min: 75,  max: 150 },
-  'Ulsoor':               { min: 80,  max: 180 },
-  'Shivajinagar':         { min: 80,  max: 170 },
-  'Dollars Colony':       { min: 50,  max: 110 },
+  'HRBR Layout':          { min: 40,  max: 90  },
+  // Unlisted localities — formula: combinedAvgSqft * 0.005 / 0.012 applied at seed time
+  // (Kasturi Nagar, Kammanahalli, Shivajinagar, Cooke Town, Cox Town, Dollars Colony handled by getCommercialRent fallback)
 }
 
 function getCommercialRent(locality: string, combinedAvgSqft: number) {
