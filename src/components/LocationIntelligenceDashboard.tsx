@@ -267,48 +267,43 @@ function buildFootfallData(ward: WardData | null, viewMode: ViewMode, targetCate
 
 // ─── competitor colours (keyed to category search labels) ────────────────────
 
+// ─── competitor search config (type + keyword for better Google Places results) ─
+
 interface CategorySearch {
-  keyword: string
+  type: string    // Google Places type
+  keyword: string // Additional keyword to narrow results
   label: string
   color: string
 }
 
 const CATEGORY_SEARCHES_FNB: CategorySearch[] = [
-  { keyword: 'restaurant',       label: 'Restaurant / Dining', color: '#FF5200' },
-  { keyword: 'cafe coffee',      label: 'Café / Coffee',       color: '#6F4E37' },
-  { keyword: 'bar pub',          label: 'Bar / Pub',           color: '#7B2D8B' },
-  { keyword: 'salon spa',        label: 'Salon / Spa',         color: '#E91E8C' },
-  { keyword: 'gym fitness',      label: 'Gym / Fitness',       color: '#1565C0' },
+  { type: 'restaurant',    keyword: 'restaurant',  label: 'Restaurant / Dining', color: '#FF5200' },
+  { type: 'cafe',          keyword: 'cafe coffee',  label: 'Café / Coffee',       color: '#6F4E37' },
+  { type: 'bar',           keyword: 'bar pub',      label: 'Bar / Pub',           color: '#7B2D8B' },
+  { type: 'meal_takeaway', keyword: 'qsr fast food',label: 'QSR / Takeaway',      color: '#F97316' },
+  { type: 'bakery',        keyword: 'bakery',       label: 'Dessert / Bakery',    color: '#F472B6' },
 ]
 const CATEGORY_SEARCHES_CAFE: CategorySearch[] = [
-  { keyword: 'cafe coffee',      label: 'Café / Coffee',       color: '#6F4E37' },
-  { keyword: 'restaurant',       label: 'Restaurant / Dining', color: '#FF5200' },
-  { keyword: 'bar pub',          label: 'Bar / Pub',           color: '#7B2D8B' },
-  { keyword: 'bakery dessert',   label: 'Dessert / Bakery',    color: '#E91E8C' },
+  { type: 'cafe',          keyword: 'cafe coffee',  label: 'Café / Coffee',       color: '#6F4E37' },
+  { type: 'restaurant',    keyword: 'restaurant',   label: 'Restaurant / Dining', color: '#FF5200' },
+  { type: 'bar',           keyword: 'bar pub',      label: 'Bar / Pub',           color: '#7B2D8B' },
+  { type: 'bakery',        keyword: 'bakery dessert',label: 'Dessert / Bakery',   color: '#F472B6' },
 ]
 const CATEGORY_SEARCHES_SALON: CategorySearch[] = [
-  { keyword: 'salon spa beauty', label: 'Salon / Spa',         color: '#E91E8C' },
-  { keyword: 'gym fitness',      label: 'Gym / Fitness',       color: '#1565C0' },
+  { type: 'beauty_salon',  keyword: 'salon',        label: 'Salon / Spa',         color: '#E91E8C' },
+  { type: 'spa',           keyword: 'spa wellness',  label: 'Salon / Spa',         color: '#E91E8C' },
+  { type: 'gym',           keyword: 'gym fitness',   label: 'Gym / Fitness',       color: '#1565C0' },
 ]
 const CATEGORY_SEARCHES_GYM: CategorySearch[] = [
-  { keyword: 'gym fitness yoga', label: 'Gym / Fitness',       color: '#1565C0' },
-  { keyword: 'salon spa',        label: 'Salon / Spa',         color: '#E91E8C' },
+  { type: 'gym',           keyword: 'gym fitness',   label: 'Gym / Fitness',       color: '#1565C0' },
+  { type: 'beauty_salon',  keyword: 'salon',         label: 'Salon / Spa',         color: '#E91E8C' },
 ]
 const CATEGORY_SEARCHES_RETAIL: CategorySearch[] = [
-  { keyword: 'clothing store fashion', label: 'Retail / Fashion',        color: '#00897B' },
-  { keyword: 'supermarket grocery',    label: 'Supermarket / Grocery',   color: '#388E3C' },
-  { keyword: 'restaurant',             label: 'Restaurant / Dining',     color: '#FF5200' },
+  { type: 'clothing_store',keyword: 'clothing',      label: 'Retail / Fashion',    color: '#00897B' },
+  { type: 'grocery_or_supermarket', keyword: 'supermarket', label: 'Supermarket', color: '#388E3C' },
+  { type: 'shoe_store',    keyword: 'shoes',         label: 'Retail / Fashion',    color: '#00897B' },
+  { type: 'restaurant',    keyword: 'restaurant',    label: 'Restaurant / Dining', color: '#FF5200' },
 ]
-const CATEGORY_SEARCH_COLORS: Record<string, string> = {
-  'Café / Coffee':        '#6F4E37',
-  'Restaurant / Dining':  '#FF5200',
-  'Bar / Pub':            '#7B2D8B',
-  'Dessert / Bakery':     '#E91E8C',
-  'Salon / Spa':          '#E91E8C',
-  'Gym / Fitness':        '#1565C0',
-  'Retail / Fashion':     '#00897B',
-  'Supermarket / Grocery':'#388E3C',
-}
 
 function getCategorySearches(category?: string): CategorySearch[] {
   const cat = (category || '').toLowerCase()
@@ -319,8 +314,19 @@ function getCategorySearches(category?: string): CategorySearch[] {
   return CATEGORY_SEARCHES_FNB
 }
 
+// Fuzzy color matching — handles legacy DB categories AND new label-based categories
 function catColor(cat: string): string {
-  return CATEGORY_SEARCH_COLORS[cat] || '#757575'
+  const c = (cat || '').toLowerCase()
+  if (c.includes('cafe') || c.includes('coffee') || c.includes('tea') || c.includes('barista')) return '#6F4E37'
+  if (c.includes('bar') || c.includes('pub') || c.includes('beer') || c.includes('brewery')) return '#7B2D8B'
+  if (c.includes('salon') || c.includes('spa') || c.includes('beauty') || c.includes('wellness')) return '#E91E8C'
+  if (c.includes('gym') || c.includes('fitness') || c.includes('yoga') || c.includes('crossfit')) return '#1565C0'
+  if (c.includes('grocery') || c.includes('supermarket') || c.includes('super market')) return '#388E3C'
+  if (c.includes('retail') || c.includes('fashion') || c.includes('cloth') || c.includes('shoe') || c.includes('store')) return '#00897B'
+  if (c.includes('dessert') || c.includes('bakery') || c.includes('ice cream') || c.includes('sweet') || c.includes('cake')) return '#F472B6'
+  if (c.includes('qsr') || c.includes('takeaway') || c.includes('fast food') || c.includes('meal')) return '#F97316'
+  if (c.includes('restaurant') || c.includes('dining') || c.includes('food') || c.includes('diner') || c.includes('bistro')) return '#FF5200'
+  return '#757575'
 }
 
 // ─── risk engine ─────────────────────────────────────────────────────────────
@@ -470,12 +476,16 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
   async function runEnrichmentWithProgress() {
     setEnriching(true); setEnrichStep(0)
     const interval = setInterval(() => setEnrichStep(p => p < 6 ? p + 1 : p), 1800)
+    // Abort enrichment if it takes > 90 seconds (Supabase/API timeout)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 90000)
     try {
       const r = await fetch(`/api/intelligence/${propertyId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ businessType: targetCategory }),
+        signal: controller.signal,
       })
-      clearInterval(interval); setEnrichStep(6)
+      clearInterval(interval); clearTimeout(timeout); setEnrichStep(6)
       if (r.ok) {
         await new Promise(res => setTimeout(res, 500))
         const r2 = await fetch(`/api/intelligence/${propertyId}`)
@@ -485,7 +495,7 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
           setCompetitors(j.competitors); setWard(j.ward ?? null)
         }
       }
-    } catch { clearInterval(interval) }
+    } catch { clearInterval(interval); clearTimeout(timeout) }
     finally { setEnriching(false); setEnrichStep(0) }
   }
 
@@ -725,60 +735,49 @@ function CompetitionTab({ competitors, data, ward, mapsLoaded, targetCategory }:
     return { lat: 12.9716, lng: 77.5946 }
   }, [ward])
 
-  // DB pins (from stored competitors with coordinates)
-  const dbPins = useMemo((): LivePin[] =>
-    competitors
+  // Always re-run when competitors or map loads — ensures DB pins never get dropped
+  useEffect(() => {
+    // Build DB pins inline (avoids stale closure from useMemo)
+    const currentDbPins: LivePin[] = competitors
       .filter(c => c.latitude != null && c.longitude != null)
       .map(c => ({
         id: c.id, name: c.name, lat: c.latitude!, lng: c.longitude!,
         category: c.category, rating: c.rating, reviewCount: c.reviewCount,
         priceLevel: c.priceLevel, distance: c.distance,
-      })),
-    [competitors]
-  )
+      }))
 
-  // Always fetch live from Google Places via multi-keyword sequential search
-  useEffect(() => {
+    // Show DB pins immediately while live fetch runs
     if (!mapsLoaded || !apiKey) {
-      if (dbPins.length > 0) setLivePins(dbPins)
+      setLivePins(currentDbPins)
       return
     }
-    const searches = getCategorySearches(targetCategory)
+
+    setLivePins(currentDbPins) // render DB pins now, enhance below
     setFetchingLive(true)
-    const seen = new Set<string>()
-    const allPins: LivePin[] = []
 
-    // Add DB pins first (deduplicated)
-    dbPins.forEach(p => {
-      const key = p.id || `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
-      if (!seen.has(key)) { seen.add(key); allPins.push(p) }
-    })
+    const searches = getCategorySearches(targetCategory)
+    const seen = new Set<string>(currentDbPins.map(p => p.id || `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`))
+    const allPins: LivePin[] = [...currentDbPins]
 
-    // Sequential keyword searches — each keyword adds new unique results
     const runSearches = async () => {
       for (const s of searches) {
         try {
-          const url = `/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&keyword=${encodeURIComponent(s.keyword)}&radius=800`
+          // Pass both type AND keyword — Google Places returns more accurate results
+          const url = `/api/intelligence/nearby?lat=${center.lat}&lng=${center.lng}&type=${encodeURIComponent(s.type)}&keyword=${encodeURIComponent(s.keyword)}&radius=800`
           const j = await fetch(url).then(r => r.json()) as { places?: LivePin[] }
-          const places = j.places ?? []
-          if (places.length === 0) continue
-          places.forEach(p => {
+          ;(j.places ?? []).forEach(p => {
             const key = p.id || `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
-            if (!seen.has(key)) {
-              seen.add(key)
-              allPins.push({ ...p, category: s.label })
-            }
+            if (!seen.has(key)) { seen.add(key); allPins.push({ ...p, category: s.label }) }
           })
-        } catch {
-          // silent — try next keyword
-        }
+        } catch { /* try next */ }
       }
       setLivePins([...allPins])
     }
 
     runSearches().finally(() => setFetchingLive(false))
+  // competitors in deps so DB pins re-render when data loads
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapsLoaded, apiKey, center.lat, center.lng, targetCategory])
+  }, [competitors, mapsLoaded, apiKey, center.lat, center.lng, targetCategory])
 
   // fitBounds once pins load
   useEffect(() => {
@@ -981,24 +980,26 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
         <p className="text-xs text-slate-500 mt-2">Prime consumer age bracket · India urban benchmark ~42%</p>
       </div>
 
-      {/* Stats grid — FIX 3: replaced median income & catchment pop */}
+      {/* Stats grid — replaced median income & catchment pop */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Commercial Rent */}
-        {ward?.commercialRentMin != null && ward?.commercialRentMax != null ? (
-          <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-xs text-slate-500">Commercial Rent</div>
-            <div className="text-base font-bold text-slate-900 mt-0.5">
-              ₹{ward.commercialRentMin}–₹{ward.commercialRentMax}
+        {/* Commercial Rent — use DB values or derive from medianIncome */}
+        {(() => {
+          const income = ward?.medianIncome ?? data.medianIncome
+          const rentMin = ward?.commercialRentMin ?? (income ? Math.round(income / 1000 / 5) * 5 : null)
+          const rentMax = ward?.commercialRentMax ?? (income ? Math.round(income / 500 / 5) * 5 : null)
+          const isEstimate = !ward?.commercialRentMin
+          return rentMin && rentMax ? (
+            <div className="bg-white rounded-xl border border-slate-100 p-4">
+              <div className="text-xs text-slate-500">Commercial Rent</div>
+              <div className="text-base font-bold text-slate-900 mt-0.5">
+                ₹{rentMin}–₹{rentMax}
+              </div>
+              <div className="text-xs text-slate-400">
+                {isEstimate ? '/sqft/mo · estimated' : '/sqft/mo · ground floor, road-facing'}
+              </div>
             </div>
-            <div className="text-xs text-slate-400">/sqft/mo · ground floor, road-facing</div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-xs text-slate-500">Commercial Rent</div>
-            <div className="text-base font-bold text-slate-900 mt-0.5">—</div>
-            <div className="text-xs text-slate-400">data loading</div>
-          </div>
-        )}
+          ) : null
+        })()}
 
         {/* Dining out */}
         {ward?.diningOutPerWeek != null && (

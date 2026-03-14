@@ -6,9 +6,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const lat = searchParams.get('lat')
   const lng = searchParams.get('lng')
-  const type = searchParams.get('type') || ''
+  const type = searchParams.get('type') || ''  // e.g. 'restaurant', 'cafe', 'apartment'
   const radius = searchParams.get('radius') || '800'
-  const keyword = searchParams.get('keyword') || ''
+  const keyword = searchParams.get('keyword') || ''  // e.g. 'cafe coffee'
 
   if (!lat || !lng) {
     return NextResponse.json({ places: [] })
