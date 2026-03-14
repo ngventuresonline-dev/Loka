@@ -1208,29 +1208,59 @@ function TransportTab({ data, ward, mapsLoaded }: {
   const [fetchingMetro, setFetchingMetro] = useState(false)
 
   useEffect(() => {
-    if (!mapsLoaded || !ward?.latitude || !ward?.longitude) return
+    if (!ward?.latitude || !ward?.longitude) return
     setFetchingMetro(true)
-    fetch(`/api/intelligence/nearby?lat=${ward.latitude}&lng=${ward.longitude}&type=subway_station&radius=2500`)
-      .then(r => r.json())
-      .then(j => {
-        const found: MetroStation[] = (j.places ?? []).map((p: { name: string; lat: number; lng: number; distance: number }) => ({
-          name: p.name, lat: p.lat, lng: p.lng, distance: p.distance,
-        }))
-        found.sort((a, b) => a.distance - b.distance)
-        setStations(found)
+
+    const lat = ward.latitude
+    const lng = ward.longitude
+    const base = `/api/intelligence/nearby?lat=${lat}&lng=${lng}&radius=2500`
+
+    // Try multiple search strategies — Google's type coverage for Indian metro varies
+    const searches = [
+      `${base}&type=subway_station`,
+      `${base}&type=transit_station&keyword=metro`,
+      `${base}&keyword=metro+station`,
+    ]
+
+    Promise.allSettled(searches.map(url => fetch(url).then(r => r.json())))
+      .then(results => {
+        const seen = new Set<string>()
+        const all: MetroStation[] = []
+        results.forEach(r => {
+          if (r.status === 'fulfilled') {
+            ;(r.value.places ?? []).forEach((p: { name: string; lat: number; lng: number; distance: number }) => {
+              const key = p.name.trim().toLowerCase()
+              // Only include places that look like metro/train stations
+              if (!seen.has(key) && /metro|station|namma/i.test(p.name)) {
+                seen.add(key)
+                all.push({ name: p.name, lat: p.lat, lng: p.lng, distance: p.distance })
+              }
+            })
+          }
+        })
+        all.sort((a, b) => a.distance - b.distance)
+        setStations(all)
       })
       .catch(() => {})
       .finally(() => setFetchingMetro(false))
-  }, [mapsLoaded, ward?.latitude, ward?.longitude])
+  }, [ward?.latitude, ward?.longitude])
 
   const nearest = stations[0] ?? null
-  const nearestDist = nearest?.distance ?? null
-  const hasMetro = stations.length > 0
+  const nearestDist = nearest?.distance ?? data.metroDistance ?? null
+  // hasMetro: live results OR the DB stored a metro name from enrichment
+  const hasMetro = stations.length > 0 || (data.metroName != null && data.metroDistance != null)
 
   const circleColor = !nearestDist ? '#EF4444'
     : nearestDist <= 500  ? '#22C55E'
     : nearestDist <= 1000 ? '#F59E0B'
     : '#EF4444'
+
+  // If live search returned nothing but DB has a stored station, synthesise a card from DB data
+  const dbFallbackStation: MetroStation | null =
+    stations.length === 0 && data.metroName && data.metroDistance != null
+      ? { name: data.metroName, lat: center.lat, lng: center.lng, distance: data.metroDistance }
+      : null
+  const displayStations = stations.length > 0 ? stations : dbFallbackStation ? [dbFallbackStation] : []
 
   return (
     <div className="space-y-4">
@@ -1250,7 +1280,7 @@ function TransportTab({ data, ward, mapsLoaded }: {
               icon={{ path: (window as any).google?.maps?.SymbolPath?.CIRCLE ?? 0, scale: 12, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }}
               zIndex={100} />
             {/* Metro station pins */}
-            {stations.map((s, i) => {
+            {displayStations.map((s, i) => {
               const lineInfo = getMetroLineInfo(s.name)
               return (
                 <Marker key={i}
@@ -1292,12 +1322,12 @@ function TransportTab({ data, ward, mapsLoaded }: {
 
       {!fetchingMetro && !hasMetro && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-          No metro station found within 2.5km — auto-rickshaw and cab are primary access modes for this location
+          No metro station within 2.5km — auto-rickshaw and cab are primary access modes for this location
         </div>
       )}
 
       {/* Station list */}
-      {stations.map((s, i) => {
+      {displayStations.map((s, i) => {
         const lineInfo = getMetroLineInfo(s.name)
         const walkLabel = s.distance <= 500 ? 'Walking distance' : s.distance <= 1000 ? '~10 min walk' : '~15+ min walk'
         const dotColor = s.distance <= 500 ? '#22C55E' : s.distance <= 1000 ? '#F59E0B' : '#EF4444'
