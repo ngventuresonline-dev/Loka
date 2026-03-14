@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendVisitScheduleWebhook } from '@/lib/pabbly-webhook'
 import { getPrisma } from '@/lib/get-prisma'
 import { createVisitCalendarEvent } from '@/lib/google-calendar'
-import { sendNgVisitNotification } from '@/lib/visit-email'
+import { sendVisitEmails } from '@/lib/visit-email'
 
 /**
  * Schedule a visit (no payment) and notify N&G.
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Email N&G (ngventuresonline@gmail.com)
-    sendNgVisitNotification({
+    // Email N&G + brand confirmation
+    sendVisitEmails({
       brandName: name,
       brandEmail: email,
       brandPhone: phone,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       propertyTitle,
       propertyId,
       notes: note || null,
-    }).catch(err => console.warn('[Visit Schedule] N&G email failed:', err))
+    }).catch(err => console.warn('[Visit Schedule] Email failed:', err))
 
     // Create Google Calendar event (we await it so we can surface errors)
     let calendarError: string | null = null
