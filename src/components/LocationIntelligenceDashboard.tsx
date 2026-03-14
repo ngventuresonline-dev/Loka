@@ -604,7 +604,7 @@ export default function LocationIntelligenceDashboard({ propertyId, targetCatego
         <CompetitionTab competitors={competitors} data={data} ward={ward} mapsLoaded={mapsLoaded} targetCategory={targetCategory} />
       )}
       {activeTab === 'demographics' && (
-        <DemographicsTab data={data} ward={ward} mapsLoaded={mapsLoaded} />
+        <DemographicsTab data={data} ward={ward} mapsLoaded={mapsLoaded} property={property} />
       )}
       {activeTab === 'transport' && (
         <TransportTab data={data} ward={ward} mapsLoaded={mapsLoaded} />
@@ -889,8 +889,8 @@ interface NearbyWard {
   populationDensity: number; population2026: number; incomeAbove15L: number; distance: number
 }
 
-function DemographicsTab({ data, ward, mapsLoaded }: {
-  data: IntelligenceData; ward: WardData | null; mapsLoaded: boolean
+function DemographicsTab({ data, ward, mapsLoaded, property }: {
+  data: IntelligenceData; ward: WardData | null; mapsLoaded: boolean; property: PropertyData | null
 }) {
   const apiKey = getGoogleMapsApiKey()
   const [nearbyWards, setNearbyWards] = useState<NearbyWard[]>([])
@@ -982,27 +982,38 @@ function DemographicsTab({ data, ward, mapsLoaded }: {
 
       {/* Stats grid — replaced median income & catchment pop */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Commercial Rent — use seeded DB values; fall back to ward.medianIncome (monthly) only */}
+        {/* Commercial Rent — seeded exact values first, then derive from property rent/sqft */}
         {(() => {
-          // ward.medianIncome is monthly (seeded in INR/month e.g. 66000)
-          // data.medianIncome is annual from census — do NOT use it here (gives 12× wrong result)
-          const monthlyIncome = ward?.medianIncome  // only monthly ward income as proxy
-          const rentMin = ward?.commercialRentMin
-            ?? (monthlyIncome ? Math.max(20, Math.min(400, Math.round(monthlyIncome / 1000 / 5) * 5)) : null)
-          const rentMax = ward?.commercialRentMax
-            ?? (monthlyIncome ? Math.max(40, Math.min(800, Math.round(monthlyIncome / 500 / 5) * 5)) : null)
-          const isEstimate = !ward?.commercialRentMin
-          return rentMin && rentMax ? (
-            <div className="bg-white rounded-xl border border-slate-100 p-4">
-              <div className="text-xs text-slate-500">Commercial Rent</div>
-              <div className="text-base font-bold text-slate-900 mt-0.5">
-                ₹{rentMin}–₹{rentMax}
+          // Priority 1: exact values seeded per locality
+          if (ward?.commercialRentMin != null && ward?.commercialRentMax != null) {
+            return (
+              <div className="bg-white rounded-xl border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">Commercial Rent</div>
+                <div className="text-base font-bold text-slate-900 mt-0.5">
+                  ₹{ward.commercialRentMin}–₹{ward.commercialRentMax}
+                </div>
+                <div className="text-xs text-slate-400">/sqft/mo · ground floor, road-facing</div>
               </div>
-              <div className="text-xs text-slate-400">
-                {isEstimate ? '/sqft/mo · approx.' : '/sqft/mo · ground floor, road-facing'}
+            )
+          }
+          // Priority 2: derive from the property's own monthly rent ÷ size
+          const monthlyRent = computeMonthlyRent(property)
+          const sqft = property?.size ? Number(property.size) : 0
+          if (monthlyRent > 0 && sqft > 0) {
+            const perSqft = monthlyRent / sqft
+            const rentMin = Math.round(perSqft * 0.75 / 5) * 5
+            const rentMax = Math.round(perSqft * 1.25 / 5) * 5
+            return (
+              <div className="bg-white rounded-xl border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">Commercial Rent</div>
+                <div className="text-base font-bold text-slate-900 mt-0.5">
+                  ₹{rentMin}–₹{rentMax}
+                </div>
+                <div className="text-xs text-slate-400">/sqft/mo · area range</div>
               </div>
-            </div>
-          ) : null
+            )
+          }
+          return null
         })()}
 
         {/* Dining out */}
