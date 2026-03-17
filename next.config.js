@@ -88,6 +88,16 @@ const nextConfig = {
     }
     return config
   },
+  // Clean URL rewrites for static landing pages
+  async rewrites() {
+    return [
+      {
+        source: '/natura-walk',
+        destination: '/natura-walk.html',
+      },
+    ]
+  },
+
   // Security headers (additional ones in middleware)
   async headers() {
     return [
