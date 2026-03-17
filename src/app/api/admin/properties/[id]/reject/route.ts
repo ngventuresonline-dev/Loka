@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-security'
 import { getPrisma } from '@/lib/get-prisma'
+import { sendPropertyStatusEmail } from '@/lib/lead-email'
 
 export async function POST(
   request: NextRequest,
@@ -47,10 +48,22 @@ export async function POST(
 
     const { id: propertyId } = await params
 
-    // Check if property exists first
+    // Fetch property with owner details for the status email
     const existingProperty = await prisma.property.findUnique({
       where: { id: propertyId },
-      select: { id: true, status: true, availability: true }
+      select: {
+        id: true,
+        title: true,
+        city: true,
+        status: true,
+        availability: true,
+        owner: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
     })
 
     if (!existingProperty) {
@@ -61,64 +74,71 @@ export async function POST(
     }
 
     // Update property status to rejected
-    // Try to update status field, but fallback to availability if status doesn't exist yet
-    try {
-      const property = await prisma.property.update({
-        where: { id: propertyId },
-        data: { 
-          status: 'rejected',
-          availability: false // Make it unavailable when rejected
-        },
-      })
+    let updatedProperty: { id: string; status: unknown; availability: boolean | null }
 
-      return NextResponse.json({
-        success: true,
-        property: {
-          id: property.id,
-          status: property.status,
+    try {
+      updatedProperty = await prisma.property.update({
+        where: { id: propertyId },
+        data: {
+          status: 'rejected',
+          availability: false,
         },
+        select: { id: true, status: true, availability: true },
       })
     } catch (statusError: any) {
-      // If status field doesn't exist yet, fallback to availability only
-      if (statusError.message?.includes('status') || statusError.code === 'P2009' || statusError.message?.includes('Unknown argument') || statusError.message?.includes('column') && statusError.message?.includes('does not exist')) {
+      // Fallback if status column doesn't exist yet
+      if (
+        statusError.message?.includes('status') ||
+        statusError.code === 'P2009' ||
+        statusError.message?.includes('Unknown argument') ||
+        (statusError.message?.includes('column') && statusError.message?.includes('does not exist'))
+      ) {
         console.warn('[Reject Property] Status field not available, using availability fallback:', statusError.message)
-        try {
-          const property = await prisma.property.update({
-            where: { id: propertyId },
-            data: { 
-              availability: false // Make it unavailable when rejected
-            },
-          })
-
-          return NextResponse.json({
-            success: true,
-            property: {
-              id: property.id,
-              availability: property.availability,
-              message: 'Property rejected (using legacy availability field)'
-            },
-          })
-        } catch (fallbackError: any) {
-          console.error('[Reject Property] Fallback update failed:', fallbackError)
-          throw fallbackError
-        }
+        updatedProperty = await prisma.property.update({
+          where: { id: propertyId },
+          data: { availability: false },
+          select: { id: true, status: true, availability: true },
+        })
+      } else {
+        throw statusError
       }
-      throw statusError
     }
+
+    // Fire owner status email non-blocking (don't hold up the HTTP response)
+    if (existingProperty.owner?.email) {
+      sendPropertyStatusEmail({
+        status: 'rejected',
+        ownerEmail: existingProperty.owner.email,
+        ownerName: existingProperty.owner.name || 'there',
+        propertyTitle: existingProperty.title,
+        propertyCity: existingProperty.city,
+        propertyId,
+      }).then(({ ownerOk, ngOk }) => {
+        console.log(`[Reject Property] Status email — ownerOk:${ownerOk} ngOk:${ngOk} property:${propertyId}`)
+      }).catch(err => console.error('[Reject Property] Status email error:', err))
+    }
+
+    return NextResponse.json({
+      success: true,
+      property: {
+        id: updatedProperty.id,
+        status: updatedProperty.status,
+        availability: updatedProperty.availability,
+      },
+    })
   } catch (error: any) {
     console.error('[Reject Property] Error:', {
       message: error?.message,
       code: error?.code,
       name: error?.name,
-      stack: error?.stack?.substring(0, 500)
+      stack: error?.stack?.substring(0, 500),
     })
     return NextResponse.json(
-      { 
+      {
         error: error?.message || 'Failed to reject property',
-        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
       },
       { status: 500 }
     )
   }
 }
-

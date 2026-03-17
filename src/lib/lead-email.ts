@@ -282,3 +282,281 @@ export async function sendDualEmail(params: DualEmailParams): Promise<{ ngOk: bo
 
   return { ngOk, userOk }
 }
+
+// ─── Property Status Notification (owner + N&G copy) ─────────────────────────
+
+const ORANGE = '#E8500A'
+const ORANGE_2 = '#FF6B2B'
+const DARK = '#1A0800'
+
+function approvedEmailHtml(data: {
+  ownerName: string
+  propertyTitle: string
+  propertyCity: string
+  propertyUrl: string
+}) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#FFF5F0;font-family:'DM Sans',system-ui,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F0;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+        <!-- Logo bar -->
+        <tr>
+          <td style="background:${DARK};border-radius:12px 12px 0 0;padding:24px 36px;">
+            <p style="margin:0;font-size:20px;font-weight:700;color:#fff;">
+              <span style="color:${ORANGE};">L</span><span style="color:${ORANGE_2};">●</span>kazen
+            </p>
+            <p style="margin:3px 0 0;font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">AI Powered Commercial Real Estate</p>
+          </td>
+        </tr>
+
+        <!-- Hero — green approved -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#16A34A,#22C55E);padding:36px;">
+            <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Listing Status Update</p>
+            <h1 style="margin:0 0 14px;font-size:28px;font-weight:800;color:#fff;line-height:1.2;">
+              🎉 Your listing is now live!
+            </h1>
+            <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.88);line-height:1.65;">
+              Hi ${data.ownerName}, your property <strong>${data.propertyTitle}</strong> in <strong>${data.propertyCity}</strong> has been <strong>approved</strong> and is now visible to brands on Lokazen.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="background:#fff;padding:36px;border-left:1px solid rgba(22,163,74,0.15);border-right:1px solid rgba(22,163,74,0.15);">
+
+            <p style="margin:0 0 14px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#16A34A;font-weight:600;">What happens now</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              ${[
+                ['Visible to brands', 'Your listing is searchable and being matched to qualified brands looking for commercial space.'],
+                ['AI-powered matching', 'Lokazen actively matches your property to brands that fit your location, size, and category.'],
+                ['Enquiries forwarded', 'Any brand that shortlists your property will be routed to you directly through the platform.'],
+              ].map(([step, desc]) => `
+              <tr>
+                <td style="vertical-align:top;padding:10px 0;border-bottom:1px solid #F0FDF4;">
+                  <span style="display:inline-block;background:#DCFCE7;color:#16A34A;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;border-radius:12px;white-space:nowrap;font-weight:700;margin-right:12px;">${step}</span>
+                </td>
+                <td style="padding:10px 0;border-bottom:1px solid #F0FDF4;font-size:13px;color:#6b7280;line-height:1.6;">${desc}</td>
+              </tr>`).join('')}
+            </table>
+
+            <!-- CTA -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" style="padding:8px 0 20px;">
+                  <a href="${data.propertyUrl}" style="display:inline-block;background:linear-gradient(135deg,${ORANGE},${ORANGE_2});color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:10px;letter-spacing:0.02em;">
+                    View Your Live Listing →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <div style="background:#FFF5F0;border-radius:8px;padding:18px 20px;border-left:3px solid ${ORANGE};">
+              <p style="margin:0;font-size:13px;color:${DARK};line-height:1.6;">
+                Questions? Reply to this email or reach us at 
+                <a href="mailto:support@lokazen.in" style="color:${ORANGE};text-decoration:none;">support@lokazen.in</a>
+              </p>
+            </div>
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:${DARK};border-radius:0 0 12px 12px;padding:22px 36px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td><p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);">© ${new Date().getFullYear()} Lokazen · GVS Ventures · Bengaluru</p></td>
+                <td align="right"><a href="https://lokazen.in" style="color:rgba(255,255,255,0.35);font-size:11px;text-decoration:none;">lokazen.in</a></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+function rejectedEmailHtml(data: {
+  ownerName: string
+  propertyTitle: string
+  propertyCity: string
+}) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#FFF5F0;font-family:'DM Sans',system-ui,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F0;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+        <!-- Logo bar -->
+        <tr>
+          <td style="background:${DARK};border-radius:12px 12px 0 0;padding:24px 36px;">
+            <p style="margin:0;font-size:20px;font-weight:700;color:#fff;">
+              <span style="color:${ORANGE};">L</span><span style="color:${ORANGE_2};">●</span>kazen
+            </p>
+            <p style="margin:3px 0 0;font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">AI Powered Commercial Real Estate</p>
+          </td>
+        </tr>
+
+        <!-- Hero — neutral/warm tone -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#78350F,#92400E);padding:36px;">
+            <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.75);">Listing Status Update</p>
+            <h1 style="margin:0 0 14px;font-size:26px;font-weight:800;color:#fff;line-height:1.2;">
+              Your listing needs attention
+            </h1>
+            <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.85);line-height:1.65;">
+              Hi ${data.ownerName}, we reviewed <strong>${data.propertyTitle}</strong> in <strong>${data.propertyCity}</strong> and were unable to approve it at this time.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="background:#fff;padding:36px;border-left:1px solid rgba(120,53,15,0.12);border-right:1px solid rgba(120,53,15,0.12);">
+
+            <div style="background:#FFF7ED;border-radius:8px;padding:20px 22px;border-left:3px solid #F97316;margin-bottom:24px;">
+              <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:${DARK};">What this means</p>
+              <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.65;">
+                Your listing has been marked as <strong>not approved</strong> and is currently not visible to brands. This could be due to incomplete information, image quality, or a mismatch with our current platform criteria.
+              </p>
+            </div>
+
+            <p style="margin:0 0 14px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${ORANGE};font-weight:600;">What you can do</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              ${[
+                ['Contact us', 'Reply to this email or write to support@lokazen.in to understand the specific reason.'],
+                ['Update your listing', 'Log in to Lokazen, edit your property details, and re-submit for review.'],
+                ['Add better images', 'Listings with clear, high-quality photos have a significantly higher approval rate.'],
+              ].map(([step, desc]) => `
+              <tr>
+                <td style="vertical-align:top;padding:10px 0;border-bottom:1px solid #FFF5F0;">
+                  <span style="display:inline-block;background:#FFF0E0;color:${ORANGE};font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;border-radius:12px;white-space:nowrap;font-weight:700;margin-right:12px;">${step}</span>
+                </td>
+                <td style="padding:10px 0;border-bottom:1px solid #FFF5F0;font-size:13px;color:#6b7280;line-height:1.6;">${desc}</td>
+              </tr>`).join('')}
+            </table>
+
+            <div style="background:#FFF5F0;border-radius:8px;padding:18px 20px;border-left:3px solid ${ORANGE};">
+              <p style="margin:0;font-size:13px;color:${DARK};line-height:1.6;">
+                We are happy to help you get your listing live. Reach us at 
+                <a href="mailto:support@lokazen.in" style="color:${ORANGE};text-decoration:none;">support@lokazen.in</a>
+                &nbsp;or reply to this email.
+              </p>
+            </div>
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:${DARK};border-radius:0 0 12px 12px;padding:22px 36px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td><p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);">© ${new Date().getFullYear()} Lokazen · GVS Ventures · Bengaluru</p></td>
+                <td align="right"><a href="https://lokazen.in" style="color:rgba(255,255,255,0.35);font-size:11px;text-decoration:none;">lokazen.in</a></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+/**
+ * Sends a property status notification to the property owner.
+ * - Approved: congratulations + live listing link + what happens next
+ * - Rejected: explanation + what they can do + support contact
+ *
+ * Also sends a copy to ngventuresonline@gmail.com for team awareness.
+ * Non-blocking by design — call with .catch() at the call-site.
+ */
+export async function sendPropertyStatusEmail(params: {
+  status: 'approved' | 'rejected'
+  ownerEmail: string
+  ownerName: string
+  propertyTitle: string
+  propertyCity: string
+  propertyId: string
+}): Promise<{ ownerOk: boolean; ngOk: boolean }> {
+  const resend = getResend()
+  if (!resend) return { ownerOk: false, ngOk: false }
+
+  const from = getFrom()
+  const { status, ownerEmail, ownerName, propertyTitle, propertyCity, propertyId } = params
+
+  // Build the public-facing property URL using the property ID directly
+  // (encodePropertyId is not imported here to keep this file dependency-free)
+  const propertyUrl = `https://lokazen.in/properties/${Buffer.from(propertyId).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}/match`
+
+  const isApproved = status === 'approved'
+
+  const ownerSubject = isApproved
+    ? `🎉 Your listing "${propertyTitle}" is now live on Lokazen`
+    : `Update on your listing "${propertyTitle}" — Lokazen`
+
+  const teamSubject = isApproved
+    ? `[Approved] ${propertyTitle} · ${propertyCity}`
+    : `[Rejected] ${propertyTitle} · ${propertyCity}`
+
+  const ownerHtml = isApproved
+    ? approvedEmailHtml({ ownerName, propertyTitle, propertyCity, propertyUrl })
+    : rejectedEmailHtml({ ownerName, propertyTitle, propertyCity })
+
+  const teamHtml = `<p style="font-family:sans-serif;font-size:14px;">
+    <strong>Property ${isApproved ? 'approved ✅' : 'rejected ❌'}</strong><br/><br/>
+    Title: ${propertyTitle}<br/>
+    City: ${propertyCity}<br/>
+    Owner: ${ownerName} &lt;${ownerEmail}&gt;<br/>
+    Property ID: ${propertyId}<br/><br/>
+    Status email sent to owner at ${ownerEmail}.
+  </p>`
+
+  let ownerOk = false
+  let ngOk = false
+
+  // Email 1 — to the property owner
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: ownerEmail,
+      replyTo: NG_EMAIL,
+      subject: ownerSubject,
+      html: ownerHtml,
+    })
+    if (error) console.error('[property-status-email] Owner email failed:', error)
+    else ownerOk = true
+  } catch (err) {
+    console.error('[property-status-email] Owner email threw:', err)
+  }
+
+  // Email 2 — internal copy to N&G
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: NG_EMAIL,
+      subject: teamSubject,
+      html: teamHtml,
+    })
+    if (error) console.error('[property-status-email] N&G copy failed:', error)
+    else ngOk = true
+  } catch (err) {
+    console.error('[property-status-email] N&G copy threw:', err)
+  }
+
+  return { ownerOk, ngOk }
+}
