@@ -3,7 +3,7 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM || 'Lokazen <noreply@support.lokazen.in>'
-const TEAM_EMAIL = 'support@lokazen.in'
+const TEAM_EMAILS = ['support@lokazen.in', 'ngventuresonline@gmail.com']
 
 function teamEmailHtml(data: {
   brandName: string
@@ -44,7 +44,7 @@ function teamEmailHtml(data: {
                 </td>
                 <td align="right" style="vertical-align:top;">
                   <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:12px 16px;text-align:center;">
-                    <div style="color:#fff;font-size:28px;font-weight:700;line-height:1;">82</div>
+                    <div style="color:#fff;font-size:28px;font-weight:700;line-height:1;">84</div>
                     <div style="color:rgba(255,255,255,0.75);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;">Lokazen Score</div>
                   </div>
                 </td>
@@ -85,7 +85,7 @@ function teamEmailHtml(data: {
                   <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#1A0800;">Next step</p>
                   <p style="margin:0;font-size:13px;color:#7A5540;line-height:1.6;">
                     ${data.enquiryType === 'visit'
-                      ? 'This brand has requested a site visit. Reach out within 48 hours to confirm and schedule.'
+                      ? 'This brand has requested a site visit. Arrange it at the earliest and confirm with them directly.'
                       : 'This brand wants to onboard. Follow up to qualify, match to the right unit, and begin the placement process.'}
                   </p>
                 </td>
@@ -101,12 +101,13 @@ function teamEmailHtml(data: {
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td>
-                  <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#fff;">
-                    <span style="color:#E8500A;">L</span>kazen
+                  <img src="https://lokazen.in/lokazen-favicon.png" alt="Lokazen" width="32" height="32" style="display:block;margin-bottom:8px;border-radius:6px;" />
+                  <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#fff;">
+                    <span style="color:#E8500A;">L</span><span style="color:#FF6B2B;">●</span>kazen
                   </p>
-                  <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.06em;">Brand Intelligence Platform · Bengaluru</p>
+                  <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.06em;">AI Powered Commercial Real Estate Platform · Bengaluru</p>
                 </td>
-                <td align="right">
+                <td align="right" style="vertical-align:bottom;">
                   <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);">Natura Walk Mall · SH-35</p>
                   <p style="margin:4px 0 0;font-size:11px;color:rgba(255,255,255,0.35);">Sarjapur Road · 562125</p>
                 </td>
@@ -144,11 +145,20 @@ function userConfirmationHtml(data: {
 
         <!-- Header -->
         <tr>
-          <td style="background:#1A0800;border-radius:12px 12px 0 0;padding:32px 36px 28px;">
-            <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#fff;">
-              <span style="color:#E8500A;">L</span>kazen
-            </p>
-            <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">Brand Intelligence Platform</p>
+          <td style="background:#1A0800;border-radius:12px 12px 0 0;padding:28px 36px 24px;">
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:14px;">
+                  <img src="https://lokazen.in/lokazen-favicon.png" alt="Lokazen" width="40" height="40" style="display:block;border-radius:8px;" />
+                </td>
+                <td style="vertical-align:middle;">
+                  <p style="margin:0 0 2px;font-size:22px;font-weight:700;color:#fff;line-height:1;">
+                    <span style="color:#E8500A;">L</span><span style="color:#FF6B2B;">●</span>kazen
+                  </p>
+                  <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">AI Powered Commercial Real Estate Platform</p>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 
@@ -159,7 +169,7 @@ function userConfirmationHtml(data: {
               ${isVisit ? 'Site Visit Confirmed' : 'Onboarding Enquiry Received'}
             </p>
             <h1 style="margin:0 0 14px;font-size:28px;font-weight:700;color:#fff;line-height:1.15;">
-              ${isVisit ? 'We\'ll arrange your visit within 48 hours.' : 'We\'ll be in touch within 24 hours.'}
+              ${isVisit ? 'We\'ll arrange a site visit at the earliest.' : 'We\'ll be in touch within 24 hours.'}
             </h1>
             <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.8);line-height:1.6;">
               Hi ${data.contactName}, your enquiry for <strong>${data.brandName}</strong> at Natura Walk Mall has been received by the Lokazen team.
@@ -220,10 +230,20 @@ function userConfirmationHtml(data: {
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td>
-                  <p style="margin:0 0 4px;font-size:13px;color:rgba(255,255,255,0.5);">Questions? Reply to this email or reach us at</p>
+                  <table cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+                    <tr>
+                      <td style="padding-right:10px;vertical-align:middle;">
+                        <img src="https://lokazen.in/lokazen-favicon.png" alt="Lokazen" width="26" height="26" style="display:block;border-radius:5px;" />
+                      </td>
+                      <td style="vertical-align:middle;">
+                        <span style="font-size:14px;font-weight:700;color:#fff;"><span style="color:#E8500A;">L</span><span style="color:#FF6B2B;">●</span>kazen</span>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:0 0 4px;font-size:12px;color:rgba(255,255,255,0.4);">Questions? Reply to this email or reach us at</p>
                   <a href="mailto:support@lokazen.in" style="color:#E8500A;font-size:13px;text-decoration:none;font-weight:600;">support@lokazen.in</a>
                 </td>
-                <td align="right">
+                <td align="right" style="vertical-align:bottom;">
                   <a href="https://lokazen.in" style="color:rgba(255,255,255,0.35);font-size:11px;text-decoration:none;letter-spacing:0.06em;">lokazen.in</a>
                 </td>
               </tr>
@@ -255,7 +275,7 @@ export async function POST(request: NextRequest) {
       // Email to Lokazen team
       resend.emails.send({
         from: FROM,
-        to: [TEAM_EMAIL],
+        to: TEAM_EMAILS,
         subject,
         html: teamEmailHtml({ brandName, category, unitSize, contactName, phone, email, enquiryType }),
       }),
