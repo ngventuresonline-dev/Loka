@@ -109,18 +109,21 @@ export default function PropertiesPage() {
     }
 
     try {
-      // Include user email and ID in query params for authentication
       const url = `/api/admin/properties/${propertyId}/approve?userId=${encodeURIComponent(user.id)}&userEmail=${encodeURIComponent(user.email)}`
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       })
       
       if (response.ok) {
-        fetchProperties() // Refresh list
+        // Optimistic update: flip the property status immediately
+        setProperties(prev =>
+          prev.map(p =>
+            p.id === propertyId ? { ...p, status: 'approved' as const, availability: true } : p
+          )
+        )
+        fetchProperties()
       } else {
         const errorData = await response.json().catch(() => ({}))
         alert(errorData.error || 'Failed to approve property')
@@ -390,10 +393,10 @@ export default function PropertiesPage() {
 
         {/* Filter: All | Pending | Approved */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {(['all', 'pending', 'approved'] as const).map((s) => (
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => (
             <button
               key={s}
-              onClick={() => handleFilterChange('status', s)}
+              onClick={() => handleFilterChange('status', s === 'all' ? '' : s)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 (filters.status || 'all') === s
                   ? 'bg-[#FF5200] text-white'
@@ -632,6 +635,22 @@ export default function PropertiesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10">
                       <div className="flex items-center space-x-2">
+                        {property.status === 'pending' && (
+                          <button
+                            onClick={() => handleApprove(property.id)}
+                            className="text-green-600 hover:text-green-900 whitespace-nowrap font-semibold"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {property.status === 'pending' && (
+                          <button
+                            onClick={() => handleReject(property.id)}
+                            className="text-orange-500 hover:text-orange-700 whitespace-nowrap"
+                          >
+                            Reject
+                          </button>
+                        )}
                         <button
                           onClick={() => router.push(`/admin/properties/${property.id}`)}
                           className="text-blue-600 hover:text-blue-900 whitespace-nowrap"

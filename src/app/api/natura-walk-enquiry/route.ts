@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.RESEND_FROM || 'Lokazen <noreply@support.lokazen.in>'
-const TEAM_EMAILS = ['support@lokazen.in', 'ngventuresonline@gmail.com']
+const NG_EMAIL = 'ngventuresonline@gmail.com'
+
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY?.trim()
+  if (!key) {
+    console.error('[natura-walk-enquiry] RESEND_API_KEY is not set in environment variables')
+    return null
+  }
+  return new Resend(key)
+}
+
+function getFrom(): string {
+  return process.env.RESEND_FROM || 'Lokazen <noreply@support.lokazen.in>'
+}
 
 function teamEmailHtml(data: {
   brandName: string
@@ -38,7 +49,7 @@ function teamEmailHtml(data: {
                     </span>
                   </div>
                   <h1 style="margin:0;color:#fff;font-size:24px;font-weight:700;line-height:1.2;">
-                    New Enquiry<br/>
+                    New ${data.enquiryType === 'visit' ? 'Site Visit' : 'Brand'} Enquiry<br/>
                     <span style="font-size:18px;opacity:0.85;">Natura Walk Mall</span>
                   </h1>
                 </td>
@@ -57,11 +68,10 @@ function teamEmailHtml(data: {
         <tr>
           <td style="background:#fff;padding:36px;border-left:1px solid rgba(232,80,10,0.12);border-right:1px solid rgba(232,80,10,0.12);">
 
-            <!-- Enquiry details -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
               <tr>
                 <td colspan="2" style="padding-bottom:16px;border-bottom:1px solid #FFF0E8;margin-bottom:16px;">
-                  <p style="margin:0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#E8500A;font-weight:600;">Brand Details</p>
+                  <p style="margin:0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#E8500A;font-weight:600;">Lead Details</p>
                 </td>
               </tr>
               ${[
@@ -71,6 +81,7 @@ function teamEmailHtml(data: {
                 ['Contact Name', data.contactName],
                 ['Phone / WhatsApp', data.phone],
                 ['Email', data.email],
+                ['Action Type', data.enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Onboarding'],
               ].map(([label, value], i) => `
               <tr style="background:${i % 2 === 0 ? '#FFF5F0' : '#fff'};">
                 <td style="padding:12px 14px;font-size:12px;color:#7A5540;font-weight:500;letter-spacing:0.04em;width:45%;border-radius:4px 0 0 4px;">${label}</td>
@@ -78,7 +89,6 @@ function teamEmailHtml(data: {
               </tr>`).join('')}
             </table>
 
-            <!-- Action prompt -->
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="background:#FFF5F0;border-radius:8px;padding:20px 22px;border-left:3px solid #E8500A;">
@@ -86,7 +96,7 @@ function teamEmailHtml(data: {
                   <p style="margin:0;font-size:13px;color:#7A5540;line-height:1.6;">
                     ${data.enquiryType === 'visit'
                       ? 'This brand has requested a site visit. Arrange it at the earliest and confirm with them directly.'
-                      : 'This brand wants to onboard. Follow up to qualify, match to the right unit, and begin the placement process.'}
+                      : 'This brand wants to onboard at Natura Walk Mall. Follow up to qualify, match to the right unit, and begin the placement process.'}
                   </p>
                 </td>
               </tr>
@@ -101,15 +111,13 @@ function teamEmailHtml(data: {
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td>
-                  <img src="https://lokazen.in/lokazen-favicon.png" alt="Lokazen" width="32" height="32" style="display:block;margin-bottom:8px;border-radius:6px;" />
                   <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#fff;">
                     <span style="color:#E8500A;">L</span><span style="color:#FF6B2B;">●</span>kazen
                   </p>
                   <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.06em;">AI Powered Commercial Real Estate Platform · Bengaluru</p>
                 </td>
                 <td align="right" style="vertical-align:bottom;">
-                  <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);">Natura Walk Mall · SH-35</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:rgba(255,255,255,0.35);">Sarjapur Road · 562125</p>
+                  <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);">Natura Walk Mall · Sarjapur Road</p>
                 </td>
               </tr>
             </table>
@@ -148,14 +156,11 @@ function userConfirmationHtml(data: {
           <td style="background:#1A0800;border-radius:12px 12px 0 0;padding:28px 36px 24px;">
             <table cellpadding="0" cellspacing="0">
               <tr>
-                <td style="vertical-align:middle;padding-right:14px;">
-                  <img src="https://lokazen.in/lokazen-favicon.png" alt="Lokazen" width="40" height="40" style="display:block;border-radius:8px;" />
-                </td>
                 <td style="vertical-align:middle;">
                   <p style="margin:0 0 2px;font-size:22px;font-weight:700;color:#fff;line-height:1;">
                     <span style="color:#E8500A;">L</span><span style="color:#FF6B2B;">●</span>kazen
                   </p>
-                  <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">AI Powered Commercial Real Estate Platform</p>
+                  <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">AI Powered Commercial Real Estate</p>
                 </td>
               </tr>
             </table>
@@ -169,10 +174,10 @@ function userConfirmationHtml(data: {
               ${isVisit ? 'Site Visit Confirmed' : 'Onboarding Enquiry Received'}
             </p>
             <h1 style="margin:0 0 14px;font-size:28px;font-weight:700;color:#fff;line-height:1.15;">
-              ${isVisit ? 'We\'ll arrange a site visit at the earliest.' : 'We\'ll be in touch within 24 hours.'}
+              ${isVisit ? "We'll arrange a site visit within 48 hours." : "We'll be in touch within 24 hours."}
             </h1>
             <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.8);line-height:1.6;">
-              Hi ${data.contactName}, your enquiry for <strong>${data.brandName}</strong> at Natura Walk Mall has been received by the Lokazen team.
+              Hi ${data.contactName}, your enquiry for <strong>${data.brandName}</strong> at <strong>Natura Walk Mall</strong> — GVS Ventures has been received.
             </p>
           </td>
         </tr>
@@ -195,7 +200,6 @@ function userConfirmationHtml(data: {
               </tr>`).join('')}
             </table>
 
-            <!-- What happens next -->
             <p style="margin:0 0 14px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#E8500A;font-weight:600;">What happens next</p>
             <table width="100%" cellpadding="0" cellspacing="0">
               ${(isVisit ? [
@@ -206,7 +210,7 @@ function userConfirmationHtml(data: {
                 ['Within 24 hrs', 'Lokazen reviews your requirements and reaches out'],
                 ['Unit matching', 'We match your brand to the right unit based on category and size'],
                 ['Placement', 'LOI, fitout guidance, and brand onboarding — end-to-end'],
-              ]).map(([step, desc], i) => `
+              ]).map(([step, desc]) => `
               <tr>
                 <td style="vertical-align:top;padding:10px 0;border-bottom:1px solid #FFF0E8;">
                   <span style="display:inline-block;background:linear-gradient(135deg,#E8500A,#FF6B2B);color:#fff;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;border-radius:12px;white-space:nowrap;margin-right:12px;">${step}</span>
@@ -217,7 +221,8 @@ function userConfirmationHtml(data: {
 
             <div style="background:#FFF5F0;border-radius:8px;padding:20px 22px;margin-top:24px;border-left:3px solid #E8500A;">
               <p style="margin:0;font-size:13px;color:#1A0800;line-height:1.6;">
-                Lokazen manages the placement end-to-end — unit negotiation, LOI, fitout guidance, brand onboarding. Success fee applies on deal closure.
+                Lokazen manages the placement end-to-end — unit negotiation, LOI, fitout guidance, brand onboarding.<br/>
+                Questions? Reply to this email or reach us at <a href="mailto:support@lokazen.in" style="color:#E8500A;">support@lokazen.in</a>
               </p>
             </div>
 
@@ -230,17 +235,7 @@ function userConfirmationHtml(data: {
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td>
-                  <table cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
-                    <tr>
-                      <td style="padding-right:10px;vertical-align:middle;">
-                        <img src="https://lokazen.in/lokazen-favicon.png" alt="Lokazen" width="26" height="26" style="display:block;border-radius:5px;" />
-                      </td>
-                      <td style="vertical-align:middle;">
-                        <span style="font-size:14px;font-weight:700;color:#fff;"><span style="color:#E8500A;">L</span><span style="color:#FF6B2B;">●</span>kazen</span>
-                      </td>
-                    </tr>
-                  </table>
-                  <p style="margin:0 0 4px;font-size:12px;color:rgba(255,255,255,0.4);">Questions? Reply to this email or reach us at</p>
+                  <p style="margin:0 0 4px;font-size:12px;color:rgba(255,255,255,0.4);">Questions? Reach us at</p>
                   <a href="mailto:support@lokazen.in" style="color:#E8500A;font-size:13px;text-decoration:none;font-weight:600;">support@lokazen.in</a>
                 </td>
                 <td align="right" style="vertical-align:bottom;">
@@ -267,42 +262,64 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const subject = enquiryType === 'visit'
-      ? `Site Visit Request — ${brandName} · Natura Walk`
-      : `Brand Enquiry — ${brandName} · Natura Walk`
+    const resend = getResend()
+    if (!resend) {
+      return NextResponse.json({ error: 'Email service not configured' }, { status: 503 })
+    }
 
-    const [teamResult, userResult] = await Promise.allSettled([
-      // Email to Lokazen team
-      resend.emails.send({
-        from: FROM,
-        to: TEAM_EMAILS,
-        subject,
+    const from = getFrom()
+    const actionLabel = enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Enquiry'
+    const teamSubject = `New Enquiry — ${brandName} · Natura Walk Mall`
+    const userSubject = enquiryType === 'visit'
+      ? `Your site visit request — Natura Walk Mall · GVS Ventures`
+      : `Your enquiry at Natura Walk Mall — GVS Ventures`
+
+    // Email 1: Lead notification to N&G team (sent immediately on form submit)
+    let ngOk = false
+    try {
+      const { error: ngErr } = await resend.emails.send({
+        from,
+        to: NG_EMAIL,
+        subject: teamSubject,
         html: teamEmailHtml({ brandName, category, unitSize, contactName, phone, email, enquiryType }),
-      }),
-      // Confirmation to brand/user
-      resend.emails.send({
-        from: FROM,
-        to: [email],
-        replyTo: TEAM_EMAIL,
-        subject: enquiryType === 'visit'
-          ? `Your site visit request is confirmed — Natura Walk Mall`
-          : `Enquiry received — Natura Walk Mall · Lokazen`,
+      })
+      if (ngErr) {
+        console.error('[natura-walk-enquiry] N&G email failed:', ngErr)
+      } else {
+        ngOk = true
+      }
+    } catch (err) {
+      console.error('[natura-walk-enquiry] N&G email threw:', err)
+    }
+
+    // Email 2: Confirmation to the user who submitted
+    let userOk = false
+    try {
+      const { error: userErr } = await resend.emails.send({
+        from,
+        to: email,
+        replyTo: NG_EMAIL,
+        subject: userSubject,
         html: userConfirmationHtml({ contactName, brandName, category, unitSize, enquiryType }),
-      }),
-    ])
+      })
+      if (userErr) {
+        console.error('[natura-walk-enquiry] User confirmation email failed:', userErr)
+      } else {
+        userOk = true
+      }
+    } catch (err) {
+      console.error('[natura-walk-enquiry] User confirmation email threw:', err)
+    }
 
-    const errors: string[] = []
-    if (teamResult.status === 'rejected') errors.push('team email failed')
-    if (userResult.status === 'rejected') errors.push('user email failed')
-
-    if (errors.length === 2) {
-      console.error('[natura-walk-enquiry] Both emails failed:', teamResult, userResult)
+    // Return success as long as at least the team notification went out
+    if (!ngOk && !userOk) {
       return NextResponse.json({ error: 'Failed to send emails' }, { status: 500 })
     }
 
+    console.log(`[natura-walk-enquiry] Emails sent — ngOk:${ngOk} userOk:${userOk} brand:${brandName} type:${enquiryType}`)
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('[natura-walk-enquiry]', error)
+    console.error('[natura-walk-enquiry] Unexpected error:', error)
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 })
   }
 }

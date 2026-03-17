@@ -17,6 +17,8 @@ export default function EditPropertyPage() {
   const propertyId = params.id as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [owners, setOwners] = useState<any[]>([])
   const [images, setImages] = useState<string[]>([])
   const [formData, setFormData] = useState({
@@ -42,6 +44,7 @@ export default function EditPropertyPage() {
     amenities: [] as string[],
     addedBy: 'owner' as 'admin' | 'owner',
     ownerId: '',
+    status: 'pending' as 'pending' | 'approved' | 'rejected',
     availability: true,
     isFeatured: false,
     displayOrder: 0,
@@ -351,6 +354,19 @@ export default function EditPropertyPage() {
         return
       }
 
+      // Extract amenities array and map_link from the stored amenities JSON
+      let amenitiesArr: string[] = []
+      let mapLinkVal = ''
+      if (prop.amenities) {
+        if (Array.isArray(prop.amenities)) {
+          amenitiesArr = prop.amenities
+        } else if (typeof prop.amenities === 'object' && prop.amenities !== null) {
+          const am = prop.amenities as Record<string, unknown>
+          amenitiesArr = Array.isArray(am.features) ? (am.features as string[]) : []
+          mapLinkVal = typeof am.map_link === 'string' ? am.map_link : ''
+        }
+      }
+
       setFormData({
         title: prop.title || '',
         description: prop.description || '',
@@ -361,7 +377,7 @@ export default function EditPropertyPage() {
         zipCode: prop.zipCode || '',
         latitude: prop.latitude?.toString() || '',
         longitude: prop.longitude?.toString() || '',
-        mapLink: prop.mapLink || '',
+        mapLink: prop.mapLink || mapLinkVal,
         price: prop.price ? Number(prop.price).toString() : '',
         priceType: prop.priceType || 'monthly',
         securityDeposit: prop.securityDeposit ? Number(prop.securityDeposit).toString() : '',
@@ -371,9 +387,10 @@ export default function EditPropertyPage() {
         storePowerCapacity: prop.storePowerCapacity || '',
         powerBackup: prop.powerBackup || false,
         waterFacility: prop.waterFacility || false,
-        amenities: Array.isArray(prop.amenities) ? prop.amenities : [],
+        amenities: amenitiesArr,
         addedBy: prop.owner?.userType === 'admin' || prop.ownerId === user?.id ? 'admin' : 'owner',
         ownerId: prop.ownerId || prop.owner?.id || '',
+        status: (prop.status as 'pending' | 'approved' | 'rejected') || 'pending',
         availability: prop.availability !== undefined ? prop.availability : true,
         isFeatured: prop.isFeatured || false,
         displayOrder: prop.displayOrder || 0,
@@ -430,16 +447,18 @@ export default function EditPropertyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user?.id || !user?.email) {
-      alert('You must be logged in to update properties')
+      setSaveError('You must be logged in to update properties')
       return
     }
 
     setSaving(true)
+    setSaveError(null)
+    setSaveSuccess(false)
 
     try {
       // Combine address with area if area is selected
       const fullAddress = formData.address
-      const addressWithArea = formData.area 
+      const addressWithArea = formData.area
         ? `${fullAddress}${fullAddress ? ', ' : ''}${formData.area}`
         : fullAddress
 
@@ -447,41 +466,60 @@ export default function EditPropertyPage() {
       const selectedType = propertyTypes.find(pt => pt.value === formData.propertyType)
       const dbPropertyType = selectedType ? selectedType.dbValue : formData.propertyType
 
-      const response = await fetch(`/api/admin/properties?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(
+        `/api/admin/properties?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-          propertyId,
-          ...formData,
-          propertyType: dbPropertyType,
-          address: addressWithArea,
-          price: parseFloat(formData.price || '0'),
-          securityDeposit: formData.securityDeposit ? parseFloat(formData.securityDeposit) : null,
-          rentEscalation: formData.rentEscalation ? parseFloat(formData.rentEscalation) : null,
-          size: parseInt(formData.size || '0'),
-          latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-          longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-          mapLink: formData.mapLink || null,
-          displayOrder: parseInt(String(formData.displayOrder)) || null,
-          images,
-        }),
-      })
+            propertyId,
+            title: formData.title,
+            description: formData.description,
+            address: addressWithArea,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode,
+            latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+            longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+            mapLink: formData.mapLink || null,
+            price: parseFloat(formData.price || '0'),
+            priceType: formData.priceType,
+            securityDeposit: formData.securityDeposit ? parseFloat(formData.securityDeposit) : null,
+            rentEscalation: formData.rentEscalation ? parseFloat(formData.rentEscalation) : null,
+            size: parseInt(formData.size || '0'),
+            propertyType: dbPropertyType,
+            storePowerCapacity: formData.storePowerCapacity,
+            powerBackup: formData.powerBackup,
+            waterFacility: formData.waterFacility,
+            amenities: formData.amenities,
+            status: formData.status,
+            availability: formData.availability,
+            isFeatured: formData.isFeatured,
+            displayOrder: parseInt(String(formData.displayOrder)) || null,
+            ownerId: formData.ownerId,
+            images,
+          }),
+        }
+      )
 
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
-          alert('Property updated successfully!')
-          router.push('/admin/properties')
+          setSaveSuccess(true)
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          setTimeout(() => {
+            router.push('/admin/properties')
+          }, 1500)
         } else {
-          alert(result.error || 'Failed to update property')
+          setSaveError(result.error || 'Failed to update property')
         }
       } else {
-        const error = await response.json().catch(() => ({ error: 'Failed to update property' }))
-        alert(error.error || 'Failed to update property')
+        const errorData = await response.json().catch(() => ({ error: 'Failed to update property' }))
+        setSaveError(errorData.error || `Server error (${response.status})`)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating property:', error)
-      alert('Failed to update property. Please try again.')
+      setSaveError(error?.message || 'Network error — please try again')
     } finally {
       setSaving(false)
     }
@@ -516,6 +554,24 @@ export default function EditPropertyPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Edit Property</h1>
           <p className="text-gray-400">Update property details</p>
         </div>
+
+        {saveSuccess && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-green-900/60 border border-green-600 rounded-lg text-green-300">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Property updated successfully! Redirecting…</span>
+          </div>
+        )}
+
+        {saveError && (
+          <div className="flex items-start gap-3 px-4 py-3 bg-red-900/60 border border-red-600 rounded-lg text-red-300">
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{saveError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-700 rounded-lg p-6 space-y-8">
           {/* Basic Information */}
@@ -864,23 +920,48 @@ export default function EditPropertyPage() {
                   <option value="admin">Admin</option>
                 </select>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.availability}
-                  onChange={(e) => setFormData({ ...formData, availability: e.target.checked })}
-                  className="w-4 h-4 rounded"
-                />
-                <label className="text-sm font-medium text-gray-300">Available</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Approval Status *</label>
+                <select
+                  required
+                  value={formData.status}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as 'pending' | 'approved' | 'rejected'
+                    setFormData({
+                      ...formData,
+                      status: newStatus,
+                      // Keep availability in sync with status change
+                      availability: newStatus === 'approved' ? true : newStatus === 'rejected' ? false : formData.availability,
+                    })
+                  }}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.isFeatured}
-                  onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                  className="w-4 h-4 rounded"
-                />
-                <label className="text-sm font-medium text-gray-300">Featured</label>
+              <div className="flex flex-col gap-3 pt-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="availability"
+                    checked={formData.availability}
+                    onChange={(e) => setFormData({ ...formData, availability: e.target.checked })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <label htmlFor="availability" className="text-sm font-medium text-gray-300">Available</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isFeatured"
+                    checked={formData.isFeatured}
+                    onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <label htmlFor="isFeatured" className="text-sm font-medium text-gray-300">Featured</label>
+                </div>
               </div>
             </div>
           </div>
