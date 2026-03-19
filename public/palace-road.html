@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Palace Road Food Court — Brand Opportunity · Lokazen</title>
+  <meta name="description" content="Central Bengaluru's first curated multi-brand dining destination. Lokazen Score 91/100 — Exceptional. 10,619 sq ft, 6–8 premium stalls, 10,400+ daily footfall. Palace Road, Vasanth Nagar." />
+
+  <!-- Open Graph / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://lokazen.in/palace-road" />
+  <meta property="og:title" content="Palace Road Food Court — Brand Opportunity · Lokazen" />
+  <meta property="og:description" content="Central Bengaluru's highest-scoring F&B placement. Lokazen Score 91/100. 10,400+ daily footfall — 3 x 5-star hotels, Mount Carmel College, Grade A offices. Zero food court within 3km. 6–8 premium stalls available." />
+  <meta property="og:image" content="https://lokazen.in/lokazen-favicon.png" />
+  <meta property="og:site_name" content="Lokazen" />
+  <meta property="og:locale" content="en_IN" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Palace Road Food Court — Brand Opportunity · Lokazen" />
+  <meta name="twitter:description" content="91/100 Lokazen Score. Zero food court within 3km of Central Bengaluru's highest-income corridor." />
+  <meta name="twitter:image" content="https://lokazen.in/lokazen-favicon.png" />
+  <link rel="icon" type="image/png" href="/lokazen-favicon.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #FFF5F0;
+      --white: #FFFFFF;
+      --ink: #1A0800;
+      --ink-light: #3D1F0A;
+      --orange: #E8500A;
+      --orange-2: #FF6B2B;
+      --orange-soft: rgba(232,80,10,0.08);
+      --gold: #C9A84C;
+      --muted: #6B5E52;
+      --muted-2: #9C8678;
+      --border: rgba(26,20,16,0.1);
+      --border-light: rgba(26,20,16,0.07);
+      --dark: #1A0800;
+      --dark-2: #2A1005;
+      --r: 16px;
+      --r-sm: 10px;
+      --font-sans: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'DM Mono', 'Courier New', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-sans); background: var(--bg); color: var(--ink); line-height: 1.6; overflow-x: hidden; }
+
+    /* ── ANIMATIONS ── */
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .fade-in.visible { opacity: 1; transform: none; }
+    .d1 { transition-delay: 0.08s; }
+    .d2 { transition-delay: 0.16s; }
+    .d3 { transition-delay: 0.24s; }
+    .d4 { transition-delay: 0.32s; }
+
+    @keyframes quantumFloat {
+      0%, 100% { transform: translateZ(0); }
+      50% { transform: translateY(-3px) translateZ(0); }
+    }
+    @keyframes quantumFloatO {
+      0%, 100% { transform: translate(-50%, -50%) translateZ(0); }
+      50% { transform: translate(-50%, calc(-50% - 2px)) translateZ(0); }
+    }
+    @keyframes gradientShift {
+      0%,100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 8px rgba(232,80,10,0.6); }
+      50% { box-shadow: 0 0 16px rgba(232,80,10,0.9); }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 8px; left: 8px; right: 8px;
+      z-index: 900;
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      border: 1px solid rgba(229,231,235,0.5);
+      overflow: hidden;
+    }
+    .nav-gradient-overlay {
+      position: absolute; inset: 0; border-radius: 24px;
+      background: linear-gradient(90deg, rgba(255,82,0,0.05) 0%, transparent 50%, rgba(228,0,43,0.05) 100%);
+      pointer-events: none;
+    }
+    .nav-inner {
+      position: relative; z-index: 1;
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo-wrap {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ql-icon { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+    .ql-orb {
+      position: absolute; border-radius: 50%;
+      background: linear-gradient(135deg, #FF5200, #E4002B);
+      box-shadow: 0 2px 8px rgba(255,82,0,0.35);
+      width: 10px; height: 10px;
+    }
+    .ql-orb-top    { top: 20%; left: 50%; transform: translateX(-50%); animation: quantumFloat 4s ease-in-out infinite 0s; }
+    .ql-orb-right  { top: 50%; right: 20%; transform: translateY(-50%); animation: quantumFloat 4s ease-in-out infinite 0.5s; }
+    .ql-orb-bottom { bottom: 20%; left: 50%; transform: translateX(-50%); animation: quantumFloat 4s ease-in-out infinite 1s; }
+    .ql-orb-left   { top: 50%; left: 20%; transform: translateY(-50%); animation: quantumFloat 4s ease-in-out infinite 1.5s; }
+    .ql-orb-center {
+      position: absolute; border-radius: 50%;
+      background: linear-gradient(135deg, #FF5200, #E4002B);
+      box-shadow: 0 2px 12px rgba(255,82,0,0.5);
+      width: 14px; height: 14px;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+    }
+    .ql-ring { position: absolute; border-radius: 50%; border: 1.5px solid rgba(255,82,0,0.2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .ql-ring-1 { width: 40px; height: 40px; }
+    .ql-ring-2 { width: 54px; height: 54px; border-color: rgba(255,82,0,0.12); }
+    .ql-text { display: flex; flex-direction: column; }
+    .ql-name {
+      font-family: Arial, sans-serif; font-weight: 900;
+      font-size: 22px; line-height: 1;
+      display: flex; align-items: center;
+    }
+    .ql-l, .ql-ka { background: linear-gradient(90deg, #FF5200, #E4002B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .ql-zen { color: #111827; -webkit-text-fill-color: #111827; }
+    .ql-o-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 0.6em; height: 1em; margin: 0 0.04em; }
+    .ql-o-dot {
+      position: absolute; width: 13px; height: 13px; border-radius: 50%;
+      background: linear-gradient(135deg, #FF5200, #E4002B);
+      box-shadow: 0 2px 8px rgba(255,82,0,0.4);
+      top: 50%; left: 50%; animation: quantumFloatO 3s ease-in-out infinite;
+    }
+    .ql-powered { font-family: Arial, sans-serif; font-size: 11px; font-weight: 500; color: #6B7280; line-height: 1.2; margin-top: 1px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-chip {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      background: var(--orange-soft); color: var(--orange);
+      border: 1px solid rgba(232,80,10,0.2);
+      padding: 5px 14px; border-radius: 20px;
+    }
+    .nav-chip-exceptional {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      background: rgba(201,168,76,0.1); color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.25);
+      padding: 5px 14px; border-radius: 20px;
+    }
+    .btn-orange {
+      background: linear-gradient(135deg, var(--orange), var(--orange-2));
+      color: #fff; border: none; cursor: pointer;
+      font-family: var(--font-sans); font-weight: 600; font-size: 14px;
+      padding: 10px 24px; border-radius: 24px;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 16px rgba(232,80,10,0.3);
+      text-decoration: none; display: inline-block;
+    }
+    .btn-orange:hover { opacity: 0.92; transform: translateY(-1px); }
+
+    @media (max-width: 640px) {
+      nav { top: 6px; left: 6px; right: 6px; border-radius: 18px; }
+      .nav-inner { height: 56px; padding: 0 12px; }
+      .nav-chip, .nav-chip-exceptional { display: none; }
+      .ql-icon { width: 44px; height: 44px; }
+      .ql-orb { width: 8px; height: 8px; }
+      .ql-orb-center { width: 11px; height: 11px; }
+      .ql-ring-1 { width: 32px; height: 32px; }
+      .ql-ring-2 { width: 42px; height: 42px; }
+      .ql-name { font-size: 18px; }
+      .ql-o-dot { width: 10px; height: 10px; }
+      .ql-powered { font-size: 9px; }
+      .btn-orange { padding: 8px 16px; font-size: 13px; }
+    }
+
+    /* ── SHARED ── */
+    .section-label {
+      font-family: var(--font-mono); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.18em;
+      color: var(--orange); display: block; margin-bottom: 12px;
+    }
+    .section-label-gold {
+      font-family: var(--font-mono); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.18em;
+      color: var(--gold); display: block; margin-bottom: 12px;
+    }
+    .sec-h {
+      font-family: var(--font-sans); font-weight: 800;
+      font-size: clamp(26px, 3vw, 44px);
+      line-height: 1.1; color: var(--ink); margin-bottom: 14px;
+    }
+    .sec-h-white { color: #fff; }
+    .sec-p { font-size: 16px; color: var(--muted); line-height: 1.75; max-width: 600px; }
+    .sec-p-dark { color: rgba(255,255,255,0.65); }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--orange), var(--orange-2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .gold-text { color: var(--gold); }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      padding: 5px 14px; border-radius: 20px;
+    }
+    .pill-orange { background: var(--orange-soft); color: var(--orange); border: 1px solid rgba(232,80,10,0.2); }
+    .pill-gold { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
+    .pill-dark { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.15); }
+    .pill-green { background: rgba(34,197,94,0.1); color: #16a34a; border: 1px solid rgba(34,197,94,0.2); }
+
+    /* score bar */
+    .intel-row { margin-bottom: 14px; }
+    .intel-row-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+    .intel-row-lbl { font-family: var(--font-sans); font-size: 13px; color: rgba(255,255,255,0.75); }
+    .intel-row-val { font-family: var(--font-mono); font-size: 12px; color: var(--gold); font-weight: 500; }
+    .intel-track { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+    .intel-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--gold)); border-radius: 2px; }
+
+    /* ── HERO ── */
+    #hero {
+      padding-top: 80px; position: relative;
+      min-height: 100vh; display: flex; flex-direction: column;
+      background: var(--dark);
+      overflow: hidden;
+    }
+    .hero-bg-gradient {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 80% 30%, rgba(232,80,10,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 70%, rgba(201,168,76,0.1) 0%, transparent 60%),
+        linear-gradient(160deg, #1A0800 0%, #2A0A00 50%, #1A0800 100%);
+    }
+    .hero-grid-overlay {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(232,80,10,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232,80,10,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-content {
+      position: relative; z-index: 2; flex: 1;
+      display: grid; grid-template-columns: 1fr 420px;
+      gap: 60px; align-items: center;
+      max-width: 1280px; margin: 0 auto;
+      padding: 80px 60px;
+      width: 100%;
+    }
+    .hero-left { }
+    .hero-badges { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; }
+    .hero-h1 {
+      font-family: var(--font-sans); font-weight: 800;
+      font-size: clamp(38px, 5vw, 68px);
+      line-height: 1.05; color: #fff;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .hero-location {
+      font-family: var(--font-mono); font-size: 12px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: rgba(255,255,255,0.35); margin-bottom: 24px;
+    }
+    .hero-sub {
+      font-size: 17px; color: rgba(255,255,255,0.65); line-height: 1.7;
+      max-width: 540px; margin-bottom: 36px;
+    }
+    .hero-stats {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 1px; background: rgba(255,255,255,0.06);
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 36px;
+    }
+    .hstat { padding: 16px 18px; background: rgba(255,255,255,0.03); }
+    .hstat-val { font-family: var(--font-sans); font-weight: 800; font-size: 22px; color: #fff; line-height: 1; }
+    .hstat-val .unit { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.4); margin-left: 2px; }
+    .hstat-lbl { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); margin-top: 5px; }
+    .hstat-val.orange { color: var(--orange); }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn-hero-primary {
+      background: linear-gradient(135deg, var(--orange), var(--orange-2));
+      color: #fff; border: none; cursor: pointer;
+      font-family: var(--font-sans); font-weight: 700; font-size: 15px;
+      padding: 14px 32px; border-radius: 28px;
+      box-shadow: 0 6px 24px rgba(232,80,10,0.4);
+      transition: opacity 0.2s, transform 0.15s;
+      text-decoration: none;
+    }
+    .btn-hero-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-hero-outline {
+      background: rgba(255,255,255,0.06);
+      color: #fff; border: 1.5px solid rgba(255,255,255,0.2); cursor: pointer;
+      font-family: var(--font-sans); font-weight: 600; font-size: 15px;
+      padding: 14px 32px; border-radius: 28px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-hero-outline:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
+
+    /* Score card */
+    .hero-right { }
+    .score-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 36px 32px;
+      position: relative; overflow: hidden;
+    }
+    .score-card::before {
+      content: '91';
+      position: absolute; right: -10px; top: -20px;
+      font-size: 160px; font-weight: 900; line-height: 1;
+      color: rgba(255,255,255,0.03); pointer-events: none;
+      font-family: var(--font-sans);
+    }
+    .score-card-label {
+      font-family: var(--font-mono); font-size: 9px;
+      text-transform: uppercase; letter-spacing: 0.18em;
+      color: var(--gold); margin-bottom: 16px; display: block;
+    }
+    .score-num {
+      font-family: var(--font-sans); font-weight: 900;
+      font-size: 80px; line-height: 1;
+      background: linear-gradient(135deg, var(--orange), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; display: inline-block;
+    }
+    .score-denom { font-size: 28px; color: rgba(255,255,255,0.25); font-weight: 400; margin-left: 4px; -webkit-text-fill-color: rgba(255,255,255,0.25); }
+    .score-verdict {
+      font-family: var(--font-mono); font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.18em;
+      color: var(--gold); margin-top: 4px; margin-bottom: 24px;
+      display: block;
+    }
+    .score-bar-main {
+      height: 4px; background: rgba(255,255,255,0.08);
+      border-radius: 2px; overflow: hidden; margin-bottom: 28px;
+    }
+    .score-bar-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--gold)); border-radius: 2px; width: 91%; }
+    .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .dim-item {
+      background: rgba(255,255,255,0.03); border-radius: 8px;
+      padding: 10px 12px; border: 1px solid rgba(255,255,255,0.06);
+    }
+    .dim-score { font-family: var(--font-sans); font-weight: 700; font-size: 15px; color: var(--orange); line-height: 1; margin-bottom: 3px; }
+    .dim-score.perfect { color: var(--gold); }
+    .dim-label { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); }
+
+    /* ── TICKER ── */
+    .ticker-wrap {
+      position: relative; z-index: 3;
+      background: var(--orange); overflow: hidden; padding: 10px 0;
+    }
+    .ticker { display: flex; gap: 0; animation: tickerScroll 30s linear infinite; white-space: nowrap; }
+    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .tick-item {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: #fff; padding: 0 28px; display: inline-flex; align-items: center; gap: 10px;
+    }
+    .tick-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+    @media (max-width: 640px) { .ticker-wrap { display: none; } }
+
+    /* ── PROPERTY OVERVIEW ── */
+    #overview { padding: 90px 80px; background: var(--white); }
+    .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: flex-start; }
+    .floor-table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+    .floor-table th {
+      font-family: var(--font-mono); font-size: 9px;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted-2); text-align: left; padding: 8px 14px;
+      border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    .floor-table td {
+      padding: 14px 14px; font-size: 13px; color: var(--ink);
+      border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.5;
+    }
+    .floor-table tr:last-child td { border-bottom: none; }
+    .floor-table .total-row td { background: var(--orange-soft); font-weight: 700; color: var(--orange); }
+    .floor-table .label-col { font-weight: 600; }
+
+    .zone-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .zone-card {
+      background: var(--bg); border-radius: var(--r-sm);
+      border: 1px solid var(--border-light);
+      border-left: 3px solid var(--orange);
+      padding: 16px 18px;
+    }
+    .zone-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .zone-name { font-family: var(--font-sans); font-size: 13px; font-weight: 700; color: var(--ink); }
+    .zone-sqft { font-family: var(--font-mono); font-size: 11px; color: var(--orange); }
+    .zone-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── CATCHMENT ── */
+    #catchment { padding: 0; display: grid; grid-template-columns: 1fr 1fr; }
+    .catch-left { padding: 90px 72px; background: var(--white); }
+    .catch-right { padding: 90px 72px; background: var(--dark); }
+    .segment-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 16px 0; border-bottom: 1px solid var(--border-light); gap: 16px;
+    }
+    .segment-row:last-child { border-bottom: none; }
+    .seg-left { }
+    .seg-name { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+    .seg-source { font-size: 12px; color: var(--muted); }
+    .seg-right { text-align: right; flex-shrink: 0; }
+    .seg-vol { font-family: var(--font-sans); font-weight: 700; font-size: 14px; color: var(--orange); white-space: nowrap; }
+    .seg-sec { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-2); margin-top: 2px; }
+    .total-footfall {
+      background: var(--orange-soft); border-radius: var(--r-sm);
+      border: 1px solid rgba(232,80,10,0.15);
+      padding: 18px 20px; margin-top: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .tf-label { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+    .tf-num { font-family: var(--font-sans); font-weight: 800; font-size: 22px; color: var(--orange); }
+
+    /* ── LANDMARKS ── */
+    #landmarks { padding: 90px 80px; background: var(--bg); }
+    .landmark-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 32px; }
+    .landmark-card {
+      background: var(--white); border-radius: var(--r-sm);
+      border: 1px solid var(--border-light); padding: 18px 20px;
+      display: flex; gap: 14px; align-items: flex-start;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .landmark-card:hover { box-shadow: 0 4px 20px rgba(232,80,10,0.1); border-color: rgba(232,80,10,0.2); }
+    .landmark-dist {
+      background: var(--orange-soft); color: var(--orange);
+      font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+      flex-shrink: 0; letter-spacing: 0.06em; border: 1px solid rgba(232,80,10,0.15);
+    }
+    .landmark-name { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+    .landmark-type { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-2); margin-bottom: 4px; }
+    .landmark-relevance { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── CATEGORIES ── */
+    #categories { padding: 90px 80px; background: var(--dark); }
+    .cat-intro { max-width: 680px; margin-bottom: 48px; }
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .cat-card {
+      background: rgba(255,255,255,0.04); border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 24px 26px;
+      transition: border-color 0.25s, background 0.25s;
+      position: relative; overflow: hidden;
+    }
+    .cat-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--orange), var(--gold));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .cat-card:hover { border-color: rgba(232,80,10,0.25); background: rgba(255,255,255,0.06); }
+    .cat-card:hover::after { transform: scaleX(1); }
+    .cat-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .cat-rank {
+      font-family: var(--font-mono); font-size: 9px;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+    }
+    .cat-score-badge {
+      font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+      padding: 3px 10px; border-radius: 10px;
+    }
+    .badge-10 { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
+    .badge-9  { background: rgba(232,80,10,0.12); color: var(--orange); border: 1px solid rgba(232,80,10,0.2); }
+    .badge-8  { background: rgba(232,80,10,0.08); color: rgba(255,107,43,0.8); border: 1px solid rgba(232,80,10,0.15); }
+    .badge-7  { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); }
+    .cat-name { font-family: var(--font-sans); font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .cat-desc { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; margin-bottom: 14px; }
+    .cat-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .cat-meta-item { }
+    .cat-meta-k { font-family: var(--font-mono); font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.28); margin-bottom: 2px; }
+    .cat-meta-v { font-size: 12px; color: rgba(255,255,255,0.65); font-weight: 500; }
+    .cat-score-bar { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 14px; overflow: hidden; }
+    .cat-score-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--gold)); border-radius: 2px; }
+
+    /* ── REVENUE ── */
+    #revenue { padding: 90px 80px; background: var(--white); }
+    .revenue-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; }
+    .rev-table { width: 100%; border-collapse: collapse; }
+    .rev-table th {
+      font-family: var(--font-mono); font-size: 8px; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--muted-2); text-align: left;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .rev-table td {
+      padding: 13px 12px; font-size: 12px; color: var(--ink);
+      border-bottom: 1px solid var(--border-light); vertical-align: top;
+    }
+    .rev-table tr:last-child td { border-bottom: none; }
+    .rev-table .cat-name-cell { font-weight: 600; color: var(--ink); }
+    .rev-combined { font-weight: 700; color: var(--orange); white-space: nowrap; }
+    .scenario-cards { display: flex; flex-direction: column; gap: 14px; }
+    .scenario-card {
+      background: var(--bg); border-radius: var(--r-sm); border: 1px solid var(--border-light);
+      padding: 20px 22px;
+    }
+    .scenario-card.base { border-left: 3px solid var(--orange); }
+    .scenario-card.optimistic { border-left: 3px solid var(--gold); }
+    .scenario-tag { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-2); margin-bottom: 6px; }
+    .scenario-rev { font-family: var(--font-sans); font-weight: 800; font-size: 26px; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+    .scenario-rev .period { font-size: 14px; font-weight: 400; color: var(--muted); }
+    .scenario-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .delivery-callout {
+      background: var(--dark); border-radius: var(--r); padding: 28px 30px; margin-top: 28px;
+    }
+    .delivery-callout p { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.7; }
+    .delivery-callout strong { color: var(--gold); }
+
+    /* ── COMPETITIVE ── */
+    #competitive { padding: 90px 80px; background: var(--bg); }
+    .comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 32px; }
+    .comp-card {
+      background: var(--white); border-radius: var(--r-sm);
+      border: 1px solid var(--border-light); padding: 18px 20px;
+    }
+    .comp-name { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+    .comp-cat { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-2); margin-bottom: 8px; }
+    .comp-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .comp-price { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+    .comp-rating { font-size: 12px; color: var(--ink); font-weight: 600; }
+    .comp-insight { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .gap-verdict {
+      background: var(--dark); border-radius: var(--r); padding: 32px 36px; margin-top: 36px;
+    }
+    .gap-verdict p { font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.75; }
+    .gap-verdict strong { color: var(--orange); }
+
+    /* ── SWOT ── */
+    #swot { padding: 90px 80px; background: var(--white); }
+    .swot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 36px; }
+    .swot-card { border-radius: var(--r-sm); padding: 24px 26px; }
+    .swot-card.strengths { background: rgba(232,80,10,0.05); border: 1px solid rgba(232,80,10,0.15); }
+    .swot-card.weaknesses { background: rgba(26,8,0,0.03); border: 1px solid var(--border-light); }
+    .swot-card.opportunities { background: rgba(201,168,76,0.06); border: 1px solid rgba(201,168,76,0.2); }
+    .swot-card.threats { background: rgba(26,8,0,0.03); border: 1px solid var(--border-light); }
+    .swot-title {
+      font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
+      letter-spacing: 0.16em; margin-bottom: 14px; font-weight: 600;
+    }
+    .swot-card.strengths .swot-title { color: var(--orange); }
+    .swot-card.weaknesses .swot-title { color: var(--muted); }
+    .swot-card.opportunities .swot-title { color: var(--gold); }
+    .swot-card.threats .swot-title { color: var(--muted); }
+    .swot-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .swot-list li { font-size: 13px; color: var(--ink); line-height: 1.5; padding-left: 16px; position: relative; }
+    .swot-list li::before { content: '›'; position: absolute; left: 0; font-weight: 700; }
+    .swot-card.strengths .swot-list li::before { color: var(--orange); }
+    .swot-card.opportunities .swot-list li::before { color: var(--gold); }
+    .swot-card.weaknesses .swot-list li::before, .swot-card.threats .swot-list li::before { color: var(--muted-2); }
+
+    /* ── SCORE DETAIL ── */
+    #score-detail { padding: 90px 80px; background: var(--dark); }
+    .score-detail-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 60px; align-items: flex-start; }
+    .score-detail-left { }
+    .verdict-card {
+      background: rgba(255,255,255,0.04); border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 28px 30px; margin-top: 24px;
+    }
+    .verdict-card p { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.75; margin-bottom: 14px; }
+    .verdict-card p:last-child { margin-bottom: 0; }
+    .verdict-card strong { color: #fff; }
+    .score-detail-right { }
+    .score-param-row { margin-bottom: 16px; }
+    .score-param-top { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: baseline; }
+    .score-param-name { font-size: 13px; color: rgba(255,255,255,0.75); }
+    .score-param-val { font-family: var(--font-mono); font-size: 12px; color: var(--gold); }
+    .score-param-rationale { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; line-height: 1.4; }
+    .score-param-bar { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; margin-top: 5px; }
+    .score-param-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--gold)); border-radius: 2px; }
+
+    /* ── CTA ── */
+    #cta { padding: 100px 80px; background: var(--dark); text-align: center; }
+    .cta-inner { max-width: 800px; margin: 0 auto; }
+    .cta-h { font-family: var(--font-sans); font-weight: 800; font-size: clamp(32px, 4vw, 56px); color: #fff; line-height: 1.1; margin-bottom: 18px; }
+    .cta-sub { font-size: 16px; color: rgba(255,255,255,0.5); margin-bottom: 52px; line-height: 1.7; max-width: 560px; margin-left: auto; margin-right: auto; }
+    .cta-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 720px; margin: 0 auto 40px; }
+    .cta-card {
+      background: rgba(255,255,255,0.04); border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 28px 26px; text-align: left;
+    }
+    .cta-card-num { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 12px; display: block; }
+    .cta-card-h { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .cta-card-p { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.6; margin-bottom: 18px; }
+    .cta-link {
+      font-family: var(--font-mono); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--orange); cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .cta-link:hover { opacity: 0.7; }
+    .cta-divider { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.2); margin: 0 0 28px; }
+    .cta-footer-row { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+    .cta-footer-item { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.25); display: flex; align-items: center; gap: 7px; }
+    .cta-footer-item::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--orange); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--white); border-top: 1px solid var(--border);
+      padding: 24px 60px; display: flex; align-items: center;
+      justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    }
+    .footer-l { font-family: var(--font-mono); font-size: 11px; color: var(--muted-2); }
+    .footer-l span { color: var(--orange); font-weight: 600; }
+    .footer-r { display: flex; gap: 20px; align-items: center; }
+    .footer-r a { font-family: var(--font-mono); font-size: 10px; color: var(--muted-2); text-decoration: none; letter-spacing: 0.08em; transition: color 0.2s; text-transform: uppercase; }
+    .footer-r a:hover { color: var(--orange); }
+
+    /* ── STICKY BAR ── */
+    .sticky-visit-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 800;
+      background: rgba(26,8,0,0.96); backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(232,80,10,0.25);
+      padding: 14px 40px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .sticky-visit-bar.visible { transform: translateY(0); }
+    .sticky-bar-left { display: flex; align-items: center; gap: 14px; }
+    .sticky-bar-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--orange);
+      box-shadow: 0 0 8px rgba(232,80,10,0.6);
+      animation: pulse-dot 2s ease-in-out infinite; flex-shrink: 0;
+    }
+    .sticky-bar-text { font-family: var(--font-sans); font-size: 14px; font-weight: 600; color: #fff; }
+    .sticky-bar-btn {
+      background: linear-gradient(135deg, var(--orange), var(--orange-2));
+      color: #fff; border: none; cursor: pointer;
+      font-family: var(--font-sans); font-weight: 700; font-size: 13px;
+      padding: 12px 28px; border-radius: 28px; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(232,80,10,0.4);
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .sticky-bar-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .sticky-bar-close {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.3); font-size: 18px; padding: 4px 8px; line-height: 1;
+      transition: color 0.2s; flex-shrink: 0;
+    }
+    .sticky-bar-close:hover { color: rgba(255,255,255,0.7); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(26,8,0,0.75); backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s; overflow-y: auto;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-card {
+      background: var(--white); border-radius: 20px;
+      max-width: 500px; width: 100%; padding: 44px;
+      position: relative; border-top: 3px solid var(--orange);
+      box-shadow: 0 40px 100px rgba(26,8,0,0.35);
+      transform: translateY(24px) scale(0.98);
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      max-height: calc(100dvh - 32px); overflow-y: auto; margin: auto;
+    }
+    .modal-overlay.open .modal-card { transform: none; }
+    .modal-close {
+      position: sticky; top: 0; float: right; margin-bottom: -32px; margin-right: -12px; z-index: 10;
+      background: rgba(26,8,0,0.07); border: none; cursor: pointer;
+      width: 34px; height: 34px; border-radius: 50%;
+      font-size: 15px; color: var(--muted); display: flex;
+      align-items: center; justify-content: center; transition: background 0.2s; flex-shrink: 0;
+    }
+    .modal-close:hover { background: rgba(26,8,0,0.14); }
+    .modal-eyebrow { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--orange); display: block; margin-bottom: 10px; padding-right: 40px; }
+    .modal-title { font-family: var(--font-sans); font-weight: 700; font-size: 24px; color: var(--ink); margin-bottom: 6px; }
+    .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 22px; line-height: 1.6; }
+    .form-g { margin-bottom: 12px; }
+    .form-l { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted-2); display: block; margin-bottom: 4px; }
+    .form-i, .form-s {
+      width: 100%; padding: 10px 13px;
+      border: 1.5px solid rgba(26,8,0,0.12); background: var(--bg);
+      border-radius: var(--r-sm); font-family: var(--font-sans); font-size: 14px;
+      color: var(--ink); outline: none; transition: border-color 0.2s; appearance: none;
+    }
+    .form-i:focus, .form-s:focus { border-color: var(--orange); }
+    .form-s {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237A5540'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+      padding-right: 36px; cursor: pointer;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-submit {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, var(--orange), var(--orange-2));
+      color: #fff; border: none; border-radius: 28px;
+      font-family: var(--font-sans); font-weight: 600; font-size: 15px;
+      cursor: pointer; margin-top: 6px;
+      box-shadow: 0 4px 20px rgba(232,80,10,0.35);
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-submit:hover { opacity: 0.92; transform: translateY(-1px); }
+    .modal-note { font-family: var(--font-mono); font-size: 9px; color: var(--muted-2); text-align: center; margin-top: 12px; line-height: 1.6; letter-spacing: 0.04em; }
+    .form-msg { font-size: 13px; padding: 10px 14px; border-radius: 8px; margin-top: 10px; display: none; }
+    .form-msg.success { background: rgba(34,197,94,0.1); color: #15803d; border: 1px solid rgba(34,197,94,0.2); display: block; }
+    .form-msg.error { background: rgba(239,68,68,0.08); color: #dc2626; border: 1px solid rgba(239,68,68,0.15); display: block; }
+
+    @media (max-width: 640px) {
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal-card { padding: 28px 18px 24px; border-radius: 20px 20px 0 0; max-height: 92dvh; margin: 0; width: 100%; }
+      .modal-title { font-size: 20px; }
+      .modal-sub { font-size: 13px; margin-bottom: 16px; }
+      .form-g { margin-bottom: 10px; }
+      .form-i, .form-s { padding: 9px 12px; font-size: 13px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .btn-submit { padding: 12px; font-size: 14px; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      #overview, #landmarks, #categories, #revenue, #competitive, #swot, #score-detail, #cta { padding: 60px 32px; }
+      .overview-grid, .revenue-layout, .score-detail-grid { grid-template-columns: 1fr; gap: 36px; }
+      #catchment { grid-template-columns: 1fr; }
+      .catch-left, .catch-right { padding: 60px 32px; }
+      .hero-content { grid-template-columns: 1fr; gap: 40px; padding: 60px 32px; }
+      .hero-right { order: -1; }
+      .hero-h1 { font-size: clamp(34px, 6vw, 52px); }
+      .cat-grid { grid-template-columns: 1fr; }
+      .swot-grid { grid-template-columns: 1fr; }
+      .cta-cards { grid-template-columns: 1fr; max-width: 400px; }
+      footer { padding: 20px 24px; }
+    }
+    @media (max-width: 640px) {
+      #overview, #landmarks, #categories, #revenue, #competitive, #swot, #score-detail, #cta { padding: 48px 16px; }
+      .catch-left, .catch-right { padding: 48px 16px; }
+      .hero-content { padding: 48px 16px; }
+      .hero-stats { grid-template-columns: 1fr 1fr; }
+      .landmark-grid { grid-template-columns: 1fr; }
+      .score-card { padding: 24px 20px; }
+      .score-num { font-size: 60px; }
+      .sticky-visit-bar { padding: 12px 16px; }
+      .sticky-bar-text { font-size: 13px; }
+      .sticky-bar-btn { padding: 10px 18px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-gradient-overlay"></div>
+  <div class="nav-inner">
+    <a class="nav-logo-wrap" href="https://lokazen.in" target="_blank">
+      <div class="ql-icon">
+        <div class="ql-ring ql-ring-1"></div>
+        <div class="ql-ring ql-ring-2"></div>
+        <div class="ql-orb ql-orb-top"></div>
+        <div class="ql-orb ql-orb-right"></div>
+        <div class="ql-orb ql-orb-bottom"></div>
+        <div class="ql-orb ql-orb-left"></div>
+        <div class="ql-orb-center"></div>
+      </div>
+      <div class="ql-text">
+        <span class="ql-name">
+          <span class="ql-l">L</span>
+          <span class="ql-o-wrap"><span class="ql-o-dot"></span></span>
+          <span class="ql-ka">ka</span>
+          <span class="ql-zen">zen</span>
+        </span>
+        <span class="ql-powered">Powered By Ai</span>
+      </div>
+    </a>
+    <div class="nav-right">
+      <span class="nav-chip-exceptional">Score 91/100 · Exceptional</span>
+      <button class="btn-orange" onclick="openModal('visit')">Enquire Now</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg-gradient"></div>
+  <div class="hero-grid-overlay"></div>
+  <div class="hero-content">
+
+    <div class="hero-left fade-in">
+      <div class="hero-badges">
+        <span class="pill pill-gold">Brand Opportunity</span>
+        <span class="pill pill-orange">Central Bengaluru</span>
+        <span class="pill pill-dark">Lokazen Score: 91 / 100</span>
+      </div>
+      <h1 class="hero-h1">Palace Road<br><span class="gradient-text">Food Court</span></h1>
+      <p class="hero-location">Niton Compound, Block B1 · Vasanth Nagar · Bengaluru – 560001</p>
+      <p class="hero-sub">Central Bengaluru's first curated multi-brand dining destination. Double-height glass facade directly on Palace Road. 10,400–14,800 daily footfall across 6 independent segments. Zero food court within 3km.</p>
+
+      <div class="hero-stats">
+        <div class="hstat">
+          <div class="hstat-val">10,619<span class="unit">sqft</span></div>
+          <div class="hstat-lbl">Total Built-Up</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val orange">6–8</div>
+          <div class="hstat-lbl">Premium Stalls</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">14,800<span class="unit">+</span></div>
+          <div class="hstat-lbl">Daily Footfall</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">3×</div>
+          <div class="hstat-lbl">5-Star Hotels ≤500m</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val orange">Zero</div>
+          <div class="hstat-lbl">Food Court Within 3km</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">SEC A<span class="unit">+</span></div>
+          <div class="hstat-lbl">Catchment Profile</div>
+        </div>
+      </div>
+
+      <div class="hero-btns">
+        <button class="btn-hero-primary" onclick="openModal('visit')">Schedule a Site Visit</button>
+        <a class="btn-hero-outline" href="/for-brands#pricing" target="_blank">Onboard Your Brand</a>
+      </div>
+    </div>
+
+    <div class="hero-right fade-in d2">
+      <div class="score-card">
+        <span class="score-card-label">Lokazen Composite Score · March 2026</span>
+        <div>
+          <span class="score-num">91</span>
+          <span class="score-denom">/100</span>
+        </div>
+        <span class="score-verdict">Exceptional · Highest CBD Rating</span>
+        <div class="score-bar-main"><div class="score-bar-fill"></div></div>
+        <div class="dim-grid">
+          <div class="dim-item"><div class="dim-score perfect">10/10</div><div class="dim-label">Footfall Density</div></div>
+          <div class="dim-item"><div class="dim-score perfect">10/10</div><div class="dim-label">Catchment Quality</div></div>
+          <div class="dim-item"><div class="dim-score perfect">10/10</div><div class="dim-label">F&B Supply Gap</div></div>
+          <div class="dim-item"><div class="dim-score">9/10</div><div class="dim-label">Property Config</div></div>
+          <div class="dim-item"><div class="dim-score perfect">10/10</div><div class="dim-label">Walk-in Access</div></div>
+          <div class="dim-item"><div class="dim-score">9/10</div><div class="dim-label">Occasion Spread</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker">
+      <span class="tick-item"><span class="tick-dot"></span>Lokazen Score 91/100 · Exceptional</span>
+      <span class="tick-item"><span class="tick-dot"></span>10,619 Sq Ft · GF + Mezzanine</span>
+      <span class="tick-item"><span class="tick-dot"></span>3 × 5-Star Hotels Within 500m</span>
+      <span class="tick-item"><span class="tick-dot"></span>Mount Carmel College · 80m · 3,500 Students</span>
+      <span class="tick-item"><span class="tick-dot"></span>Zero Food Court Within 3km</span>
+      <span class="tick-item"><span class="tick-dot"></span>White-Space Delivery Pin · Swiggy · Zomato</span>
+      <span class="tick-item"><span class="tick-dot"></span>₹2.16 Cr/Month Base Case Revenue</span>
+      <span class="tick-item"><span class="tick-dot"></span>Palace Road · Vasanth Nagar · Central Bengaluru</span>
+      <!-- dupe for infinite scroll -->
+      <span class="tick-item"><span class="tick-dot"></span>Lokazen Score 91/100 · Exceptional</span>
+      <span class="tick-item"><span class="tick-dot"></span>10,619 Sq Ft · GF + Mezzanine</span>
+      <span class="tick-item"><span class="tick-dot"></span>3 × 5-Star Hotels Within 500m</span>
+      <span class="tick-item"><span class="tick-dot"></span>Mount Carmel College · 80m · 3,500 Students</span>
+      <span class="tick-item"><span class="tick-dot"></span>Zero Food Court Within 3km</span>
+      <span class="tick-item"><span class="tick-dot"></span>White-Space Delivery Pin · Swiggy · Zomato</span>
+      <span class="tick-item"><span class="tick-dot"></span>₹2.16 Cr/Month Base Case Revenue</span>
+      <span class="tick-item"><span class="tick-dot"></span>Palace Road · Vasanth Nagar · Central Bengaluru</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- PROPERTY OVERVIEW -->
+<section id="overview">
+  <div class="overview-grid">
+    <div class="fade-in">
+      <span class="section-label">01 · Property Overview</span>
+      <h2 class="sec-h">10,619 sq ft.<br>Purpose-built for a food court.</h2>
+      <p class="sec-p" style="margin-bottom:28px;">Niton Compound Block B1 — a two-floor bare-shell commercial building with a double-height ground floor (5.85m clear height) and a mezzanine gallery overlooking below. Full glass frontage on Palace Road, elevator, independent toilet cores on both levels.</p>
+
+      <table class="floor-table">
+        <thead>
+          <tr>
+            <th>Floor</th>
+            <th>Built-Up Area</th>
+            <th>Clear Height</th>
+            <th>Key Features</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label-col">Ground Floor</td>
+            <td>5,961 sq ft</td>
+            <td>5.85m double height</td>
+            <td>Open plan, glass facade all sides, HVAC stub-outs, elevator, marble flooring</td>
+          </tr>
+          <tr>
+            <td class="label-col">Mezzanine</td>
+            <td>4,658 sq ft</td>
+            <td>2.81–2.82m</td>
+            <td>Gallery overlooking GF; balcony; toilets; pantry; staircase + elevator</td>
+          </tr>
+          <tr class="total-row">
+            <td class="label-col">Total</td>
+            <td>10,619 sq ft</td>
+            <td>—</td>
+            <td>Largest food court-format space on Palace Road corridor</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="fade-in d2">
+      <span class="section-label">Format Configuration</span>
+      <h3 style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:20px;">Recommended zone allocation</h3>
+      <div class="zone-cards">
+        <div class="zone-card">
+          <div class="zone-card-top">
+            <span class="zone-name">GF — Brand Wall</span>
+            <span class="zone-sqft">~4,200 sq ft</span>
+          </div>
+          <p class="zone-desc">6–8 premium brand stalls at 600–800 sq ft each. Individual kitchen counters. Live cooking visibility. Street-facing brand signage on Palace Road.</p>
+        </div>
+        <div class="zone-card">
+          <div class="zone-card-top">
+            <span class="zone-name">GF — Common Seating</span>
+            <span class="zone-sqft">~1,800 sq ft</span>
+          </div>
+          <p class="zone-desc">80–100 covers. Quick-turnover seating visible from entrance. Serves overflow and spontaneous walk-in.</p>
+        </div>
+        <div class="zone-card" style="border-left-color:var(--gold);">
+          <div class="zone-card-top">
+            <span class="zone-name">Mezzanine — Primary Dining</span>
+            <span class="zone-sqft">~4,000 sq ft</span>
+          </div>
+          <p class="zone-desc">180–220 premium covers. Gallery seating overlooking brand counters below. Group seating sections. Evening destination ambience.</p>
+        </div>
+        <div class="zone-card" style="border-left-color:var(--gold);">
+          <div class="zone-card-top">
+            <span class="zone-name">Mezzanine — Balcony</span>
+            <span class="zone-sqft">~658 sq ft</span>
+          </div>
+          <p class="zone-desc">Semi-open evening seating. Premium ambience differentiator. Social discovery driver. Palace Road views.</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+        <div style="background:var(--orange-soft);border-radius:8px;padding:14px 16px;flex:1;min-width:120px;border:1px solid rgba(232,80,10,0.15);">
+          <div style="font-size:22px;font-weight:800;color:var(--orange);line-height:1;margin-bottom:3px;">200+</div>
+          <div style="font-family:var(--font-mono);font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Total Covers</div>
+        </div>
+        <div style="background:var(--orange-soft);border-radius:8px;padding:14px 16px;flex:1;min-width:120px;border:1px solid rgba(232,80,10,0.15);">
+          <div style="font-size:22px;font-weight:800;color:var(--orange);line-height:1;margin-bottom:3px;">5.85m</div>
+          <div style="font-family:var(--font-mono);font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">GF Ceiling Height</div>
+        </div>
+        <div style="background:var(--orange-soft);border-radius:8px;padding:14px 16px;flex:1;min-width:120px;border:1px solid rgba(232,80,10,0.15);">
+          <div style="font-size:22px;font-weight:800;color:var(--orange);line-height:1;margin-bottom:3px;">100%</div>
+          <div style="font-family:var(--font-mono);font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Glass Frontage</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- CATCHMENT -->
+<section id="catchment">
+  <div class="catch-left fade-in">
+    <span class="section-label">03 · Catchment Density</span>
+    <h2 class="sec-h">6 independent demand segments. All within 500m.</h2>
+    <p class="sec-p" style="margin-bottom:32px;">Lokazen catchment analysis combines daytime population estimation, SEC profiling, and footfall-occasion mapping. Palace Road stacks five independent high-quality demand segments within 500m — rivalled only by UB City and MG Road at a fraction of their commercial costs.</p>
+
+    <div class="segment-row">
+      <div class="seg-left"><div class="seg-name">Office / Corporate</div><div class="seg-source">RMZ Icon (Jio), Embassy Star, iNurture, MSPL, Neo Foods</div></div>
+      <div class="seg-right"><div class="seg-vol">3,500–5,000</div><div class="seg-sec">SEC A / A+ · Daily</div></div>
+    </div>
+    <div class="segment-row">
+      <div class="seg-left"><div class="seg-name">College / Students</div><div class="seg-source">Mount Carmel College + PU (80m), Sophia Evening College (700m)</div></div>
+      <div class="seg-right"><div class="seg-vol">3,500–4,500</div><div class="seg-sec">SEC B+ to A · Daily</div></div>
+    </div>
+    <div class="segment-row">
+      <div class="seg-left"><div class="seg-name">5-Star Hotel Guests</div><div class="seg-source">Shangri-La (opp.), ITC Windsor (350m), LaLit Ashok (600m), Fortune JP Cosmos (700m)</div></div>
+      <div class="seg-right"><div class="seg-vol">1,200–1,800</div><div class="seg-sec">SEC A+ / Intl · Evening</div></div>
+    </div>
+    <div class="segment-row">
+      <div class="seg-left"><div class="seg-name">Vasanth Nagar Residents</div><div class="seg-source">Affluent residential — ₹31.6K/sqft avg property. C-suite, MLAs, retired bureaucrats.</div></div>
+      <div class="seg-right"><div class="seg-vol">1,000–1,500</div><div class="seg-sec">SEC A / A+ · Weekend</div></div>
+    </div>
+    <div class="segment-row">
+      <div class="seg-left"><div class="seg-name">Government / Institutional</div><div class="seg-source">Vidhana Soudha, French Consulate, Govt RC College, state secretariat</div></div>
+      <div class="seg-right"><div class="seg-vol">800–1,200</div><div class="seg-sec">SEC B to A · Weekday</div></div>
+    </div>
+    <div class="segment-row">
+      <div class="seg-left"><div class="seg-name">Tourists / Event Visitors</div><div class="seg-source">Bangalore Palace (5-min walk), Golf Club events, Chinnaswamy Stadium (3.5km)</div></div>
+      <div class="seg-right"><div class="seg-vol">400–800</div><div class="seg-sec">Mixed · Weekend/Event</div></div>
+    </div>
+
+    <div class="total-footfall">
+      <div><div class="tf-label">Total Addressable Daily Footfall</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">Predominantly SEC A/A+</div></div>
+      <div class="tf-num">10,400–14,800</div>
+    </div>
+  </div>
+
+  <div class="catch-right fade-in d2">
+    <span class="section-label-gold">Intelligence Dimensions</span>
+    <h2 class="sec-h sec-h-white">Where the numbers sit.</h2>
+    <p class="sec-p sec-p-dark" style="margin-bottom:36px;">Scored across 8 Lokazen intelligence dimensions. 91/100 composite — one of the highest ever recorded for a non-mall CBD location in Bengaluru.</p>
+
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">Footfall Density</span><span class="intel-row-val">10/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:100%"></div></div>
+    </div>
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">Catchment Quality (SEC Profile)</span><span class="intel-row-val">10/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:100%"></div></div>
+    </div>
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">F&B Supply Gap (Competitive Void)</span><span class="intel-row-val">10/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:100%"></div></div>
+    </div>
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">Captive Walk-In Access</span><span class="intel-row-val">10/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:100%"></div></div>
+    </div>
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">Property Configuration Fit</span><span class="intel-row-val">9/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:90%"></div></div>
+    </div>
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">Occasion Spread (Day-Part)</span><span class="intel-row-val">9/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:90%"></div></div>
+    </div>
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">Connectivity & Multi-Modal Access</span><span class="intel-row-val">8/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:80%"></div></div>
+    </div>
+    <div class="intel-row">
+      <div class="intel-row-top"><span class="intel-row-lbl">Commercial Viability (Rent vs Footfall)</span><span class="intel-row-val">8/10</span></div>
+      <div class="intel-track"><div class="intel-fill" style="width:80%"></div></div>
+    </div>
+
+    <div style="background:rgba(201,168,76,0.1);border-radius:10px;padding:20px;margin-top:24px;border:1px solid rgba(201,168,76,0.2);">
+      <p style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.7;margin:0;">
+        <span style="color:var(--gold);font-weight:600;">Lokazen Catchment Verdict:</span> The rarest combination in Bengaluru F&B placement — maximum density, maximum affluence, maximum competitive void — on a road most brands have overlooked. That perception lag is the commercial opportunity.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- LANDMARKS -->
+<section id="landmarks">
+  <div class="fade-in">
+    <span class="section-label">02 · Location · Within 500m</span>
+    <h2 class="sec-h">The highest-density office + institution + luxury hotel cluster in Central Bengaluru.</h2>
+    <p class="sec-p">Exact address: Niton Compound, No. 11/4, Block B1, Palace Road, near Mount Carmel College, Vasanth Nagar, Bengaluru – 560001. This 300m stretch is unmatched outside UB City and MG Road.</p>
+  </div>
+  <div class="landmark-grid">
+    <div class="landmark-card fade-in">
+      <span class="landmark-dist">~50m</span>
+      <div>
+        <div class="landmark-name">Shangri-La Hotel</div>
+        <div class="landmark-type">5-Star Hotel · 4.6★ / 23,754 reviews</div>
+        <div class="landmark-relevance">Hotel guests seeking casual dining below hotel pricing. Structural daily overflow meal occasion. Directly opposite.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in d1">
+      <span class="landmark-dist">~80m</span>
+      <div>
+        <div class="landmark-name">Mount Carmel College</div>
+        <div class="landmark-type">Women's Degree College · ~3,500 students</div>
+        <div class="landmark-relevance">Breakfast, lunch, and post-college hangout. Highest repeat-frequency segment — 4–5x/week. Immediately adjacent on same block.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in d2">
+      <span class="landmark-dist">~80m</span>
+      <div>
+        <div class="landmark-name">Mount Carmel PU College</div>
+        <div class="landmark-type">PU College · ~800–1,000 students</div>
+        <div class="landmark-relevance">7:50AM–2:50PM schedule. Sharp daily lunch peak. Drives morning and afternoon footfall consistently.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in">
+      <span class="landmark-dist">Same bldg</span>
+      <div>
+        <div class="landmark-name">iNurture Education (same compound)</div>
+        <div class="landmark-type">EdTech Office · 500–1,000 employees</div>
+        <div class="landmark-relevance">Captive daily lunch — zero quality option today. Highest-frequency captive audience in the building.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in d1">
+      <span class="landmark-dist">~120m</span>
+      <div>
+        <div class="landmark-name">RMZ Icon — Reliance Jio</div>
+        <div class="landmark-type">Grade A Office · 4 Floors</div>
+        <div class="landmark-relevance">Internal canteen confirmed but basic quality. Captive SEC A overflow for lunch and coffee.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in d2">
+      <span class="landmark-dist">~150m</span>
+      <div>
+        <div class="landmark-name">Embassy Star</div>
+        <div class="landmark-type">Grade A Office · Aspect Technology, NETGEAR India</div>
+        <div class="landmark-relevance">NASDAQ-listed companies. SEC A professionals. Lunch + coffee + snack occasions.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in">
+      <span class="landmark-dist">~200m</span>
+      <div>
+        <div class="landmark-name">MSPL Limited (Sankey Cross Rd)</div>
+        <div class="landmark-type">Corporate HQ · Mining Conglomerate</div>
+        <div class="landmark-relevance">Google review: "Location is Royal, but no nearby restaurant." Direct unmet demand signal from employees.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in d1">
+      <span class="landmark-dist">~350m</span>
+      <div>
+        <div class="landmark-name">ITC Windsor</div>
+        <div class="landmark-type">5-Star Hotel · 4.7★ / 21,468 reviews</div>
+        <div class="landmark-relevance">Evening overflow. Second 5-star within walking distance. Hotel-pricing-fatigue drives casual dining demand.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in d2">
+      <span class="landmark-dist">~600m</span>
+      <div>
+        <div class="landmark-name">The LaLit Ashok</div>
+        <div class="landmark-type">5-Star Hotel · 4.3★ / 26,659 reviews</div>
+        <div class="landmark-relevance">Third 5-star within easy reach. Hotel guest casual dining overflow. Adds to evening demand pool.</div>
+      </div>
+    </div>
+    <div class="landmark-card fade-in">
+      <span class="landmark-dist">~700m</span>
+      <div>
+        <div class="landmark-name">Sophia Evening College</div>
+        <div class="landmark-type">Evening College · 4–8PM schedule</div>
+        <div class="landmark-relevance">Drives the 5–7PM window food courts typically struggle to fill. Extends peak demand into evening.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- CATEGORIES -->
+<section id="categories">
+  <div class="cat-intro fade-in">
+    <span class="section-label-gold">05 · Category Recommendation</span>
+    <h2 class="sec-h sec-h-white">8 stall slots. 8 open categories. Zero competition.</h2>
+    <p class="sec-p sec-p-dark">Lokazen recommends a 6–8 operator model maximising category diversity across Palace Road's four daily demand windows. This is not a mall food court — it is a curated dining destination. Target average cover spend: ₹400–700.</p>
+  </div>
+  <div class="cat-grid">
+
+    <div class="cat-card fade-in">
+      <div class="cat-card-top"><span class="cat-rank">01 · Priority</span><span class="cat-score-badge badge-10">10/10</span></div>
+      <div class="cat-name">Specialty Coffee + Café</div>
+      <div class="cat-desc">Zero specialty coffee on Palace Road. 5,000+ office workers + 3,500 students = strongest morning and afternoon coffee demand possible. First brand here owns the occasion entirely — 6 days/week, 52 weeks/year.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">650 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Avg Cover</div><div class="cat-meta-v">₹180–260</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">90–130</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:100%"></div></div>
+    </div>
+
+    <div class="cat-card fade-in d1">
+      <div class="cat-card-top"><span class="cat-rank">02 · Priority</span><span class="cat-score-badge badge-9">9/10</span></div>
+      <div class="cat-name">Indian Casual / Biryani & Meals</div>
+      <div class="cat-desc">Dominant lunch category for all segments. Existing supply (Food Corner, Vishnu Park) is quality-poor and capacity-constrained. Premium step-up format captures the upgrade occasion directly.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">750 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Avg Cover</div><div class="cat-meta-v">₹280–380</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">80–120</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero Quality</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:90%"></div></div>
+    </div>
+
+    <div class="cat-card fade-in d2">
+      <div class="cat-card-top"><span class="cat-rank">03 · Priority</span><span class="cat-score-badge badge-9">9/10</span></div>
+      <div class="cat-name">Quick Bites / Wraps & Rolls</div>
+      <div class="cat-desc">Mount Carmel has ~3,500 women aged 18–24 — wraps and portable formats are the #1 lunch preference. No wrap format within 800m. Clean category gap with guaranteed high-frequency repeat.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">700 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Avg Cover</div><div class="cat-meta-v">₹180–400</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">80–120</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:90%"></div></div>
+    </div>
+
+    <div class="cat-card fade-in d3">
+      <div class="cat-card-top"><span class="cat-rank">04 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
+      <div class="cat-name">Premium Burger / Grill</div>
+      <div class="cat-desc">Office and hotel guest demand for Western QSR is unmet. No burger brand on Palace Road. Premium grilled format (not fast-food) aligns with SEC A spending power in this corridor.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">700 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Avg Cover</div><div class="cat-meta-v">₹350–500</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">50–80</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:80%"></div></div>
+    </div>
+
+    <div class="cat-card fade-in">
+      <div class="cat-card-top"><span class="cat-rank">05 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
+      <div class="cat-name">Bakery + Patisserie</div>
+      <div class="cat-desc">Hotel guests, residents, and college students all drive strong bakery demand. Morning + afternoon + gifting occasion. Elevates overall food court brand perception. Corporate gifting adds a high-margin delivery stream.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">650 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Per Item</div><div class="cat-meta-v">₹200–350</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">60–90</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:80%"></div></div>
+    </div>
+
+    <div class="cat-card fade-in d1">
+      <div class="cat-card-top"><span class="cat-rank">06 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
+      <div class="cat-name">Asian Street Food (Momos / Bao / Dim Sum)</div>
+      <div class="cat-desc">Highest-growth category among 18–35 urban females — dominant MCC demographic. Zero Asian street food within 800m. Strong social media discovery format. "Asian near me" on Palace Road returns zero results.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">650 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Avg Cover</div><div class="cat-meta-v">₹200–300</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">70–100</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:80%"></div></div>
+    </div>
+
+    <div class="cat-card fade-in d2">
+      <div class="cat-card-top"><span class="cat-rank">07 · Priority</span><span class="cat-score-badge badge-7">7/10</span></div>
+      <div class="cat-name">Desserts + Milkshakes</div>
+      <div class="cat-desc">Post-meal and standalone social occasion. Evening anchor for mezzanine dwell time. No artisanal dessert counter anywhere on this corridor. Late-night delivery (9PM–12AM) is uncontested.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">600 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Avg Cover</div><div class="cat-meta-v">₹180–300</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">60–90</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:70%"></div></div>
+    </div>
+
+    <div class="cat-card fade-in d3">
+      <div class="cat-card-top"><span class="cat-rank">08 · Priority</span><span class="cat-score-badge badge-7">7/10</span></div>
+      <div class="cat-name">Healthy / Salad Bowl + Smoothies</div>
+      <div class="cat-desc">Vasanth Nagar residents and hotel guests — health-aware, premium-spend segments. Breakfast and lunch occasion. Corporate tiffin subscriptions (Swiggy Daily) is the key revenue unlock for weekday repeat.</div>
+      <div class="cat-meta-grid">
+        <div class="cat-meta-item"><div class="cat-meta-k">Stall Size</div><div class="cat-meta-v">600 sq ft</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Avg Cover</div><div class="cat-meta-v">₹260–380</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Daily Covers</div><div class="cat-meta-v">50–80</div></div>
+        <div class="cat-meta-item"><div class="cat-meta-k">Corridor Comp</div><div class="cat-meta-v">Zero</div></div>
+      </div>
+      <div class="cat-score-bar"><div class="cat-score-fill" style="width:70%"></div></div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- REVENUE -->
+<section id="revenue">
+  <div class="revenue-layout">
+    <div class="fade-in">
+      <span class="section-label">06 · Revenue Potential</span>
+      <h2 class="sec-h">₹5–22 L / month per stall.<br>₹2.16 Cr combined at base case.</h2>
+      <p class="sec-p" style="margin-bottom:28px;">Per-stall estimates based on Palace Road SEC A/A+ catchment, realistic daily covers, and Swiggy/Zomato delivery modelling. Palace Road is a white-space delivery pin — any brand opening here ranks top 3 in its category within this pin within weeks.</p>
+
+      <table class="rev-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Dine-In / Mo</th>
+            <th>Delivery / Mo</th>
+            <th>Combined</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cat-name-cell">Specialty Coffee</td>
+            <td>₹5.4–10.2 L</td>
+            <td>₹1.2–2.5 L</td>
+            <td class="rev-combined">₹6.6–12.7 L</td>
+          </tr>
+          <tr>
+            <td class="cat-name-cell">Indian / Biryani</td>
+            <td>₹6.7–13.7 L</td>
+            <td>₹3.5–6.0 L</td>
+            <td class="rev-combined">₹10.2–19.7 L</td>
+          </tr>
+          <tr>
+            <td class="cat-name-cell">QSR / Wraps / Burgers</td>
+            <td>₹5.0–14.4 L</td>
+            <td>₹4.0–7.5 L</td>
+            <td class="rev-combined">₹9.0–21.9 L</td>
+          </tr>
+          <tr>
+            <td class="cat-name-cell">Premium Burger / Grill</td>
+            <td>₹5.3–12.0 L</td>
+            <td>₹2.5–5.0 L</td>
+            <td class="rev-combined">₹7.8–17.0 L</td>
+          </tr>
+          <tr>
+            <td class="cat-name-cell">Bakery + Patisserie</td>
+            <td>₹3.6–9.5 L</td>
+            <td>₹1.5–3.0 L</td>
+            <td class="rev-combined">₹5.1–12.5 L</td>
+          </tr>
+          <tr>
+            <td class="cat-name-cell">Asian Street Food</td>
+            <td>₹4.2–9.0 L</td>
+            <td>₹3.0–5.5 L</td>
+            <td class="rev-combined">₹7.2–14.5 L</td>
+          </tr>
+          <tr>
+            <td class="cat-name-cell">Desserts + Milkshakes</td>
+            <td>₹3.2–8.1 L</td>
+            <td>₹2.0–4.0 L</td>
+            <td class="rev-combined">₹5.2–12.1 L</td>
+          </tr>
+          <tr>
+            <td class="cat-name-cell">Healthy / Salad Bowl</td>
+            <td>₹3.9–9.1 L</td>
+            <td>₹2.0–4.0 L</td>
+            <td class="rev-combined">₹5.9–13.1 L</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="delivery-callout">
+        <p><strong>Delivery upside:</strong> Palace Road is a white-space delivery pin on Swiggy and Zomato. The only quality F&B options currently listing from this zone are Shangri-La's hotel restaurants (₹₹₹₹₹). Any brand opening here immediately ranks top 3 for its category within this pin — with minimal ad spend and near-zero competition for <strong>12–18 months</strong>.</p>
+      </div>
+    </div>
+
+    <div class="fade-in d2">
+      <span class="section-label">Revenue Scenarios · All 8 Stalls</span>
+      <div class="scenario-cards" style="margin-top:52px;">
+        <div class="scenario-card">
+          <div class="scenario-tag">Conservative · 6-Month Ramp-up</div>
+          <div class="scenario-rev">₹1.35 Cr <span class="period">/ month</span></div>
+          <div style="font-size:11px;color:var(--orange);font-family:var(--font-mono);margin-bottom:6px;">₹16.2 Cr / year</div>
+          <div class="scenario-desc">Lower-end covers, 6-month ramp-up. Coffee + Meals + Wraps operational first.</div>
+        </div>
+        <div class="scenario-card base">
+          <div class="scenario-tag">Base Case · Full Operations by Month 8</div>
+          <div class="scenario-rev">₹2.16 Cr <span class="period">/ month</span></div>
+          <div style="font-size:11px;color:var(--orange);font-family:var(--font-mono);margin-bottom:6px;">₹25.9 Cr / year</div>
+          <div class="scenario-desc">Mid-range covers across all 8 categories. Full operations within 6–8 months.</div>
+        </div>
+        <div class="scenario-card optimistic">
+          <div class="scenario-tag">Optimistic · Delivery Included</div>
+          <div class="scenario-rev">₹2.94 Cr <span class="period">/ month</span></div>
+          <div style="font-size:11px;color:var(--gold);font-family:var(--font-mono);margin-bottom:6px;">₹35.3 Cr / year</div>
+          <div class="scenario-desc">Upper-end covers, event-day spikes, delivery revenue fully ramped. Well-established brands.</div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border);padding:22px 22px;margin-top:20px;">
+        <div style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted-2);margin-bottom:10px;">Landlord Return Model</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;">
+            <span style="color:var(--muted);">Fixed rent (market rate)</span>
+            <span style="font-weight:700;color:var(--ink);">₹55–70 L / month</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;">
+            <span style="color:var(--muted);">Revenue share (8–10% above MG)</span>
+            <span style="font-weight:700;color:var(--orange);">Additional upside</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding-top:8px;border-top:1px solid var(--border);">
+            <span style="color:var(--muted);">Annual landlord yield</span>
+            <span style="font-weight:800;font-size:15px;color:var(--ink);">₹7–9 Cr / year</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- COMPETITIVE -->
+<section id="competitive">
+  <div class="fade-in">
+    <span class="section-label">04 · Competitive Landscape</span>
+    <h2 class="sec-h">No food court. No QSR. No branded casual dining within 800m.</h2>
+    <p class="sec-p">Lokazen maps F&B supply within a 1km radius using Google rating volume as validated demand proxy. Every restaurant with 500+ reviews is either 5-star hotel-priced or a budget canteen. The mid-premium format gap is total.</p>
+  </div>
+  <div class="comp-grid">
+    <div class="comp-card fade-in">
+      <div class="comp-name">Shang Palace (Shangri-La)</div>
+      <div class="comp-cat">Chinese Fine Dining</div>
+      <div class="comp-meta"><span class="comp-price">₹₹₹₹₹</span><span class="comp-rating">4.6★ · 251 reviews</span></div>
+      <div class="comp-insight">Hotel-resident only. Zero accessibility for office workers or students. Pricing wall, not competition.</div>
+    </div>
+    <div class="comp-card fade-in d1">
+      <div class="comp-name">b Café (Shangri-La)</div>
+      <div class="comp-cat">All-Day Dining</div>
+      <div class="comp-meta"><span class="comp-price">₹₹₹₹₹</span><span class="comp-rating">4.5★ · 577 reviews</span></div>
+      <div class="comp-insight">Buffet ₹1,611+ per head. Not a daily occasion. Reconfirms the 5-star pricing wall for mid-market demand.</div>
+    </div>
+    <div class="comp-card fade-in d2">
+      <div class="comp-name">Caprese (Shangri-La)</div>
+      <div class="comp-cat">Italian Fine Dining</div>
+      <div class="comp-meta"><span class="comp-price">₹₹₹₹₹</span><span class="comp-rating">4.4★ · 248 reviews</span></div>
+      <div class="comp-insight">18th floor dinner venue. Occasion-only. Zero daily volume. Not accessible to office/student catchment.</div>
+    </div>
+    <div class="comp-card fade-in">
+      <div class="comp-name">Pasta Street (Cunningham Rd)</div>
+      <div class="comp-cat">Italian Casual · 800m away</div>
+      <div class="comp-meta"><span class="comp-price">₹₹₹</span><span class="comp-rating">4.4★ · 4,527 reviews</span></div>
+      <div class="comp-insight">4,527 reviews = massive validated demand 800m away. A food court here captures this demand directly — closer and multi-format.</div>
+    </div>
+    <div class="comp-card fade-in d1">
+      <div class="comp-name">The Food Corner (near MCC)</div>
+      <div class="comp-cat">North Indian / Veg · Budget Canteen</div>
+      <div class="comp-meta"><span class="comp-price">₹</span><span class="comp-rating">4.1★ · 636 reviews</span></div>
+      <div class="comp-insight">Reviews note "jam packed during lunch." Students have zero premium option. Quality-constrained by format.</div>
+    </div>
+    <div class="comp-card fade-in d2">
+      <div class="comp-name">Sri Vishnu Park (near MCC)</div>
+      <div class="comp-cat">Pure Veg South Indian · Budget</div>
+      <div class="comp-meta"><span class="comp-price">₹</span><span class="comp-rating">4.5★ · 341 reviews</span></div>
+      <div class="comp-insight">"Parking impossible, constant student rush." Demand exceeds capacity. Premium upgrade is the exact gap here.</div>
+    </div>
+  </div>
+  <div class="gap-verdict fade-in">
+    <p><strong>Gap Verdict:</strong> No food court, no QSR chain, no branded casual dining within 800m of this pin on Palace Road. Pasta Street (800m, single-cuisine, 4,527 reviews) is the closest proxy for latent demand. A multi-format destination here captures this entire unmet demand pool — while being closer, more convenient, and offering category variety that a single-cuisine venue cannot.</p>
+  </div>
+</section>
+
+
+<!-- SWOT -->
+<section id="swot">
+  <div class="fade-in">
+    <span class="section-label">07 · SWOT Analysis</span>
+    <h2 class="sec-h">First-mover window is open. It won't be indefinite.</h2>
+    <p class="sec-p">CBD gentrification cycles in Bengaluru close within 18–24 months once a concept demonstrates proof of demand. A 91/100 location with zero food court competition is not a permanent condition.</p>
+  </div>
+  <div class="swot-grid">
+    <div class="swot-card strengths fade-in">
+      <div class="swot-title">Strengths</div>
+      <ul class="swot-list">
+        <li>Only food court format on one of Bengaluru's highest-income CBD corridors</li>
+        <li>10,400–14,800 daily footfall across 6 verified demand segments</li>
+        <li>3 × 5-star hotels within 500m — structural daily overflow dining demand</li>
+        <li>Double-height GF (5.85m) — purpose-ideal spatial quality for food court format</li>
+        <li>Mount Carmel College directly adjacent — 3,500+ students, highest repeat frequency</li>
+        <li>Same-compound captive office (iNurture, 500–1,000 employees) — zero quality food today</li>
+        <li>Residential at ₹31K+/sqft — SEC A spending power in immediate vicinity</li>
+        <li>Zero food court competitor within 3km on Palace Road axis</li>
+      </ul>
+    </div>
+    <div class="swot-card weaknesses fade-in d1">
+      <div class="swot-title">Weaknesses</div>
+      <ul class="swot-list">
+        <li>Significant bare-shell fit-out investment across 6–8 brand stalls + mezzanine dining</li>
+        <li>Limited dedicated parking — Palace Road on-street competes with Shangri-La public lot</li>
+        <li>Single elevator — potential bottleneck at lunch peak; staircase mitigation required</li>
+        <li>Lower pedestrian street culture vs MG Road / Church Street — wayfinding and signage critical</li>
+        <li>Weekend office-worker segment disappears — Saturday/Sunday relies on hotels + residents</li>
+        <li>FSSAI, fire NOC, and health department clearances: standard 3–5 month timeline</li>
+      </ul>
+    </div>
+    <div class="swot-card opportunities fade-in d2">
+      <div class="swot-title">Opportunities</div>
+      <ul class="swot-list">
+        <li>First-mover advantage — define the food court category on Palace Road before any competitor</li>
+        <li>Metro growth: Cubbon Park station (Purple Line, ~1.2km) increases transit footfall year-on-year</li>
+        <li>Event multiplier: Bangalore Palace, Golf Club tournaments, Chinnaswamy Stadium IPL (3.5km)</li>
+        <li>B2B corporate catering to Cunningham Road offices — untapped high-margin revenue stream</li>
+        <li>Delivery kitchen integration — mezzanine dark kitchen pods during off-peak hours</li>
+        <li>Late-night extension (10PM–1AM): hotel overflow + Vasanth Nagar late-night demand unserved</li>
+      </ul>
+    </div>
+    <div class="swot-card threats fade-in d3">
+      <div class="swot-title">Threats</div>
+      <ul class="swot-list">
+        <li>Palace Road CBD rents are among the highest in BLR — only high-ticket formats are viable</li>
+        <li>Shangri-La F&B (b Café, Shang Palace, Caprese) continues capturing the hotel occasion at premium</li>
+        <li>If RMZ Icon/Embassy Star installs managed food facility, captive office demand partially shifts</li>
+        <li>CBD gentrification closes first-mover window within 18–24 months of concept proof-of-demand</li>
+        <li>Road construction on Palace Road periodically affects accessibility and foot traffic patterns</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- SCORE DETAIL -->
+<section id="score-detail">
+  <div class="score-detail-grid">
+    <div class="score-detail-left fade-in">
+      <span class="section-label-gold">08 · Lokazen Composite Score</span>
+      <div style="display:flex;align-items:baseline;gap:8px;margin:16px 0;">
+        <span style="font-family:var(--font-sans);font-weight:900;font-size:96px;line-height:1;background:linear-gradient(135deg,var(--orange),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">91</span>
+        <span style="font-size:32px;color:rgba(255,255,255,0.2);-webkit-text-fill-color:rgba(255,255,255,0.2);">/100</span>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--gold);display:block;margin-bottom:24px;">Exceptional · GVS Recommends Immediate Engagement</span>
+
+      <div class="verdict-card">
+        <p><strong>Property Verdict:</strong> Palace Road, Niton Compound Block B1 is one of the highest-scoring food court placement opportunities Lokazen has evaluated in Bengaluru's CBD. The combination of SEC A+ multi-layered catchment, total competitive void, purpose-fit double-height configuration, and sub-150m walking access to 5,000+ office and student footfall creates a once-in-cycle commercial window.</p>
+        <p><strong>Format Verdict:</strong> 6–8 premium stalls (600–800 sq ft each) with full mezzanine dining (180–220 covers). Not a mall food court — a curated dining destination. Average cover spend target ₹400–700. Premium fit-out mandatory.</p>
+        <p><strong>Timing:</strong> The competitive advantage is real but time-bounded. A 91/100 location with zero food court competition is not a permanent condition. First-mover window is open now.</p>
+      </div>
+    </div>
+
+    <div class="score-detail-right fade-in d2">
+      <span class="section-label-gold" style="margin-bottom:24px;display:block;">Score Breakdown · 8 Parameters</span>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">Footfall Density (Catchment Volume)</span><span class="score-param-val">10/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:100%"></div></div>
+        <div class="score-param-rationale">10,400–14,800 daily across 6 verified independent segments. Benchmark-level for non-mall CBD in BLR.</div>
+      </div>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">Catchment Quality (SEC Profile)</span><span class="score-param-val">10/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:100%"></div></div>
+        <div class="score-param-rationale">5 hotels (3 × 5-star), 2 Grade A offices, ₹31K+ residential — SEC A/A+ dominant. Highest willingness-to-pay in BLR.</div>
+      </div>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">F&B Supply Gap (Competitive Void)</span><span class="score-param-val">10/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:100%"></div></div>
+        <div class="score-param-rationale">Zero food court format within 3km. Total mid-premium gap between 5-star hotel pricing and budget canteen.</div>
+      </div>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">Captive Walk-In Access</span><span class="score-param-val">10/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:100%"></div></div>
+        <div class="score-param-rationale">Mount Carmel (~80m), RMZ Icon (~120m), Embassy Star (~150m), iNurture (same compound). No vehicle needed.</div>
+      </div>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">Property Configuration Fit</span><span class="score-param-val">9/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:90%"></div></div>
+        <div class="score-param-rationale">Double-height GF (5.85m) + mezzanine gallery = architecturally purpose-ideal for multi-brand food court.</div>
+      </div>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">Occasion Spread (Day-Part Coverage)</span><span class="score-param-val">9/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:90%"></div></div>
+        <div class="score-param-rationale">All 4 daily windows covered. Sophia Evening College extends demand to 8PM. Late-night hotel overflow unserved.</div>
+      </div>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">Connectivity & Multi-Modal Access</span><span class="score-param-val">8/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:80%"></div></div>
+        <div class="score-param-rationale">Palace Road arterial access; metro ~1.2km; auto/cab density. Constraint: no dedicated parking.</div>
+      </div>
+      <div class="score-param-row">
+        <div class="score-param-top"><span class="score-param-name">Commercial Viability (Rent vs Footfall)</span><span class="score-param-val">8/10</span></div>
+        <div class="score-param-bar"><div class="score-param-fill" style="width:80%"></div></div>
+        <div class="score-param-rationale">Premium location pricing justified by footfall quality and density — brand selection must favour high-ticket formats.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-inner">
+    <span class="section-label-gold" style="text-align:center;">Ready to place your brand?</span>
+    <h2 class="cta-h">8 categories open.<br>One location. <span class="gradient-text">First-mover wins.</span></h2>
+    <p class="cta-sub">Lokazen manages the placement end-to-end — stall selection, LOI, fit-out guidance, brand onboarding. The window is open now. 91/100 locations don't stay available.</p>
+
+    <div class="cta-cards">
+      <div class="cta-card">
+        <span class="cta-card-num">01 — Site Visit</span>
+        <div class="cta-card-h">Schedule a Site Visit</div>
+        <p class="cta-card-p">Walk the double-height glass space. See Palace Road footfall first-hand. We arrange visits at the earliest.</p>
+        <a class="cta-link" onclick="openModal('visit')">Book a Visit →</a>
+      </div>
+      <div class="cta-card">
+        <span class="cta-card-num">02 — Brand Placement</span>
+        <div class="cta-card-h">Onboard Your Brand</div>
+        <p class="cta-card-p">Submit your brand and category. Lokazen matches you to the right stall and manages the placement end-to-end.</p>
+        <a class="cta-link" href="/for-brands#pricing" target="_blank">Start Onboarding →</a>
+      </div>
+    </div>
+
+    <p class="cta-divider">or speak to us directly</p>
+    <div class="cta-footer-row">
+      <span class="cta-footer-item">lokazen.in</span>
+      <span class="cta-footer-item">Palace Road · Vasanth Nagar</span>
+      <span class="cta-footer-item">Central Bengaluru · 560001</span>
+      <span class="cta-footer-item">March 2026</span>
+    </div>
+  </div>
+</section>
+
+
+<footer>
+  <div class="footer-l"><span>Lokazen</span> — AI Powered Commercial Real Estate Platform</div>
+  <div class="footer-r">
+    <a href="https://lokazen.in" target="_blank">lokazen.in</a>
+    <a href="https://lokazen.in/privacy" target="_blank">Privacy</a>
+    <a href="https://lokazen.in/terms" target="_blank">Terms</a>
+  </div>
+</footer>
+
+
+<!-- STICKY VISIT BAR -->
+<div class="sticky-visit-bar" id="stickyBar">
+  <div class="sticky-bar-left">
+    <div class="sticky-bar-dot"></div>
+    <div class="sticky-bar-text">Stalls available now · Palace Road Food Court · Central Bengaluru</div>
+  </div>
+  <button class="sticky-bar-btn" onclick="openModal('visit')">Book Your Site Visit</button>
+  <button class="sticky-bar-close" onclick="dismissSticky()" aria-label="Dismiss">✕</button>
+</div>
+
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlay(event)">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <span class="modal-eyebrow" id="mEyebrow">Brand Enquiry · Palace Road Food Court</span>
+    <h3 class="modal-title" id="mTitle">Onboard Your Brand</h3>
+    <p class="modal-sub" id="mSub">Tell us about your brand and preferred stall. Lokazen will revert within 24 hours.</p>
+
+    <form id="eForm" onsubmit="handleSubmit(event)">
+      <div class="form-g">
+        <label class="form-l" for="bName">Brand Name</label>
+        <input class="form-i" type="text" id="bName" placeholder="e.g. Chai Point, Wrap Co" required />
+      </div>
+      <div class="form-g">
+        <label class="form-l" for="cat">Category</label>
+        <select class="form-s" id="cat" required>
+          <option value="">Select category…</option>
+          <option>Specialty Coffee / Café</option>
+          <option>Indian Casual / Biryani & Meals</option>
+          <option>Quick Bites / Wraps & Rolls</option>
+          <option>Premium Burger / Grill</option>
+          <option>Bakery + Patisserie</option>
+          <option>Asian Street Food (Momos / Bao)</option>
+          <option>Desserts + Milkshakes</option>
+          <option>Healthy / Salad Bowl + Smoothies</option>
+          <option>Other F&B</option>
+        </select>
+      </div>
+      <div class="form-g">
+        <label class="form-l" for="uSize">Stall Size Preference</label>
+        <select class="form-s" id="uSize" required>
+          <option value="">Select size…</option>
+          <option>600 sq ft — Small Stall</option>
+          <option>650 sq ft — Standard Stall</option>
+          <option>700–750 sq ft — Large Stall</option>
+          <option>Flexible / Discuss</option>
+        </select>
+      </div>
+      <div class="form-grid">
+        <div class="form-g">
+          <label class="form-l" for="cName">Contact Name</label>
+          <input class="form-i" type="text" id="cName" placeholder="Your name" required />
+        </div>
+        <div class="form-g">
+          <label class="form-l" for="ph">Phone / WhatsApp</label>
+          <input class="form-i" type="tel" id="ph" placeholder="+91 98xxx xxxxx" required />
+        </div>
+      </div>
+      <div class="form-g">
+        <label class="form-l" for="em">Email</label>
+        <input class="form-i" type="email" id="em" placeholder="you@brand.com" required />
+      </div>
+
+      <div id="formMsg"></div>
+      <button class="btn-submit" type="submit" id="submitBtn">Submit Enquiry</button>
+    </form>
+
+    <p class="modal-note">Lokazen manages the placement end-to-end.<br>Success fee applies on deal closure. Palace Road Food Court · March 2026.</p>
+  </div>
+</div>
+
+
+<script>
+  // ── MODAL ──
+  let currentMode = 'visit';
+  function openModal(mode) {
+    currentMode = mode;
+    const eyebrow = document.getElementById('mEyebrow');
+    const title   = document.getElementById('mTitle');
+    const sub     = document.getElementById('mSub');
+    if (mode === 'visit') {
+      eyebrow.textContent = 'Site Visit · Palace Road Food Court';
+      title.textContent   = 'Schedule a Site Visit';
+      sub.textContent     = 'We\'ll arrange a site visit at the earliest.';
+    } else {
+      eyebrow.textContent = 'Brand Enquiry · Palace Road Food Court';
+      title.textContent   = 'Onboard Your Brand';
+      sub.textContent     = 'Tell us about your brand and preferred stall. Lokazen will revert within 24 hours.';
+    }
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function handleOverlay(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+  function showFormMsg(msg, type) {
+    const el = document.getElementById('formMsg');
+    el.textContent = msg; el.className = 'form-msg ' + type;
+  }
+  function hideFormMsg() {
+    const el = document.getElementById('formMsg');
+    el.textContent = ''; el.className = 'form-msg';
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const brandName   = document.getElementById('bName').value.trim();
+    const category    = document.getElementById('cat').value;
+    const unitSize    = document.getElementById('uSize').value;
+    const contactName = document.getElementById('cName').value.trim();
+    const phone       = document.getElementById('ph').value.trim();
+    const email       = document.getElementById('em').value.trim();
+
+    if (!brandName || !category || !unitSize || !contactName || !phone || !email) {
+      showFormMsg('Please fill in all fields.', 'error'); return;
+    }
+    btn.disabled = true; btn.textContent = 'Sending…'; hideFormMsg();
+
+    try {
+      const res = await fetch('/api/palace-road-enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandName, category, unitSize, contactName, phone, email, enquiryType: currentMode })
+      });
+      if (res.ok) {
+        showFormMsg('Enquiry received. Check your email — Lokazen will be in touch shortly.', 'success');
+        document.getElementById('eForm').reset();
+        setTimeout(closeModal, 3200);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showFormMsg(data.error || 'Something went wrong. Please try again.', 'error');
+      }
+    } catch {
+      showFormMsg('Network error. Please try again.', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Submit Enquiry';
+    }
+  }
+
+  // ── STICKY BAR ──
+  const stickyBar = document.getElementById('stickyBar');
+  let stickyDismissed = false;
+  function dismissSticky() { stickyDismissed = true; stickyBar.classList.remove('visible'); }
+  const stickyObs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (stickyDismissed) return;
+      if (en.isIntersecting) stickyBar.classList.add('visible');
+      else stickyBar.classList.remove('visible');
+    });
+  }, { threshold: 0.05 });
+  const catSec = document.getElementById('categories');
+  const ctaSec = document.getElementById('cta');
+  if (catSec) stickyObs.observe(catSec);
+  if (ctaSec) stickyObs.observe(ctaSec);
+
+  // ── FADE-IN ──
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('visible'); obs.unobserve(en.target); } });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>

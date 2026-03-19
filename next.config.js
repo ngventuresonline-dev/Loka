@@ -92,9 +92,13 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/natura-walk',
-        destination: '/natura-walk.html',
-      },
+             source: '/natura-walk',
+             destination: '/natura-walk.html',
+           },
+           {
+             source: '/palace-road',
+             destination: '/palace-road.html',
+           },
     ]
   },
 
