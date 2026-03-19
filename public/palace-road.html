@@ -235,7 +235,7 @@
     .hero-bg-img {
       position: absolute; inset: 0;
       background: url('pr-vision-1.png') center center / cover no-repeat;
-      opacity: 0.18;
+      opacity: 0.28;
     }
     .hero-bg-gradient {
       position: absolute; inset: 0;
@@ -428,7 +428,19 @@
     /* ── CATCHMENT ── */
     #catchment { padding: 0; display: grid; grid-template-columns: 1fr 1fr; }
     .catch-left { padding: 90px 72px; background: var(--white); }
-    .catch-right { padding: 90px 72px; background: var(--dark); }
+    .catch-right {
+      padding: 90px 72px;
+      background: var(--dark);
+      position: relative; overflow: hidden;
+    }
+    .catch-right::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url('pr-vision-1.png') center center / cover no-repeat;
+      opacity: 0.12;
+      z-index: 0;
+    }
+    .catch-right > * { position: relative; z-index: 1; }
     .segment-row {
       display: flex; justify-content: space-between; align-items: flex-start;
       padding: 16px 0; border-bottom: 1px solid var(--border-light); gap: 16px;
@@ -480,9 +492,13 @@
       transition: border-color 0.25s, background 0.25s;
       position: relative; overflow: hidden;
     }
-    .cat-icon {
-      font-size: 48px; line-height: 1; display: block;
-      margin-bottom: 14px; filter: grayscale(0.2);
+    .cat-card::before {
+      content: attr(data-rank);
+      position: absolute; right: 14px; top: -14px;
+      font-family: var(--font-sans); font-weight: 900;
+      font-size: 110px; line-height: 1;
+      color: rgba(255,255,255,0.04); pointer-events: none;
+      letter-spacing: -0.04em;
     }
     .cat-card::after {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
@@ -570,26 +586,35 @@
 
     /* ── SWOT ── */
     #swot { padding: 90px 80px; background: var(--white); }
-    .swot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 36px; }
-    .swot-card { border-radius: var(--r-sm); padding: 24px 26px; }
-    .swot-card.strengths { background: rgba(232,80,10,0.05); border: 1px solid rgba(232,80,10,0.15); }
-    .swot-card.weaknesses { background: rgba(26,8,0,0.03); border: 1px solid var(--border-light); }
-    .swot-card.opportunities { background: rgba(201,168,76,0.06); border: 1px solid rgba(201,168,76,0.2); }
-    .swot-card.threats { background: rgba(26,8,0,0.03); border: 1px solid var(--border-light); }
+    .swot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 36px; border-radius: var(--r); overflow: hidden; }
+    .swot-card { padding: 32px 28px; position: relative; overflow: hidden; border-top: 3px solid transparent; }
+    .swot-card.strengths { background: rgba(232,80,10,0.07); border-top-color: var(--orange); }
+    .swot-card.weaknesses { background: rgba(201,168,76,0.06); border-top-color: var(--gold); }
+    .swot-card.opportunities { background: rgba(34,197,94,0.06); border-top-color: #4ade80; }
+    .swot-card.threats { background: rgba(239,68,68,0.06); border-top-color: #f87171; }
     .swot-title {
       font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
-      letter-spacing: 0.16em; margin-bottom: 14px; font-weight: 600;
+      letter-spacing: 0.18em; margin-bottom: 18px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .swot-title::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
     }
     .swot-card.strengths .swot-title { color: var(--orange); }
-    .swot-card.weaknesses .swot-title { color: var(--muted); }
-    .swot-card.opportunities .swot-title { color: var(--gold); }
-    .swot-card.threats .swot-title { color: var(--muted); }
-    .swot-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .swot-list li { font-size: 15px; color: var(--ink); line-height: 1.6; padding-left: 16px; position: relative; }
-    .swot-list li::before { content: '›'; position: absolute; left: 0; font-weight: 700; }
+    .swot-card.strengths .swot-title::before { background: var(--orange); }
+    .swot-card.weaknesses .swot-title { color: var(--gold); }
+    .swot-card.weaknesses .swot-title::before { background: var(--gold); }
+    .swot-card.opportunities .swot-title { color: #4ade80; }
+    .swot-card.opportunities .swot-title::before { background: #4ade80; }
+    .swot-card.threats .swot-title { color: #f87171; }
+    .swot-card.threats .swot-title::before { background: #f87171; }
+    .swot-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+    .swot-list li { font-size: 14px; color: var(--ink); line-height: 1.55; padding-left: 14px; position: relative; }
+    .swot-list li::before { content: '—'; position: absolute; left: 0; font-size: 10px; top: 3px; }
     .swot-card.strengths .swot-list li::before { color: var(--orange); }
-    .swot-card.opportunities .swot-list li::before { color: var(--gold); }
-    .swot-card.weaknesses .swot-list li::before, .swot-card.threats .swot-list li::before { color: var(--muted-2); }
+    .swot-card.weaknesses .swot-list li::before { color: var(--gold); }
+    .swot-card.opportunities .swot-list li::before { color: #4ade80; }
+    .swot-card.threats .swot-list li::before { color: #f87171; }
 
     /* ── SCORE DETAIL ── */
     #score-detail { padding: 90px 80px; background: var(--dark); }
@@ -831,6 +856,44 @@
       .slider-title-overlay { padding: 20px 20px 60px; }
       .slider-dots { bottom: 16px; right: 16px; }
       .slide-label { bottom: 16px; left: 16px; }
+    }
+
+    /* ── VISION FULLBLEED ── */
+    .vision-fullbleed {
+      position: relative; height: clamp(360px, 50vw, 600px);
+      overflow: hidden; background: #000;
+    }
+    .vision-fullbleed img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transform: scale(1.04);
+      transition: transform 12s linear;
+      filter: brightness(0.7);
+    }
+    .vision-fullbleed:hover img { transform: scale(1.0); }
+    .vfb-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(26,8,0,0.72) 0%, rgba(26,8,0,0.3) 60%, transparent 100%);
+      display: flex; align-items: flex-end;
+      padding: 52px 72px;
+    }
+    .vfb-content { max-width: 720px; }
+    .vfb-label {
+      font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.18em; color: var(--gold); display: block; margin-bottom: 16px;
+    }
+    .vfb-statement {
+      font-family: var(--font-sans); font-weight: 900;
+      font-size: clamp(26px, 4.5vw, 52px); line-height: 1.1;
+      color: #fff; letter-spacing: -0.02em;
+    }
+    .vfb-statement span { color: var(--orange); }
+    .vfb-sub {
+      font-size: 16px; color: rgba(255,255,255,0.55); margin-top: 16px;
+      font-family: var(--font-sans); line-height: 1.6; max-width: 480px;
+    }
+    @media (max-width: 768px) {
+      .vfb-overlay { padding: 32px 24px; }
+      .vision-fullbleed { height: clamp(280px, 60vw, 400px); }
     }
 
     /* ── NUMBERS BILLBOARD ── */
@@ -1128,6 +1191,18 @@
 </section>
 
 
+<!-- VISION FULLBLEED -->
+<div class="vision-fullbleed">
+  <img src="pr-vision-2.png" alt="Palace Road Food Court — The Vision" />
+  <div class="vfb-overlay">
+    <div class="vfb-content">
+      <span class="vfb-label">The Vision · Palace Road Food Court</span>
+      <div class="vfb-statement">Central Bengaluru's first<br>curated <span>multi-brand</span><br>dining destination.</div>
+      <div class="vfb-sub">10,619 sq ft · 6–8 premium stalls · 200+ covers · Palace Road</div>
+    </div>
+  </div>
+</div>
+
 <!-- NUMBERS BILLBOARD -->
 <div class="numbers-strip">
   <div class="ns-item fade-in">
@@ -1242,7 +1317,7 @@
   <div class="catch-left fade-in">
     <span class="section-label">03 · Catchment Density</span>
     <h2 class="sec-h">6 independent demand segments. All within 500m.</h2>
-    <p class="sec-p" style="margin-bottom:32px;">Lokazen catchment analysis combines daytime population estimation, SEC profiling, and footfall-occasion mapping. Palace Road stacks five independent high-quality demand segments within 500m — rivalled only by UB City and MG Road at a fraction of their commercial costs.</p>
+    <p class="sec-p" style="margin-bottom:32px;">Palace Road stacks six independent high-quality demand segments within 500m — rivalled only by UB City and MG Road, at a fraction of their commercial costs.</p>
 
     <div class="segment-row">
       <div class="seg-left"><div class="seg-name">Office / Corporate</div><div class="seg-source">RMZ Icon (Jio), Embassy Star, iNurture, MSPL, Neo Foods</div></div>
@@ -1327,7 +1402,7 @@
   <div class="fade-in">
     <span class="section-label">02 · Location · Within 500m</span>
     <h2 class="sec-h">The highest-density office + institution + luxury hotel cluster in Central Bengaluru.</h2>
-    <p class="sec-p">Exact address: Niton Compound, No. 11/4, Block B1, Palace Road, near Mount Carmel College, Vasanth Nagar, Bengaluru – 560001. This 300m stretch is unmatched outside UB City and MG Road.</p>
+    <p class="sec-p">Every major demand generator within 500m — three 5-star hotels, 7,000+ office workers, 4,500+ students, and one of Bengaluru's most affluent residential streets. This 300m stretch is unmatched outside UB City.</p>
   </div>
   <div class="landmark-grid">
     <div class="landmark-card fade-in">
@@ -1423,8 +1498,7 @@
   </div>
   <div class="cat-grid">
 
-    <div class="cat-card fade-in">
-      <span class="cat-icon">☕</span>
+    <div class="cat-card fade-in" data-rank="01">
       <div class="cat-card-top"><span class="cat-rank">01 · Priority</span><span class="cat-score-badge badge-10">10/10</span></div>
       <div class="cat-name">Specialty Coffee + Café</div>
       <div class="cat-desc">Zero specialty coffee on Palace Road. 5,000+ office workers + 3,500 students = strongest morning and afternoon coffee demand possible. First brand here owns the occasion entirely — 6 days/week, 52 weeks/year.</div>
@@ -1437,8 +1511,7 @@
       <div class="cat-score-bar"><div class="cat-score-fill" style="width:100%"></div></div>
     </div>
 
-    <div class="cat-card fade-in d1">
-      <span class="cat-icon">🍛</span>
+    <div class="cat-card fade-in d1" data-rank="02">
       <div class="cat-card-top"><span class="cat-rank">02 · Priority</span><span class="cat-score-badge badge-9">9/10</span></div>
       <div class="cat-name">Indian Casual / Biryani & Meals</div>
       <div class="cat-desc">Dominant lunch category for all segments. Existing supply (Food Corner, Vishnu Park) is quality-poor and capacity-constrained. Premium step-up format captures the upgrade occasion directly.</div>
@@ -1451,8 +1524,7 @@
       <div class="cat-score-bar"><div class="cat-score-fill" style="width:90%"></div></div>
     </div>
 
-    <div class="cat-card fade-in d2">
-      <span class="cat-icon">🌯</span>
+    <div class="cat-card fade-in d2" data-rank="03">
       <div class="cat-card-top"><span class="cat-rank">03 · Priority</span><span class="cat-score-badge badge-9">9/10</span></div>
       <div class="cat-name">Quick Bites / Wraps & Rolls</div>
       <div class="cat-desc">Mount Carmel has ~3,500 women aged 18–24 — wraps and portable formats are the #1 lunch preference. No wrap format within 800m. Clean category gap with guaranteed high-frequency repeat.</div>
@@ -1465,8 +1537,7 @@
       <div class="cat-score-bar"><div class="cat-score-fill" style="width:90%"></div></div>
     </div>
 
-    <div class="cat-card fade-in d3">
-      <span class="cat-icon">🍔</span>
+    <div class="cat-card fade-in d3" data-rank="04">
       <div class="cat-card-top"><span class="cat-rank">04 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
       <div class="cat-name">Premium Burger / Grill</div>
       <div class="cat-desc">Office and hotel guest demand for Western QSR is unmet. No burger brand on Palace Road. Premium grilled format (not fast-food) aligns with SEC A spending power in this corridor.</div>
@@ -1479,8 +1550,7 @@
       <div class="cat-score-bar"><div class="cat-score-fill" style="width:80%"></div></div>
     </div>
 
-    <div class="cat-card fade-in">
-      <span class="cat-icon">🥐</span>
+    <div class="cat-card fade-in" data-rank="05">
       <div class="cat-card-top"><span class="cat-rank">05 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
       <div class="cat-name">Bakery + Patisserie</div>
       <div class="cat-desc">Hotel guests, residents, and college students all drive strong bakery demand. Morning + afternoon + gifting occasion. Elevates overall food court brand perception. Corporate gifting adds a high-margin delivery stream.</div>
@@ -1493,8 +1563,7 @@
       <div class="cat-score-bar"><div class="cat-score-fill" style="width:80%"></div></div>
     </div>
 
-    <div class="cat-card fade-in d1">
-      <span class="cat-icon">🥟</span>
+    <div class="cat-card fade-in d1" data-rank="06">
       <div class="cat-card-top"><span class="cat-rank">06 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
       <div class="cat-name">Asian Street Food (Momos / Bao / Dim Sum)</div>
       <div class="cat-desc">Highest-growth category among 18–35 urban females — dominant MCC demographic. Zero Asian street food within 800m. Strong social media discovery format. "Asian near me" on Palace Road returns zero results.</div>
@@ -1507,8 +1576,7 @@
       <div class="cat-score-bar"><div class="cat-score-fill" style="width:80%"></div></div>
     </div>
 
-    <div class="cat-card fade-in d2">
-      <span class="cat-icon">🍨</span>
+    <div class="cat-card fade-in d2" data-rank="07">
       <div class="cat-card-top"><span class="cat-rank">07 · Priority</span><span class="cat-score-badge badge-7">7/10</span></div>
       <div class="cat-name">Desserts + Milkshakes</div>
       <div class="cat-desc">Post-meal and standalone social occasion. Evening anchor for mezzanine dwell time. No artisanal dessert counter anywhere on this corridor. Late-night delivery (9PM–12AM) is uncontested.</div>
@@ -1521,8 +1589,7 @@
       <div class="cat-score-bar"><div class="cat-score-fill" style="width:70%"></div></div>
     </div>
 
-    <div class="cat-card fade-in d3">
-      <span class="cat-icon">🥗</span>
+    <div class="cat-card fade-in d3" data-rank="08">
       <div class="cat-card-top"><span class="cat-rank">08 · Priority</span><span class="cat-score-badge badge-7">7/10</span></div>
       <div class="cat-name">Healthy / Salad Bowl + Smoothies</div>
       <div class="cat-desc">Vasanth Nagar residents and hotel guests — health-aware, premium-spend segments. Breakfast and lunch occasion. Corporate tiffin subscriptions (Swiggy Daily) is the key revenue unlock for weekday repeat.</div>
@@ -1604,7 +1671,7 @@
   <div class="fade-in">
     <span class="section-label">04 · Competitive Landscape</span>
     <h2 class="sec-h">No food court. No QSR. No branded casual dining within 800m.</h2>
-    <p class="sec-p">Lokazen maps F&B supply within a 1km radius using Google rating volume as validated demand proxy. Every restaurant with 500+ reviews is either 5-star hotel-priced or a budget canteen. The mid-premium format gap is total.</p>
+    <p class="sec-p">Every restaurant with 500+ reviews on this corridor is either 5-star hotel-priced or a budget canteen. The mid-premium gap is total.</p>
   </div>
   <div class="comp-grid">
     <div class="comp-card fade-in">
@@ -1645,7 +1712,7 @@
     </div>
   </div>
   <div class="gap-verdict fade-in">
-    <p><strong>Gap Verdict:</strong> No food court, no QSR chain, no branded casual dining within 800m of this pin on Palace Road. Pasta Street (800m, single-cuisine, 4,527 reviews) is the closest proxy for latent demand. A multi-format destination here captures this entire unmet demand pool — while being closer, more convenient, and offering category variety that a single-cuisine venue cannot.</p>
+    <p><strong>Gap Verdict:</strong> No food court, no QSR chain, no branded casual dining within 800m. Pasta Street (800m away) at 4,527 reviews is the closest proof of demand — a multi-format destination here captures that entire unmet pool, closer and with full category variety.</p>
   </div>
 </section>
 
@@ -1655,7 +1722,7 @@
   <div class="fade-in">
     <span class="section-label">07 · SWOT Analysis</span>
     <h2 class="sec-h">First-mover window is open. It won't be indefinite.</h2>
-    <p class="sec-p">CBD gentrification cycles in Bengaluru close within 18–24 months once a concept demonstrates proof of demand. A 91/100 location with zero food court competition is not a permanent condition.</p>
+    <p class="sec-p">CBD gentrification closes first-mover windows within 18–24 months of proof of demand. A 91/100 location with zero food court competition is not a permanent condition.</p>
   </div>
   <div class="swot-grid">
     <div class="swot-card strengths fade-in">
@@ -1719,9 +1786,9 @@
       <span style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--gold);display:block;margin-bottom:24px;">Exceptional · GVS Recommends Immediate Engagement</span>
 
       <div class="verdict-card">
-        <p><strong>Property Verdict:</strong> Palace Road, Niton Compound Block B1 is one of the highest-scoring food court placement opportunities Lokazen has evaluated in Bengaluru's CBD. The combination of SEC A+ multi-layered catchment, total competitive void, purpose-fit double-height configuration, and sub-150m walking access to 5,000+ office and student footfall creates a once-in-cycle commercial window.</p>
-        <p><strong>Format Verdict:</strong> 6–8 premium stalls (600–800 sq ft each) with full mezzanine dining (180–220 covers). Not a mall food court — a curated dining destination. Average cover spend target ₹400–700. Premium fit-out mandatory.</p>
-        <p><strong>Timing:</strong> The competitive advantage is real but time-bounded. A 91/100 location with zero food court competition is not a permanent condition. First-mover window is open now.</p>
+        <p><strong>Property Verdict:</strong> One of the highest-scoring food court placements Lokazen has evaluated in Bengaluru's CBD. Maximum catchment density, maximum SEC profile, maximum competitive void — on a road most brands have overlooked. That perception lag is the commercial opportunity.</p>
+        <p><strong>Format:</strong> 6–8 premium stalls (600–800 sq ft) · 180–220 mezzanine covers · Target spend ₹400–700 · Premium fit-out mandatory.</p>
+        <p><strong>Timing:</strong> First-mover window is open. It won't be indefinite.</p>
       </div>
     </div>
 
