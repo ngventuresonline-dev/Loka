@@ -5,6 +5,7 @@ import { CreatePropertySchema, PropertyQuerySchema } from '@/lib/validations/pro
 import { generatePropertyId } from '@/lib/property-id-generator'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
+import { sendNewPropertyNotification } from '@/lib/lead-email'
 
 /**
  * POST /api/properties
@@ -114,6 +115,36 @@ export async function POST(request: NextRequest) {
     // Fire-and-forget background enrichment for new property (does not block response)
     enrichPropertyIntelligence(property.id).catch((err) => {
       console.error('[Intelligence] Background enrichment failed for property', property.id, err)
+    })
+
+    // Fire-and-forget: notify N&G immediately about the new listing
+    const firstImage = Array.isArray(property.images)
+      ? (property.images as unknown[]).find(
+          (img): img is string => typeof img === 'string' && img.startsWith('http')
+        ) ?? null
+      : null
+
+    sendNewPropertyNotification({
+      propertyId: property.id,
+      title: property.title,
+      propertyType: property.propertyType,
+      size: property.size,
+      price: typeof (property.price as any)?.toNumber === 'function'
+        ? (property.price as any).toNumber()
+        : Number(property.price) || 0,
+      priceType: property.priceType,
+      address: property.address,
+      city: property.city,
+      state: property.state,
+      mapLink: null, // map link is set later via admin edit
+      ownerName: property.owner?.name || '',
+      ownerEmail: property.owner?.email || '',
+      ownerPhone: property.owner?.phone || '',
+      imageUrl: firstImage,
+    }).then(ok => {
+      console.log(`[Properties API] New property notification sent: ${ok} for ${property.id}`)
+    }).catch(err => {
+      console.error('[Properties API] New property notification failed:', err)
     })
 
     return NextResponse.json(

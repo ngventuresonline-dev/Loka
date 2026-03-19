@@ -16,14 +16,44 @@ function formatPrice(price: number, priceType: string, size: number): string {
 }
 
 /**
- * Returns the first valid HTTP image URL from a property's images array,
- * skipping placeholder/localhost/stock photo URLs.
+ * Extracts a URL string from an image entry which may be:
+ *  - a plain URL string
+ *  - an object with a `url`, `src`, or `href` property
+ */
+function extractUrl(img: unknown): string | null {
+  if (typeof img === 'string') return img.trim() || null
+  if (img && typeof img === 'object') {
+    const obj = img as Record<string, unknown>
+    const raw = obj.url ?? obj.src ?? obj.href ?? obj.image ?? null
+    return typeof raw === 'string' ? raw.trim() || null : null
+  }
+  return null
+}
+
+/**
+ * Returns the first valid HTTP image URL from a property's images field.
+ * Handles plain string arrays, arrays of URL objects, and JSON-encoded strings.
+ * Skips placeholder, localhost, and stock photo URLs.
  */
 function getFirstValidImage(images: unknown): string | null {
-  if (!Array.isArray(images)) return null
-  for (const img of images) {
-    if (typeof img !== 'string' || !img.trim()) continue
-    const src = img.trim()
+  let arr: unknown[] = []
+
+  if (Array.isArray(images)) {
+    arr = images
+  } else if (typeof images === 'string') {
+    // Sometimes JSONB comes back as a raw JSON string
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) arr = parsed
+    } catch {
+      // single URL string stored directly
+      arr = [images]
+    }
+  }
+
+  for (const img of arr) {
+    const src = extractUrl(img)
+    if (!src) continue
     if (
       src.startsWith('http') &&
       !src.includes('localhost') &&
