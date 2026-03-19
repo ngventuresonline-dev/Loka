@@ -876,50 +876,28 @@ export async function PATCH(request: NextRequest) {
       data.ownerId = updateData.ownerId
     }
 
-    // Split update to avoid statement timeout (57014): heavy JSON (images/amenities) can make
-    // a single update slow. Do scalars first (fast), then JSON in a second step.
-    const { images: _im, amenities: _am, ...dataScalars } = data
-    const hasJson = data.images !== undefined || data.amenities !== undefined
-    const jsonPayload = hasJson ? { ...(data.images !== undefined && { images: data.images }), ...(data.amenities !== undefined && { amenities: data.amenities }) } : null
-
+    // Perform the update directly — no interactive transaction wrapper needed.
+    // Previously these were wrapped in prisma.$transaction(async (tx) => { ... }) which has
+    // a hard 5-second Prisma-level timeout that cannot be overridden by SET statement_timeout.
+    // Direct updates respect only the PostgreSQL statement timeout (default 8s on Supabase,
+    // extended here to 60s for large JSON payloads like the images array).
     let property: { id: string; title: string; address: string; city: string; size: number; price: unknown; priceType: string; availability: boolean | null; createdAt: Date | null; isFeatured: boolean | null; owner: { id: string; name: string | null; email: string } }
 
-    if (hasJson && jsonPayload && Object.keys(jsonPayload).length > 0) {
-      // 1) Update scalar columns only if any (fast, avoids timeout)
-      if (Object.keys(dataScalars).length > 0) {
-        await prisma.$transaction(async (tx) => {
-          await tx.$executeRaw`SET statement_timeout = '30000'`
-          await tx.property.update({
-            where: { id: propertyId },
-            data: dataScalars as any,
-          })
-        })
-      }
-      // 2) Update JSON columns (may be heavier)
-      await prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`SET statement_timeout = '30000'`
-        await tx.property.update({
-          where: { id: propertyId },
-          data: jsonPayload,
-        })
-      })
-      const found = await prisma.property.findUniqueOrThrow({
-        where: { id: propertyId },
-        include: { owner: { select: { id: true, name: true, email: true } } },
-      })
-      property = found
-    } else {
-      property = await prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`SET statement_timeout = '30000'`
-        return tx.property.update({
-          where: { id: propertyId },
-          data: dataScalars as any,
-          include: {
-            owner: { select: { id: true, name: true, email: true } },
-          },
-        })
-      })
+    // Bump statement timeout for this connection before the heavy update
+    try {
+      await prisma.$executeRawUnsafe(`SET statement_timeout = 60000`)
+    } catch {
+      // Non-fatal — continue even if the SET fails
     }
+
+    // Perform a single update with all changed fields
+    property = await prisma.property.update({
+      where: { id: propertyId },
+      data: data as any,
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+      },
+    })
 
     // Trigger intelligence refresh AFTER returning (non-blocking).
     // This avoids heavy cascade work (competitors/ward/revenue scoring) inside the save request.
