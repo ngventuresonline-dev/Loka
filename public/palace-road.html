@@ -375,20 +375,43 @@
     /* ── PROPERTY OVERVIEW ── */
     #overview { padding: 90px 80px; background: var(--white); }
     .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: flex-start; }
-    .floor-table { width: 100%; border-collapse: collapse; margin-top: 24px; }
-    .floor-table th {
-      font-family: var(--font-mono); font-size: 9px;
-      text-transform: uppercase; letter-spacing: 0.14em;
-      color: var(--muted-2); text-align: left; padding: 8px 14px;
-      border-bottom: 1px solid var(--border); background: var(--bg);
+    /* Floor visual cards */
+    .floor-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px; }
+    .floor-img-card {
+      position: relative; border-radius: 12px; overflow: hidden;
+      height: 220px; background: #111;
     }
-    .floor-table td {
-      padding: 14px 14px; font-size: 13px; color: var(--ink);
-      border-bottom: 1px solid var(--border-light); vertical-align: top; line-height: 1.5;
+    .floor-img-card img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transition: transform 0.5s ease;
     }
-    .floor-table tr:last-child td { border-bottom: none; }
-    .floor-table .total-row td { background: var(--orange-soft); font-weight: 700; color: var(--orange); }
-    .floor-table .label-col { font-weight: 600; }
+    .floor-img-card:hover img { transform: scale(1.04); }
+    .floor-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(26,8,0,0.85) 0%, rgba(26,8,0,0.2) 55%, transparent 100%);
+      padding: 18px;
+      display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;
+    }
+    .fco-floor {
+      font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--gold);
+    }
+    .fco-area { font-family: var(--font-sans); font-weight: 800; font-size: 22px; color: #fff; line-height: 1; }
+    .fco-height { font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+    .fco-desc { font-size: 11px; color: rgba(255,255,255,0.65); line-height: 1.4; margin-top: 4px; }
+    .floor-total-bar {
+      background: var(--orange-soft); border-radius: 10px;
+      border: 1px solid rgba(232,80,10,0.15);
+      padding: 14px 18px; margin-top: 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .ftb-label { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+    .ftb-val { font-family: var(--font-sans); font-weight: 800; font-size: 20px; color: var(--orange); }
+    .ftb-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    @media (max-width: 640px) {
+      .floor-cards { grid-template-columns: 1fr; }
+      .floor-img-card { height: 180px; }
+    }
 
     .zone-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
     .zone-card {
@@ -456,6 +479,10 @@
       padding: 24px 26px;
       transition: border-color 0.25s, background 0.25s;
       position: relative; overflow: hidden;
+    }
+    .cat-icon {
+      font-size: 48px; line-height: 1; display: block;
+      margin-bottom: 14px; filter: grayscale(0.2);
     }
     .cat-card::after {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
@@ -729,14 +756,25 @@
 
     /* ── IMAGE GALLERY / SLIDER ── */
     #gallery { padding: 0; background: var(--dark); position: relative; }
-    .gallery-header {
-      padding: 72px 80px 32px;
-      display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap;
-    }
     /* Slider */
     .slider-wrap {
       position: relative; overflow: hidden;
-      height: 520px; background: #000;
+      height: clamp(300px, 52vw, 560px); background: #000;
+    }
+    /* Title overlay inside slider */
+    .slider-title-overlay {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 6;
+      padding: 28px 32px 80px;
+      background: linear-gradient(to bottom, rgba(26,8,0,0.75) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .slider-title-label {
+      font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--gold); display: block; margin-bottom: 8px;
+    }
+    .slider-title-text {
+      font-family: var(--font-sans); font-weight: 800;
+      font-size: clamp(18px, 3vw, 30px); color: #fff; line-height: 1.2;
     }
     .slider-track {
       display: flex; height: 100%;
@@ -789,13 +827,45 @@
       transition: width linear;
       z-index: 5;
     }
+    @media (max-width: 640px) {
+      .slider-title-overlay { padding: 20px 20px 60px; }
+      .slider-dots { bottom: 16px; right: 16px; }
+      .slide-label { bottom: 16px; left: 16px; }
+    }
+
+    /* ── NUMBERS BILLBOARD ── */
+    .numbers-strip {
+      background: var(--dark);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: grid; grid-template-columns: repeat(4, 1fr);
+    }
+    .ns-item {
+      padding: 40px 36px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .ns-item:last-child { border-right: none; }
+    .ns-num {
+      font-family: var(--font-sans); font-weight: 900;
+      font-size: clamp(32px, 4vw, 52px); line-height: 1;
+      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .ns-num.accent { background: linear-gradient(135deg, var(--orange), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .ns-lbl {
+      font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.12em; color: rgba(255,255,255,0.35); line-height: 1.4;
+    }
     @media (max-width: 1024px) {
-      .gallery-header { padding: 52px 32px 24px; }
-      .slider-wrap { height: 360px; }
+      .numbers-strip { grid-template-columns: 1fr 1fr; }
+      .ns-item { padding: 28px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+      .ns-item:nth-child(2), .ns-item:nth-child(4) { border-right: none; }
     }
     @media (max-width: 640px) {
-      .gallery-header { padding: 40px 16px 20px; }
-      .slider-wrap { height: 260px; }
+      .numbers-strip { grid-template-columns: 1fr 1fr; }
+      .ns-item { padding: 20px 18px; }
     }
 
     /* Revenue grades */
@@ -992,15 +1062,12 @@
 
 <!-- IMAGE GALLERY -->
 <section id="gallery">
-  <div class="gallery-header">
-    <div>
-      <span class="section-label-gold">The Space · Palace Road</span>
-      <h2 class="sec-h sec-h-white" style="margin-bottom:0;">See what 10,619 sq ft looks like.</h2>
-    </div>
-  </div>
-
   <div class="slider-wrap" id="prSlider">
     <div class="slider-progress" id="sliderProgress"></div>
+    <div class="slider-title-overlay">
+      <span class="slider-title-label">The Space · Palace Road</span>
+      <span class="slider-title-text">See what 10,619 sq ft looks like.</span>
+    </div>
     <div class="slider-track" id="sliderTrack">
 
       <div class="slide active">
@@ -1061,6 +1128,26 @@
 </section>
 
 
+<!-- NUMBERS BILLBOARD -->
+<div class="numbers-strip">
+  <div class="ns-item fade-in">
+    <div class="ns-num accent">14,800+</div>
+    <div class="ns-lbl">Daily footfall<br>across 6 segments</div>
+  </div>
+  <div class="ns-item fade-in d1">
+    <div class="ns-num">10,619</div>
+    <div class="ns-lbl">sq ft<br>purpose-built</div>
+  </div>
+  <div class="ns-item fade-in d2">
+    <div class="ns-num accent">3×</div>
+    <div class="ns-lbl">5-star hotels<br>within 500m</div>
+  </div>
+  <div class="ns-item fade-in d3">
+    <div class="ns-num">Zero</div>
+    <div class="ns-lbl">F&B food court<br>within 3km</div>
+  </div>
+</div>
+
 <!-- PROPERTY OVERVIEW -->
 <section id="overview">
   <div class="overview-grid">
@@ -1069,36 +1156,33 @@
       <h2 class="sec-h">10,619 sq ft.<br>Purpose-built for a food court.</h2>
       <p class="sec-p" style="margin-bottom:28px;">Niton Compound Block B1 — a two-floor bare-shell commercial building with a double-height ground floor (5.85m clear height) and a mezzanine gallery overlooking below. Full glass frontage on Palace Road, elevator, independent toilet cores on both levels.</p>
 
-      <table class="floor-table">
-        <thead>
-          <tr>
-            <th>Floor</th>
-            <th>Built-Up Area</th>
-            <th>Clear Height</th>
-            <th>Key Features</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="label-col">Ground Floor</td>
-            <td>5,961 sq ft</td>
-            <td>5.85m double height</td>
-            <td>Open plan, glass facade all sides, HVAC stub-outs, elevator, marble flooring</td>
-          </tr>
-          <tr>
-            <td class="label-col">Mezzanine</td>
-            <td>4,658 sq ft</td>
-            <td>2.81–2.82m</td>
-            <td>Gallery overlooking GF; balcony; toilets; pantry; staircase + elevator</td>
-          </tr>
-          <tr class="total-row">
-            <td class="label-col">Total</td>
-            <td>10,619 sq ft</td>
-            <td>—</td>
-            <td>Largest food court-format space on Palace Road corridor</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="floor-cards">
+        <div class="floor-img-card">
+          <img src="pr-current-1.png" alt="Palace Road ground floor" />
+          <div class="floor-card-overlay">
+            <span class="fco-floor">Ground Floor</span>
+            <div class="fco-area">5,961 sq ft</div>
+            <div class="fco-height">5.85m · Double height</div>
+            <div class="fco-desc">Open plan · Glass facade all sides · Marble flooring · HVAC</div>
+          </div>
+        </div>
+        <div class="floor-img-card">
+          <img src="pr-current-3.png" alt="Palace Road mezzanine" />
+          <div class="floor-card-overlay">
+            <span class="fco-floor">Mezzanine</span>
+            <div class="fco-area">4,658 sq ft</div>
+            <div class="fco-height">2.81–2.82m · Gallery level</div>
+            <div class="fco-desc">Balcony · Gallery overlooking GF · Toilets · Elevator</div>
+          </div>
+        </div>
+      </div>
+      <div class="floor-total-bar">
+        <div>
+          <div class="ftb-label">Total Built-Up</div>
+          <div class="ftb-sub">Largest food court-format space on Palace Road</div>
+        </div>
+        <div class="ftb-val">10,619 sq ft</div>
+      </div>
     </div>
 
     <div class="fade-in d2">
@@ -1340,6 +1424,7 @@
   <div class="cat-grid">
 
     <div class="cat-card fade-in">
+      <span class="cat-icon">☕</span>
       <div class="cat-card-top"><span class="cat-rank">01 · Priority</span><span class="cat-score-badge badge-10">10/10</span></div>
       <div class="cat-name">Specialty Coffee + Café</div>
       <div class="cat-desc">Zero specialty coffee on Palace Road. 5,000+ office workers + 3,500 students = strongest morning and afternoon coffee demand possible. First brand here owns the occasion entirely — 6 days/week, 52 weeks/year.</div>
@@ -1353,6 +1438,7 @@
     </div>
 
     <div class="cat-card fade-in d1">
+      <span class="cat-icon">🍛</span>
       <div class="cat-card-top"><span class="cat-rank">02 · Priority</span><span class="cat-score-badge badge-9">9/10</span></div>
       <div class="cat-name">Indian Casual / Biryani & Meals</div>
       <div class="cat-desc">Dominant lunch category for all segments. Existing supply (Food Corner, Vishnu Park) is quality-poor and capacity-constrained. Premium step-up format captures the upgrade occasion directly.</div>
@@ -1366,6 +1452,7 @@
     </div>
 
     <div class="cat-card fade-in d2">
+      <span class="cat-icon">🌯</span>
       <div class="cat-card-top"><span class="cat-rank">03 · Priority</span><span class="cat-score-badge badge-9">9/10</span></div>
       <div class="cat-name">Quick Bites / Wraps & Rolls</div>
       <div class="cat-desc">Mount Carmel has ~3,500 women aged 18–24 — wraps and portable formats are the #1 lunch preference. No wrap format within 800m. Clean category gap with guaranteed high-frequency repeat.</div>
@@ -1379,6 +1466,7 @@
     </div>
 
     <div class="cat-card fade-in d3">
+      <span class="cat-icon">🍔</span>
       <div class="cat-card-top"><span class="cat-rank">04 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
       <div class="cat-name">Premium Burger / Grill</div>
       <div class="cat-desc">Office and hotel guest demand for Western QSR is unmet. No burger brand on Palace Road. Premium grilled format (not fast-food) aligns with SEC A spending power in this corridor.</div>
@@ -1392,6 +1480,7 @@
     </div>
 
     <div class="cat-card fade-in">
+      <span class="cat-icon">🥐</span>
       <div class="cat-card-top"><span class="cat-rank">05 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
       <div class="cat-name">Bakery + Patisserie</div>
       <div class="cat-desc">Hotel guests, residents, and college students all drive strong bakery demand. Morning + afternoon + gifting occasion. Elevates overall food court brand perception. Corporate gifting adds a high-margin delivery stream.</div>
@@ -1405,6 +1494,7 @@
     </div>
 
     <div class="cat-card fade-in d1">
+      <span class="cat-icon">🥟</span>
       <div class="cat-card-top"><span class="cat-rank">06 · Priority</span><span class="cat-score-badge badge-8">8/10</span></div>
       <div class="cat-name">Asian Street Food (Momos / Bao / Dim Sum)</div>
       <div class="cat-desc">Highest-growth category among 18–35 urban females — dominant MCC demographic. Zero Asian street food within 800m. Strong social media discovery format. "Asian near me" on Palace Road returns zero results.</div>
@@ -1418,6 +1508,7 @@
     </div>
 
     <div class="cat-card fade-in d2">
+      <span class="cat-icon">🍨</span>
       <div class="cat-card-top"><span class="cat-rank">07 · Priority</span><span class="cat-score-badge badge-7">7/10</span></div>
       <div class="cat-name">Desserts + Milkshakes</div>
       <div class="cat-desc">Post-meal and standalone social occasion. Evening anchor for mezzanine dwell time. No artisanal dessert counter anywhere on this corridor. Late-night delivery (9PM–12AM) is uncontested.</div>
@@ -1431,6 +1522,7 @@
     </div>
 
     <div class="cat-card fade-in d3">
+      <span class="cat-icon">🥗</span>
       <div class="cat-card-top"><span class="cat-rank">08 · Priority</span><span class="cat-score-badge badge-7">7/10</span></div>
       <div class="cat-name">Healthy / Salad Bowl + Smoothies</div>
       <div class="cat-desc">Vasanth Nagar residents and hotel guests — health-aware, premium-spend segments. Breakfast and lunch occasion. Corporate tiffin subscriptions (Swiggy Daily) is the key revenue unlock for weekday repeat.</div>
