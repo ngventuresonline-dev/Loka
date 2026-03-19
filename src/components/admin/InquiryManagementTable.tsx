@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 
 interface Inquiry {
   id: string
-  type: 'inquiry' | 'expert_request'
+  type: 'inquiry' | 'expert_request' | 'general_enquiry'
   brand: {
     name: string
     email: string
@@ -24,6 +24,7 @@ interface Inquiry {
   message: string
   phone?: string
   scheduleDateTime?: string
+  enquiryType?: string
 }
 
 interface InquiryManagementTableProps {
@@ -74,11 +75,14 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
     }
   }
 
-  const handleStatusUpdate = async (inquiryId: string, newStatus: string, type: 'inquiry' | 'expert_request') => {
+  const handleStatusUpdate = async (inquiryId: string, newStatus: string, type: 'inquiry' | 'expert_request' | 'general_enquiry') => {
     try {
-      const endpoint = type === 'expert_request' 
-        ? `/api/admin/expert-requests/${inquiryId}`
-        : `/api/admin/inquiries/${inquiryId}`
+      const endpoint =
+        type === 'expert_request'
+          ? `/api/admin/expert-requests/${inquiryId}`
+          : type === 'general_enquiry'
+          ? `/api/admin/general-enquiries/${inquiryId}`
+          : `/api/admin/inquiries/${inquiryId}`
       
       const response = await fetch(endpoint, {
         method: 'PATCH',
@@ -197,11 +201,17 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
                   >
                     <td className="py-3 px-4">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        inquiry.type === 'expert_request' 
-                          ? 'bg-purple-500/20 text-purple-300' 
+                        inquiry.type === 'expert_request'
+                          ? 'bg-purple-500/20 text-purple-300'
+                          : inquiry.type === 'general_enquiry'
+                          ? 'bg-orange-500/20 text-orange-300'
                           : 'bg-blue-500/20 text-blue-300'
                       }`}>
-                        {inquiry.type === 'expert_request' ? 'Expert Request' : 'Inquiry'}
+                        {inquiry.type === 'expert_request'
+                          ? 'Expert / Visit'
+                          : inquiry.type === 'general_enquiry'
+                          ? `Enquiry${inquiry.enquiryType === 'visit' ? ' · Visit' : ''}`
+                          : 'Inquiry'}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -231,6 +241,17 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
                           <option value="completed">Completed</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
+                      ) : inquiry.type === 'general_enquiry' ? (
+                        <select
+                          value={inquiry.status}
+                          onChange={(e) => handleStatusUpdate(inquiry.id, e.target.value, 'general_enquiry')}
+                          className={`px-2 py-1 rounded text-xs font-semibold border-0 ${getStatusColor(inquiry.status)} bg-transparent cursor-pointer`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="contacted">Contacted</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
                       ) : (
                         <select
                           value={inquiry.status}
@@ -255,20 +276,28 @@ export default function InquiryManagementTable({ userEmail, userId }: InquiryMan
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => {
-                            let inquiryInfo = `${inquiry.type === 'expert_request' ? 'Expert Request' : 'Inquiry'} Details:\n\n`
-                            inquiryInfo += `Brand: ${inquiry.brand.name} (${inquiry.brand.email})\n`
-                            if (inquiry.phone) {
-                              inquiryInfo += `Phone: ${inquiry.phone}\n`
+                            const typeLabel =
+                              inquiry.type === 'expert_request'
+                                ? 'Expert / Visit Request'
+                                : inquiry.type === 'general_enquiry'
+                                ? 'General Enquiry'
+                                : 'Inquiry'
+                            let inquiryInfo = `${typeLabel} Details:\n\n`
+                            inquiryInfo += `Brand / Name: ${inquiry.brand.name}\n`
+                            if (inquiry.brand.email) inquiryInfo += `Email: ${inquiry.brand.email}\n`
+                            if (inquiry.phone) inquiryInfo += `Phone: ${inquiry.phone}\n`
+                            if (inquiry.enquiryType) inquiryInfo += `Enquiry Type: ${inquiry.enquiryType}\n`
+                            inquiryInfo += `Source / Property: ${inquiry.property.title}\n`
+                            if (inquiry.property.address && inquiry.property.address !== '—') {
+                              inquiryInfo += `Category / Details: ${inquiry.property.address}\n`
                             }
-                            inquiryInfo += `Property: ${inquiry.property.title}\n`
-                            inquiryInfo += `Address: ${inquiry.property.address}\n`
-                            inquiryInfo += `Owner: ${inquiry.owner ? `${inquiry.owner.name} (${inquiry.owner.email})` : 'N/A'}\n`
+                            if (inquiry.owner) inquiryInfo += `Owner: ${inquiry.owner.name} (${inquiry.owner.email})\n`
                             inquiryInfo += `Status: ${inquiry.status}\n`
                             inquiryInfo += `Date: ${new Date(inquiry.createdAt).toLocaleDateString()}\n`
                             if (inquiry.scheduleDateTime) {
                               inquiryInfo += `Scheduled: ${new Date(inquiry.scheduleDateTime).toLocaleString()}\n`
                             }
-                            inquiryInfo += `\n${inquiry.type === 'expert_request' ? 'Notes' : 'Message'}:\n${inquiry.message || 'No message provided'}`
+                            inquiryInfo += `\nNotes / Message:\n${inquiry.message || 'No message provided'}`
                             alert(inquiryInfo)
                           }}
                           className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 text-sm"

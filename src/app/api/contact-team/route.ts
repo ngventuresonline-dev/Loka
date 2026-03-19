@@ -7,6 +7,7 @@ import {
   buildUserConfirmationHtml,
   NG_EMAIL,
 } from '@/lib/lead-email'
+import { insertGeneralEnquiry } from '@/lib/general-enquiry-db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,6 +73,20 @@ export async function POST(request: NextRequest) {
     }).then(({ ngOk, userOk }) => {
       console.log(`[Contact Team] Emails sent — ngOk:${ngOk} userOk:${userOk} name:${name}`)
     }).catch(err => console.error('[Contact Team] Email send error:', err))
+
+    // ── Save to DB (non-blocking) ─────────────────────────────────────────────
+    insertGeneralEnquiry({
+      source: 'contact-team',
+      brandName: name,
+      contactName: name,
+      email: email || null,
+      phone,
+      notes: [
+        bestTime ? `Best time: ${bestTime}` : '',
+        additionalRequirements ? `Requirements: ${additionalRequirements}` : '',
+        searchCriteria ? `Search criteria: ${typeof searchCriteria === 'string' ? searchCriteria : JSON.stringify(searchCriteria)}` : '',
+      ].filter(Boolean).join('\n') || null,
+    }).catch(err => console.error('[Contact Team] DB save error:', err))
 
     // ── Pabbly webhook (non-blocking) ────────────────────────────────────────
     sendContactTeamWebhook({

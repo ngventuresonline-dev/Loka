@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { insertGeneralEnquiry } from '@/lib/general-enquiry-db'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM || 'Lokazen <noreply@support.lokazen.in>'
@@ -292,6 +293,19 @@ export async function POST(request: NextRequest) {
       console.error('[palace-road-enquiry] Both emails failed:', teamResult, userResult)
       return NextResponse.json({ error: 'Failed to send emails' }, { status: 500 })
     }
+
+    // ── Save to DB (non-blocking) ─────────────────────────────────────────────
+    insertGeneralEnquiry({
+      source: 'palace-road',
+      brandName,
+      contactName,
+      email,
+      phone,
+      category,
+      unitSize,
+      enquiryType,
+      notes: `Palace Road Food Court enquiry — ${enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Onboarding'}`,
+    }).catch(err => console.error('[palace-road-enquiry] DB save error:', err))
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

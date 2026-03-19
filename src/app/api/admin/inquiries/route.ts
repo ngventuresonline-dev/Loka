@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
 import { getPrisma } from '@/lib/get-prisma'
+import { fetchGeneralEnquiries } from '@/lib/general-enquiry-db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -79,8 +80,20 @@ export async function GET(request: NextRequest) {
       orderBy.createdAt = sortOrder
     }
 
-    // Fetch both inquiries and expert requests
-    const [inquiries, expertRequests, inquiryTotal, expertRequestTotal] = await Promise.all([
+    // Decide whether to include general enquiries based on status filter
+    const shouldFetchGeneral =
+      !status ||
+      ['pending', 'responded', 'contacted', 'closed', 'completed', 'cancelled'].includes(status)
+
+    // Map admin statuses to general_enquiry statuses
+    const generalStatusMap: Record<string, string> = {
+      responded: 'contacted',
+      closed: 'completed',
+    }
+    const generalStatus = status ? (generalStatusMap[status] ?? status) : ''
+
+    // Fetch inquiries, expert requests, and general enquiries in parallel
+    const [inquiries, expertRequests, inquiryTotal, expertRequestTotal, generalResult] = await Promise.all([
       shouldFetchInquiries
         ? prisma.inquiry.findMany({
             where: inquiryWhere,
@@ -122,7 +135,10 @@ export async function GET(request: NextRequest) {
           })
         : Promise.resolve([]),
       shouldFetchInquiries ? prisma.inquiry.count({ where: inquiryWhere }) : Promise.resolve(0),
-      shouldFetchExpertRequests ? prisma.expertRequest.count({ where: expertRequestWhere }) : Promise.resolve(0)
+      shouldFetchExpertRequests ? prisma.expertRequest.count({ where: expertRequestWhere }) : Promise.resolve(0),
+      shouldFetchGeneral
+        ? fetchGeneralEnquiries({ search, status: generalStatus, limit: 500, sortOrder: sortOrder as 'asc' | 'desc' })
+        : Promise.resolve({ rows: [], total: 0 }),
     ])
 
     // Format inquiries
@@ -166,15 +182,42 @@ export async function GET(request: NextRequest) {
       scheduleDateTime: er.scheduleDateTime,
     }))
 
+    // Source labels for display
+    const sourceLabel: Record<string, string> = {
+      'contact-team': 'General Contact',
+      'natura-walk': 'Natura Walk Mall',
+      'palace-road': 'Palace Road Food Court',
+    }
+
+    // Format general enquiries
+    const formattedGeneral = generalResult.rows.map(ge => ({
+      id: ge.id,
+      type: 'general_enquiry' as const,
+      brand: {
+        name: ge.brand_name || ge.contact_name || 'Unknown',
+        email: ge.email || '',
+      },
+      property: {
+        title: sourceLabel[ge.source] || ge.source,
+        address: ge.category ? `${ge.category}${ge.unit_size ? ' · ' + ge.unit_size : ''}` : '—',
+      },
+      owner: null,
+      status: ge.status as any,
+      createdAt: ge.created_at,
+      message: ge.notes || '',
+      phone: ge.phone || undefined,
+      enquiryType: ge.enquiry_type || undefined,
+    }))
+
     // Combine and sort all items
-    const allItems = [...formattedInquiries, ...formattedExpertRequests].sort((a, b) => {
+    const allItems = [...formattedInquiries, ...formattedExpertRequests, ...formattedGeneral].sort((a, b) => {
       const dateA = new Date(a.createdAt || 0).getTime()
       const dateB = new Date(b.createdAt || 0).getTime()
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
     })
 
     // Apply pagination to combined results
-    const total = inquiryTotal + expertRequestTotal
+    const total = inquiryTotal + expertRequestTotal + generalResult.total
     const skip = (page - 1) * limit
     const paginatedItems = allItems.slice(skip, skip + limit)
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { insertGeneralEnquiry } from '@/lib/general-enquiry-db'
 
 const NG_EMAIL = 'ngventuresonline@gmail.com'
 
@@ -310,6 +311,19 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error('[natura-walk-enquiry] User confirmation email threw:', err)
     }
+
+    // ── Save to DB (non-blocking) ─────────────────────────────────────────────
+    insertGeneralEnquiry({
+      source: 'natura-walk',
+      brandName,
+      contactName,
+      email,
+      phone,
+      category,
+      unitSize,
+      enquiryType,
+      notes: `Natura Walk Mall enquiry — ${enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Onboarding'}`,
+    }).catch(err => console.error('[natura-walk-enquiry] DB save error:', err))
 
     // Return success as long as at least the team notification went out
     if (!ngOk && !userOk) {
