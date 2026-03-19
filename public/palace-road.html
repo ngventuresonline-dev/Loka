@@ -485,7 +485,7 @@
 
     /* ── REVENUE ── */
     #revenue { padding: 90px 80px; background: var(--white); }
-    .revenue-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; }
+    .revenue-layout { display: block; max-width: 900px; }
     .rev-table { width: 100%; border-collapse: collapse; }
     .rev-table th {
       font-family: var(--font-mono); font-size: 8px; text-transform: uppercase;
@@ -722,54 +722,80 @@
       .btn-submit { padding: 12px; font-size: 14px; }
     }
 
-    /* ── IMAGE GALLERY ── */
-    #gallery { padding: 0; background: var(--dark); }
+    /* ── IMAGE GALLERY / SLIDER ── */
+    #gallery { padding: 0; background: var(--dark); position: relative; }
     .gallery-header {
-      padding: 72px 80px 40px;
+      padding: 72px 80px 32px;
       display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap;
     }
-    .gallery-toggle {
-      display: flex; gap: 0;
-      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; overflow: hidden;
+    /* Slider */
+    .slider-wrap {
+      position: relative; overflow: hidden;
+      height: 520px; background: #000;
     }
-    .gallery-tab {
-      font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
-      letter-spacing: 0.12em; padding: 9px 20px; cursor: pointer; border: none;
-      background: transparent; color: rgba(255,255,255,0.4);
-      transition: background 0.2s, color 0.2s;
+    .slider-track {
+      display: flex; height: 100%;
+      transition: transform 0.9s cubic-bezier(0.77,0,0.18,1);
+      will-change: transform;
     }
-    .gallery-tab.active { background: var(--orange); color: #fff; }
-    .gallery-grid {
-      display: grid; gap: 3px; padding: 0 0 3px;
+    .slide {
+      min-width: 100%; height: 100%; position: relative; flex-shrink: 0;
     }
-    .gallery-grid-current {
-      grid-template-columns: 1.4fr 1fr 1fr;
-      grid-template-rows: 420px;
+    .slide img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transition: transform 8s linear;
     }
-    .gallery-grid-vision {
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 480px;
+    .slide.active img { transform: scale(1.04); }
+    .slide-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(26,8,0,0.6) 0%, transparent 50%);
     }
-    .gallery-img {
-      overflow: hidden; position: relative;
+    .slide-label {
+      position: absolute; bottom: 24px; left: 24px;
+      display: flex; align-items: center; gap: 10px;
     }
-    .gallery-img img {
-      width: 100%; height: 100%; object-fit: cover;
-      transition: transform 0.5s ease;
-      display: block;
-    }
-    .gallery-img:hover img { transform: scale(1.03); }
-    .gallery-img-label {
-      position: absolute; bottom: 14px; left: 14px;
-      background: rgba(26,8,0,0.75); backdrop-filter: blur(6px);
+    .slide-badge {
+      background: rgba(26,8,0,0.75); backdrop-filter: blur(8px);
       font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
-      letter-spacing: 0.1em; color: rgba(255,255,255,0.7);
+      letter-spacing: 0.12em; color: rgba(255,255,255,0.7);
       padding: 5px 12px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
-    .gallery-img:first-child { grid-row: span 1; }
+    .slide-badge.vision { background: rgba(232,80,10,0.75); color: #fff; }
+    .slide-title {
+      font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+      color: rgba(255,255,255,0.85);
+    }
+    /* Dots */
+    .slider-dots {
+      position: absolute; bottom: 24px; right: 24px;
+      display: flex; gap: 6px; align-items: center;
+    }
+    .slider-dot {
+      width: 6px; height: 6px; border-radius: 3px; cursor: pointer;
+      background: rgba(255,255,255,0.25);
+      transition: background 0.3s, width 0.3s;
+    }
+    .slider-dot.active { background: var(--orange); width: 20px; }
+    /* Progress bar */
+    .slider-progress {
+      position: absolute; top: 0; left: 0; height: 2px;
+      background: var(--orange); width: 0%;
+      transition: width linear;
+      z-index: 5;
+    }
+    @media (max-width: 1024px) {
+      .gallery-header { padding: 52px 32px 24px; }
+      .slider-wrap { height: 360px; }
+    }
+    @media (max-width: 640px) {
+      .gallery-header { padding: 40px 16px 20px; }
+      .slider-wrap { height: 260px; }
+    }
 
     /* Revenue grades */
-    .rev-grade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    .rev-grade-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 8px; }
+    @media (max-width: 1200px) { .rev-grade-grid { grid-template-columns: 1fr 1fr; } }
     .rev-grade-card {
       background: var(--bg); border-radius: var(--r-sm);
       border: 1px solid var(--border-light); padding: 16px 18px;
@@ -795,16 +821,10 @@
     .rev-grade-delivery::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--orange); }
 
     @media (max-width: 1024px) {
-      .gallery-header { padding: 52px 32px 28px; }
-      .gallery-grid-current { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
-      .gallery-grid-vision { grid-template-columns: 1fr; grid-template-rows: auto; }
-      .gallery-img { height: 260px; }
-      .rev-grade-grid { grid-template-columns: 1fr; }
+      .rev-grade-grid { grid-template-columns: 1fr 1fr !important; }
     }
     @media (max-width: 640px) {
-      .gallery-header { padding: 40px 16px 20px; }
-      .gallery-grid-current { grid-template-columns: 1fr; }
-      .gallery-img { height: 220px; }
+      .rev-grade-grid { grid-template-columns: 1fr !important; }
     }
 
     /* ── RESPONSIVE ── */
@@ -971,35 +991,65 @@
       <span class="section-label-gold">The Space · Palace Road</span>
       <h2 class="sec-h sec-h-white" style="margin-bottom:0;">See what 10,619 sq ft looks like.</h2>
     </div>
-    <div class="gallery-toggle">
-      <button class="gallery-tab active" id="tabCurrent" onclick="switchGallery('current')">Current State</button>
-      <button class="gallery-tab" id="tabVision" onclick="switchGallery('vision')">The Vision</button>
-    </div>
   </div>
 
-  <div class="gallery-grid gallery-grid-current" id="galCurrent">
-    <div class="gallery-img">
-      <img src="pr-current-1.png" alt="Palace Road Food Court — Ground floor with double-height column" />
-      <span class="gallery-img-label">GF · Double Height · 5.85m</span>
-    </div>
-    <div class="gallery-img">
-      <img src="pr-current-2.png" alt="Palace Road Food Court — Main hall, open plan" />
-      <span class="gallery-img-label">GF · Open Plan · Brand Wall Zone</span>
-    </div>
-    <div class="gallery-img">
-      <img src="pr-current-3.png" alt="Palace Road Food Court — Interior angle with mezzanine" />
-      <span class="gallery-img-label">GF + Mezzanine Gallery Above</span>
-    </div>
-  </div>
+  <div class="slider-wrap" id="prSlider">
+    <div class="slider-progress" id="sliderProgress"></div>
+    <div class="slider-track" id="sliderTrack">
 
-  <div class="gallery-grid gallery-grid-vision" id="galVision" style="display:none;">
-    <div class="gallery-img">
-      <img src="pr-vision-1.png" alt="Palace Road Food Court vision — premium multi-brand food court" />
-      <span class="gallery-img-label">Vision · Brand Stall Wall · GF</span>
+      <div class="slide active">
+        <img src="pr-current-1.png" alt="Palace Road — Ground floor, double-height column" />
+        <div class="slide-overlay"></div>
+        <div class="slide-label">
+          <span class="slide-badge">Current State</span>
+          <span class="slide-title">GF · Double Height · 5.85m Clear</span>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="pr-current-2.png" alt="Palace Road — Main hall, open plan" />
+        <div class="slide-overlay"></div>
+        <div class="slide-label">
+          <span class="slide-badge">Current State</span>
+          <span class="slide-title">GF · Open Plan · Brand Wall Zone</span>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="pr-current-3.png" alt="Palace Road — Interior angle with mezzanine" />
+        <div class="slide-overlay"></div>
+        <div class="slide-label">
+          <span class="slide-badge">Current State</span>
+          <span class="slide-title">GF + Mezzanine Gallery View</span>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="pr-vision-1.png" alt="Palace Road vision — premium multi-brand food court" />
+        <div class="slide-overlay"></div>
+        <div class="slide-label">
+          <span class="slide-badge vision">The Vision</span>
+          <span class="slide-title">Brand Stall Wall · Ground Floor</span>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="pr-vision-2.png" alt="Palace Road vision — evening dining ambience" />
+        <div class="slide-overlay"></div>
+        <div class="slide-label">
+          <span class="slide-badge vision">The Vision</span>
+          <span class="slide-title">Evening Dining Ambience</span>
+        </div>
+      </div>
+
     </div>
-    <div class="gallery-img">
-      <img src="pr-vision-2.png" alt="Palace Road Food Court vision — evening dining ambience" />
-      <span class="gallery-img-label">Vision · Evening Dining Ambience</span>
+
+    <div class="slider-dots" id="sliderDots">
+      <div class="slider-dot active" onclick="goToSlide(0)"></div>
+      <div class="slider-dot" onclick="goToSlide(1)"></div>
+      <div class="slider-dot" onclick="goToSlide(2)"></div>
+      <div class="slider-dot" onclick="goToSlide(3)"></div>
+      <div class="slider-dot" onclick="goToSlide(4)"></div>
     </div>
   </div>
 </section>
@@ -1447,47 +1497,6 @@
       </div>
     </div>
 
-    <div class="fade-in d2">
-      <span class="section-label">Revenue Scenarios · All 8 Stalls</span>
-      <div class="scenario-cards" style="margin-top:52px;">
-        <div class="scenario-card">
-          <div class="scenario-tag">Conservative · 6-Month Ramp-up</div>
-          <div class="scenario-rev">₹1.35 Cr <span class="period">/ month</span></div>
-          <div style="font-size:11px;color:var(--orange);font-family:var(--font-mono);margin-bottom:6px;">₹16.2 Cr / year</div>
-          <div class="scenario-desc">Lower-end covers, 6-month ramp-up. Coffee + Meals + Wraps operational first.</div>
-        </div>
-        <div class="scenario-card base">
-          <div class="scenario-tag">Base Case · Full Operations by Month 8</div>
-          <div class="scenario-rev">₹2.16 Cr <span class="period">/ month</span></div>
-          <div style="font-size:11px;color:var(--orange);font-family:var(--font-mono);margin-bottom:6px;">₹25.9 Cr / year</div>
-          <div class="scenario-desc">Mid-range covers across all 8 categories. Full operations within 6–8 months.</div>
-        </div>
-        <div class="scenario-card optimistic">
-          <div class="scenario-tag">Optimistic · Delivery Included</div>
-          <div class="scenario-rev">₹2.94 Cr <span class="period">/ month</span></div>
-          <div style="font-size:11px;color:var(--gold);font-family:var(--font-mono);margin-bottom:6px;">₹35.3 Cr / year</div>
-          <div class="scenario-desc">Upper-end covers, event-day spikes, delivery revenue fully ramped. Well-established brands.</div>
-        </div>
-      </div>
-
-      <div style="background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border);padding:22px 22px;margin-top:20px;">
-        <div style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted-2);margin-bottom:10px;">Landlord Return Model</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;justify-content:space-between;font-size:13px;">
-            <span style="color:var(--muted);">Fixed rent (market rate)</span>
-            <span style="font-weight:700;color:var(--ink);">₹55–70 L / month</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;">
-            <span style="color:var(--muted);">Revenue share (8–10% above MG)</span>
-            <span style="font-weight:700;color:var(--orange);">Additional upside</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;padding-top:8px;border-top:1px solid var(--border);">
-            <span style="color:var(--muted);">Annual landlord yield</span>
-            <span style="font-weight:800;font-size:15px;color:var(--ink);">₹7–9 Cr / year</span>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -1782,20 +1791,77 @@
 
 
 <script>
-  // ── GALLERY TOGGLE ──
-  function switchGallery(view) {
-    const cur = document.getElementById('galCurrent');
-    const vis = document.getElementById('galVision');
-    const tabC = document.getElementById('tabCurrent');
-    const tabV = document.getElementById('tabVision');
-    if (view === 'current') {
-      cur.style.display = 'grid'; vis.style.display = 'none';
-      tabC.classList.add('active'); tabV.classList.remove('active');
-    } else {
-      cur.style.display = 'none'; vis.style.display = 'grid';
-      tabC.classList.remove('active'); tabV.classList.add('active');
+  // ── AUTO SLIDER ──
+  (function() {
+    const TOTAL = 5;
+    const INTERVAL = 4000; // ms between slides
+    let current = 0;
+    let timer = null;
+    let progTimer = null;
+
+    const track = document.getElementById('sliderTrack');
+    const slides = track ? track.querySelectorAll('.slide') : [];
+    const dots = document.querySelectorAll('.slider-dot');
+    const progress = document.getElementById('sliderProgress');
+
+    function goToSlide(n) {
+      slides[current].classList.remove('active');
+      dots[current].classList.remove('active');
+      current = (n + TOTAL) % TOTAL;
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
+      track.style.transform = `translateX(-${current * 100}%)`;
+      resetProgress();
     }
-  }
+    window.goToSlide = goToSlide;
+
+    function resetProgress() {
+      if (progTimer) clearInterval(progTimer);
+      if (!progress) return;
+      progress.style.transition = 'none';
+      progress.style.width = '0%';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          progress.style.transition = `width ${INTERVAL}ms linear`;
+          progress.style.width = '100%';
+        });
+      });
+    }
+
+    function next() { goToSlide(current + 1); }
+
+    function startAuto() {
+      if (timer) clearInterval(timer);
+      timer = setInterval(next, INTERVAL);
+    }
+
+    if (slides.length) {
+      resetProgress();
+      startAuto();
+
+      // Pause on hover
+      const wrap = document.getElementById('prSlider');
+      if (wrap) {
+        wrap.addEventListener('mouseenter', () => {
+          clearInterval(timer);
+          if (progTimer) clearInterval(progTimer);
+          if (progress) { progress.style.transition = 'none'; }
+        });
+        wrap.addEventListener('mouseleave', () => {
+          startAuto();
+          resetProgress();
+        });
+      }
+
+      // Touch swipe
+      let touchStartX = 0;
+      track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+      track.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 40) { clearInterval(timer); goToSlide(current + (dx < 0 ? 1 : -1)); startAuto(); }
+      }, { passive: true });
+    }
+  })();
 
   // ── MODAL ──
   let currentMode = 'visit';
