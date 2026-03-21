@@ -884,15 +884,13 @@ export default function Home() {
         }
         const data = await response.json()
         
-        // Filter brands - be lenient: just need a name (companyName or name)
-        // Brands are already sorted by API (displayOrder, then createdAt)
+        // Featured = only brands with displayOrder set (manually curated). Bulk-uploaded brands have displayOrder null.
         const brandsWithProfiles = (data.brands || []).filter((brand: any) => {
-          // Only filter out brands with no name at all
           const hasName = brand && (brand.companyName || brand.name)
-          return hasName
+          const isFeatured = brand.displayOrder != null
+          return hasName && isFeatured
         })
         
-        // Limit to 6 featured brands (already sorted by API)
         const featured = brandsWithProfiles.slice(0, 6)
         
         setFeaturedBrands(featured)

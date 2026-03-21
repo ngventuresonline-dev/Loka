@@ -91,11 +91,13 @@ function calculateSizeMatch(propertySize: number, minSize: number, maxSize: numb
     if (percentDiff <= 0.2) return 60
     return 30
   }
+  // Property exceeds maxSize - penalize heavily. 2000 sqft for 150-500 is not a match
   const diff = propertySize - maxSize
-  const percentDiff = diff / maxSize
-  if (percentDiff <= 0.1) return 90
-  if (percentDiff <= 0.2) return 70
-  return 40
+  const percentOver = diff / maxSize
+  if (percentOver <= 0.1) return 85   // up to 10% over
+  if (percentOver <= 0.2) return 60   // up to 20% over
+  if (percentOver <= 0.5) return 25   // up to 50% over
+  return 0                             // >50% over max = exclude
 }
 
 function calculateBudgetMatch(monthlyRent: number, budgetMin: number, budgetMax: number): number {
@@ -289,8 +291,12 @@ export async function computeAdminMatches(
     }
 
     for (const property of properties) {
+      const propSize = property.size ?? 0
+      // Hard filter: skip properties that exceed brand's max size by >50%
+      if (sizeMax !== Number.MAX_SAFE_INTEGER && sizeMax > 0 && propSize > sizeMax * 1.5) continue
+
       const pfiScore = calculatePFI(brandRequirements, {
-        size: property.size ?? 0,
+        size: propSize,
         price: Number(property.price),
         priceType: property.priceType as 'monthly' | 'yearly',
         city: property.city || '',

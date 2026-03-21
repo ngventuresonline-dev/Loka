@@ -72,13 +72,14 @@ function calculateSizeMatch(propertySize: number, minSize: number, maxSize: numb
     return 30
   }
   
-  // propertySize > maxSize (and maxSize is not infinite)
+  // propertySize > maxSize - penalize heavily. 2000 sqft for 150-500 is not a match
   if (maxSize !== Number.MAX_SAFE_INTEGER && maxSize > 0) {
     const diff = propertySize - maxSize
-    const percentDiff = diff / maxSize
-    if (percentDiff <= 0.1) return 90
-    if (percentDiff <= 0.2) return 70
-    return 40
+    const percentOver = diff / maxSize
+    if (percentOver <= 0.1) return 85
+    if (percentOver <= 0.2) return 60
+    if (percentOver <= 0.5) return 25
+    return 0
   }
   
   // No upper limit, property is larger than min

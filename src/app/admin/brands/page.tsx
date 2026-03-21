@@ -31,10 +31,14 @@ export default function BrandsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const limit = 100
 
   useEffect(() => {
     fetchBrands()
-  }, [user])
+  }, [user, page])
 
   const fetchBrands = async () => {
     try {
@@ -47,7 +51,7 @@ export default function BrandsPage() {
         return
       }
       
-      const response = await fetch(`/api/admin/brands?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`)
+      const response = await fetch(`/api/admin/brands?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}&page=${page}&limit=${limit}`)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -64,7 +68,6 @@ export default function BrandsPage() {
       }
       
       const data = await response.json()
-      console.log('Fetched brands data:', data)
       
       if (!data.brands || !Array.isArray(data.brands)) {
         console.error('Invalid response format:', data)
@@ -72,6 +75,10 @@ export default function BrandsPage() {
         setLoading(false)
         return
       }
+
+      const pagination = data.pagination || {}
+      setTotalPages(pagination.totalPages ?? 1)
+      setTotal(pagination.total ?? data.brands.length)
       
       const dbBrands: Brand[] = data.brands.map((b: any) => ({
         id: b.id,
@@ -92,7 +99,6 @@ export default function BrandsPage() {
         }
       }))
       
-      console.log('Mapped brands:', dbBrands.length)
       setBrands(dbBrands)
     } catch (error) {
       console.error('Error fetching brands:', error)
@@ -171,24 +177,45 @@ export default function BrandsPage() {
           </button>
         </div>
 
-        {/* Search and Bulk Actions */}
+        {/* Search, pagination, Bulk Actions */}
         <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex gap-4 items-center">
-            <input
-              type="text"
-              placeholder="Search brands..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF5200]"
-            />
-            {selectedBrands.length > 0 && (
-              <button
-                onClick={handleBulkDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete Selected ({selectedBrands.length})
-              </button>
-            )}
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex gap-4 items-center flex-1 min-w-0">
+              <input
+                type="text"
+                placeholder="Search brands..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 min-w-[200px] px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF5200]"
+              />
+              {selectedBrands.length > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shrink-0"
+                >
+                  Delete Selected ({selectedBrands.length})
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-sm text-gray-400 shrink-0">
+              <span>Page {page} of {totalPages} · {total} total</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="px-3 py-1.5 bg-gray-800 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-white"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="px-3 py-1.5 bg-gray-800 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-white"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

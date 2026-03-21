@@ -35,10 +35,9 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('[Admin Brands API] Fetching brands from database...')
-    // Fetch brands - limit to 50 per page to reduce egress
     const searchParams = request.nextUrl.searchParams
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 50)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '100')), 500)
     const skip = (page - 1) * limit
     
     const brands = await prisma.user.findMany({
