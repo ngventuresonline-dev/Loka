@@ -121,11 +121,28 @@ export default function BulkUploadPropertiesPage() {
           <div>
             <h2 className="text-lg font-semibold text-white mb-2">1. Download CSV Template</h2>
             <p className="text-gray-400 text-sm mb-3">
-              The CSV should have these columns:
+              The CSV should have these columns. Required: title, address, city, propertyType, ownerEmail.
             </p>
-            <code className="block bg-gray-800 text-gray-100 text-xs p-3 rounded">
-              id,title,address,city,state,zipCode,price,priceType,size,propertyType,ownerName,ownerEmail,isFeatured,availability,images,amenities,displayOrder
+            <code className="block bg-gray-800 text-gray-100 text-xs p-3 rounded mb-3">
+              title,address,city,state,zipCode,price,priceType,size,propertyType,ownerName,ownerEmail,isFeatured,availability,images,amenities
             </code>
+            <button
+              type="button"
+              onClick={() => {
+                const header = 'title,address,city,state,zipCode,price,priceType,size,propertyType,ownerName,ownerEmail,isFeatured,availability,images,amenities'
+                const sample = 'Sample Retail Space,123 MG Road,Bangalore,Karnataka,560001,50000,monthly,1500,retail,John Doe,owner@example.com,false,true,,'
+                const blob = new Blob([header + '\n' + sample], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'properties-bulk-template.csv'
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+            >
+              Download template
+            </button>
           </div>
 
           <div>

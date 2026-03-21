@@ -119,13 +119,30 @@ export default function BulkUploadBrandsPage() {
 
         <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6 space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">1. CSV Format</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">1. Download CSV Template</h2>
             <p className="text-gray-400 text-sm mb-3">
-              Use this header row:
+              Required: name, email. Comma-separate lists for preferredLocations, preferredPropertyTypes.
             </p>
-            <code className="block bg-gray-800 text-gray-100 text-xs p-3 rounded">
+            <code className="block bg-gray-800 text-gray-100 text-xs p-3 rounded mb-3">
               name,email,industry,companyName,preferredLocations,budgetMin,budgetMax,minSize,maxSize,preferredPropertyTypes,mustHaveAmenities
             </code>
+            <button
+              type="button"
+              onClick={() => {
+                const header = 'name,email,industry,companyName,preferredLocations,budgetMin,budgetMax,minSize,maxSize,preferredPropertyTypes,mustHaveAmenities'
+                const sample = 'Acme Cafe,brand@acme.com,Café,Acme Cafe,HSR Layout Koramangala,50000,150000,500,2000,"Retail,Café",'
+                const blob = new Blob([header + '\n' + sample], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'brands-bulk-template.csv'
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+            >
+              Download template
+            </button>
           </div>
 
           <div>
