@@ -14,11 +14,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch all active brands (no limit to show all brands in modal)
+    // Only return featured brands (displayOrder set). Bulk-uploaded brands have displayOrder=null.
     const brands = await prisma.user.findMany({
       where: { 
         userType: 'brand',
-        isActive: true 
+        isActive: true,
+        displayOrder: { not: null }
       },
       take: 100, // Increased limit to show all brands
       select: {

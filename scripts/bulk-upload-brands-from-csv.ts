@@ -265,6 +265,7 @@ async function main() {
           phone: null,
           userType: 'brand',
           isActive: true,
+          displayOrder: null, // Never featured; admin must set in UI to feature
           brandProfiles: {
             create: {
               company_name: r.companyName,

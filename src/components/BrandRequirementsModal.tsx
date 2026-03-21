@@ -249,6 +249,22 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
 
   // Convert database brands to BrandRequirement format
   useEffect(() => {
+    const formatIndustry = (raw: string | null | undefined): string => {
+      if (!raw || !raw.trim()) return ''
+      const known: Record<string, string> = {
+        'qsr_/_takeaway': 'QSR / Takeaway',
+        'café/_dessert_/_beverage': 'Café / Dessert / Beverage',
+        'caf/_dessert_/_beverage': 'Café / Dessert / Beverage',
+        'flagship_retail': 'Flagship Retail',
+        'taproom_/_brewery': 'Taproom / Brewery',
+        'wellness_/_salon': 'Wellness / Salon',
+        'quick_service_restaurant_(qsr)': 'QSR',
+        '_bakery_&_dessert_brand': 'Bakery & Dessert',
+      }
+      const key = raw.trim().toLowerCase()
+      if (known[key]) return known[key]
+      return raw.replace(/_/g, ' ').replace(/\s*\/\s*/g, ' / ').replace(/\bcaf\b/gi, 'Café').replace(/\bqsr\b/gi, 'QSR').replace(/\b\w/g, c => c.toUpperCase()).trim()
+    }
     const convertDbBrands = (brands: DatabaseBrand[]): BrandRequirement[] => {
       return brands.map(brand => {
         const profile = brand.brandProfile
@@ -257,10 +273,12 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
         const budgetMin = profile?.budgetMin ?? 0
         const budgetMax = profile?.budgetMax ?? 0
         
-        // Format size range
-        const sizeRange = minSize && maxSize 
-          ? `${minSize.toLocaleString()}-${maxSize.toLocaleString()} sqft`
-          : minSize 
+        // Format size range (avoid "150-150" when min=max)
+        const sizeRange = minSize != null && maxSize != null
+          ? minSize === maxSize
+            ? `${minSize.toLocaleString()} sqft`
+            : `${minSize.toLocaleString()}-${maxSize.toLocaleString()} sqft`
+          : minSize != null
           ? `${minSize.toLocaleString()}+ sqft`
           : 'Not specified'
         
@@ -278,8 +296,8 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
           : 'Not specified'
         
         return {
-          brandName: brand.name || brand.companyName,
-          businessType: brand.industry || 'Other' as any,
+          brandName: brand.companyName || brand.name || 'Unknown',
+          businessType: formatIndustry(brand.industry) || 'Other' as any,
           sizeRequirement: {
             category: 'Medium' as any,
             range: sizeRange,
@@ -307,10 +325,8 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
       })
     }
 
-    // Prefer database brands; fall back to static requirements if none returned
-    const allBrands = dbBrands.length > 0
-      ? convertDbBrands(dbBrands)
-      : brandRequirements
+    // Only show brands returned by API (featured only). No fallback to static when none featured.
+    const allBrands = convertDbBrands(dbBrands)
     
     if (selectedType === 'All') {
       setFilteredBrands(allBrands)
