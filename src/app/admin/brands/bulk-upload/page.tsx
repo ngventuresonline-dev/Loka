@@ -38,7 +38,8 @@ export default function BulkUploadBrandsPage() {
     setError(null)
     setResult(null)
     try {
-      const text = await file.text()
+      let text = await file.text()
+      text = text.replace(/^\uFEFF/, '') // strip BOM
       const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0)
       if (lines.length < 2) {
         setError('CSV must contain a header row and at least one data row')
@@ -46,9 +47,35 @@ export default function BulkUploadBrandsPage() {
         return
       }
 
-      const headers = lines[0].split(',').map(h => h.trim())
+      const parseCSVLine = (line: string): string[] => {
+        const out: string[] = []
+        let cur = ''
+        let inQuotes = false
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i]
+          if (c === '"') inQuotes = !inQuotes
+          else if (c === ',' && !inQuotes) {
+            out.push(cur.trim().replace(/^"|"$/g, ''))
+            cur = ''
+          } else cur += c
+        }
+        out.push(cur.trim().replace(/^"|"$/g, ''))
+        return out
+      }
+
+      const apiColumns: Record<string, string> = {
+        name: 'name', email: 'email', industry: 'industry', companyname: 'companyName',
+        preferredlocations: 'preferredLocations', budgetmin: 'budgetMin', budgetmax: 'budgetMax',
+        minsize: 'minSize', maxsize: 'maxSize', preferredpropertytypes: 'preferredPropertyTypes',
+        musthaveamenities: 'mustHaveAmenities',
+      }
+      const rawHeaders = parseCSVLine(lines[0])
+      const headers = rawHeaders.map((h) => {
+        const key = h.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+        return apiColumns[key] || h.trim()
+      })
       const rows = lines.slice(1).map((line) => {
-        const cells = line.split(',')
+        const cells = parseCSVLine(line)
         const row: any = {}
         headers.forEach((header, index) => {
           row[header] = (cells[index] ?? '').trim()
@@ -90,7 +117,18 @@ export default function BulkUploadBrandsPage() {
         body: JSON.stringify({ rows: rowsToUpload }),
       })
 
-      const data = await response.json()
+      const text = await response.text()
+      let data: any
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch {
+        setError(
+          response.ok
+            ? 'Invalid response from server'
+            : `Server error (${response.status}). Large uploads may time out — try fewer rows (e.g. under 200).`
+        )
+        return
+      }
       if (!response.ok) {
         setError(data.error || 'Bulk upload failed')
         return
@@ -112,7 +150,7 @@ export default function BulkUploadBrandsPage() {
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Bulk Upload Brands</h1>
             <p className="text-gray-400">
-              Upload a CSV file to create multiple brands and their profiles at once.
+              Upload a CSV file to create multiple brands (max 300 per upload). Use double quotes for fields with commas.
             </p>
           </div>
         </div>
@@ -188,14 +226,19 @@ export default function BulkUploadBrandsPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <button
               onClick={handleUpload}
-              disabled={uploading || rowsToUpload.length === 0}
+              disabled={uploading || rowsToUpload.length === 0 || rowsToUpload.length > 300}
               className="px-6 py-3 bg-[#FF5200] text-white rounded-lg hover:bg-[#E4002B] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
               {uploading ? 'Uploading...' : `Upload ${rowsToUpload.length} rows`}
             </button>
+            {rowsToUpload.length > 300 && (
+              <p className="text-amber-400 text-sm">
+                Max 300 rows per upload. Split your file into batches.
+              </p>
+            )}
             {error && <p className="text-red-400 text-sm">{error}</p>}
           </div>
 

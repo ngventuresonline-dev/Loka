@@ -1,4 +1,4 @@
-﻿node_modules/
+node_modules/
 .next/
 out/
 .env
@@ -11,3 +11,4 @@ out/
 *.swo
 *~
 next-env.d.ts
+scripts/output/

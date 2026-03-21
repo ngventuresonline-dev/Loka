@@ -32,9 +32,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const rows: CsvBrandRow[] = Array.isArray(body.rows) ? body.rows : []
 
+    const MAX_ROWS = 300
     if (rows.length === 0) {
       return NextResponse.json(
         { success: false, error: 'No rows provided for bulk upload', inserted: 0, skipped: 0, errors: [] },
+        { status: 400 }
+      )
+    }
+    if (rows.length > MAX_ROWS) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many rows (${rows.length}). Max ${MAX_ROWS} per upload. Split your CSV and upload in batches.`,
+          inserted: 0,
+          skipped: rows.length,
+          errors: [],
+        },
         { status: 400 }
       )
     }
