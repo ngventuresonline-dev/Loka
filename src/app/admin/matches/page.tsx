@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 import Image from 'next/image'
+import { useAuth } from '@/contexts/AuthContext'
 
 type MatchGroup = {
   brand?: {
@@ -46,10 +47,16 @@ type MatchGroup = {
 }
 
 export default function AdminMatchesPage() {
+  const { user } = useAuth()
   const [view, setView] = useState<'brand' | 'property'>('brand')
   const [matches, setMatches] = useState<MatchGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedBrandIds, setSelectedBrandIds] = useState<Set<string>>(new Set())
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [emailNote, setEmailNote] = useState('')
+  const [sendingEmails, setSendingEmails] = useState(false)
+  const [emailFeedback, setEmailFeedback] = useState<string | null>(null)
   
   // Filters
   const [brandNameFilter, setBrandNameFilter] = useState('')
@@ -65,6 +72,10 @@ export default function AdminMatchesPage() {
     fetchMatches()
   }, [view, brandNameFilter, propertyTypeFilter, locationFilter, minScoreFilter, selectedBrandId, selectedPropertyId])
 
+  useEffect(() => {
+    setSelectedBrandIds(new Set())
+  }, [view, brandNameFilter, propertyTypeFilter, locationFilter, minScoreFilter, selectedBrandId, selectedPropertyId])
+
   const fetchMatches = async () => {
     setLoading(true)
     setError(null)
@@ -78,8 +89,10 @@ export default function AdminMatchesPage() {
       if (locationFilter) params.append('location', locationFilter)
       if (selectedBrandId) params.append('brandId', selectedBrandId)
       if (selectedPropertyId) params.append('propertyId', selectedPropertyId)
+      if (user?.id) params.append('userId', user.id)
+      if (user?.email) params.append('userEmail', encodeURIComponent(user.email))
 
-      const response = await fetch(`/api/admin/matches?${params}`)
+      const response = await fetch(`/api/admin/matches?${params}`, { credentials: 'include' })
       if (!response.ok) {
         throw new Error('Failed to fetch matches')
       }
@@ -109,6 +122,83 @@ export default function AdminMatchesPage() {
     return `₹${(price / 1000).toFixed(0)}K/month`
   }
 
+  const brandsWithEmail = useMemo(() => {
+    return matches.filter((g) => g.brand?.email && String(g.brand.email).trim().length > 0)
+  }, [matches])
+
+  const selectableIds = useMemo(
+    () => brandsWithEmail.map((g) => g.brand!.id).filter(Boolean),
+    [brandsWithEmail]
+  )
+
+  const allSelectableChecked =
+    selectableIds.length > 0 && selectableIds.every((id) => selectedBrandIds.has(id))
+
+  const toggleBrand = useCallback((brandId: string) => {
+    setSelectedBrandIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(brandId)) next.delete(brandId)
+      else next.add(brandId)
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback(() => {
+    if (allSelectableChecked) {
+      setSelectedBrandIds(new Set())
+    } else {
+      setSelectedBrandIds(new Set(selectableIds))
+    }
+  }, [allSelectableChecked, selectableIds])
+
+  const sendMatchEmails = async () => {
+    if (!user?.id || !user?.email) {
+      setEmailFeedback('Sign in as admin to send emails.')
+      return
+    }
+    const ids = [...selectedBrandIds]
+    if (ids.length === 0) return
+    setSendingEmails(true)
+    setEmailFeedback(null)
+    try {
+      const q = new URLSearchParams({
+        userId: user.id,
+        userEmail: encodeURIComponent(user.email),
+      })
+      const res = await fetch(`/api/admin/matches/email?${q}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandIds: ids,
+          minScore: minScoreFilter,
+          brandName: brandNameFilter || undefined,
+          propertyType: propertyTypeFilter || undefined,
+          location: locationFilter || undefined,
+          propertyId: selectedPropertyId || undefined,
+          note: emailNote.trim(),
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setEmailFeedback(data.error || 'Failed to send emails')
+        return
+      }
+      const ok = (data.results || []).filter((r: { ok: boolean }) => r.ok).length
+      const fail = (data.results || []).filter((r: { ok: boolean }) => !r.ok).length
+      setEmailFeedback(
+        `${ok} sent${fail ? `, ${fail} skipped/failed` : ''}. ${data.message || ''}`.trim()
+      )
+      setShowEmailModal(false)
+      setEmailNote('')
+      setSelectedBrandIds(new Set())
+    } catch (e: any) {
+      setEmailFeedback(e?.message || 'Network error')
+    } finally {
+      setSendingEmails(false)
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -121,6 +211,34 @@ export default function AdminMatchesPage() {
             </p>
           </div>
         </div>
+
+        {/* CRM: bulk email (brand view) */}
+        {view === 'brand' && matches.length > 0 && (
+          <div className="bg-gray-800/80 border border-gray-700 rounded-lg p-4 flex flex-wrap items-center gap-4 justify-between">
+            <div className="text-sm text-gray-300">
+              <strong className="text-white">CRM:</strong> Select brands, then email them their{' '}
+              <span className="text-[#FF5200]">matched properties</span> (same filters as above). Requires{' '}
+              <code className="text-xs bg-gray-900 px-1 rounded">RESEND_API_KEY</code> for real delivery.
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-gray-400 text-sm">{selectedBrandIds.size} selected</span>
+              <button
+                type="button"
+                disabled={selectedBrandIds.size === 0 || !user?.email}
+                onClick={() => {
+                  setEmailFeedback(null)
+                  setShowEmailModal(true)
+                }}
+                className="px-4 py-2 rounded-lg font-medium bg-[#FF5200] text-white hover:bg-[#e04800] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Email matched properties
+              </button>
+            </div>
+          </div>
+        )}
+        {emailFeedback && (
+          <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">{emailFeedback}</div>
+        )}
 
         {/* View Toggle */}
         <div className="bg-gray-800 rounded-lg p-4">
@@ -243,6 +361,16 @@ export default function AdminMatchesPage() {
                   <tr>
                     {view === 'brand' ? (
                       <>
+                        <th className="px-3 py-4 text-left w-12">
+                          <input
+                            type="checkbox"
+                            title="Select all with email"
+                            checked={allSelectableChecked}
+                            onChange={toggleSelectAll}
+                            disabled={selectableIds.length === 0}
+                            className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#FF5200] focus:ring-[#FF5200]"
+                          />
+                        </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Brand</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Matched Properties</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Top Score</th>
@@ -270,6 +398,20 @@ export default function AdminMatchesPage() {
                       <tr key={uniqueKey} className="hover:bg-gray-750">
                         {view === 'brand' ? (
                           <>
+                            <td className="px-3 py-4 align-top">
+                              <input
+                                type="checkbox"
+                                checked={group.brand?.id ? selectedBrandIds.has(group.brand.id) : false}
+                                onChange={() => group.brand?.id && toggleBrand(group.brand.id)}
+                                disabled={!group.brand?.email || !String(group.brand.email).trim()}
+                                title={
+                                  !group.brand?.email
+                                    ? 'No email on file'
+                                    : 'Include in bulk email'
+                                }
+                                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#FF5200] focus:ring-[#FF5200] disabled:opacity-30"
+                              />
+                            </td>
                             <td className="px-6 py-4">
                               <div className="flex items-start gap-3">
                                 {(() => {
@@ -358,6 +500,19 @@ export default function AdminMatchesPage() {
                                 >
                                   Contact
                                 </button>
+                                {group.brand?.id && group.brand?.email && (
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1.5 bg-[#FF5200]/90 hover:bg-[#FF5200] text-white text-xs rounded-lg transition-colors"
+                                    onClick={() => {
+                                      setSelectedBrandIds(new Set([group.brand!.id]))
+                                      setEmailFeedback(null)
+                                      setShowEmailModal(true)
+                                    }}
+                                  >
+                                    Email matches
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </>
@@ -460,6 +615,61 @@ export default function AdminMatchesPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Email matched properties modal */}
+        {showEmailModal && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+            <div className="bg-gray-800 rounded-lg max-w-lg w-full border border-gray-700 shadow-xl">
+              <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Email matched properties</h2>
+                <button
+                  type="button"
+                  onClick={() => !sendingEmails && setShowEmailModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-gray-400 text-sm">
+                  Sending to <strong className="text-white">{selectedBrandIds.size}</strong> brand(s) using the account email
+                  on file. Each message lists their current matches using the same filters as this page (min score{' '}
+                  {minScoreFilter}%).
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Optional note to brands</label>
+                  <textarea
+                    value={emailNote}
+                    onChange={(e) => setEmailNote(e.target.value)}
+                    rows={4}
+                    placeholder="e.g. We shortlisted these for your Q2 expansion — reply if you want a site visit."
+                    className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5200] text-sm"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    disabled={sendingEmails}
+                    onClick={() => setShowEmailModal(false)}
+                    className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={sendingEmails}
+                    onClick={sendMatchEmails}
+                    className="px-4 py-2 rounded-lg bg-[#FF5200] text-white font-medium hover:bg-[#e04800] disabled:opacity-50 text-sm"
+                  >
+                    {sendingEmails ? 'Sending…' : 'Send emails'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
