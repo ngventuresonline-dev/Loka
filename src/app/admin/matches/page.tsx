@@ -152,8 +152,60 @@ export default function AdminMatchesPage() {
     [brandsWithEmail]
   )
 
+  const brandsWithEmailFromPropertyView = useMemo(() => {
+    const seen = new Set<string>()
+    const ids: string[] = []
+    for (const g of matches) {
+      for (const m of g.matches || []) {
+        const bid = m.brand?.id
+        const email = m.brand?.email
+        if (bid && email && String(email).trim() && !seen.has(bid)) {
+          seen.add(bid)
+          ids.push(bid)
+        }
+      }
+    }
+    return ids
+  }, [matches])
+
+  const getBrandIdsForProperty = useCallback((group: MatchGroup) => {
+    const ids: string[] = []
+    for (const m of group.matches || []) {
+      if (m.brand?.id && m.brand?.email && String(m.brand.email).trim()) {
+        ids.push(m.brand.id)
+      }
+    }
+    return ids
+  }, [])
+
+  const isPropertyFullySelected = useCallback(
+    (group: MatchGroup) => {
+      const ids = getBrandIdsForProperty(group)
+      return ids.length > 0 && ids.every((id) => selectedBrandIds.has(id))
+    },
+    [getBrandIdsForProperty, selectedBrandIds]
+  )
+
+  const togglePropertyBrands = useCallback(
+    (group: MatchGroup) => {
+      const ids = getBrandIdsForProperty(group)
+      if (ids.length === 0) return
+      setSelectedBrandIds((prev) => {
+        const next = new Set(prev)
+        const allIn = ids.every((id) => next.has(id))
+        if (allIn) ids.forEach((id) => next.delete(id))
+        else ids.forEach((id) => next.add(id))
+        return next
+      })
+    },
+    [getBrandIdsForProperty]
+  )
+
   const allSelectableChecked =
-    selectableIds.length > 0 && selectableIds.every((id) => selectedBrandIds.has(id))
+    view === 'brand'
+      ? selectableIds.length > 0 && selectableIds.every((id) => selectedBrandIds.has(id))
+      : brandsWithEmailFromPropertyView.length > 0 &&
+        brandsWithEmailFromPropertyView.every((id) => selectedBrandIds.has(id))
 
   const toggleBrand = useCallback((brandId: string) => {
     setSelectedBrandIds((prev) => {
@@ -168,9 +220,10 @@ export default function AdminMatchesPage() {
     if (allSelectableChecked) {
       setSelectedBrandIds(new Set())
     } else {
-      setSelectedBrandIds(new Set(selectableIds))
+      const ids = view === 'brand' ? selectableIds : brandsWithEmailFromPropertyView
+      setSelectedBrandIds(new Set(ids))
     }
-  }, [allSelectableChecked, selectableIds])
+  }, [allSelectableChecked, selectableIds, brandsWithEmailFromPropertyView, view])
 
   const fetchEmailPreview = useCallback(async () => {
     const ids = [...selectedBrandIds]
@@ -319,12 +372,13 @@ export default function AdminMatchesPage() {
           </div>
         </div>
 
-        {/* CRM: bulk email (brand view) */}
-        {view === 'brand' && matches.length > 0 && (
+        {/* CRM: bulk email */}
+        {matches.length > 0 && (
           <div className="bg-gray-800/80 border border-gray-700 rounded-lg p-4 flex flex-wrap items-center gap-4 justify-between">
             <div className="text-sm text-gray-300">
-              <strong className="text-white">CRM:</strong> Select brands, then email them their{' '}
-              <span className="text-[#FF5200]">matched properties</span> (same filters as above). Requires{' '}
+              <strong className="text-white">CRM:</strong>{' '}
+              {view === 'brand' ? 'Select brands' : 'Check properties to select their matched brands'}, then email them their{' '}
+              <span className="text-[#FF5200]">matched properties</span>. Requires{' '}
               <code className="text-xs bg-gray-900 px-1 rounded">RESEND_API_KEY</code> for real delivery.
             </div>
             <div className="flex items-center gap-3">
@@ -509,6 +563,16 @@ export default function AdminMatchesPage() {
                       </>
                     ) : (
                       <>
+                        <th className="px-3 py-4 text-left w-12">
+                          <input
+                            type="checkbox"
+                            title="Select all properties' brands"
+                            checked={allSelectableChecked}
+                            onChange={toggleSelectAll}
+                            disabled={brandsWithEmailFromPropertyView.length === 0}
+                            className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#FF5200] focus:ring-[#FF5200]"
+                          />
+                        </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Property</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Matched Brands</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Top Score</th>
@@ -648,6 +712,20 @@ export default function AdminMatchesPage() {
                           </>
                         ) : (
                           <>
+                            <td className="px-3 py-4 align-top">
+                              <input
+                                type="checkbox"
+                                checked={isPropertyFullySelected(group)}
+                                onChange={() => togglePropertyBrands(group)}
+                                disabled={getBrandIdsForProperty(group).length === 0}
+                                title={
+                                  getBrandIdsForProperty(group).length === 0
+                                    ? 'No matched brands with email'
+                                    : 'Select to email matched brands'
+                                }
+                                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#FF5200] focus:ring-[#FF5200] disabled:opacity-30"
+                              />
+                            </td>
                             <td className="px-6 py-4">
                               <div>
                                 <div className="font-medium text-white">{group.property?.title}</div>
@@ -736,6 +814,19 @@ export default function AdminMatchesPage() {
                                 >
                                   Contact Owner
                                 </button>
+                                {getBrandIdsForProperty(group).length > 0 && (
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1.5 bg-[#FF5200]/90 hover:bg-[#FF5200] text-white text-xs rounded-lg transition-colors"
+                                    onClick={() => {
+                                      setSelectedBrandIds(new Set(getBrandIdsForProperty(group)))
+                                      setEmailFeedback(null)
+                                      setShowEmailModal(true)
+                                    }}
+                                  >
+                                    Email brands
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </>
