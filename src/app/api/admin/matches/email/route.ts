@@ -113,12 +113,13 @@ export async function POST(request: NextRequest) {
       failed: results.filter((r) => !r.ok).length,
     })
 
+    const hasResend = !!process.env.RESEND_API_KEY?.trim()
     return NextResponse.json({
       ok: true,
       results,
-      message: process.env.RESEND_API_KEY
+      message: hasResend
         ? undefined
-        : 'Emails logged only until RESEND_API_KEY is set (see EMAIL_FROM in env).',
+        : 'Set RESEND_API_KEY and RESEND_FROM (or EMAIL_FROM) in environment for email delivery.',
     })
   } catch (error: any) {
     console.error('[Admin Matches Email] Error:', error)

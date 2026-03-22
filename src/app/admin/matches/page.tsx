@@ -382,7 +382,7 @@ export default function AdminMatchesPage() {
               <strong className="text-white">CRM:</strong>{' '}
               {view === 'brand' ? 'Select brands' : 'Check properties to select their matched brands'}, then email them their{' '}
               <span className="text-[#FF5200]">matched properties</span>. Requires{' '}
-              <code className="text-xs bg-gray-900 px-1 rounded">RESEND_API_KEY</code> for real delivery.
+              <code className="text-xs bg-gray-900 px-1 rounded">RESEND_API_KEY</code> + <code className="text-xs bg-gray-900 px-1 rounded">RESEND_FROM</code> for delivery.
             </div>
             <div className="flex items-center gap-3">
               <span className="text-gray-400 text-sm">{selectedBrandIds.size} selected</span>

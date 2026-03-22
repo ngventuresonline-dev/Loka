@@ -14,45 +14,35 @@ interface EmailOptions {
   subject: string
   html: string
   text?: string
+  replyTo?: string
 }
 
 /**
- * Send email via Resend when RESEND_API_KEY is set; otherwise log only (dev-friendly).
+ * Send email via Resend. Requires RESEND_API_KEY for delivery.
+ * Uses RESEND_FROM or EMAIL_FROM; replyTo can be set per-call.
  */
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; error?: string }> {
   try {
-    const apiKey = process.env.RESEND_API_KEY
-    if (apiKey) {
-      const resend = new Resend(apiKey)
-      const from = process.env.EMAIL_FROM || 'Lokazen <onboarding@resend.dev>'
-      const { error } = await resend.emails.send({
-        from,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      })
-      if (error) {
-        console.error('[Email Service] Resend error:', error)
-        return { success: false, error: error.message || 'Resend send failed' }
-      }
-      return { success: true }
+    const apiKey = process.env.RESEND_API_KEY?.trim()
+    if (!apiKey) {
+      console.warn('[Email Service] RESEND_API_KEY not set — email not sent')
+      return { success: false, error: 'RESEND_API_KEY not configured. Set it in environment for email delivery.' }
     }
 
-    console.log('📧 Email (no RESEND_API_KEY — not sent):', {
+    const resend = new Resend(apiKey)
+    const from = process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Lokazen <onboarding@resend.dev>'
+    const { error } = await resend.emails.send({
+      from,
       to: options.to,
       subject: options.subject,
-      preview: options.html.substring(0, 120) + '...',
+      html: options.html,
+      text: options.text,
+      ...(options.replyTo && { reply_to: options.replyTo }),
     })
-
-    if (process.env.NODE_ENV === 'development' && process.env.ENABLE_EMAIL_LOGGING === 'true') {
-      console.log('📧 Email Content:', {
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-      })
+    if (error) {
+      console.error('[Email Service] Resend error:', error)
+      return { success: false, error: error.message || 'Resend send failed' }
     }
-
     return { success: true }
   } catch (error: any) {
     console.error('[Email Service] Error sending email:', error)
@@ -250,7 +240,11 @@ export async function sendBrandMatchDigestEmail(params: {
     subjectOverride,
     bodyIntroOverride,
   })
-  return sendEmail({ to, ...content })
+  return sendEmail({
+    to,
+    ...content,
+    replyTo: process.env.EMAIL_REPLY_TO || 'ngventuresonline@gmail.com',
+  })
 }
 
 function escapeHtml(s: string): string {
@@ -366,6 +360,7 @@ This is an automated email. Please do not reply to this message.
     subject,
     html,
     text,
+    replyTo: process.env.EMAIL_REPLY_TO || 'ngventuresonline@gmail.com',
   })
 }
 
