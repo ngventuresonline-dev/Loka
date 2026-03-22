@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
       location = '',
       propertyId = '',
       note = '',
+      subjectOverride,
+      bodyIntroOverride,
     } = body as {
       brandIds?: string[]
       minScore?: number
@@ -33,6 +35,8 @@ export async function POST(request: NextRequest) {
       location?: string
       propertyId?: string
       note?: string
+      subjectOverride?: string
+      bodyIntroOverride?: string
     }
 
     if (!Array.isArray(brandIds) || brandIds.length === 0) {
@@ -91,6 +95,8 @@ export async function POST(request: NextRequest) {
         brandName: group.brand.name,
         matches: matchesForEmail,
         adminNote: typeof note === 'string' ? note.trim() : '',
+        subjectOverride: subjectOverride || undefined,
+        bodyIntroOverride: bodyIntroOverride || undefined,
       })
 
       results.push({

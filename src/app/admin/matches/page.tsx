@@ -55,8 +55,17 @@ export default function AdminMatchesPage() {
   const [selectedBrandIds, setSelectedBrandIds] = useState<Set<string>>(new Set())
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [emailNote, setEmailNote] = useState('')
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailBodyIntro, setEmailBodyIntro] = useState('')
+  const [previewHtml, setPreviewHtml] = useState('')
+  const [previewBrandName, setPreviewBrandName] = useState('')
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
   const [sendingEmails, setSendingEmails] = useState(false)
   const [emailFeedback, setEmailFeedback] = useState<string | null>(null)
+
+  const DEFAULT_SUBJECT = 'Properties matched for you on Lokazen — {{brandName}}'
+  const DEFAULT_BODY_INTRO = 'Hi {{brandName}} team,\n\nHere are commercial spaces on Lokazen that fit your profile (BFI / PFI scoring).'
   
   // Filters
   const [brandNameFilter, setBrandNameFilter] = useState('')
@@ -163,6 +172,87 @@ export default function AdminMatchesPage() {
     }
   }, [allSelectableChecked, selectableIds])
 
+  const fetchEmailPreview = useCallback(async () => {
+    const ids = [...selectedBrandIds]
+    if (ids.length === 0) return
+    setPreviewLoading(true)
+    try {
+      const res = await fetch('/api/admin/matches/email/preview', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandIds: ids,
+          minScore: minScoreFilter,
+          brandName: brandNameFilter || undefined,
+          propertyType: propertyTypeFilter || undefined,
+          location: locationFilter || undefined,
+          propertyId: selectedPropertyId || undefined,
+          note: emailNote.trim(),
+          subjectOverride: emailSubject.trim() || undefined,
+          bodyIntroOverride: emailBodyIntro.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && !data.error) {
+        setPreviewHtml(data.html || '')
+        setPreviewBrandName(data.brandName || '')
+      }
+    } catch {
+      // ignore
+    } finally {
+      setPreviewLoading(false)
+    }
+  }, [
+    selectedBrandIds,
+    minScoreFilter,
+    brandNameFilter,
+    propertyTypeFilter,
+    locationFilter,
+    selectedPropertyId,
+    emailNote,
+    emailSubject,
+    emailBodyIntro,
+  ])
+
+  useEffect(() => {
+    if (showEmailModal && selectedBrandIds.size > 0) {
+      setEmailSubject(DEFAULT_SUBJECT)
+      setEmailBodyIntro(DEFAULT_BODY_INTRO)
+      setEmailFeedback(null)
+      fetchEmailPreview()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when modal opens
+  }, [showEmailModal, selectedBrandIds.size])
+
+  const handleEditWithAI = async () => {
+    setAiLoading(true)
+    setEmailFeedback(null)
+    try {
+      const res = await fetch('/api/admin/matches/email/edit-with-ai', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: emailSubject || DEFAULT_SUBJECT,
+          body: emailBodyIntro || DEFAULT_BODY_INTRO,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setEmailSubject(data.subject ?? emailSubject)
+        setEmailBodyIntro(data.body ?? emailBodyIntro)
+        setEmailFeedback('AI suggestions applied. Review and refresh preview.')
+      } else {
+        setEmailFeedback(data.error || 'AI edit failed')
+      }
+    } catch (e: any) {
+      setEmailFeedback(e?.message || 'AI edit failed')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   const sendMatchEmails = async () => {
     if (!user?.id || !user?.email) {
       setEmailFeedback('Sign in as admin to send emails.')
@@ -189,6 +279,8 @@ export default function AdminMatchesPage() {
           location: locationFilter || undefined,
           propertyId: selectedPropertyId || undefined,
           note: emailNote.trim(),
+          subjectOverride: emailSubject.trim() !== DEFAULT_SUBJECT ? emailSubject.trim() : undefined,
+          bodyIntroOverride: emailBodyIntro.trim() !== DEFAULT_BODY_INTRO ? emailBodyIntro.trim() : undefined,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -203,6 +295,9 @@ export default function AdminMatchesPage() {
       )
       setShowEmailModal(false)
       setEmailNote('')
+      setEmailSubject('')
+      setEmailBodyIntro('')
+      setPreviewHtml('')
       setSelectedBrandIds(new Set())
     } catch (e: any) {
       setEmailFeedback(e?.message || 'Network error')
@@ -656,8 +751,8 @@ export default function AdminMatchesPage() {
 
         {/* Email matched properties modal */}
         {showEmailModal && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-            <div className="bg-gray-800 rounded-lg max-w-lg w-full border border-gray-700 shadow-xl">
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4 overflow-y-auto">
+            <div className="bg-gray-800 rounded-lg max-w-4xl w-full border border-gray-700 shadow-xl my-8">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">Email matched properties</h2>
                 <button
@@ -670,23 +765,94 @@ export default function AdminMatchesPage() {
                   </svg>
                 </button>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto">
                 <p className="text-gray-400 text-sm">
-                  Sending to <strong className="text-white">{selectedBrandIds.size}</strong> brand(s) using the account email
-                  on file. Each message lists their current matches using the same filters as this page (min score{' '}
-                  {minScoreFilter}%).
+                  Sending to <strong className="text-white">{selectedBrandIds.size}</strong> brand(s). Use <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;brandName&#125;&#125;</code> in subject/body as placeholder.
                 </p>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Optional note to brands</label>
-                  <textarea
-                    value={emailNote}
-                    onChange={(e) => setEmailNote(e.target.value)}
-                    rows={4}
-                    placeholder="e.g. We shortlisted these for your Q2 expansion — reply if you want a site visit."
-                    className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5200] text-sm"
-                  />
+                {emailFeedback && (
+                  <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">{emailFeedback}</div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-white">Edit</h3>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Subject</label>
+                      <input
+                        type="text"
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        placeholder={DEFAULT_SUBJECT}
+                        className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5200] text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Body intro</label>
+                      <textarea
+                        value={emailBodyIntro}
+                        onChange={(e) => setEmailBodyIntro(e.target.value)}
+                        rows={4}
+                        placeholder={DEFAULT_BODY_INTRO}
+                        className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5200] text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Use double line breaks for paragraphs.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Note to brands</label>
+                      <textarea
+                        value={emailNote}
+                        onChange={(e) => setEmailNote(e.target.value)}
+                        rows={3}
+                        placeholder="e.g. We shortlisted these for your Q2 expansion — reply if you want a site visit."
+                        className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5200] text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={aiLoading}
+                        onClick={handleEditWithAI}
+                        className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {aiLoading ? (
+                          <>
+                            <span className="animate-spin">⏳</span> AI editing…
+                          </>
+                        ) : (
+                          <>✨ Edit with Claude</>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={previewLoading}
+                        onClick={fetchEmailPreview}
+                        className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm hover:bg-gray-600 disabled:opacity-50"
+                      >
+                        {previewLoading ? 'Loading…' : 'Refresh preview'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-2">Preview {previewBrandName && `(${previewBrandName})`}</h3>
+                    <div className="border border-gray-600 rounded-lg bg-white min-h-[320px] overflow-auto">
+                      {previewLoading && !previewHtml ? (
+                        <div className="p-8 text-center text-gray-500">Loading preview…</div>
+                      ) : previewHtml ? (
+                        <iframe
+                          srcDoc={previewHtml}
+                          title="Email preview"
+                          className="w-full min-h-[320px] border-0"
+                          sandbox="allow-same-origin"
+                        />
+                      ) : (
+                        <div className="p-8 text-center text-gray-500">No preview yet</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-2">
+
+                <div className="flex justify-end gap-3 pt-2 border-t border-gray-700">
                   <button
                     type="button"
                     disabled={sendingEmails}

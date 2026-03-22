@@ -79,16 +79,24 @@ function buildAppBaseUrl(): string {
   return 'https://lokazen.in'
 }
 
+export interface BrandMatchDigestContent {
+  subject: string
+  html: string
+  text: string
+}
+
 /**
- * Send CRM digest: matched properties for one brand (admin → brand).
+ * Build email content for brand match digest (for preview and send).
+ * Supports custom subject and body intro overrides.
  */
-export async function sendBrandMatchDigestEmail(params: {
-  to: string
+export function buildBrandMatchDigestEmailContent(params: {
   brandName: string
   matches: AdminMatchRow[]
   adminNote?: string
-}): Promise<{ success: boolean; error?: string }> {
-  const { to, brandName, matches, adminNote } = params
+  subjectOverride?: string
+  bodyIntroOverride?: string
+}): BrandMatchDigestContent {
+  const { brandName, matches, adminNote = '', subjectOverride, bodyIntroOverride } = params
   const base = buildAppBaseUrl().replace(/\/$/, '')
 
   const rowsHtml = matches
@@ -122,7 +130,20 @@ export async function sendBrandMatchDigestEmail(params: {
          </div>`
       : ''
 
-  const subject = `Properties matched for you on Lokazen — ${brandName}`
+  const defaultSubject = `Properties matched for you on Lokazen — ${brandName}`
+  const subject = subjectOverride
+    ? subjectOverride.replace(/\{\{brandName\}\}/g, brandName)
+    : defaultSubject
+
+  const defaultIntro = `<p style="font-size:15px;margin-top:0;">Hi ${escapeHtml(brandName)} team,</p>
+    <p style="font-size:15px;">Here are commercial spaces on Lokazen that fit your profile (BFI / PFI scoring).</p>`
+  const introHtml = bodyIntroOverride
+    ? `<div style="font-size:15px;margin-bottom:16px;">${bodyIntroOverride
+        .replace(/\{\{brandName\}\}/g, brandName)
+        .split('\n\n')
+        .map((p) => `<p style="margin:0 0 8px;">${escapeHtml(p.trim() || ' ')}</p>`)
+        .join('')}</div>`
+    : defaultIntro
 
   const html = `
 <!DOCTYPE html>
@@ -134,8 +155,7 @@ export async function sendBrandMatchDigestEmail(params: {
     <p style="color:#fff;margin:8px 0 0;font-size:14px;opacity:0.95;">${escapeHtml(brandName)}</p>
   </div>
   <div style="background:#fff;padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px;">
-    <p style="font-size:15px;margin-top:0;">Hi ${escapeHtml(brandName)} team,</p>
-    <p style="font-size:15px;">Here are commercial spaces on Lokazen that fit your profile (BFI / PFI scoring).</p>
+    ${introHtml}
     ${noteBlock}
     <table style="width:100%;border-collapse:collapse;margin-top:8px;">${rowsHtml}</table>
     ${
@@ -156,10 +176,13 @@ export async function sendBrandMatchDigestEmail(params: {
     return `- ${m.property.title || 'Property'} (${m.property.city}) BFI ${score}% — ${url}`
   })
 
+  const defaultTextIntro = `Hi ${brandName} team,\n\nHere are properties matched to your profile on Lokazen:`
+  const textIntro = bodyIntroOverride
+    ? bodyIntroOverride.replace(/\{\{brandName\}\}/g, brandName)
+    : defaultTextIntro
+
   const text = [
-    `Hi ${brandName} team,`,
-    '',
-    'Here are properties matched to your profile on Lokazen:',
+    textIntro,
     '',
     ...textLines,
     adminNote ? `\n\nNote from Lokazen:\n${adminNote}` : '',
@@ -167,7 +190,29 @@ export async function sendBrandMatchDigestEmail(params: {
     '— Lokazen',
   ].join('\n')
 
-  return sendEmail({ to, subject, html, text })
+  return { subject, html, text }
+}
+
+/**
+ * Send CRM digest: matched properties for one brand (admin → brand).
+ */
+export async function sendBrandMatchDigestEmail(params: {
+  to: string
+  brandName: string
+  matches: AdminMatchRow[]
+  adminNote?: string
+  subjectOverride?: string
+  bodyIntroOverride?: string
+}): Promise<{ success: boolean; error?: string }> {
+  const { to, brandName, matches, adminNote, subjectOverride, bodyIntroOverride } = params
+  const content = buildBrandMatchDigestEmailContent({
+    brandName,
+    matches,
+    adminNote,
+    subjectOverride,
+    bodyIntroOverride,
+  })
+  return sendEmail({ to, ...content })
 }
 
 function escapeHtml(s: string): string {
