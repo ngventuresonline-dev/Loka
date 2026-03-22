@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 503 })
     }
 
-    const allMatches = await computeAdminMatches(prisma, {
+    const { rows: allMatches } = await computeAdminMatches(prisma, {
       minScore,
       brandIds: uniqueIds,
       propertyId: propertyId || null,

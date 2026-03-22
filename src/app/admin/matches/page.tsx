@@ -67,14 +67,22 @@ export default function AdminMatchesPage() {
   const [selectedPropertyId, setSelectedPropertyId] = useState('')
   const [selectedMatchGroup, setSelectedMatchGroup] = useState<MatchGroup | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalBrands, setTotalBrands] = useState(0)
+  const limit = 100
+
+  useEffect(() => {
+    setPage(1)
+  }, [view, brandNameFilter, propertyTypeFilter, locationFilter, minScoreFilter, selectedBrandId, selectedPropertyId])
 
   useEffect(() => {
     fetchMatches()
-  }, [view, brandNameFilter, propertyTypeFilter, locationFilter, minScoreFilter, selectedBrandId, selectedPropertyId])
+  }, [view, brandNameFilter, propertyTypeFilter, locationFilter, minScoreFilter, selectedBrandId, selectedPropertyId, page])
 
   useEffect(() => {
     setSelectedBrandIds(new Set())
-  }, [view, brandNameFilter, propertyTypeFilter, locationFilter, minScoreFilter, selectedBrandId, selectedPropertyId])
+  }, [view, brandNameFilter, propertyTypeFilter, locationFilter, minScoreFilter, selectedBrandId, selectedPropertyId, page])
 
   const fetchMatches = async () => {
     setLoading(true)
@@ -89,6 +97,8 @@ export default function AdminMatchesPage() {
       if (locationFilter) params.append('location', locationFilter)
       if (selectedBrandId) params.append('brandId', selectedBrandId)
       if (selectedPropertyId) params.append('propertyId', selectedPropertyId)
+      params.append('page', page.toString())
+      params.append('limit', limit.toString())
       if (user?.id) params.append('userId', user.id)
       if (user?.email) params.append('userEmail', encodeURIComponent(user.email))
 
@@ -98,6 +108,8 @@ export default function AdminMatchesPage() {
       }
       const data = await response.json()
       setMatches(data.matches || [])
+      setTotalPages(data.totalPages ?? 1)
+      setTotalBrands(data.totalBrands ?? data.matches?.length ?? 0)
     } catch (err: any) {
       setError(err.message || 'Failed to load matches')
     } finally {
@@ -355,6 +367,29 @@ export default function AdminMatchesPage() {
           </div>
         ) : (
           <div className="bg-gray-800 rounded-lg overflow-hidden">
+            {totalPages > 1 && (
+              <div className="px-6 py-3 bg-gray-900/50 border-b border-gray-700 flex items-center justify-between">
+                <span className="text-sm text-gray-400">
+                  Page {page} of {totalPages} · {totalBrands} brands total
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="px-3 py-1.5 bg-gray-800 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="px-3 py-1.5 bg-gray-800 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-900">

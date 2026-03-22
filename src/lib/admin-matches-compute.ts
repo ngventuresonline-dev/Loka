@@ -14,6 +14,10 @@ export interface ComputeAdminMatchesOptions {
   propertyType?: string | null
   location?: string | null
   brandName?: string | null
+  /** Pagination for brand view */
+  brandPage?: number
+  brandLimit?: number
+  propertyLimit?: number
 }
 
 export type AdminMatchRow = {
@@ -203,18 +207,31 @@ export async function computeAdminMatches(
     propertyType = null,
     location = null,
     brandName = null,
+    brandPage = 1,
+    brandLimit = 100,
+    propertyLimit = 300,
   } = options
 
   const propertyTypeFilter = mapPropertyTypeFilter(propertyType)
 
   const brandWhere =
     brandIds && brandIds.length > 0
-      ? { id: { in: brandIds } as { in: string[] } }
-      : undefined
+      ? ({ id: { in: brandIds } } as { id: { in: string[] } })
+      : {
+          ...(brandName
+            ? { company_name: { contains: brandName, mode: 'insensitive' as const } }
+            : {}),
+        }
+
+  const totalBrands =
+    brandIds?.length
+      ? brandIds.length
+      : await prisma.brand_profiles.count({ where: brandWhere })
 
   const brands = await prisma.brand_profiles.findMany({
     where: brandWhere,
-    ...(brandIds?.length ? {} : { take: 50 }),
+    orderBy: { company_name: 'asc' },
+    ...(brandIds?.length ? {} : { skip: (Math.max(1, brandPage) - 1) * brandLimit, take: brandLimit }),
     select: {
       id: true,
       company_name: true,
@@ -243,7 +260,7 @@ export async function computeAdminMatches(
       ...(propertyTypeFilter ? { propertyType: propertyTypeFilter as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other' } : {}),
       ...(location ? { city: { contains: location, mode: 'insensitive' } } : {}),
     },
-    take: 50,
+    take: propertyLimit,
     select: {
       id: true,
       title: true,
@@ -272,7 +289,6 @@ export async function computeAdminMatches(
 
   for (const brand of brands) {
     if (brandId && brand.id !== brandId) continue
-    if (brandName && !brand.company_name?.toLowerCase().includes(brandName.toLowerCase())) continue
 
     const sizeMin = brand.min_size ?? 0
     const sizeMax = brand.max_size ?? Number.MAX_SAFE_INTEGER
@@ -377,7 +393,7 @@ export async function computeAdminMatches(
   }
 
   allMatches.sort((a, b) => b.pfiScore - a.pfiScore)
-  return allMatches
+  return { rows: allMatches, totalBrands }
 }
 
 export function groupMatchesByBrand(matches: AdminMatchRow[]) {

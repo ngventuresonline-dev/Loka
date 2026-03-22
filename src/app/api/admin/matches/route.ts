@@ -17,20 +17,26 @@ export async function GET(request: NextRequest) {
     const propertyType = searchParams.get('propertyType')
     const location = searchParams.get('location')
     const brandName = searchParams.get('brandName')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(500, Math.max(1, parseInt(searchParams.get('limit') || '100')))
 
     const prisma = await getPrisma()
     if (!prisma) {
       return NextResponse.json({ error: 'Database not available' }, { status: 503 })
     }
 
-    const allMatches = await computeAdminMatches(prisma, {
+    const { rows: allMatches, totalBrands } = await computeAdminMatches(prisma, {
       minScore,
       brandId,
       propertyId,
       propertyType,
       location,
       brandName,
+      brandPage: page,
+      brandLimit: limit,
     })
+
+    const totalPages = Math.ceil(totalBrands / limit)
 
     if (view === 'property') {
       const groupedByProperty = groupMatchesByProperty(allMatches)
@@ -38,6 +44,10 @@ export async function GET(request: NextRequest) {
         view: 'property',
         matches: Object.values(groupedByProperty),
         total: allMatches.length,
+        totalBrands,
+        page,
+        limit,
+        totalPages,
       }
       const responseSize = estimateJsonSize(responseData)
       logQuerySize('/api/admin/matches?view=property', responseSize, allMatches.length)
@@ -49,6 +59,10 @@ export async function GET(request: NextRequest) {
       view: 'brand',
       matches: Object.values(groupedByBrand),
       total: allMatches.length,
+      totalBrands,
+      page,
+      limit,
+      totalPages,
     }
     const responseSize = estimateJsonSize(responseData)
     logQuerySize('/api/admin/matches?view=brand', responseSize, allMatches.length)
