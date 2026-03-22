@@ -63,6 +63,7 @@ export default function AdminMatchesPage() {
   const [aiLoading, setAiLoading] = useState(false)
   const [sendingEmails, setSendingEmails] = useState(false)
   const [emailFeedback, setEmailFeedback] = useState<string | null>(null)
+  const [emailContextPropertyId, setEmailContextPropertyId] = useState<string | null>(null)
 
   const DEFAULT_SUBJECT = 'Matched commercial spaces for {{brandName}} on Lokazen'
   const DEFAULT_BODY_INTRO = 'Hi {{contactName}},\n\nWe came across your enquiry for a space in Bangalore and have put together a curated list of available commercial properties that match {{brandName}}\'s requirements.'
@@ -240,7 +241,7 @@ export default function AdminMatchesPage() {
           brandName: brandNameFilter || undefined,
           propertyType: propertyTypeFilter || undefined,
           location: locationFilter || undefined,
-          propertyId: selectedPropertyId || undefined,
+          propertyId: emailContextPropertyId || selectedPropertyId || undefined,
           note: emailNote.trim(),
           subjectOverride: emailSubject.trim() || undefined,
           bodyIntroOverride: emailBodyIntro.trim() || undefined,
@@ -263,6 +264,7 @@ export default function AdminMatchesPage() {
     propertyTypeFilter,
     locationFilter,
     selectedPropertyId,
+    emailContextPropertyId,
     emailNote,
     emailSubject,
     emailBodyIntro,
@@ -330,7 +332,7 @@ export default function AdminMatchesPage() {
           brandName: brandNameFilter || undefined,
           propertyType: propertyTypeFilter || undefined,
           location: locationFilter || undefined,
-          propertyId: selectedPropertyId || undefined,
+          propertyId: emailContextPropertyId || selectedPropertyId || undefined,
           note: emailNote.trim(),
           subjectOverride: emailSubject.trim() !== DEFAULT_SUBJECT ? emailSubject.trim() : undefined,
           bodyIntroOverride: emailBodyIntro.trim() !== DEFAULT_BODY_INTRO ? emailBodyIntro.trim() : undefined,
@@ -352,6 +354,7 @@ export default function AdminMatchesPage() {
       setEmailBodyIntro('')
       setPreviewHtml('')
       setSelectedBrandIds(new Set())
+      setEmailContextPropertyId(null)
     } catch (e: any) {
       setEmailFeedback(e?.message || 'Network error')
     } finally {
@@ -848,7 +851,12 @@ export default function AdminMatchesPage() {
                 <h2 className="text-xl font-bold text-white">Email matched properties</h2>
                 <button
                   type="button"
-                  onClick={() => !sendingEmails && setShowEmailModal(false)}
+                  onClick={() => {
+                    if (!sendingEmails) {
+                      setShowEmailModal(false)
+                      setEmailContextPropertyId(null)
+                    }
+                  }}
                   className="text-gray-400 hover:text-white"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -858,7 +866,7 @@ export default function AdminMatchesPage() {
               </div>
               <div className="p-6 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto">
                 <p className="text-gray-400 text-sm">
-                  Sending to <strong className="text-white">{selectedBrandIds.size}</strong> brand(s). Placeholders: <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;brandName&#125;&#125;</code> <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;contactName&#125;&#125;</code>
+                  Sending to <strong className="text-white">{selectedBrandIds.size}</strong> brand(s){emailContextPropertyId ? ' — this property only' : ''}. Placeholders: <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;brandName&#125;&#125;</code> <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;contactName&#125;&#125;</code>
                 </p>
                 {emailFeedback && (
                   <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">{emailFeedback}</div>
@@ -947,7 +955,10 @@ export default function AdminMatchesPage() {
                   <button
                     type="button"
                     disabled={sendingEmails}
-                    onClick={() => setShowEmailModal(false)}
+                    onClick={() => {
+                      setShowEmailModal(false)
+                      setEmailContextPropertyId(null)
+                    }}
                     className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 text-sm"
                   >
                     Cancel
@@ -1151,23 +1162,59 @@ export default function AdminMatchesPage() {
                               </div>
                               <div className="flex flex-col gap-2">
                                 {view === 'brand' ? (
-                                  <button
-                                    onClick={() => {
-                                      window.location.href = `mailto:${match.property.owner?.email}?subject=Property Match: ${match.property.title}`
-                                    }}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                  >
-                                    Contact Owner
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        window.location.href = `mailto:${match.property.owner?.email}?subject=Property Match: ${match.property.title}`
+                                      }}
+                                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                    >
+                                      Contact Owner
+                                    </button>
+                                    {selectedMatchGroup.brand?.id &&
+                                      selectedMatchGroup.brand?.email &&
+                                      match.property?.id && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedBrandIds(new Set([selectedMatchGroup.brand!.id]))
+                                            setEmailContextPropertyId(match.property.id)
+                                            setEmailFeedback(null)
+                                            setShowEmailModal(true)
+                                          }}
+                                          className="px-4 py-2 bg-[#FF5200]/90 hover:bg-[#FF5200] text-white text-sm rounded-lg transition-colors"
+                                        >
+                                          Email property to brand
+                                        </button>
+                                      )}
+                                  </>
                                 ) : (
-                                  <button
-                                    onClick={() => {
-                                      window.location.href = `mailto:${match.brand.email}?subject=Property Match: ${selectedMatchGroup.property?.title}`
-                                    }}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                  >
-                                    Contact Brand
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        window.location.href = `mailto:${match.brand.email}?subject=Property Match: ${selectedMatchGroup.property?.title}`
+                                      }}
+                                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                    >
+                                      Contact Brand
+                                    </button>
+                                    {match.brand?.id &&
+                                      match.brand?.email &&
+                                      selectedMatchGroup.property?.id && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedBrandIds(new Set([match.brand.id]))
+                                            setEmailContextPropertyId(selectedMatchGroup.property!.id)
+                                            setEmailFeedback(null)
+                                            setShowEmailModal(true)
+                                          }}
+                                          className="px-4 py-2 bg-[#FF5200]/90 hover:bg-[#FF5200] text-white text-sm rounded-lg transition-colors"
+                                        >
+                                          Email property to brand
+                                        </button>
+                                      )}
+                                  </>
                                 )}
                               </div>
                             </div>
