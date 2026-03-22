@@ -25,6 +25,7 @@ export type AdminMatchRow = {
   brand: {
     id: string
     name: string
+    contactName?: string
     businessType: string
     email: string
     phone: string
@@ -357,6 +358,7 @@ export async function computeAdminMatches(
           brand: {
             id: brand.id,
             name: brand.company_name || 'Unknown Brand',
+            contactName: (brand.user as { name?: string } | undefined)?.name || undefined,
             businessType: brand.industry || 'Brand',
             email: brand.user?.email || '',
             phone: brand.user?.phone || '',

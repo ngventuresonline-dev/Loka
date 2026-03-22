@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    const prompt = `You are helping refine a B2B email sent by Lokazen (a commercial real estate matching platform) to brands about their matched properties. Improve the subject line and email body to be more professional, concise, and engaging. Keep {{brandName}} as a literal placeholder - do not replace it.
+    const prompt = `You are helping refine a B2B email sent by GVS Ventures (commercial real estate) to brands about matched properties in Bangalore. Improve the subject line and body to be professional, concise, and engaging. Keep these as literal placeholders: {{brandName}} (company name), {{contactName}} (contact person). Do not replace them.
 
 Current subject: ${subject || '(empty)'}
 Current body: ${bodyText || '(empty)'}

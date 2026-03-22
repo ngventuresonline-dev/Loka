@@ -64,8 +64,8 @@ export default function AdminMatchesPage() {
   const [sendingEmails, setSendingEmails] = useState(false)
   const [emailFeedback, setEmailFeedback] = useState<string | null>(null)
 
-  const DEFAULT_SUBJECT = 'Properties matched for you on Lokazen — {{brandName}}'
-  const DEFAULT_BODY_INTRO = 'Hi {{brandName}} team,\n\nHere are commercial spaces on Lokazen that fit your profile (BFI / PFI scoring).'
+  const DEFAULT_SUBJECT = 'Matched commercial spaces for {{brandName}} on Lokazen'
+  const DEFAULT_BODY_INTRO = 'Hi {{contactName}},\n\nWe came across your enquiry for a space in Bangalore and have put together a curated list of available commercial properties that match {{brandName}}\'s requirements.'
   
   // Filters
   const [brandNameFilter, setBrandNameFilter] = useState('')
@@ -767,7 +767,7 @@ export default function AdminMatchesPage() {
               </div>
               <div className="p-6 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto">
                 <p className="text-gray-400 text-sm">
-                  Sending to <strong className="text-white">{selectedBrandIds.size}</strong> brand(s). Use <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;brandName&#125;&#125;</code> in subject/body as placeholder.
+                  Sending to <strong className="text-white">{selectedBrandIds.size}</strong> brand(s). Placeholders: <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;brandName&#125;&#125;</code> <code className="text-xs bg-gray-900 px-1 rounded">&#123;&#123;contactName&#125;&#125;</code>
                 </p>
                 {emailFeedback && (
                   <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">{emailFeedback}</div>
