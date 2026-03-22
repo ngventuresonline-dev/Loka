@@ -198,7 +198,7 @@ function mapPropertyTypeFilter(propertyType: string | null | undefined): string 
 export async function computeAdminMatches(
   prisma: any,
   options: ComputeAdminMatchesOptions
-): Promise<AdminMatchRow[]> {
+): Promise<{ rows: AdminMatchRow[]; totalBrands: number }> {
   const {
     minScore,
     brandId = null,
