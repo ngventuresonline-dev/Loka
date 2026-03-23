@@ -35,6 +35,12 @@ export default function PropertiesPage() {
   const [selectedProperties, setSelectedProperties] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null)
+
+  // Server-side pagination (API supports page/limit + totalPages)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const limit = 50 // API caps limit to 50
   
   // Column filters
   const [filters, setFilters] = useState({
@@ -49,8 +55,13 @@ export default function PropertiesPage() {
   })
 
   useEffect(() => {
+    // Reset pagination when status filter changes
+    setPage(1)
+  }, [filters.status])
+
+  useEffect(() => {
     if (user?.id && user?.email) fetchProperties()
-  }, [user?.id, user?.email, filters.status])
+  }, [user?.id, user?.email, filters.status, page])
 
   useEffect(() => {
     applyFilters(properties)
@@ -64,7 +75,9 @@ export default function PropertiesPage() {
     try {
       setLoading(true)
       const statusQuery = statusParam === 'all' ? '' : `&status=${statusParam}`
-      const url = `/api/admin/properties?userEmail=${encodeURIComponent(userEmail)}&userId=${userId}&limit=500&page=1${statusQuery}`
+      const url = `/api/admin/properties?userEmail=${encodeURIComponent(
+        userEmail
+      )}&userId=${userId}&limit=${limit}&page=${page}${statusQuery}`
       const response = await fetch(url)
       
       if (response.ok) {
@@ -76,6 +89,8 @@ export default function PropertiesPage() {
 
         setProperties(allProps)
         applyFilters(allProps)
+        setTotalPages(data.totalPages ?? 1)
+        setTotalCount(data.total ?? allProps.length ?? 0)
       } else {
         // Try to get error details from response
         let errorMessage = `Failed to fetch properties: ${response.status}`
@@ -97,6 +112,8 @@ export default function PropertiesPage() {
     } catch (error) {
       console.error('Error fetching properties:', error)
       setProperties([])
+      setTotalPages(1)
+      setTotalCount(0)
     } finally {
       setLoading(false)
     }
@@ -435,6 +452,33 @@ export default function PropertiesPage() {
             </button>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Page <span className="font-semibold text-gray-900">{page}</span> of{' '}
+              <span className="font-semibold text-gray-900">{totalPages}</span> ·{' '}
+              <span>{totalCount} total</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Properties Table */}
         {loading ? (
