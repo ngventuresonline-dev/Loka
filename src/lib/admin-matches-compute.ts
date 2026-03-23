@@ -259,7 +259,16 @@ export async function computeAdminMatches(
       availability: true,
       ...(propertyId ? { id: propertyId } : {}),
       ...(propertyTypeFilter ? { propertyType: propertyTypeFilter as 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other' } : {}),
-      ...(location ? { city: { contains: location, mode: 'insensitive' } } : {}),
+      // Location search should match both "city" and "address" (admins type areas like Jayanagar, not always city)
+      ...(location
+        ? {
+            OR: [
+              { city: { contains: location, mode: 'insensitive' as const } },
+              { address: { contains: location, mode: 'insensitive' as const } },
+              { title: { contains: location, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
     },
     take: propertyLimit,
     select: {
