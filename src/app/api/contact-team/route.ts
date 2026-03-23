@@ -8,6 +8,7 @@ import {
   NG_EMAIL,
 } from '@/lib/lead-email'
 import { insertGeneralEnquiry } from '@/lib/general-enquiry-db'
+import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,6 +88,23 @@ export async function POST(request: NextRequest) {
         searchCriteria ? `Search criteria: ${typeof searchCriteria === 'string' ? searchCriteria : JSON.stringify(searchCriteria)}` : '',
       ].filter(Boolean).join('\n') || null,
     }).catch(err => console.error('[Contact Team] DB save error:', err))
+
+    // Sync to Google Sheets — fire and forget
+    appendToSheet('Enquiries', [
+      istTimestamp(),
+      name,
+      email || '—',
+      phone,
+      '—',
+      '—',
+      '—',
+      'Lokazen Platform',
+      [
+        bestTime ? `Best time: ${bestTime}` : '',
+        additionalRequirements || '',
+      ].filter(Boolean).join(' | ') || '—',
+      'lokazen-platform',
+    ]).catch(console.error)
 
     // ── Pabbly webhook (non-blocking) ────────────────────────────────────────
     sendContactTeamWebhook({

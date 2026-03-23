@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { insertGeneralEnquiry } from '@/lib/general-enquiry-db'
+import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 const NG_EMAIL = 'ngventuresonline@gmail.com'
 
@@ -324,6 +325,20 @@ export async function POST(request: NextRequest) {
       enquiryType,
       notes: `Natura Walk Mall enquiry — ${enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Onboarding'}`,
     }).catch(err => console.error('[natura-walk-enquiry] DB save error:', err))
+
+    // Sync to Google Sheets — fire and forget
+    appendToSheet('Enquiries', [
+      istTimestamp(),
+      contactName,
+      email,
+      phone,
+      brandName,
+      category || '—',
+      unitSize || '—',
+      'Natura Walk Mall',
+      `${enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Onboarding'}`,
+      'natura-walk',
+    ]).catch(console.error)
 
     // Return success as long as at least the team notification went out
     if (!ngOk && !userOk) {

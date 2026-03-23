@@ -4,6 +4,7 @@ import { generatePropertyId } from '@/lib/property-id-generator'
 import bcrypt from 'bcryptjs'
 import { generateSecurePassword, sendOwnerWelcomeEmail } from '@/lib/email-service'
 import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
+import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 /* TODO: Add auth when owner registration enabled
 import { getAuthenticatedUser } from '@/lib/api-auth'
@@ -581,6 +582,21 @@ export async function POST(request: NextRequest) {
     } else if (anonId && !anonId.startsWith('anon_')) {
       console.log('[LOKAZEN_DEBUG] SESSION_COMPLETE', 'anonId is not anonymous, skipping linking:', anonId)
     }
+
+    // Sync to Google Sheets — fire and forget
+    appendToSheet('Properties Uploaded', [
+      istTimestamp(),
+      owner?.name || '—',
+      owner?.email || '—',
+      owner?.phone || '—',
+      title,
+      property.location || '—',
+      String(size),
+      String(rent),
+      normalizedType,
+      property.location || '—',
+      propertyRow.id,
+    ]).catch(console.error)
 
     // Send webhook to Pabbly
     const { sendPropertySubmissionWebhook } = await import('@/lib/pabbly-webhook')

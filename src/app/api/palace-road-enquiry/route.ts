@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { insertGeneralEnquiry } from '@/lib/general-enquiry-db'
+import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM || 'Lokazen <noreply@support.lokazen.in>'
@@ -306,6 +307,20 @@ export async function POST(request: NextRequest) {
       enquiryType,
       notes: `Palace Road Food Court enquiry — ${enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Onboarding'}`,
     }).catch(err => console.error('[palace-road-enquiry] DB save error:', err))
+
+    // Sync to Google Sheets — fire and forget
+    appendToSheet('Enquiries', [
+      istTimestamp(),
+      contactName,
+      email,
+      phone,
+      brandName,
+      category || '—',
+      unitSize || '—',
+      'Palace Road Food Court',
+      `${enquiryType === 'visit' ? 'Site Visit Request' : 'Brand Onboarding'}`,
+      'palace-road',
+    ]).catch(console.error)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

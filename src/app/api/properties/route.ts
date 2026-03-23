@@ -6,6 +6,7 @@ import { generatePropertyId } from '@/lib/property-id-generator'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 import { sendNewPropertyNotification } from '@/lib/lead-email'
+import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 /**
  * POST /api/properties
@@ -111,6 +112,21 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Sync to Google Sheets — fire and forget
+    appendToSheet('Properties Uploaded', [
+      istTimestamp(),
+      property.owner?.name || '—',
+      property.owner?.email || '—',
+      property.owner?.phone || '—',
+      property.title,
+      property.city || '—',
+      String(property.size),
+      String(typeof (property.price as any)?.toNumber === 'function' ? (property.price as any).toNumber() : Number(property.price) || 0),
+      property.propertyType,
+      property.address || '—',
+      property.id,
+    ]).catch(console.error)
 
     // Fire-and-forget background enrichment for new property (does not block response)
     enrichPropertyIntelligence(property.id).catch((err) => {

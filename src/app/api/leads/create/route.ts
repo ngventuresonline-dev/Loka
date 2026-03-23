@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLeadCreationWebhook } from '@/lib/pabbly-webhook'
+import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 /* TODO: Add auth when brand registration enabled
 import { getAuthenticatedUser } from '@/lib/api-auth'
@@ -101,6 +102,22 @@ export async function POST(req: Request) {
     } catch (err) {
       // Ignore errors in logging
     }
+
+    // Sync to Google Sheets — fire and forget
+    appendToSheet('Brands Onboarded', [
+      istTimestamp(),
+      name || email || phone || 'Brand Lead',
+      name || '—',
+      email || '—',
+      phone || '—',
+      businessTypeRaw || '—',
+      sizeMin != null ? String(sizeMin) : '—',
+      sizeMax != null ? String(sizeMax) : '—',
+      budgetMin != null ? String(budgetMin) : '—',
+      budgetMax != null ? String(budgetMax) : '—',
+      Array.isArray(locations) && locations.length > 0 ? locations.join(', ') : '—',
+      '—',
+    ]).catch(console.error)
 
     // Send webhook to Pabbly
     sendLeadCreationWebhook({

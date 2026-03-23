@@ -3,6 +3,7 @@ import { sendVisitScheduleWebhook } from '@/lib/pabbly-webhook'
 import { getPrisma } from '@/lib/get-prisma'
 import { createVisitCalendarEvent } from '@/lib/google-calendar'
 import { sendVisitEmails } from '@/lib/visit-email'
+import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 /**
  * Schedule a visit (no payment) and notify N&G.
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     const prisma = await getPrisma()
     let propertyTitle: string | undefined
+    let propertyLocality: string | undefined
     if (prisma) {
       try {
         await prisma.expertRequest.create({
@@ -48,13 +50,27 @@ export async function POST(request: NextRequest) {
         })
         const prop = await prisma.property.findUnique({
           where: { id: propertyId },
-          select: { title: true },
+          select: { title: true, city: true },
         })
         if (prop?.title) propertyTitle = prop.title
+        if (prop?.city) propertyLocality = prop.city
       } catch (dbErr) {
         console.warn('[Visit Schedule] DB create failed:', dbErr)
       }
     }
+
+    // Sync to Google Sheets — fire and forget
+    appendToSheet('Site Visits', [
+      istTimestamp(),
+      company || name,
+      email,
+      phone,
+      propertyTitle || propertyId,
+      propertyLocality || '—',
+      propertyId,
+      dateTime,
+      note || '—',
+    ]).catch(console.error)
 
     // Email N&G + brand confirmation
     sendVisitEmails({
