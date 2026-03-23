@@ -38,6 +38,11 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       html: options.html,
       text: options.text,
       ...(options.replyTo && { reply_to: options.replyTo }),
+      // Best-effort: help Gmail treat these as automated transactional emails.
+      headers: {
+        'Auto-Submitted': 'auto-generated',
+      },
+      tags: [{ name: 'email_type', value: 'transactional' }],
     })
     if (error) {
       console.error('[Email Service] Resend error:', error)
@@ -90,7 +95,8 @@ export function buildBrandMatchDigestEmailContent(params: {
   bodyIntroOverride?: string
 }): BrandMatchDigestContent {
   const { brandName, contactName, matches, adminNote = '', subjectOverride, bodyIntroOverride } = params
-  const base = buildAppBaseUrl().replace(/\/$/, '')
+  // These emails must always link to the production domain.
+  const base = 'https://lokazen.in'
   const brand = matches[0]?.brand
   const greetingName = contactName || brand?.contactName || brandName
   const spaceType = (brand?.preferredPropertyTypes?.length
@@ -154,7 +160,7 @@ export function buildBrandMatchDigestEmailContent(params: {
 
   const introHtml = `<div style="font-size:15px;line-height:1.7;margin-bottom:20px;">${narrativeHtml}${brandReqsBlock}</div>`
 
-  const forbrandsUrl = `${base.replace(/\/$/, '')}/forbrands`
+  const forbrandsUrl = `${base}/for-brands`
 
   const html = `
 <!DOCTYPE html>
