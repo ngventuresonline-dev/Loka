@@ -18,6 +18,7 @@ interface GVSProperty {
   price: number
   priceType: 'monthly' | 'sqft'
   securityDepositMonths?: number | null
+  securityDepositFixed?: number | null
   frontage?: number
   power?: string
   powerBackup: boolean
@@ -28,6 +29,11 @@ interface GVSProperty {
   mapLink?: string
   idealFor?: string
   vegOnly?: boolean
+  rentEscalation?: number
+  lockInYears?: number | string
+  maintenance?: number
+  revenueShare?: number
+  availability?: string
 }
 
 const gvsProperties: GVSProperty[] = [
@@ -209,6 +215,167 @@ const gvsProperties: GVSProperty[] = [
     idealFor: 'Café | QSR | Retail',
     mapLink: 'https://maps.app.goo.gl/M1cS9SaXu2FXsMB68?g_st=ic',
   },
+  // New batch - Nov 2025
+  {
+    title: 'Independent Bungalow G+1 | Indiranagar 2nd Stage, 60 Ft Road',
+    address: 'Indiranagar 2nd Stage, opposite Still Coffee, 60 Ft Road',
+    city: 'Bangalore',
+    size: 2300,
+    price: 375000,
+    priceType: 'monthly',
+    securityDepositMonths: 8,
+    power: '50 kVA',
+    powerBackup: true,
+    floor: 'Ground + 1',
+    idealFor: 'Café | Restaurant',
+    rentEscalation: 7.5,
+    lockInYears: '2-3',
+    mapLink: 'https://maps.app.goo.gl/kpPCoywdYZ48ydNg9?g_st=aw',
+    availability: 'May',
+  },
+  {
+    title: 'Prime Commercial Property | Off 100 Ft Road, Indiranagar',
+    address: 'Off 100 Ft Road, Indiranagar',
+    city: 'Bangalore',
+    size: 2500,
+    price: 400000,
+    priceType: 'monthly',
+    securityDepositMonths: 8,
+    floor: 'Ground + Mezzanine',
+    power: undefined,
+    powerBackup: false,
+    idealFor: 'Salon | Spa | Café | Lounge | Retail',
+  },
+  {
+    title: 'Commercial Space | Electronic City – Phase 1',
+    address: 'Electronic City Phase 1',
+    city: 'Bangalore',
+    size: 1000,
+    price: 75000,
+    priceType: 'monthly',
+    securityDepositMonths: 10,
+    floor: 'Ground Floor',
+    power: undefined,
+    powerBackup: false,
+    idealFor: 'Café | QSR | Retail | Office',
+    availability: 'Immediate',
+  },
+  {
+    title: 'Prime Commercial Property | HSR Layout – 19th Main',
+    address: 'HSR Layout, 19th Main',
+    city: 'Bangalore',
+    size: 2100,
+    price: 420000,
+    priceType: 'monthly',
+    securityDepositFixed: 3300000,
+    securityDepositMonths: null,
+    floor: 'Ground + Mezzanine',
+    power: '20-25 kVA',
+    powerBackup: true,
+    lockInYears: 3,
+    idealFor: 'Restaurant | Café | QSR | Retail',
+    availability: 'Immediate',
+  },
+  {
+    title: 'Prime Commercial Property | HSR Layout – 24th Main Road (300 Sqft)',
+    address: 'HSR Layout, 24th Main Road',
+    city: 'Bangalore',
+    size: 300,
+    price: 300,
+    priceType: 'sqft',
+    securityDepositMonths: 8,
+    floor: 'Ground Floor',
+    power: undefined,
+    powerBackup: true,
+    idealFor: 'Café | Dessert | Beverage | QSR | Retail',
+    availability: 'Immediate',
+  },
+  {
+    title: 'Prime Commercial Property | HSR Layout – 24th Main Road (730 Sqft)',
+    address: 'HSR Layout, 24th Main Road',
+    city: 'Bangalore',
+    size: 730,
+    price: 300,
+    priceType: 'sqft',
+    securityDepositMonths: 8,
+    floor: 'Ground Floor',
+    power: undefined,
+    powerBackup: true,
+    idealFor: 'Café | Dessert | Beverage | QSR | Retail',
+    availability: 'Immediate',
+  },
+  {
+    title: 'Ultra-Prime Commercial Space | Sarjapur Main Road (VEG ONLY)',
+    address: 'Sarjapur Main Road',
+    city: 'Bangalore',
+    size: 275,
+    price: 120000,
+    priceType: 'monthly',
+    securityDepositMonths: 8,
+    power: undefined,
+    powerBackup: false,
+    idealFor: 'Premium Kiosk | Dessert | Beverage | Boutique Retail',
+    vegOnly: true,
+    availability: 'BTS',
+  },
+  {
+    title: 'Prime Commercial Property | Kalyan Nagar',
+    address: 'Kalyan Nagar',
+    city: 'Bangalore',
+    size: 1200,
+    price: 400000,
+    priceType: 'monthly',
+    securityDepositMonths: null,
+    floor: 'Ground Floor',
+    power: undefined,
+    powerBackup: false,
+    idealFor: 'Restaurant | Café | QSR | Retail',
+  },
+  {
+    title: 'Commercial Space | Near Sarjapur Junction',
+    address: 'Near Sarjapur Junction',
+    city: 'Bangalore',
+    size: 550,
+    price: 250,
+    priceType: 'sqft',
+    securityDepositMonths: 6,
+    floor: 'Ground Floor',
+    power: '15 kVA',
+    powerBackup: false,
+    waterFacility: true,
+    idealFor: 'Café | QSR | Dessert | Retail',
+    availability: 'Immediate',
+  },
+  {
+    title: 'Commercial Space | Nature Walk – Sompura, Sarjapur Road (480 Sqft)',
+    address: 'Nature Walk, Sompura, Sarjapur Road',
+    city: 'Bangalore',
+    size: 480,
+    price: 100000,
+    priceType: 'monthly',
+    securityDepositMonths: 6,
+    power: '20-25 kVA',
+    powerBackup: true,
+    idealFor: 'Café | Dessert | Beverage | QSR',
+    maintenance: 10000,
+    revenueShare: 18,
+    availability: 'Immediate',
+  },
+  {
+    title: 'Commercial Space | Nature Walk – Sompura, Sarjapur Road (1000 Sqft)',
+    address: 'Nature Walk, Sompura, Sarjapur Road',
+    city: 'Bangalore',
+    size: 1000,
+    price: 150000,
+    priceType: 'monthly',
+    securityDepositMonths: 6,
+    power: '20-25 kVA',
+    powerBackup: true,
+    idealFor: 'Café | Dessert | Beverage | QSR',
+    maintenance: 19000,
+    revenueShare: 18,
+    availability: 'Immediate',
+  },
 ]
 
 async function generatePropertyId(index: number): Promise<string> {
@@ -267,9 +434,11 @@ async function main() {
           : prop.price
 
       const securityDeposit =
-        prop.securityDepositMonths != null
-          ? Math.round(prop.securityDepositMonths * monthlyRent)
-          : null
+        prop.securityDepositFixed != null
+          ? prop.securityDepositFixed
+          : prop.securityDepositMonths != null
+            ? Math.round(prop.securityDepositMonths * monthlyRent)
+            : null
 
       const amenitiesData: Record<string, unknown> = {
         features: ['Commercial', 'GVS Ventures'],
@@ -281,6 +450,11 @@ async function main() {
       if (prop.floor) amenitiesData.floor = prop.floor
       if (prop.idealFor) amenitiesData.ideal_for = prop.idealFor
       if (prop.vegOnly) amenitiesData.veg_only = prop.vegOnly
+      if (prop.rentEscalation) amenitiesData.rent_escalation_pct = prop.rentEscalation
+      if (prop.lockInYears !== undefined) amenitiesData.lock_in_years = prop.lockInYears
+      if (prop.maintenance) amenitiesData.maintenance = prop.maintenance
+      if (prop.revenueShare) amenitiesData.revenue_share = prop.revenueShare
+      if (prop.availability) amenitiesData.availability = prop.availability
 
       const descriptionParts: string[] = []
       if (prop.floor) descriptionParts.push(`${prop.floor}.`)
@@ -290,6 +464,11 @@ async function main() {
       if (prop.leaseTill) descriptionParts.push(`Lease till: ${prop.leaseTill}.`)
       if (prop.idealFor) descriptionParts.push(`Ideal for: ${prop.idealFor}.`)
       if (prop.vegOnly) descriptionParts.push('VEG ONLY.')
+      if (prop.rentEscalation) descriptionParts.push(`Escalation: ${prop.rentEscalation}% p.a.`)
+      if (prop.lockInYears) descriptionParts.push(`Lock-in: ${prop.lockInYears} years.`)
+      if (prop.maintenance) descriptionParts.push(`Maintenance: ₹${prop.maintenance.toLocaleString('en-IN')}/month.`)
+      if (prop.revenueShare) descriptionParts.push(`Revenue share: ${prop.revenueShare}%.`)
+      if (prop.availability) descriptionParts.push(`Availability: ${prop.availability}.`)
 
       const propertyId = await generatePropertyId(imported)
 
@@ -310,6 +489,7 @@ async function main() {
           price: prop.priceType === 'sqft' ? prop.price : prop.price,
           priceType: prop.priceType === 'sqft' ? 'sqft' : 'monthly',
           securityDeposit,
+          rentEscalation: prop.rentEscalation ?? null,
           storePowerCapacity: prop.power || null,
           powerBackup: prop.powerBackup,
           waterFacility: prop.waterFacility ?? false,
