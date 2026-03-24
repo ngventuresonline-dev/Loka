@@ -9,8 +9,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import { getNearestPincodeFromCoords } from '@/lib/location-intelligence/bangalore-areas'
 import { extractLatLngFromMapLink } from '@/lib/property-coordinates'
-import { uploadPropertyImages } from '@/lib/supabase/storage'
-import { resolvePropertyImagesForSave } from '@/lib/property-images-save'
 
 export default function EditPropertyPage() {
   const router = useRouter()
@@ -458,20 +456,6 @@ export default function EditPropertyPage() {
     setSaveSuccess(false)
 
     try {
-      let imagesForSave = images
-      try {
-        imagesForSave = await resolvePropertyImagesForSave(images, propertyId)
-        if (JSON.stringify(imagesForSave) !== JSON.stringify(images)) {
-          setImages(imagesForSave)
-        }
-      } catch (uploadErr: unknown) {
-        const msg =
-          uploadErr instanceof Error ? uploadErr.message : 'Image upload failed'
-        setSaveError(msg)
-        setSaving(false)
-        return
-      }
-
       // Combine address with area if area is selected
       const fullAddress = formData.address
       const addressWithArea = formData.area
@@ -513,7 +497,7 @@ export default function EditPropertyPage() {
             isFeatured: formData.isFeatured,
             displayOrder: parseInt(String(formData.displayOrder)) || null,
             ownerId: formData.ownerId,
-            images: imagesForSave,
+            images,
           }),
         }
       )
@@ -531,13 +515,7 @@ export default function EditPropertyPage() {
         }
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Failed to update property' }))
-        if (response.status === 413) {
-          setSaveError(
-            'Save payload was too large (often caused by images). Images are uploaded to storage first—try again, or remove and re-add photos.'
-          )
-        } else {
-          setSaveError(errorData.error || `Server error (${response.status})`)
-        }
+        setSaveError(errorData.error || `Server error (${response.status})`)
       }
     } catch (error: any) {
       console.error('Error updating property:', error)
@@ -918,13 +896,6 @@ export default function EditPropertyPage() {
               multiple
               value={images}
               onChange={setImages}
-              onFileSelect={async (files) => {
-                const { urls, success, errors } = await uploadPropertyImages(files, propertyId)
-                if (!success || !urls?.length) {
-                  throw new Error(errors?.join('; ') || 'Upload failed')
-                }
-                return urls
-              }}
             />
           </div>
 
