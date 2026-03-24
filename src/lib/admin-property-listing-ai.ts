@@ -3,9 +3,10 @@
  * The legacy template helpers ignore most fields; this path uses full listing facts.
  */
 
-import type { Decimal } from '@prisma/client/runtime/library'
 import { generateText, isGoogleAIConfigured } from '@/lib/google-ai'
 import { toAmenityArray } from '@/lib/property-description'
+
+type DecimalLike = { toNumber: () => number }
 
 export type PropertyFactsForListingAI = {
   title: string
@@ -16,7 +17,7 @@ export type PropertyFactsForListingAI = {
   zipCode: string
   size: number
   propertyType: string
-  price: Decimal | null
+  price: DecimalLike | null
   priceType: string
   amenities: unknown
   availability: boolean | null
@@ -27,7 +28,7 @@ export type PropertyFactsForListingAI = {
 
 export { isGoogleAIConfigured }
 
-function formatRent(price: Decimal | null, priceType: string): string {
+function formatRent(price: DecimalLike | null, priceType: string): string {
   if (!price) return 'Not specified in data'
   const n = price.toNumber()
   if (priceType === 'yearly') {
