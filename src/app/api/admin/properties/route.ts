@@ -876,28 +876,28 @@ export async function PATCH(request: NextRequest) {
       data.ownerId = updateData.ownerId
     }
 
-    // Perform the update directly — no interactive transaction wrapper needed.
-    // Previously these were wrapped in prisma.$transaction(async (tx) => { ... }) which has
-    // a hard 5-second Prisma-level timeout that cannot be overridden by SET statement_timeout.
-    // Direct updates respect only the PostgreSQL statement timeout (default 8s on Supabase,
-    // extended here to 60s for large JSON payloads like the images array).
+    // Run inside a long-timeout transaction so SET LOCAL applies to the exact connection
+    // used by the update query (connection pooling can otherwise ignore session-level SET).
     let property: { id: string; title: string; address: string; city: string; size: number; price: unknown; priceType: string; availability: boolean | null; createdAt: Date | null; isFeatured: boolean | null; owner: { id: string; name: string | null; email: string } }
 
-    // Bump statement timeout for this connection before the heavy update
-    try {
-      await prisma.$executeRawUnsafe(`SET statement_timeout = 60000`)
-    } catch {
-      // Non-fatal — continue even if the SET fails
-    }
+    property = await prisma.$transaction(
+      async (tx: any) => {
+        // Disable statement timeout for this transaction only.
+        await tx.$executeRawUnsafe(`SET LOCAL statement_timeout = 0`)
 
-    // Perform a single update with all changed fields
-    property = await prisma.property.update({
-      where: { id: propertyId },
-      data: data as any,
-      include: {
-        owner: { select: { id: true, name: true, email: true } },
+        return tx.property.update({
+          where: { id: propertyId },
+          data: data as any,
+          include: {
+            owner: { select: { id: true, name: true, email: true } },
+          },
+        })
       },
-    })
+      {
+        maxWait: 15000,
+        timeout: 120000,
+      }
+    )
 
     // Trigger intelligence refresh AFTER returning (non-blocking).
     // This avoids heavy cascade work (competitors/ward/revenue scoring) inside the save request.
