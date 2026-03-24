@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import { getNearestPincodeFromCoords } from '@/lib/location-intelligence/bangalore-areas'
 import { extractLatLngFromMapLink } from '@/lib/property-coordinates'
-import { resolvePropertyImagesForSave, uploadImagesViaAdminApi } from '@/lib/property-images-save'
+import { resolvePropertyImagesForSave, uploadImagesViaAdminApiWithAuth } from '@/lib/property-images-save'
 
 export default function EditPropertyPage() {
   const router = useRouter()
@@ -918,7 +918,10 @@ export default function EditPropertyPage() {
               value={images}
               onChange={setImages}
               onFileSelect={async (files) => {
-                return uploadImagesViaAdminApi(files, propertyId)
+                return uploadImagesViaAdminApiWithAuth(files, propertyId, {
+                  id: user?.id,
+                  email: user?.email,
+                })
               }}
             />
           </div>

@@ -70,7 +70,11 @@ export default function FileUpload({
       onChange?.(updatedPreviews)
     } catch (error: any) {
       console.error('File upload error:', error)
-      alert('Failed to upload files')
+      const message =
+        typeof error?.message === 'string' && error.message.trim().length > 0
+          ? error.message
+          : 'Failed to upload files'
+      alert(message)
     } finally {
       setUploading(false)
       if (fileInputRef.current) {

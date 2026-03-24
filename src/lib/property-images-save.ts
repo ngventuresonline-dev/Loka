@@ -35,6 +35,36 @@ export async function uploadImagesViaAdminApi(files: File[], propertyId: string)
   return json.urls as string[]
 }
 
+export async function uploadImagesViaAdminApiWithAuth(
+  files: File[],
+  propertyId: string,
+  user?: { id?: string; email?: string }
+): Promise<string[]> {
+  if (files.length === 0) return []
+  const formData = new FormData()
+  formData.append('propertyId', propertyId)
+  files.forEach((f) => formData.append('files', f))
+
+  const params = new URLSearchParams()
+  if (user?.id) params.set('userId', user.id)
+  if (user?.email) params.set('userEmail', encodeURIComponent(user.email))
+  const qs = params.toString()
+
+  const response = await fetch(
+    `/api/admin/properties/upload-images${qs ? `?${qs}` : ''}`,
+    {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    }
+  )
+  const json = await response.json().catch(() => ({}))
+  if (!response.ok || !Array.isArray(json.urls)) {
+    throw new Error(json?.error || `Failed to upload files (${response.status})`)
+  }
+  return json.urls as string[]
+}
+
 /**
  * Replace any data: URLs with Supabase public URLs; keep http(s) URLs as-is.
  */
