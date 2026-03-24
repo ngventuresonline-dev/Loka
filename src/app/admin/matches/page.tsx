@@ -80,7 +80,7 @@ export default function AdminMatchesPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalBrands, setTotalBrands] = useState(0)
-  const limit = 100
+  const limit = 500
 
   useEffect(() => {
     setPage(1)
