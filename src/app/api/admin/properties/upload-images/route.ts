@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
-import { createServerClient, getAdminClient } from '@/lib/supabase/server'
+import { getAdminClient } from '@/lib/supabase/server'
 
 const BUCKET = 'property-images'
 
@@ -39,13 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No files found in request' }, { status: 400 })
     }
 
-    let supabase: ReturnType<typeof createServerClient>
-    try {
-      supabase = getAdminClient()
-    } catch (e) {
-      // Local/dev fallback when service-role key is not loaded in runtime env.
-      supabase = createServerClient(false)
-    }
+    const supabase = getAdminClient()
     const urls: string[] = []
 
     for (let i = 0; i < fileEntries.length; i++) {
@@ -62,9 +56,7 @@ export async function POST(request: NextRequest) {
 
       if (uploadError) {
         return NextResponse.json(
-          {
-            error: `Upload failed: ${uploadError.message}. If this is local, ensure SUPABASE_SERVICE_ROLE_KEY is in .env.local and restart dev server.`,
-          },
+          { error: `Upload failed: ${uploadError.message}` },
           { status: 500 }
         )
       }
