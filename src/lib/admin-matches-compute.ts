@@ -209,8 +209,8 @@ export async function computeAdminMatches(
     location = null,
     brandName = null,
     brandPage = 1,
-    brandLimit = 500,
-    propertyLimit = 800,
+    brandLimit = 100,
+    propertyLimit = 300,
   } = options
 
   const propertyTypeFilter = mapPropertyTypeFilter(propertyType)
@@ -219,7 +219,6 @@ export async function computeAdminMatches(
     brandIds && brandIds.length > 0
       ? ({ id: { in: brandIds } } as { id: { in: string[] } })
       : {
-          ...(brandId ? { id: brandId } : {}),
           ...(brandName
             ? { company_name: { contains: brandName, mode: 'insensitive' as const } }
             : {}),
@@ -230,12 +229,10 @@ export async function computeAdminMatches(
       ? brandIds.length
       : await prisma.brand_profiles.count({ where: brandWhere })
 
-  const skipBrandPagination = Boolean(brandIds?.length || brandId)
-
   const brands = await prisma.brand_profiles.findMany({
     where: brandWhere,
     orderBy: { company_name: 'asc' },
-    ...(skipBrandPagination ? {} : { skip: (Math.max(1, brandPage) - 1) * brandLimit, take: brandLimit }),
+    ...(brandIds?.length ? {} : { skip: (Math.max(1, brandPage) - 1) * brandLimit, take: brandLimit }),
     select: {
       id: true,
       company_name: true,
@@ -273,7 +270,6 @@ export async function computeAdminMatches(
           }
         : {}),
     },
-    orderBy: { createdAt: 'desc' },
     take: propertyLimit,
     select: {
       id: true,
@@ -302,6 +298,8 @@ export async function computeAdminMatches(
   const allMatches: AdminMatchRow[] = []
 
   for (const brand of brands) {
+    if (brandId && brand.id !== brandId) continue
+
     const sizeMin = brand.min_size ?? 0
     const sizeMax = brand.max_size ?? Number.MAX_SAFE_INTEGER
     const budgetMin = brand.budget_min ? Number(brand.budget_min) : 0
@@ -415,15 +413,13 @@ export function groupMatchesByBrand(matches: AdminMatchRow[]) {
     { brand: AdminMatchRow['brand']; matches: AdminMatchRow[] }
   > = {}
   for (const match of matches) {
-    const key = String(match.brand.id ?? '').trim()
-    if (!key) continue
-    if (!groupedByBrand[key]) {
-      groupedByBrand[key] = {
+    if (!groupedByBrand[match.brand.id]) {
+      groupedByBrand[match.brand.id] = {
         brand: match.brand,
         matches: [],
       }
     }
-    groupedByBrand[key].matches.push(match)
+    groupedByBrand[match.brand.id].matches.push(match)
   }
   return groupedByBrand
 }
@@ -434,15 +430,13 @@ export function groupMatchesByProperty(matches: AdminMatchRow[]) {
     { property: AdminMatchRow['property']; matches: AdminMatchRow[] }
   > = {}
   for (const match of matches) {
-    const key = String(match.property.id ?? '').trim()
-    if (!key) continue
-    if (!groupedByProperty[key]) {
-      groupedByProperty[key] = {
+    if (!groupedByProperty[match.property.id]) {
+      groupedByProperty[match.property.id] = {
         property: match.property,
         matches: [],
       }
     }
-    groupedByProperty[key].matches.push(match)
+    groupedByProperty[match.property.id].matches.push(match)
   }
   return groupedByProperty
 }

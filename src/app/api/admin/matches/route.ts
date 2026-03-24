@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get('location')
     const brandName = searchParams.get('brandName')
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const limit = Math.min(500, Math.max(1, parseInt(searchParams.get('limit') || '500')))
+    const limit = Math.min(500, Math.max(1, parseInt(searchParams.get('limit') || '100')))
 
     const prisma = await getPrisma()
     if (!prisma) {
@@ -55,12 +55,9 @@ export async function GET(request: NextRequest) {
     }
 
     const groupedByBrand = groupMatchesByBrand(allMatches)
-    const brandGroups = Object.values(groupedByBrand).sort((a, b) =>
-      (a.brand?.name || '').localeCompare(b.brand?.name || '', undefined, { sensitivity: 'base' })
-    )
     const responseData = {
       view: 'brand',
-      matches: brandGroups,
+      matches: Object.values(groupedByBrand),
       total: allMatches.length,
       totalBrands,
       page,

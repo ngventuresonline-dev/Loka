@@ -16,7 +16,7 @@ function pickVariant(source: string, options: string[]): string {
 }
 
 /** Normalize amenities from DB: can be array, or object { features: string[], map_link?: string } */
-export function toAmenityArray(
+function toAmenityArray(
   raw: string[] | { features?: string[] } | null | undefined
 ): string[] {
   if (!raw) return []
