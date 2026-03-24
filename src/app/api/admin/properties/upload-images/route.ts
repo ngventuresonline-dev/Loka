@@ -11,19 +11,7 @@ function buildFilePath(propertyId: string, index: number, filename: string): str
 
 export async function POST(request: NextRequest) {
   try {
-    try {
-      await requireUserType(request, ['admin'])
-    } catch (authError: any) {
-      // Same fallback pattern used in other admin endpoints.
-      const userEmailParam = request.nextUrl.searchParams.get('userEmail')
-      const decodedEmail = userEmailParam ? decodeURIComponent(userEmailParam).toLowerCase() : ''
-      if (decodedEmail !== 'admin@ngventures.com') {
-        return NextResponse.json(
-          { error: authError?.message || 'Authentication required' },
-          { status: 401 }
-        )
-      }
-    }
+    await requireUserType(request, ['admin'])
 
     const formData = await request.formData()
     const propertyId = String(formData.get('propertyId') || '').trim()
