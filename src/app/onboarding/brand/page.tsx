@@ -44,6 +44,8 @@ function BrandOnboardingContent() {
   const [selectedAudience, setSelectedAudience] = useState<Set<string>>(new Set())
   const [formData, setFormData] = useState({
     brandName: '',
+    phone: '',
+    email: '',
     storeType: '',
     size: '',
     budgetMin: '',
@@ -138,10 +140,14 @@ function BrandOnboardingContent() {
     if (step > 1) setStep(step - 1)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Build query params to show matching properties
-    // Parse size ranges to find overall min/max
+    setSubmitting(true)
+    setSubmitError(null)
+
     const parseSizeRanges = (ranges: Set<string>) => {
       if (ranges.size === 0) return { min: 0, max: 100000 }
       let globalMin = Number.MAX_SAFE_INTEGER
@@ -168,20 +174,67 @@ function BrandOnboardingContent() {
     const budgetMinNum = parseInt(formData.budgetMin.replace(/[^0-9]/g, '')) || 50000
     const budgetMaxNum = parseInt(formData.budgetMax.replace(/[^0-9]/g, '')) || budgetMinNum + 5000
 
-    const params = new URLSearchParams()
-    if (formData.storeType) params.set('type', formData.storeType)
-    if (formData.preferredLocations) params.set('locations', formData.preferredLocations)
-    params.set('sizeMin', sizeRange.min.toString())
-    params.set('sizeMax', sizeRange.max.toString())
-    params.set('budgetMin', budgetMinNum.toString())
-    params.set('budgetMax', budgetMaxNum.toString())
-    // Save for future prefill if needed
+    // Save locally for fallback prefill
     localStorage.setItem('brandOnboardingSubmission', JSON.stringify(formData))
-    
+
     // Track form completion and Lead event
     trackFormComplete('brand', formData)
-    
-    router.push(`/properties/results?${params.toString()}`)
+
+    try {
+      // Save brand to Supabase and get back a userId
+      const sessionId = typeof window !== 'undefined'
+        ? window.localStorage.getItem('clientSessionUserId') || undefined
+        : undefined
+
+      const res = await fetch('/api/onboarding/brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandName: formData.brandName,
+          phone: formData.phone,
+          email: formData.email,
+          storeType: formData.storeType,
+          sizeRanges: Array.from(selectedSizeRanges),
+          budgetMin: budgetMinNum,
+          budgetMax: budgetMaxNum,
+          targetAudience: formData.targetAudience,
+          preferredLocations: formData.preferredLocations,
+          additionalRequirements: formData.additionalRequirements,
+          sessionId,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.userId) {
+          localStorage.setItem('brandId', data.userId)
+          localStorage.setItem('brandName', formData.brandName)
+        }
+        router.push('/dashboard/brand')
+      } else {
+        // Fallback: go to results if API fails so UX is never blocked
+        const params = new URLSearchParams()
+        if (formData.storeType) params.set('type', formData.storeType)
+        if (formData.preferredLocations) params.set('locations', formData.preferredLocations)
+        params.set('sizeMin', sizeRange.min.toString())
+        params.set('sizeMax', sizeRange.max.toString())
+        params.set('budgetMin', budgetMinNum.toString())
+        params.set('budgetMax', budgetMaxNum.toString())
+        router.push(`/properties/results?${params.toString()}`)
+      }
+    } catch {
+      // Fallback to results page so form submission never hangs
+      const params = new URLSearchParams()
+      if (formData.storeType) params.set('type', formData.storeType)
+      if (formData.preferredLocations) params.set('locations', formData.preferredLocations)
+      params.set('sizeMin', sizeRange.min.toString())
+      params.set('sizeMax', sizeRange.max.toString())
+      params.set('budgetMin', budgetMinNum.toString())
+      params.set('budgetMax', budgetMaxNum.toString())
+      router.push(`/properties/results?${params.toString()}`)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -241,6 +294,36 @@ function BrandOnboardingContent() {
                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
                       placeholder="Enter your brand name"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#FF5200] focus:outline-none transition-colors"
+                        placeholder="you@brand.com"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -441,9 +524,18 @@ function BrandOnboardingContent() {
                 ) : (
                   <button
                     type="submit"
-                    className="flex-1 px-8 py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-[1.02]"
+                    disabled={submitting}
+                    className="flex-1 px-8 py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100"
                   >
-                    Submit & Find Matches
+                    {submitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Setting up your dashboard...
+                      </span>
+                    ) : 'Submit & View Dashboard'}
                   </button>
                 )}
               </div>
