@@ -17,12 +17,12 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
   return EARTH_RADIUS_M * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
 
-/** Catchment proxy: nearby pincodes with share % by distance inverse (within 5 km). */
+/** Catchment proxy: nearby pincodes with share % by distance inverse (within 4 km). */
 export function computeCatchment(
   lat: number,
   lng: number,
-  maxDistKm = 5
-): Array<{ pincode: string; name: string; sharePct: number; distanceM: number }> {
+  maxDistKm = 4
+): Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType: string }> {
   const maxM = maxDistKm * 1000
   const point = { lat, lng }
   const withDist = BANGALORE_PINCODES.map((p) => ({
@@ -41,8 +41,10 @@ export function computeCatchment(
       name: p.name,
       sharePct: Math.round((p.invDist / totalInv) * 100),
       distanceM: p.distanceM,
+      areaType: p.areaType || 'mixed',
     }))
     .sort((a, b) => a.distanceM - b.distanceM)
+    .slice(0, 8)
 }
 
 /** Categories for retail mix (from POI names/types). */

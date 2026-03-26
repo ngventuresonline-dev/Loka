@@ -170,31 +170,67 @@ function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string):
   const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
   const p = (propertyType || '').toLowerCase()
 
-  // Cafe / QSR – show BOTH cafe and QSR competitors (user may be either)
-  const isCafeQSR = /\b(qsr|quick service|fast food)\b/.test(raw) || /\bcafe\b/.test(raw) || /\bcoffee\b/.test(raw) || /\bcafé\b/.test(raw)
-  if (isCafeQSR) {
+  // Eyewear / Optical
+  if (/\b(eye|eyewear|optical|optician|spectacles|glasses|lenses|vision)\b/.test(raw)) {
+    return [{ type: 'store', keyword: 'eyewear optical spectacles glasses lenses optician' }]
+  }
+  // Jewelry
+  if (/\b(jewel|jewellery|jewelry|gold|diamond|ornament)\b/.test(raw)) {
+    return [{ type: 'jewelry_store', keyword: 'jewellery jewelry gold diamond' }]
+  }
+  // Pharmacy / Medical
+  if (/\b(pharma|pharmacy|medical|medicine|health|clinic|diagnostic)\b/.test(raw)) {
+    return [{ type: 'pharmacy', keyword: 'pharmacy medical store' }]
+  }
+  // Salon / Beauty
+  if (/\b(salon|beauty|spa|hair|nail|grooming|barber|makeup)\b/.test(raw)) {
+    return [{ type: 'beauty_salon', keyword: 'salon beauty spa hair' }]
+  }
+  // Gym / Fitness
+  if (/\b(gym|fitness|yoga|pilates|crossfit|sport|workout)\b/.test(raw)) {
+    return [{ type: 'gym', keyword: 'gym fitness yoga' }]
+  }
+  // Electronics
+  if (/\b(electronics|mobile|phone|laptop|computer|gadget|tech store)\b/.test(raw)) {
+    return [{ type: 'electronics_store', keyword: 'electronics mobile phone laptop' }]
+  }
+  // Supermarket / Grocery
+  if (/\b(super ?market|grocery|kirana|provision|hypermarket)\b/.test(raw)) {
+    return [{ type: 'supermarket', keyword: 'supermarket grocery' }]
+  }
+  // Fashion / Apparel / Footwear
+  if (/\b(fashion|apparel|clothing|footwear|shoes|shoe|garment|kurta|saree|wear)\b/.test(raw)) {
+    return [{ type: 'clothing_store', keyword: 'clothing fashion apparel shoes footwear' }]
+  }
+  // Cafe / Coffee
+  if (/\bcafe\b|\bcoffee\b|\bcafé\b/.test(raw)) {
     return [
       { type: 'cafe', keyword: 'cafe coffee' },
-      { type: 'meal_takeaway', keyword: 'fast food burger pizza shawarma biryani momos qsr' },
+      { type: 'meal_takeaway', keyword: 'fast food burger pizza' },
     ]
   }
-  if (/\brestaurant\b/.test(raw) || p.includes('restaurant')) {
-    return [{ type: 'restaurant', keyword: 'restaurant' }]
+  // QSR / Fast Food
+  if (/\b(qsr|quick service|fast food|burger|pizza|biryani|momos|shawarma)\b/.test(raw)) {
+    return [{ type: 'meal_takeaway', keyword: 'fast food burger pizza shawarma biryani qsr' }]
   }
-  if (/\b(dessert|desserts|sweet|sweets|bakery|ice cream|cake)\b/.test(raw)) {
+  // Full-service restaurant
+  if (/\brestaurant\b|\bdining\b|\bfine dining\b/.test(raw) || p.includes('restaurant')) {
+    return [{ type: 'restaurant', keyword: 'restaurant dining' }]
+  }
+  // Bakery / Dessert
+  if (/\b(dessert|bakery|sweet|ice cream|cake|patisserie)\b/.test(raw)) {
     return [{ type: 'bakery', keyword: 'dessert bakery sweets' }]
   }
-  if (/\bbar\b/.test(raw) || /\bbrew\b/.test(raw)) {
-    return [{ type: 'bar', keyword: 'bar' }]
+  // Bar / Brewery / Nightlife
+  if (/\bbar\b|\bbrew\b|\bpub\b|\bnightclub\b/.test(raw)) {
+    return [{ type: 'bar', keyword: 'bar pub brewery' }]
   }
+  // Generic retail fallback
   if (/\bretail\b/.test(raw) || p.includes('retail')) {
-    return [{ type: 'clothing_store', keyword: 'retail store' }]
-  }
-  if (p.includes('office')) {
-    return [{ type: 'point_of_interest', keyword: 'office' }]
+    return [{ type: 'store', keyword: 'retail store shop' }]
   }
 
-  return [{ type: 'point_of_interest', keyword: '' }]
+  return [{ type: 'point_of_interest', keyword: businessType || '' }]
 }
 
 /** Deterministic seed from location + business + competitor count for varied peak hours */
