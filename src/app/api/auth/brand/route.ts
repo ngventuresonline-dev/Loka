@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const phone = body.phone ? String(body.phone).trim() : null
+    const rawPhone = body.phone ? String(body.phone).trim() : null
     const email = body.email ? String(body.email).trim().toLowerCase() : null
 
-    if (!phone && !email) {
+    if (!rawPhone && !email) {
       return NextResponse.json(
         { error: 'Phone number or email is required' },
         { status: 400 }
@@ -28,10 +28,29 @@ export async function POST(request: NextRequest) {
     // Look up brand user by phone first, then email
     let user = null
 
-    if (phone) {
+    if (rawPhone) {
+      // Build all common phone format variants to handle whatever was stored in DB
+      const digits = rawPhone.replace(/\D/g, '') // pure digits e.g. "7991129725"
+      const phoneVariants = Array.from(
+        new Set([
+          rawPhone,                          // as typed
+          digits,                            // "7991129725"
+          `+91${digits}`,                    // "+917991129725"
+          `91${digits}`,                     // "917991129725"
+          `+91 ${digits}`,                   // "+91 7991129725"
+          // spaced format for 10-digit Indian numbers
+          digits.length === 10
+            ? `${digits.slice(0, 5)} ${digits.slice(5)}`
+            : null,                          // "79911 29725"
+          digits.length === 10
+            ? `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`
+            : null,                          // "+91 79911 29725"
+        ].filter(Boolean) as string[])
+      )
+
       user = await prisma.user
         .findFirst({
-          where: { phone, userType: 'brand' },
+          where: { phone: { in: phoneVariants }, userType: 'brand' },
           select: {
             id: true,
             name: true,
