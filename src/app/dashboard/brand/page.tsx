@@ -248,7 +248,7 @@ export default function BrandDashboardPage() {
     const storedName = typeof window !== 'undefined' ? localStorage.getItem('brandName') : null
 
     if (!storedId) {
-      router.replace('/filter/brand')
+      router.replace('/dashboard/brand/login')
       return
     }
 
