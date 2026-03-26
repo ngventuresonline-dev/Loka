@@ -321,10 +321,20 @@ function BuildingIcon({ className = 'w-7 h-7' }: { className?: string }) {
   )
 }
 
-function MetricCell({ label, value, trend, benchmark }: { label: string; value: string; trend?: 'up' | 'down'; benchmark?: string }) {
+function MetricCell({ label, value, trend, benchmark, tooltip }: { label: string; value: string; trend?: 'up' | 'down'; benchmark?: string; tooltip?: string }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
+      <div className="flex items-center gap-1 mb-0.5">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
+        {tooltip && (
+          <div className="relative group">
+            <button className="text-[9px] w-3.5 h-3.5 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold flex-shrink-0">i</button>
+            <div className="absolute left-0 top-4 w-52 bg-gray-900 text-white text-[10px] rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+              {tooltip}
+            </div>
+          </div>
+        )}
+      </div>
       <div className="flex items-baseline gap-1 mt-0.5">
         <p className="text-xl font-bold text-gray-900">{value}</p>
         {trend && <span className={trend === 'up' ? 'text-green-500 text-sm' : 'text-red-500 text-sm'}>{trend === 'up' ? '↗' : '↘'}</span>}
@@ -675,38 +685,80 @@ export default function BrandDashboardPage() {
                       onClick={() => selectProperty(m)}
                       onMouseEnter={() => setHoveredPropertyId(m.property.id)}
                       onMouseLeave={() => setHoveredPropertyId(null)}
-                      className={`mx-3 mb-2 p-3 rounded-xl border cursor-pointer transition-all ${
-                        isSelected ? 'border-[#FF5200] bg-orange-50 shadow-sm' : 'border-gray-100 bg-white hover:border-orange-200'
+                      className={`mx-3 mb-2.5 rounded-2xl border cursor-pointer transition-all overflow-hidden ${
+                        isSelected
+                          ? 'border-[#FF5200] shadow-md ring-1 ring-[#FF5200]/20 bg-white'
+                          : 'border-gray-100 bg-white hover:border-orange-200 hover:shadow-sm'
                       }`}
                     >
-                      <div className="flex gap-2.5 items-start">
-                        <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-orange-50 to-red-50 relative">
-                          {imgSrc ? (
-                            <Image src={imgSrc} alt={m.property.title} fill className="object-cover" unoptimized />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center"><BuildingIcon /></div>
+                      {/* Full-width image banner */}
+                      <div className="relative h-[100px] bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden">
+                        {imgSrc ? (
+                          <Image src={imgSrc} alt={m.property.title} fill className="object-cover" unoptimized />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center opacity-40">
+                            <BuildingIcon className="w-10 h-10" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                        {/* BFI badge — top right */}
+                        <div className="absolute top-2 right-2 bg-gray-900/80 backdrop-blur-sm rounded-lg px-2 py-1 flex flex-col items-center leading-none min-w-[40px]">
+                          <span className="text-[#FF5200] text-base font-black leading-none">{m.bfiScore}</span>
+                          <span className="text-gray-300 text-[8px] uppercase tracking-wider leading-none mt-0.5">BFI</span>
+                        </div>
+                        {/* City + type — bottom left overlay */}
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+                          <span className="bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium rounded-full px-2 py-0.5">{m.property.city}</span>
+                          <span className="bg-black/60 backdrop-blur-sm text-white text-[10px] rounded-full px-2 py-0.5 capitalize">{m.property.propertyType}</span>
+                        </div>
+                      </div>
+
+                      {/* Card body */}
+                      <div className="p-3">
+                        <p className="font-semibold text-sm text-gray-900 line-clamp-1 mb-1">{m.property.title}</p>
+                        <p className="text-[11px] text-gray-400 line-clamp-1 mb-2">{m.property.address}</p>
+
+                        {/* Key specs row */}
+                        <div className="flex items-center gap-2 mb-2 text-[11px]">
+                          <span className="font-bold text-[#FF5200]">{formatPrice(m.property.price, m.property.priceType)}</span>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-gray-600">{m.property.size.toLocaleString()} sqft</span>
+                        </div>
+
+                        {/* Fit chips */}
+                        <div className="flex gap-1 flex-wrap mb-2.5">
+                          {m.breakdown.locationFit >= 80 && (
+                            <span className="text-[10px] bg-green-50 text-green-700 border border-green-100 rounded-md px-1.5 py-0.5 font-medium">Area Match</span>
+                          )}
+                          {m.breakdown.budgetFit >= 80 && (
+                            <span className="text-[10px] bg-green-50 text-green-700 border border-green-100 rounded-md px-1.5 py-0.5 font-medium">Budget Fit</span>
+                          )}
+                          {m.breakdown.sizeFit >= 80 && (
+                            <span className="text-[10px] bg-green-50 text-green-700 border border-green-100 rounded-md px-1.5 py-0.5 font-medium">Size Match</span>
+                          )}
+                          {m.breakdown.budgetFit < 60 && (
+                            <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-100 rounded-md px-1.5 py-0.5 font-medium">Over Budget</span>
+                          )}
+                          {m.bfiScore >= 80 && (
+                            <span className="text-[10px] bg-orange-50 text-[#FF5200] border border-orange-100 rounded-md px-1.5 py-0.5 font-medium">Strong Match</span>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-1">
-                            <p className="font-semibold text-sm text-gray-900 line-clamp-1">{m.property.title}</p>
-                            <span className="flex-shrink-0 text-[11px] font-bold text-white bg-[#FF5200] rounded-full px-2 py-0.5">{m.bfiScore}</span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5 truncate">{m.property.city}</p>
-                          <div className="flex gap-1 mt-1.5 flex-wrap">
-                            <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{m.property.size.toLocaleString()} sqft</span>
-                            <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{formatPrice(m.property.price, m.property.priceType)}</span>
-                            <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 capitalize">{m.property.propertyType}</span>
-                          </div>
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            {m.breakdown.locationFit >= 80 && <span className="text-[10px] bg-green-50 text-green-700 rounded-full px-2 py-0.5">✓ Area Match</span>}
-                            {m.breakdown.budgetFit >= 80 && <span className="text-[10px] bg-green-50 text-green-700 rounded-full px-2 py-0.5">✓ Budget Fit</span>}
-                            {m.breakdown.budgetFit < 60 && <span className="text-[10px] bg-yellow-50 text-yellow-700 rounded-full px-2 py-0.5">⚠ Over Budget</span>}
-                          </div>
-                          <div className="flex gap-2 mt-1.5">
-                            <Link href={`/properties/${encodePropertyId(m.property.id)}`} onClick={(e) => e.stopPropagation()} className="text-[10px] text-[#FF5200] hover:underline">View →</Link>
-                            <button onClick={(e) => { e.stopPropagation(); selectProperty(m) }} className="text-[10px] text-gray-400 hover:text-[#FF5200]">Intelligence</button>
-                          </div>
+
+                        {/* Action row */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); selectProperty(m) }}
+                            className="flex-1 text-center text-[11px] font-semibold text-white bg-[#FF5200] rounded-lg py-1.5 hover:bg-orange-600 transition-colors"
+                          >
+                            View Intelligence
+                          </button>
+                          <Link
+                            href={`/properties/${encodePropertyId(m.property.id)}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[11px] text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gray-400 hover:text-gray-700 transition-colors whitespace-nowrap"
+                          >
+                            Listing
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -899,15 +951,32 @@ export default function BrandDashboardPage() {
                     position={m.coords}
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
-                      scale: isActive ? 28 : isHovered ? 26 : 22,
+                      scale: isActive ? 32 : isHovered ? 30 : 26,
                       fillColor: '#FF5200', fillOpacity: 1,
-                      strokeColor: '#ffffff', strokeWeight: isActive ? 3 : 2,
+                      strokeColor: '#ffffff', strokeWeight: isActive ? 3.5 : 2.5,
                     }}
-                    label={{ text: String(m.bfiScore), color: '#ffffff', fontWeight: 'bold', fontSize: '11px' }}
+                    label={{ text: String(m.bfiScore), color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
                     onClick={() => selectProperty(m)}
                   />
                 )
               })}
+              {/* Pulse ring for active/selected property */}
+              {isLoaded && selectedMatch?.coords && (
+                <Marker
+                  position={selectedMatch.coords}
+                  icon={{
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 44,
+                    fillColor: '#FF5200',
+                    fillOpacity: 0.15,
+                    strokeColor: '#FF5200',
+                    strokeWeight: 1.5,
+                    strokeOpacity: 0.4,
+                  }}
+                  clickable={false}
+                  zIndex={0}
+                />
+              )}
               {/* Competitor pins when in intelligence mode */}
               {isLoaded && rightMode === 'intelligence' && intelData && [...intelData.competitors, ...intelData.complementaryBrands].map((c, i) => {
                 if (!selectedMatch?.coords) return null
@@ -1038,34 +1107,90 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: OVERVIEW ── */}
                 {rightPanelTab === 'overview' && (
                   <div>
+                    {/* Lokazen Composite Score — LIR Section 08 style */}
                     <div className="p-5 border-b border-gray-100">
-                      <div className="flex items-start gap-2 mb-1">
-                        <h2 className="font-bold text-lg text-gray-900">Overview</h2>
-                        <span className="text-[10px] text-gray-400 font-normal bg-gray-100 px-2 py-0.5 rounded-full mt-1 leading-tight">
-                          Footfall · Competitors · Growth · Market Size
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-3">
-                        <div className="flex gap-0.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <StarIcon key={i} filled={i < Math.round(intelData.overallScore / 20)} className="w-6 h-6" />
-                          ))}
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-5xl font-black text-gray-900">{intelData.overallScore}</span>
+                            <span className="text-xl text-gray-400 font-light">/ 100</span>
+                            <span className={`ml-2 text-xs font-bold px-2.5 py-1 rounded-full ${
+                              intelData.overallScore >= 80 ? 'bg-green-100 text-green-700' :
+                              intelData.overallScore >= 60 ? 'bg-amber-100 text-amber-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {intelData.overallScore >= 85 ? 'EXCEPTIONAL' :
+                               intelData.overallScore >= 75 ? 'STRONG' :
+                               intelData.overallScore >= 60 ? 'VIABLE' : 'CONDITIONAL'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">Lokazen Composite Score</p>
                         </div>
-                        <span className="text-3xl font-bold text-gray-900">{Math.round(intelData.overallScore / 20)}</span>
-                        <span className="text-gray-500 text-sm">out of 5</span>
-                        <span className="text-sm text-gray-400">({intelData.overallScore}/100)</span>
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <div className="flex gap-0.5 mb-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <StarIcon key={i} filled={i < Math.round(intelData.overallScore / 20)} className="w-5 h-5" />
+                            ))}
+                          </div>
+                          <span className="text-xs text-gray-400">{Math.round(intelData.overallScore / 20)} of 5</span>
+                        </div>
                       </div>
+
+                      {/* 8-parameter scorecard */}
+                      {(() => {
+                        const footfallScore = Math.min(10, Math.round((intelData.totalFootfall / 3000) * 10))
+                        const catchmentScore = intelData.affluenceIndicator === 'High' ? 10 : intelData.affluenceIndicator === 'Medium' ? 7 : 5
+                        const competitionVoidScore = intelData.numberOfStores === 0 ? 10 : Math.max(3, 10 - Math.round(intelData.numberOfStores / 3))
+                        const configScore = Math.round((selectedMatch?.breakdown.sizeFit || 50) / 10)
+                        const accessScore = intelData.metroDistance ? Math.max(3, 10 - Math.round(intelData.metroDistance / 1000)) : 6
+                        const connScore = intelData.busStops > 0 ? 8 : 6
+                        const occasionScore = Math.min(10, Math.max(1, Math.round(intelData.growthTrend / 10)))
+                        const viabilityScore = Math.round((selectedMatch?.breakdown.budgetFit || 50) / 10)
+                        const parameters = [
+                          { label: 'Footfall Density', score: footfallScore, note: `~${intelData.totalFootfall.toLocaleString()} daily est.` },
+                          { label: 'Catchment Quality', score: catchmentScore, note: intelData.affluenceIndicator + ' affluence' },
+                          { label: 'F&B Supply Gap', score: competitionVoidScore, note: `${intelData.numberOfStores} competitors nearby` },
+                          { label: 'Property Configuration', score: configScore, note: `${selectedMatch?.property.size.toLocaleString()} sqft ${selectedMatch?.property.propertyType}` },
+                          { label: 'Captive Walk-In Access', score: Math.min(10, Math.round(accessScore * 1.2)), note: intelData.metroName ? `Metro ${((intelData.metroDistance || 0) / 1000).toFixed(1)}km` : 'Access estimated' },
+                          { label: 'Connectivity', score: connScore, note: intelData.busStops > 0 ? 'Transit nearby' : 'Road access' },
+                          { label: 'Occasion Spread', score: occasionScore, note: 'Day-part coverage' },
+                          { label: 'Commercial Viability', score: viabilityScore, note: formatPrice(selectedMatch?.property.price || 0, selectedMatch?.property.priceType || 'monthly') },
+                        ]
+                        return (
+                          <div className="space-y-2">
+                            {parameters.map(({ label, score, note }) => (
+                              <div key={label} className="flex items-center gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <span className="text-[11px] font-medium text-gray-700 truncate">{label}</span>
+                                    <span className={`text-[11px] font-bold ml-2 flex-shrink-0 ${score >= 8 ? 'text-green-600' : score >= 6 ? 'text-amber-600' : 'text-red-500'}`}>{score}/10</span>
+                                  </div>
+                                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full transition-all duration-700 ${score >= 8 ? 'bg-green-400' : score >= 6 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${score * 10}%` }} />
+                                  </div>
+                                  <p className="text-[9px] text-gray-400 mt-0.5 truncate">{note}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </div>
 
+                    {/* Highlights */}
                     {intelData.highlights.length > 0 && (
                       <div className="px-5 py-3 border-b border-gray-100">
-                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Highlights</p>
+                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                          Highlights
+                          <span className="ml-1 text-gray-300 font-normal normal-case">— derived from live market data</span>
+                        </p>
                         <div className="flex gap-2 flex-wrap">
                           {intelData.highlights.map((h) => <HighlightChip key={h} label={h} />)}
                         </div>
                       </div>
                     )}
 
+                    {/* BFI Breakdown */}
                     <div className="px-5 py-4 border-b border-gray-100">
                       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3">BFI Breakdown</p>
                       {selectedMatch && [
@@ -1085,7 +1210,8 @@ export default function BrandDashboardPage() {
                       ))}
                     </div>
 
-                    <div className="px-5 py-4">
+                    {/* Property Details */}
+                    <div className="px-5 py-4 border-b border-gray-100">
                       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Property Details</p>
                       <div className="grid grid-cols-2 gap-4">
                         <MetricCell label="AREA" value={`${selectedMatch?.property.size.toLocaleString()} sqft`} />
@@ -1093,6 +1219,108 @@ export default function BrandDashboardPage() {
                         <MetricCell label="TYPE" value={selectedMatch?.property.propertyType || '—'} />
                         <MetricCell label="CITY" value={selectedMatch?.property.city || '—'} />
                         {intelData.metroName && <MetricCell label="NEAREST METRO" value={intelData.metroName} benchmark={intelData.metroDistance ? `${(intelData.metroDistance / 1000).toFixed(1)} km` : undefined} />}
+                      </div>
+                    </div>
+
+                    {/* Revenue Potential — LIR Section 06 style */}
+                    <div className="px-5 py-4 border-b border-gray-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="font-bold text-gray-900 text-sm">Revenue Potential</h3>
+                        <span className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">Lokazen estimate · not a guarantee</span>
+                        <div className="relative group ml-auto">
+                          <button className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">i</button>
+                          <div className="absolute right-0 top-5 w-56 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                            Based on: category benchmarks, area footfall multiplier, avg ticket size, capture rate. Not a financial guarantee.
+                          </div>
+                        </div>
+                      </div>
+                      {(() => {
+                        const brand = data?.brand ?? null
+                        const industry = brand?.industry?.toLowerCase() || ''
+                        const isCafe = industry.includes('cafe') || industry.includes('coffee')
+                        const isQsr = industry.includes('qsr') || industry.includes('fast food') || industry.includes('burger')
+                        const isRestaurant = industry.includes('restaurant') || industry.includes('dining')
+                        const isBakery = industry.includes('bakery') || industry.includes('dessert')
+                        const avgTicket = isCafe ? 220 : isQsr ? 290 : isRestaurant ? 420 : isBakery ? 250 : 350
+                        const captureRate = isCafe ? 0.04 : isQsr ? 0.05 : isRestaurant ? 0.03 : 0.035
+                        const dailyFootfall = Math.max(500, intelData.totalFootfall || 2000)
+                        const dailyCovers = Math.round(dailyFootfall * captureRate)
+                        const conservative = Math.round(dailyCovers * 0.6 * avgTicket * 26 / 100000)
+                        const base = Math.round(dailyCovers * avgTicket * 26 / 100000)
+                        const optimistic = Math.round(dailyCovers * 1.4 * avgTicket * 26 / 100000)
+                        return (
+                          <div>
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              {[
+                                { label: 'Conservative', value: `₹${conservative}L`, color: 'bg-gray-50 border-gray-200' },
+                                { label: 'Base Case', value: `₹${base}L`, color: 'bg-orange-50 border-orange-200' },
+                                { label: 'Optimistic', value: `₹${optimistic}L`, color: 'bg-green-50 border-green-200' },
+                              ].map(({ label, value, color }) => (
+                                <div key={label} className={`${color} border rounded-xl p-2.5 text-center`}>
+                                  <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+                                  <p className="font-black text-gray-900 text-base leading-none">{value}</p>
+                                  <p className="text-[9px] text-gray-400 mt-0.5">per month</p>
+                                </div>
+                              ))}
+                            </div>
+                            {selectedMatch && (() => {
+                              const monthlyRent = selectedMatch.property.priceType === 'monthly' ? Number(selectedMatch.property.price) : 0
+                              if (monthlyRent === 0) return null
+                              const rentPct = Math.round((monthlyRent / (base * 100000)) * 100)
+                              return (
+                                <div className={`rounded-xl p-2.5 text-xs ${rentPct <= 15 ? 'bg-green-50 border border-green-100' : rentPct <= 25 ? 'bg-amber-50 border border-amber-100' : 'bg-red-50 border border-red-100'}`}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-600">Rent-to-Revenue Ratio</span>
+                                    <span className={`font-bold ${rentPct <= 15 ? 'text-green-700' : rentPct <= 25 ? 'text-amber-700' : 'text-red-600'}`}>{rentPct}%</span>
+                                  </div>
+                                  <p className={`text-[10px] mt-0.5 ${rentPct <= 15 ? 'text-green-600' : rentPct <= 25 ? 'text-amber-600' : 'text-red-500'}`}>
+                                    {rentPct <= 15 ? 'Healthy ratio — strong unit economics' : rentPct <= 25 ? 'Viable but requires consistent volume' : 'High rent load — premium brand or high volume essential'}
+                                  </p>
+                                </div>
+                              )
+                            })()}
+                            <p className="text-[9px] text-gray-400 mt-2">
+                              Estimates based on {dailyCovers} avg daily covers · ₹{avgTicket} avg ticket · {brand?.industry || 'F&B'} benchmarks
+                            </p>
+                          </div>
+                        )
+                      })()}
+                    </div>
+
+                    {/* Lokazen Verdict */}
+                    <div className="px-5 py-4 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1 h-5 bg-[#FF5200] rounded-full flex-shrink-0" />
+                        <h3 className="font-bold text-gray-900 text-sm">Lokazen Verdict</h3>
+                      </div>
+                      {(() => {
+                        const score = intelData.overallScore
+                        const bfi = selectedMatch?.bfiScore || 0
+                        const location = selectedMatch?.property.city || 'this location'
+                        const brand = data?.brand ?? null
+                        const industry = brand?.industry || 'F&B'
+                        const verdict = score >= 80 && bfi >= 75
+                          ? `${location} is a high-confidence ${industry} placement. Strong catchment, good brand-location fit, and validated demand. Recommend engaging now.`
+                          : score >= 65 && bfi >= 60
+                          ? `${location} shows good potential for ${industry}. Fundamentals are solid. Verify rent terms and delivery activation plan before committing.`
+                          : `${location} has conditional viability for ${industry}. Review budget fit and competition density carefully. Premium brand or high-ticket format required.`
+                        return <p className="text-xs text-gray-700 leading-relaxed">{verdict}</p>
+                      })()}
+                      <div className="flex gap-2 mt-3">
+                        <Link
+                          href={`/properties/${encodePropertyId(selectedMatch?.property.id || '')}`}
+                          className="flex-1 text-center text-xs font-semibold text-white bg-[#FF5200] rounded-xl py-2 hover:bg-orange-600 transition-colors"
+                        >
+                          View Full Listing
+                        </Link>
+                        <a
+                          href={`https://wa.me/919845791657?text=Hi, I'm interested in ${encodeURIComponent(selectedMatch?.property.title || 'this property')} on Lokazen`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 text-center text-xs font-semibold text-[#FF5200] border border-[#FF5200] rounded-xl py-2 hover:bg-orange-50 transition-colors"
+                        >
+                          Enquire via WhatsApp
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -1111,6 +1339,64 @@ export default function BrandDashboardPage() {
                         <MetricCell label="AFFLUENCE INDICATOR" value={intelData.affluenceIndicator || '—'} trend="up" benchmark="Bengaluru Avg 0.49" />
                       </div>
                     </div>
+                    {/* Catchment Quality Scorecard — LIR Section 03 style */}
+                    <div className="px-5 py-4 border-b border-gray-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="font-bold text-gray-900 text-sm">Catchment Quality</h3>
+                        <div className="relative group">
+                          <button className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">i</button>
+                          <div className="absolute left-0 top-5 w-60 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                            Lokazen catchment quality measures 5 axes: density, affluence, frequency, captive access, and occasion coverage.
+                          </div>
+                        </div>
+                      </div>
+                      {(() => {
+                        const axes = [
+                          {
+                            label: 'Density (Daily Footfall)',
+                            score: Math.min(10, Math.round((intelData.totalFootfall / 2000) * 10)),
+                            signal: intelData.totalFootfall > 5000 ? 'Benchmark-level for CBD location' : intelData.totalFootfall > 2000 ? 'Good footfall density' : 'Below average — verify catchment',
+                          },
+                          {
+                            label: 'Affluence / Willingness to Pay',
+                            score: intelData.affluenceIndicator === 'High' ? 10 : intelData.affluenceIndicator === 'Medium' ? 7 : 5,
+                            signal: `${intelData.affluenceIndicator} affluence area`,
+                          },
+                          {
+                            label: 'Competitive Void',
+                            score: intelData.numberOfStores === 0 ? 10 : Math.max(2, 10 - intelData.numberOfStores),
+                            signal: intelData.numberOfStores === 0 ? 'Zero competition — category void' : `${intelData.numberOfStores} competitors mapped`,
+                          },
+                          {
+                            label: 'Occasion Spread',
+                            score: Math.min(10, Math.max(4, Math.round(intelData.growthTrend / 10))),
+                            signal: 'Day-part coverage estimate',
+                          },
+                          {
+                            label: 'Catchment Radius Coverage',
+                            score: intelData.catchment.length >= 5 ? 9 : intelData.catchment.length >= 3 ? 7 : 5,
+                            signal: `${intelData.catchment.length} pincodes in catchment`,
+                          },
+                        ]
+                        return (
+                          <div className="space-y-3">
+                            {axes.map(({ label, score, signal }) => (
+                              <div key={label}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-gray-700 font-medium">{label}</span>
+                                  <span className={`text-xs font-bold ${score >= 8 ? 'text-green-600' : score >= 6 ? 'text-amber-600' : 'text-red-500'}`}>{score}/10</span>
+                                </div>
+                                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-0.5">
+                                  <div className={`h-full rounded-full ${score >= 8 ? 'bg-green-400' : score >= 6 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${score * 10}%` }} />
+                                </div>
+                                <p className="text-[9px] text-gray-400">{signal}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })()}
+                    </div>
+
                     <div className="p-5">
                       <h3 className="font-bold text-gray-900 mb-4">Where Shoppers Come From</h3>
                       <CatchmentFlow catchment={intelData.catchment} />
@@ -1145,11 +1431,11 @@ export default function BrandDashboardPage() {
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">5 min Walking</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <MetricCell label="TOTAL FOOTFALL" value={intelData.totalFootfall.toLocaleString()} trend="up" benchmark="7.68" />
-                        <MetricCell label="GROWTH TRENDS" value={intelData.growthTrend.toFixed(1)} trend="up" benchmark="36.89" />
-                        <MetricCell label="SPENDING CAPACITY" value={intelData.spendingCapacity.toFixed(1)} trend="up" benchmark="27.89" />
-                        <MetricCell label="NUMBER OF STORES" value={String(intelData.numberOfStores)} trend="down" benchmark="245" />
-                        <MetricCell label="RETAIL INDEX" value={intelData.retailIndex.toFixed(3)} trend="up" benchmark="0.34" />
+                        <MetricCell label="TOTAL FOOTFALL" value={intelData.totalFootfall.toLocaleString()} trend="up" benchmark="7.68" tooltip="Estimated average daily footfall in the 5-min walking catchment. Derived from Google Places density + Lokazen area multipliers." />
+                        <MetricCell label="GROWTH TRENDS" value={intelData.growthTrend.toFixed(1)} trend="up" benchmark="36.89" tooltip="Whitespace score — higher means more room to grow. Measures unmet demand vs current supply." />
+                        <MetricCell label="SPENDING CAPACITY" value={intelData.spendingCapacity.toFixed(1)} trend="up" benchmark="27.89" tooltip="Demand Gap Score — how underserved this area is for your category. Higher = better opportunity." />
+                        <MetricCell label="NUMBER OF STORES" value={String(intelData.numberOfStores)} trend="down" benchmark="245" tooltip="Total competitor and complementary brand count within 800m radius from Google Places data." />
+                        <MetricCell label="RETAIL INDEX" value={intelData.retailIndex.toFixed(3)} trend="up" benchmark="0.34" tooltip="Inverse saturation index — higher means less congested retail market. 1.0 = zero competition." />
                       </div>
                     </div>
 
@@ -1294,7 +1580,7 @@ export default function BrandDashboardPage() {
                       )}
                     </div>
 
-                    <div className="p-5">
+                    <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Store Closure Risk</h3>
                         <span className="text-xs bg-green-100 text-green-600 rounded-full px-2 py-0.5">5 min Walking</span>
@@ -1314,6 +1600,74 @@ export default function BrandDashboardPage() {
                           </tbody>
                         </table>
                       )}
+                    </div>
+
+                    {/* SWOT Analysis — LIR Section 07 style */}
+                    <div className="p-5">
+                      <h3 className="font-bold text-gray-900 text-sm mb-3">SWOT Analysis</h3>
+                      {(() => {
+                        const hasGoodFootfall = intelData.totalFootfall > 2000
+                        const lowCompetition = intelData.numberOfStores < 5
+                        const highAffluence = intelData.affluenceIndicator === 'High'
+                        const metroNear = intelData.metroDistance != null && intelData.metroDistance < 1500
+                        const highBudgetFit = (selectedMatch?.breakdown.budgetFit || 0) >= 70
+                        const highLocationFit = (selectedMatch?.breakdown.locationFit || 0) >= 70
+
+                        const strengths = [
+                          hasGoodFootfall && `Strong footfall density (~${intelData.totalFootfall.toLocaleString()} daily)`,
+                          lowCompetition && 'Low competitor density — category opportunity',
+                          highAffluence && 'High-affluence catchment — strong spending power',
+                          metroNear && `Metro access within ${((intelData.metroDistance || 0) / 1000).toFixed(1)}km`,
+                          highLocationFit && 'Located in your preferred area',
+                        ].filter(Boolean) as string[]
+
+                        const weaknesses = [
+                          !highBudgetFit && 'Rent above your stated budget range',
+                          !lowCompetition && `${intelData.numberOfStores} active competitors in the area`,
+                          !metroNear && 'No metro station nearby — auto/cab dependent',
+                          intelData.catchment.length < 3 && 'Limited catchment radius data available',
+                        ].filter(Boolean) as string[]
+
+                        const opportunities = [
+                          lowCompetition && 'First-mover advantage in underserved market',
+                          `Delivery channel — ${intelData.catchment[0]?.name || 'local'} delivery zone`,
+                          (intelData.crowdPullers.length > 0) && `${intelData.crowdPullers[0].name} nearby drives footfall overflow`,
+                        ].filter(Boolean) as string[]
+
+                        const threats = [
+                          !lowCompetition && 'Competition density may increase further',
+                          !highBudgetFit && 'High rent-to-revenue ratio risk',
+                          intelData.cannibalisationRisk.length > 0 && 'Cannibalisation risk from same-brand outlets nearby',
+                        ].filter(Boolean) as string[]
+
+                        const sections = [
+                          { title: 'Strengths', items: strengths.slice(0, 4), color: 'bg-green-50 border-green-100', titleColor: 'text-green-700', dot: 'bg-green-500' },
+                          { title: 'Weaknesses', items: weaknesses.slice(0, 3), color: 'bg-red-50 border-red-100', titleColor: 'text-red-700', dot: 'bg-red-400' },
+                          { title: 'Opportunities', items: opportunities.slice(0, 3), color: 'bg-blue-50 border-blue-100', titleColor: 'text-blue-700', dot: 'bg-blue-400' },
+                          { title: 'Threats', items: threats.slice(0, 3), color: 'bg-amber-50 border-amber-100', titleColor: 'text-amber-700', dot: 'bg-amber-400' },
+                        ]
+                        return (
+                          <div className="grid grid-cols-2 gap-2">
+                            {sections.map(({ title, items, color, titleColor, dot }) => (
+                              <div key={title} className={`${color} border rounded-xl p-3`}>
+                                <p className={`text-[11px] font-bold ${titleColor} uppercase tracking-wide mb-2`}>{title}</p>
+                                {items.length === 0 ? (
+                                  <p className="text-[10px] text-gray-400 italic">None identified</p>
+                                ) : (
+                                  <ul className="space-y-1">
+                                    {items.map((item, i) => (
+                                      <li key={i} className="flex items-start gap-1.5">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${dot} mt-1 flex-shrink-0`} />
+                                        <span className="text-[10px] text-gray-700 leading-tight">{item}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </div>
                   </div>
                 )}
