@@ -1814,6 +1814,8 @@ export default function BrandDashboardPage() {
             )}
           </div>
         )}
+      </div>
+
       {/* Schedule Visit Modal */}
       {visitModal.open && selectedMatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
