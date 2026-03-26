@@ -941,13 +941,43 @@ export default function BrandDashboardPage() {
                   </InfoWindow>
                 )
               })}
-              {/* Heatmap */}
-              {isLoaded && mapMode === 'heatmap' && (
-                <HeatmapLayer
-                  data={matches.filter((m) => m.coords).map((m) => new google.maps.LatLng(m.coords!.lat, m.coords!.lng))}
-                  options={{ radius: 40, gradient: ['rgba(255,255,255,0)', '#FFB899', '#FF5200', '#E4002B'] }}
-                />
-              )}
+              {/* Heatmap — property locations in map mode; competitor density in intelligence mode */}
+              {isLoaded && mapMode === 'heatmap' && (() => {
+                let heatPoints: google.maps.LatLng[] = []
+                if (rightMode === 'intelligence' && intelData && selectedMatch?.coords) {
+                  // Show competitor/activity density around selected property
+                  const base = selectedMatch.coords
+                  const allPlaces = [...(intelData.competitors ?? []), ...(intelData.complementaryBrands ?? []), ...(intelData.crowdPullers ?? [])]
+                  heatPoints = allPlaces
+                    .filter((c) => c.distance > 0)
+                    .map((c, i) => {
+                      const angle = (i / Math.max(1, allPlaces.length)) * 2 * Math.PI
+                      const dist = c.distance / 111320
+                      return new google.maps.LatLng(
+                        base.lat + dist * Math.cos(angle),
+                        base.lng + dist * Math.sin(angle)
+                      )
+                    })
+                  // Also add a cluster at the property itself
+                  for (let j = 0; j < 5; j++) {
+                    heatPoints.push(new google.maps.LatLng(
+                      base.lat + (Math.random() - 0.5) * 0.002,
+                      base.lng + (Math.random() - 0.5) * 0.002
+                    ))
+                  }
+                } else {
+                  heatPoints = matches
+                    .filter((m) => m.coords)
+                    .map((m) => new google.maps.LatLng(m.coords!.lat, m.coords!.lng))
+                }
+                if (heatPoints.length === 0) return null
+                return (
+                  <HeatmapLayer
+                    data={heatPoints}
+                    options={{ radius: 50, opacity: 0.8, gradient: ['rgba(255,255,255,0)', '#FFB899', '#FF5200', '#E4002B'] }}
+                  />
+                )
+              })()}
             </GoogleMap>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-100">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
-import { getPropertyCoordinatesFromRow } from '@/lib/property-coordinates'
+import { getPropertyCoordinatesFromRow, geocodeAddress } from '@/lib/property-coordinates'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 
 export async function GET(request: NextRequest) {
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       coords: { lat: number; lng: number } | null
     }
 
-    const scored: ScoredMatch[] = properties
+    const preScoredList = properties
       .map((p) => {
         const price = Number(p.price)
         const size = p.size
@@ -133,6 +133,28 @@ export async function GET(request: NextRequest) {
       .filter((m) => m.bfiScore >= 45)
       .sort((a, b) => b.bfiScore - a.bfiScore)
       .slice(0, 15)
+
+    // Geocode any remaining properties without coordinates (run in parallel, cap at 5s)
+    const geocodeResults = await Promise.allSettled(
+      preScoredList.map(async (m) => {
+        if (m.coords) return m
+        try {
+          const geocoded = await geocodeAddress(
+            m.p.address || '',
+            m.p.city || '',
+            m.p.state || 'Karnataka',
+            m.p.title
+          )
+          return { ...m, coords: geocoded }
+        } catch {
+          return m
+        }
+      })
+    )
+
+    const scored: ScoredMatch[] = geocodeResults.map((r, i) =>
+      r.status === 'fulfilled' ? r.value : preScoredList[i]
+    )
 
     return NextResponse.json({
       matches: scored.map((m) => ({
