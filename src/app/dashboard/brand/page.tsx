@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { GoogleMap, Marker, HeatmapLayer, useLoadScript, InfoWindow } from '@react-google-maps/api'
 import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
 import { encodePropertyId } from '@/lib/property-slug'
+import Logo from '@/components/Logo'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 
@@ -215,7 +216,8 @@ function splitCompetitors(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformLiveIntelligence(data: any, coords: { lat: number; lng: number }): IntelligenceData {
+function transformLiveIntelligence(data: any, coords: { lat: number; lng: number } | null): IntelligenceData {
+  const resolvedCoords = coords ?? { lat: data?.lat ?? 12.9716, lng: data?.lng ?? 77.5946 }
   const competitors: IntelligenceData['competitors'] = (data.competitors || []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (c: any) => ({
@@ -244,7 +246,7 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
   const similarMarkets: IntelligenceData['similarMarkets'] = (data.similarMarkets || []).map((m: any) => {
     const areaKey = String(m.area || '')
     const area = BANGALORE_AREAS.find((a) => a.key === areaKey)
-    return { key: areaKey, lat: area?.lat || coords.lat, lng: area?.lng || coords.lng, score: Number(m.score) || 50 }
+    return { key: areaKey, lat: area?.lat || resolvedCoords.lat, lng: area?.lng || resolvedCoords.lng, score: Number(m.score) || 50 }
   })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const crowdPullers: IntelligenceData['crowdPullers'] = (data.crowdPullers || []).map((p: any) => ({
@@ -260,7 +262,7 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
     distanceM: Number(c.distanceM) || 0,
   }))
   return {
-    coords,
+    coords: resolvedCoords,
     overallScore: Number(data.marketPotentialScore) || 50,
     highlights: buildHighlights(data),
     totalFootfall: Number(data.footfall?.dailyAverage) || 0,
@@ -472,42 +474,47 @@ export default function BrandDashboardPage() {
     setRightMode('intelligence')
     const brand = data?.brand ?? null
     try {
-      if (coords) {
-        const liveRes = await fetch('/api/location-intelligence', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            lat: coords.lat, lng: coords.lng,
-            address: property.address, city: property.city,
-            state: 'Karnataka', propertyType: property.propertyType,
-            businessType: brand?.industry || '',
-          }),
-        })
-        if (liveRes.ok) {
-          const liveData = await liveRes.json()
-          if (liveData.success) {
-            const intel = transformLiveIntelligence(liveData.data, coords)
-            const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brand?.industry)
-            setIntelData({ ...intel, competitors: sameCat, complementaryBrands: compBrands })
-            return
-          }
+      // Always call the live API — it geocodes from address/city when coords are missing
+      const liveRes = await fetch('/api/location-intelligence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+          address: property.address, city: property.city,
+          state: 'Karnataka', propertyType: property.propertyType,
+          businessType: brand?.industry || '',
+        }),
+      })
+      if (liveRes.ok) {
+        const liveData = await liveRes.json()
+        if (liveData.success) {
+          const resolvedCoords: { lat: number; lng: number } | null =
+            coords ?? (liveData.data?.lat != null && liveData.data?.lng != null
+              ? { lat: liveData.data.lat, lng: liveData.data.lng }
+              : null)
+          const intel = transformLiveIntelligence(liveData.data, resolvedCoords)
+          const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brand?.industry)
+          setIntelData({ ...intel, competitors: sameCat, complementaryBrands: compBrands })
+          return
         }
       }
-      // Fallback to DB intelligence
+      // Fallback to DB intelligence if live API fails
       const dbRes = await fetch(`/api/intelligence/${propertyId}?category=${encodeURIComponent(brand?.industry || '')}`)
       if (dbRes.ok) {
         const dbData = await dbRes.json()
-        if (dbData.intelligence && coords) {
+        if (dbData.intelligence) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const intel = dbData.intelligence as any
+          const fallbackCoords = coords ?? { lat: 12.9716, lng: 77.5946 }
           setIntelData({
-            coords, overallScore: Number(intel.marketPotentialScore) || 50, highlights: [],
+            coords: fallbackCoords, overallScore: Number(intel.marketPotentialScore) || 50, highlights: [],
             totalFootfall: Number(intel.dailyFootfall) || 0, growthTrend: 0, spendingCapacity: 0,
             numberOfStores: 0, retailIndex: 0.5, hourlyPattern: [], totalHouseholds: 0,
             affluenceIndicator: 'Medium', catchment: [], competitors: [], complementaryBrands: [],
             crowdPullers: [], retailMix: [], cannibalisationRisk: [], storeClosureRisk: [], similarMarkets: [],
             metroDistance: null, metroName: null, busStops: 0,
           })
+          return
         }
       }
     } catch (err) { console.error('[Brand Dashboard] intel error:', err) }
@@ -548,7 +555,7 @@ export default function BrandDashboardPage() {
     { key: 'competitors', label: 'Competitors' },
     { key: 'risk', label: 'Risk' },
     { key: 'similar', label: 'Similar Markets' },
-    { key: 'map', label: '🗺 Map' },
+    { key: 'map', label: 'Map' },
   ]
 
   return (
@@ -560,10 +567,7 @@ export default function BrandDashboardPage() {
         {/* Brand Header */}
         <div className="p-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <Link href="/">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/lokazen-logo-text.svg" alt="Lokazen" className="h-7" />
-            </Link>
+            <Logo size="sm" showPoweredBy={false} href="/" />
             <button
               onClick={() => { localStorage.clear(); router.push('/') }}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
@@ -610,14 +614,13 @@ export default function BrandDashboardPage() {
         <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {[
-              { label: 'Matches', value: matches.length, icon: '🎯', color: 'text-[#FF5200]' },
-              { label: 'Viewed', value: stats.totalViews, icon: '👁', color: 'text-blue-600' },
-              { label: 'Saved', value: stats.totalSaved, icon: '♥', color: 'text-pink-600' },
-              { label: 'Inquiries', value: stats.totalInquiries, icon: '💬', color: 'text-purple-600' },
-              { label: 'Pending', value: stats.pendingInquiries, icon: '⏳', color: 'text-amber-600' },
-            ].map(({ label, value, icon, color }) => (
+              { label: 'Matches', value: matches.length, color: 'text-[#FF5200]' },
+              { label: 'Viewed', value: stats.totalViews, color: 'text-blue-600' },
+              { label: 'Saved', value: stats.totalSaved, color: 'text-pink-600' },
+              { label: 'Inquiries', value: stats.totalInquiries, color: 'text-purple-600' },
+              { label: 'Pending', value: stats.pendingInquiries, color: 'text-amber-600' },
+            ].map(({ label, value, color }) => (
               <div key={label} className="min-w-[78px] flex-shrink-0 rounded-xl bg-gray-50 border border-gray-100 p-2.5 text-center">
-                <div className="text-base mb-0.5">{icon}</div>
                 <p className={`text-lg font-bold ${color}`}>{value}</p>
                 <p className="text-[10px] text-gray-500">{label}</p>
               </div>
@@ -957,7 +960,7 @@ export default function BrandDashboardPage() {
             {(['pins', 'heatmap', 'satellite'] as const).map((mode) => (
               <button key={mode} onClick={() => { setMapMode(mode); if (mapRef) mapRef.setMapTypeId(mode === 'satellite' ? 'satellite' : 'roadmap') }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize ${mapMode === mode ? 'bg-[#FF5200] text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-                {mode === 'pins' ? '📍 Pins' : mode === 'heatmap' ? '🌡 Heatmap' : '🛰 Satellite'}
+                {mode === 'pins' ? 'Pins' : mode === 'heatmap' ? 'Heatmap' : 'Satellite'}
               </button>
             ))}
           </div>
@@ -994,8 +997,8 @@ export default function BrandDashboardPage() {
             {!intelLoading && !intelData && (
               <div className="flex items-center justify-center h-full py-20">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-2">No intelligence data available for this property.</p>
-                  <p className="text-xs text-gray-400">Coordinates may be missing — coordinates are required for live intelligence.</p>
+                  <p className="text-sm text-gray-500 mb-2">Intelligence data could not be loaded.</p>
+                  <p className="text-xs text-gray-400">Try selecting the property again or check your connection.</p>
                 </div>
               </div>
             )}
