@@ -32,6 +32,7 @@ export const BANGALORE_AREAS: AreaDefinition[] = [
   { key: 'electronic city', lat: 12.8456, lng: 77.6603, pincode: '560100' },
   { key: 'sarjapur road', lat: 12.9102, lng: 77.6878, pincode: '560035' },
   { key: 'banashankari', lat: 12.9254, lng: 77.5468, pincode: '560070' },
+  { key: 'kalyan nagar', lat: 13.022, lng: 77.647, pincode: '560043' },
   { key: 'malleswaram', lat: 13.0035, lng: 77.5648, pincode: '560055' },
   { key: 'rajajinagar', lat: 13.0102, lng: 77.5534, pincode: '560010' },
   { key: 'brigade road', lat: 12.9714, lng: 77.6061, pincode: '560025' },

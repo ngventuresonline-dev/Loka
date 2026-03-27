@@ -677,8 +677,11 @@ export default function BrandDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
-          address: property.address, city: property.city,
-          state: 'Karnataka', propertyType: property.propertyType,
+          address: property.address,
+          city: property.city,
+          state: 'Karnataka',
+          title: property.title,
+          propertyType: property.propertyType,
           businessType: brand?.industry || '',
           monthlyRent: deriveMonthlyRentFromListing(property.price, property.priceType, property.size),
           sizeSqft: property.size,
@@ -1531,7 +1534,7 @@ export default function BrandDashboardPage() {
                           <span className="ml-1.5 normal-case font-normal text-[#FF5200]">· Lokazen intelligence</span>
                         </p>
                         {intelData.locationSynthesisLoading && (
-                          <span className="text-[10px] text-[#FF5200] animate-pulse">Synthesizing…</span>
+                          <span className="text-[10px] text-[#FF5200] animate-pulse">Working…</span>
                         )}
                         {intelData.locationSynthesis && (
                           <span

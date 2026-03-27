@@ -3,12 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Note: This is POST so revalidate doesn't apply, but Redis cache is already wired
 export const maxDuration = 30 // Allow 30s for Google Places calls
 
-import {
-  mapplsGeocode,
-  mapplsNearby,
-  mapplsNearbyTransit,
-  mapToMapplsNearbyParams,
-} from '@/lib/mappls-api'
+import { mapplsNearby, mapplsNearbyTransit, mapToMapplsNearbyParams } from '@/lib/mappls-api'
 import { isMapplsConfigured } from '@/lib/mappls-config'
 import {
   computeSaturationIndex,
@@ -35,6 +30,7 @@ import {
   computeCannibalisationRisk,
 } from '@/lib/location-intelligence/geoiq-features'
 import { buildPopulationRentContext } from '@/lib/location-intelligence/location-rent-context'
+import { geocodeAddress } from '@/lib/property-coordinates'
 
 type LocationIntelligenceRequest = {
   lat?: number
@@ -42,6 +38,8 @@ type LocationIntelligenceRequest = {
   address?: string
   city?: string
   state?: string
+  /** Listing title — used to disambiguate geocode (e.g. "| Kalyan Nagar" vs generic "7th Main") */
+  title?: string
   propertyType?: string
   businessType?: string
   monthlyRent?: number
@@ -640,39 +638,28 @@ export async function POST(request: NextRequest) {
     }
     if (!body || typeof body !== 'object') body = {} as LocationIntelligenceRequest
 
-    let { lat, lng, address, city, state, propertyType, businessType, monthlyRent: rawRent, sizeSqft: rawSize } = body
+    let {
+      lat,
+      lng,
+      address,
+      city,
+      state,
+      title,
+      propertyType,
+      businessType,
+      monthlyRent: rawRent,
+      sizeSqft: rawSize,
+    } = body
     const monthlyRent = typeof rawRent === 'number' && Number.isFinite(rawRent) && rawRent > 0 ? rawRent : undefined
     const sizeSqft = typeof rawSize === 'number' && Number.isFinite(rawSize) ? rawSize : undefined
 
     if (typeof lat !== 'number' || typeof lng !== 'number') {
       const locationQuery = [address, city, state].filter(Boolean).join(', ')
-      if (!locationQuery.trim()) {
-        // Will fail below with proper error
-      } else if (isMapplsConfigured()) {
-        const coords = await mapplsGeocode(locationQuery)
+      if (locationQuery.trim()) {
+        const coords = await geocodeAddress(address || '', city || '', state || '', title)
         if (coords) {
           lat = coords.lat
           lng = coords.lng
-        }
-      }
-      if (typeof lat !== 'number' || typeof lng !== 'number') {
-        const googleKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-        if (googleKey && locationQuery) {
-          try {
-            const geoUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json')
-            geoUrl.searchParams.set('address', locationQuery)
-            geoUrl.searchParams.set('key', googleKey)
-            const geoRes = await fetch(geoUrl.toString(), { signal: AbortSignal.timeout(10000) })
-            if (geoRes.ok) {
-              const geoJson = await geoRes.json()
-              if (geoJson.results?.[0]?.geometry?.location) {
-                lat = geoJson.results[0].geometry.location.lat
-                lng = geoJson.results[0].geometry.location.lng
-              }
-            }
-          } catch (e: any) {
-            console.warn('[LocationIntelligence API] Geocode failed:', e?.message)
-          }
         }
       }
     }

@@ -142,6 +142,14 @@ export function buildLocationIntelSnapshot(
   const crowdPullers = Array.isArray(raw.crowdPullers) ? raw.crowdPullers : []
 
   const lmByKind = (kind: string) => landmarks.filter((l: { kind?: string }) => (l as { kind?: string }).kind === kind).length
+  const landmarkSamples = (landmarks as Array<{ name?: string; kind?: string; distanceMeters?: number }>)
+    .slice(0, 14)
+    .map((l) => ({
+      name: String(l.name || '').slice(0, 80),
+      kind: String(l.kind || ''),
+      km: Math.round((Number(l.distanceMeters) || 0) / 100) / 10,
+    }))
+    .filter((l) => l.name)
 
   const footfall = raw.footfall as Record<string, unknown> | undefined
   const market = raw.market as Record<string, unknown> | undefined
