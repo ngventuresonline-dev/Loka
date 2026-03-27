@@ -10,6 +10,8 @@ import { encodePropertyId } from '@/lib/property-slug'
 import Logo from '@/components/Logo'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
+import { deriveMonthlyRentFromListing } from '@/lib/location-intelligence/location-rent-context'
+import type { BrandIntelClaudeEnrichment } from '@/lib/intelligence/brand-intel-enrichment.types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,7 +141,16 @@ type IntelligenceData = {
   metroName: string | null
   busStops: number
   rentPerSqftCommercial: number | null
+  /** Area / listing model band (before Claude) */
+  marketRentLow: number | null
+  marketRentHigh: number | null
+  rentDataSource: 'listing' | 'area_benchmark' | null
+  nearestCommercialAreaKey: string | null
   incomeLevel: string | null
+  /** Claude interpretation of modelled intel + match context */
+  aiEnrichment: BrandIntelClaudeEnrichment | null
+  aiEnrichmentLoading: boolean
+  aiEnrichmentError: string | null
 }
 
 type RightPanelMode = 'map' | 'intelligence'
@@ -157,6 +168,12 @@ function formatPrice(price: number, priceType: string) {
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function shortenText(s: string, max: number) {
+  const t = (s || '').trim()
+  if (t.length <= max) return t
+  return `${t.slice(0, max - 1)}…`
 }
 
 function statusBadge(status: string) {
@@ -323,7 +340,18 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
     busStops: data.accessibility?.nearestBusStop ? 1 : 0,
     rentPerSqftCommercial:
       data.populationLifestyle?.rentPerSqft != null ? Number(data.populationLifestyle.rentPerSqft) : null,
+    marketRentLow:
+      data.populationLifestyle?.marketRentLow != null ? Number(data.populationLifestyle.marketRentLow) : null,
+    marketRentHigh:
+      data.populationLifestyle?.marketRentHigh != null ? Number(data.populationLifestyle.marketRentHigh) : null,
+    rentDataSource: data.populationLifestyle?.rentDataSource === 'listing' || data.populationLifestyle?.rentDataSource === 'area_benchmark'
+      ? data.populationLifestyle.rentDataSource
+      : null,
+    nearestCommercialAreaKey: data.nearestCommercialAreaKey != null ? String(data.nearestCommercialAreaKey) : null,
     incomeLevel: data.demographics?.incomeLevel ? String(data.demographics.incomeLevel) : null,
+    aiEnrichment: null,
+    aiEnrichmentLoading: false,
+    aiEnrichmentError: null,
   }
 }
 
@@ -546,7 +574,8 @@ export default function BrandDashboardPage() {
   const fetchPropertyIntelligence = useCallback(async (
     propertyId: string,
     property: MatchedProperty['property'],
-    coords: { lat: number; lng: number } | null
+    coords: { lat: number; lng: number } | null,
+    matchMeta: MatchedProperty | null
   ) => {
     setIntelLoading(true)
     setIntelData(null)
@@ -562,6 +591,8 @@ export default function BrandDashboardPage() {
           address: property.address, city: property.city,
           state: 'Karnataka', propertyType: property.propertyType,
           businessType: brand?.industry || '',
+          monthlyRent: deriveMonthlyRentFromListing(property.price, property.priceType, property.size),
+          sizeSqft: property.size,
         }),
       })
       if (liveRes.ok) {
@@ -579,7 +610,98 @@ export default function BrandDashboardPage() {
                 : null)
           const intel = transformLiveIntelligence(d, resolvedCoords)
           const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brand?.industry)
-          setIntelData({ ...intel, competitors: sameCat, complementaryBrands: compBrands })
+          setIntelData({
+            ...intel,
+            competitors: sameCat,
+            complementaryBrands: compBrands,
+            aiEnrichment: null,
+            aiEnrichmentLoading: true,
+            aiEnrichmentError: null,
+          })
+
+          const preferred =
+            brand?.preferredLocations != null
+              ? Array.isArray(brand.preferredLocations)
+                ? brand.preferredLocations
+                : typeof brand.preferredLocations === 'string'
+                  ? (() => {
+                      try {
+                        const p = JSON.parse(brand.preferredLocations as string)
+                        return Array.isArray(p) ? p.map(String) : []
+                      } catch {
+                        return []
+                      }
+                    })()
+                  : []
+              : []
+
+          void (async () => {
+            try {
+              const enrichRes = await fetch('/api/dashboard/brand/intel-enrich', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  brandId: brand?.id,
+                  rawIntel: d,
+                  brand: {
+                    name: brand?.name || 'Brand',
+                    companyName: brand?.companyName,
+                    industry: brand?.industry,
+                    budgetMin: brand?.budgetMin,
+                    budgetMax: brand?.budgetMax,
+                    preferredLocations: preferred.length ? preferred : null,
+                  },
+                  property: {
+                    title: property.title,
+                    address: property.address,
+                    city: property.city,
+                    propertyType: property.propertyType,
+                    size: property.size,
+                    price: property.price,
+                    priceType: property.priceType,
+                  },
+                  match: matchMeta
+                    ? {
+                        bfiScore: matchMeta.bfiScore,
+                        locationFit: matchMeta.breakdown.locationFit,
+                        budgetFit: matchMeta.breakdown.budgetFit,
+                        sizeFit: matchMeta.breakdown.sizeFit,
+                      }
+                    : undefined,
+                }),
+              })
+              const enrichJson = await enrichRes.json().catch(() => ({}))
+              if (enrichRes.ok && enrichJson.success && enrichJson.data) {
+                setIntelData((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        aiEnrichment: enrichJson.data as BrandIntelClaudeEnrichment,
+                        aiEnrichmentLoading: false,
+                        aiEnrichmentError: null,
+                      }
+                    : prev
+                )
+              } else {
+                setIntelData((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        aiEnrichment: null,
+                        aiEnrichmentLoading: false,
+                        aiEnrichmentError: String(enrichJson.error || 'AI briefing unavailable'),
+                      }
+                    : prev
+                )
+              }
+            } catch {
+              setIntelData((prev) =>
+                prev
+                  ? { ...prev, aiEnrichment: null, aiEnrichmentLoading: false, aiEnrichmentError: 'AI briefing failed' }
+                  : prev
+              )
+            }
+          })()
           return
         }
       }
@@ -598,7 +720,13 @@ export default function BrandDashboardPage() {
             affluenceIndicator: 'Medium', catchment: [], catchmentLandmarks: [], competitors: [], complementaryBrands: [],
             crowdPullers: [], retailMix: [], cannibalisationRisk: [], storeClosureRisk: [], similarMarkets: [],
             metroDistance: null, metroName: null, busStops: 0,
-            rentPerSqftCommercial: null, incomeLevel: null,
+            rentPerSqftCommercial: null,
+            marketRentLow: null,
+            marketRentHigh: null,
+            rentDataSource: null,
+            nearestCommercialAreaKey: null,
+            incomeLevel: null,
+            aiEnrichment: null, aiEnrichmentLoading: false, aiEnrichmentError: null,
           })
           return
         }
@@ -612,7 +740,7 @@ export default function BrandDashboardPage() {
     setRightPanelTab('overview')
     setActiveInfoWindowId(m.property.id)
     if (m.coords && mapRef) { mapRef.panTo(m.coords); mapRef.setZoom(15) }
-    fetchPropertyIntelligence(m.property.id, m.property, m.coords)
+    fetchPropertyIntelligence(m.property.id, m.property, m.coords, m)
   }
 
   if (loading) {
@@ -1286,6 +1414,112 @@ export default function BrandDashboardPage() {
                       </div>
                     )}
 
+                    {/* Claude AI briefing — enriches modelled intel */}
+                    <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-violet-50/40 to-transparent">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                          AI location read
+                          <span className="ml-1.5 normal-case font-normal text-violet-600">Claude</span>
+                        </p>
+                        {intelData.aiEnrichmentLoading && (
+                          <span className="text-[10px] text-violet-600 animate-pulse">Synthesizing…</span>
+                        )}
+                        {intelData.aiEnrichment && (
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                              intelData.aiEnrichment.strategicFit === 'strong'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : intelData.aiEnrichment.strategicFit === 'viable'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : intelData.aiEnrichment.strategicFit === 'cautionary'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {intelData.aiEnrichment.strategicFit} fit
+                          </span>
+                        )}
+                      </div>
+                      {intelData.aiEnrichmentError && (
+                        <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">{intelData.aiEnrichmentError}</p>
+                      )}
+                      {intelData.aiEnrichmentLoading && !intelData.aiEnrichment && !intelData.aiEnrichmentError && (
+                        <div className="space-y-2 animate-pulse">
+                          <div className="h-3 bg-violet-100 rounded w-full" />
+                          <div className="h-3 bg-violet-100 rounded w-11/12" />
+                          <div className="h-3 bg-violet-100 rounded w-4/5" />
+                        </div>
+                      )}
+                      {intelData.aiEnrichment && (
+                        <div className="space-y-3 text-xs text-gray-700">
+                          <p className="leading-relaxed text-gray-800">{intelData.aiEnrichment.executiveSummary}</p>
+                          {intelData.aiEnrichment.liveEconomics && (
+                            <div className="rounded-lg border border-violet-100 bg-white/90 px-3 py-2">
+                              <p className="text-[9px] font-bold text-violet-700 uppercase tracking-wide mb-0.5">Live commercial rent (AI)</p>
+                              <p className="text-sm font-bold text-gray-900">
+                                ₹{intelData.aiEnrichment.liveEconomics.commercialRentPerSqftTypical}/sqft/mo typical
+                                <span className="text-[11px] font-normal text-gray-500">
+                                  {' '}· band ₹{intelData.aiEnrichment.liveEconomics.commercialRentLow}–
+                                  {intelData.aiEnrichment.liveEconomics.commercialRentHigh}
+                                  <span className="capitalize"> · {intelData.aiEnrichment.liveEconomics.confidence} confidence</span>
+                                </span>
+                              </p>
+                              <p className="text-[10px] text-gray-600 mt-1">{shortenText(intelData.aiEnrichment.liveEconomics.rationale, 220)}</p>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Strengths</p>
+                              <ul className="space-y-1 list-disc list-inside text-[11px] text-gray-700">
+                                {intelData.aiEnrichment.strengths.map((s, i) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Risks</p>
+                              <ul className="space-y-1 list-disc list-inside text-[11px] text-gray-700">
+                                {intelData.aiEnrichment.risks.map((s, i) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                          {intelData.aiEnrichment.opportunities.length > 0 && (
+                            <div>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Opportunities</p>
+                              <ul className="space-y-1 list-disc list-inside text-[11px] text-gray-700">
+                                {intelData.aiEnrichment.opportunities.map((s, i) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          <p className="text-[11px] text-gray-600">
+                            <span className="font-semibold text-gray-700">Competition: </span>
+                            {intelData.aiEnrichment.competitorTakeaway}
+                          </p>
+                          <p className="text-[11px] text-gray-600">
+                            <span className="font-semibold text-gray-700">Footfall: </span>
+                            {intelData.aiEnrichment.footfallInterpretation}
+                          </p>
+                          {intelData.aiEnrichment.nextSteps.length > 0 && (
+                            <div className="rounded-lg bg-white/80 border border-violet-100 px-3 py-2">
+                              <p className="text-[9px] font-bold text-violet-700 uppercase mb-1">Suggested next steps</p>
+                              <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-800">
+                                {intelData.aiEnrichment.nextSteps.map((s, i) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+                          <p className="text-[9px] text-gray-400 leading-snug pt-1 border-t border-gray-100">
+                            {intelData.aiEnrichment.disclaimer}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
                     {/* BFI Breakdown */}
                     <div className="px-5 py-4 border-b border-gray-100">
                       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3">BFI Breakdown</p>
@@ -1572,19 +1806,56 @@ export default function BrandDashboardPage() {
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Catchment economics</h3>
-                        <span className="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">Modelled</span>
+                        <span className={`text-xs rounded-full px-2 py-0.5 ${
+                          intelData.aiEnrichment?.liveEconomics
+                            ? 'bg-violet-100 text-violet-800 font-medium'
+                            : intelData.aiEnrichmentLoading
+                              ? 'bg-amber-50 text-amber-800'
+                              : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {intelData.aiEnrichment?.liveEconomics
+                            ? 'Claude live rent + platform band'
+                            : intelData.aiEnrichmentLoading
+                              ? 'Updating live rent…'
+                              : intelData.rentDataSource === 'listing'
+                                ? 'Listing + area band'
+                                : 'Area benchmark model'}
+                        </span>
                       </div>
+                      {intelData.nearestCommercialAreaKey && (
+                        <p className="text-[10px] text-gray-500 mb-2">
+                          Micro-market: <span className="font-medium text-gray-700 capitalize">{intelData.nearestCommercialAreaKey.replace(/-/g, ' ')}</span>
+                          {intelData.rentDataSource === 'listing' ? ' · Listing used for implied ₹/sqft' : ''}
+                        </p>
+                      )}
                       <div className="grid grid-cols-2 gap-3 mb-1">
                         <MetricCell
-                          label="COMM. RENT (INDICATOR)"
-                          value={
-                            intelData.rentPerSqftCommercial != null
-                              ? `₹${intelData.rentPerSqftCommercial}/sqft`
-                              : '—'
+                          label={
+                            intelData.aiEnrichment?.liveEconomics
+                              ? 'COMM. RENT (LIVE)'
+                              : intelData.aiEnrichmentLoading
+                                ? 'COMM. RENT (…)'
+                                : 'COMM. RENT (MODEL)'
                           }
+                          value={(() => {
+                            const le = intelData.aiEnrichment?.liveEconomics
+                            const v = le?.commercialRentPerSqftTypical ?? intelData.rentPerSqftCommercial
+                            return v != null && Number.isFinite(Number(v)) ? `₹${Math.round(Number(v))}/sqft` : '—'
+                          })()}
                           trend="up"
-                          benchmark="~80"
-                          tooltip="Typical commercial rent per sqft benchmark for the ward / city tier (Census-derived estimates)."
+                          benchmark={(() => {
+                            const le = intelData.aiEnrichment?.liveEconomics
+                            if (le) return `₹${le.commercialRentLow}–${le.commercialRentHigh}/sqft (${le.confidence})`
+                            if (intelData.marketRentLow != null && intelData.marketRentHigh != null) {
+                              return `₹${intelData.marketRentLow}–${intelData.marketRentHigh}/sqft`
+                            }
+                            return undefined
+                          })()}
+                          tooltip={(() => {
+                            const le = intelData.aiEnrichment?.liveEconomics
+                            if (le) return `${le.rationale} Not a quote—validate with brokers/comps.`
+                            return 'Typical commercial ₹/sqft/month band for the nearest mapped Bengaluru sub-market, adjusted for property type. Pass listing rent + size for listing-implied ₹/sqft.'
+                          })()}
                         />
                         <MetricCell
                           label="INCOME BAND (AREA)"
@@ -1607,6 +1878,12 @@ export default function BrandDashboardPage() {
                           tooltip="Estimated household count where Census ward data is available."
                         />
                       </div>
+                      {intelData.aiEnrichment?.liveEconomics?.listingVsMarketNote ? (
+                        <p className="text-[11px] text-gray-600 mt-2 leading-snug border-t border-gray-100 pt-2">
+                          <span className="font-semibold text-gray-700">Listing vs market: </span>
+                          {intelData.aiEnrichment.liveEconomics.listingVsMarketNote}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">

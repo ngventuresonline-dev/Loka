@@ -34,6 +34,7 @@ import {
   findSimilarMarkets,
   computeCannibalisationRisk,
 } from '@/lib/location-intelligence/geoiq-features'
+import { buildPopulationRentContext } from '@/lib/location-intelligence/location-rent-context'
 
 type LocationIntelligenceRequest = {
   lat?: number
@@ -139,6 +140,10 @@ type LocationIntelligenceResponse = {
     totalHouseholds?: number
     affluenceIndicator?: string
     rentPerSqft?: number
+    marketRentLow?: number
+    marketRentHigh?: number
+    listingRentPerSqft?: number
+    rentDataSource?: 'listing' | 'area_benchmark'
     benchmarkNote?: string
     dataSource?: string
   }
@@ -157,6 +162,8 @@ type LocationIntelligenceResponse = {
     nearestSameBrandDistanceM: number
     cannibalisationPct: number
   }>
+  /** Bangalore micro-market key used for rent benchmarks (see location-rent-context) */
+  nearestCommercialAreaKey?: string
 }
 
 const EARTH_RADIUS_M = 6371000
@@ -683,7 +690,7 @@ export async function POST(request: NextRequest) {
     // Phase 6: Redis cache (by location + category only; rentViability recomputed per request)
     let cached: LocationIntelligenceResponse | null = null
     try {
-      const cacheKey = locationIntelCacheKey(lat, lng, propertyType, businessType)
+      const cacheKey = locationIntelCacheKey(lat, lng, propertyType, businessType, { monthlyRent, sizeSqft })
       cached = await cacheGet<LocationIntelligenceResponse>(cacheKey)
       if (cached) {
         if (typeof monthlyRent === 'number' && monthlyRent > 0 && cached.scores?.revenueProjectionMonthly) {
@@ -1029,6 +1036,13 @@ export async function POST(request: NextRequest) {
         competitorCount,
       })
 
+      const rentCtx = buildPopulationRentContext({
+        nearestAreaKey: nearestArea?.key ?? null,
+        propertyType,
+        monthlyRent,
+        sizeSqft,
+      })
+
       const prismaForWard = await getPrisma()
       const wardForPop = prismaForWard ? await findNearestCensusWard(prismaForWard, { latitude: lat, longitude: lng }) : null
       const pop = wardForPop?.totalPopulation as number | undefined
@@ -1037,7 +1051,7 @@ export async function POST(request: NextRequest) {
 
       // 2026 enrichment: project demographics when Census ward available
       let projections2026: { totalHouseholds: number; affluenceIndicator: string; populationGrowth: string; incomeGrowth: string; projectionSource: string } | undefined
-      let populationLifestyle: { totalHouseholds?: number; affluenceIndicator?: string; rentPerSqft?: number; benchmarkNote?: string; dataSource?: 'Estimated' } | undefined
+      let populationLifestyle: LocationIntelligenceResponse['populationLifestyle']
 
       if (wardForPop) {
         const wardId = (wardForPop as { wardId?: string }).wardId as string | undefined
@@ -1070,8 +1084,12 @@ export async function POST(request: NextRequest) {
             populationLifestyle = {
               totalHouseholds: totalHouseholds2026,
               affluenceIndicator: projections2026.affluenceIndicator,
-              rentPerSqft: 80,
-              benchmarkNote: `2026 projection: ${projections2026.populationGrowth} pop, ${projections2026.incomeGrowth} income. Census 2021 base.`,
+              rentPerSqft: rentCtx.rentPerSqft,
+              marketRentLow: rentCtx.marketRentLow,
+              marketRentHigh: rentCtx.marketRentHigh,
+              listingRentPerSqft: rentCtx.listingRentPerSqft,
+              rentDataSource: rentCtx.rentDataSource,
+              benchmarkNote: `2026 projection: ${projections2026.populationGrowth} pop, ${projections2026.incomeGrowth} income (Census base). ${rentCtx.benchmarkNote}`,
               dataSource: 'Estimated' as const,
             }
           }
@@ -1082,10 +1100,26 @@ export async function POST(request: NextRequest) {
           populationLifestyle = {
             totalHouseholds: pop != null && hhSize != null && hhSize > 0 ? Math.round(pop / hhSize) : undefined,
             affluenceIndicator: inc15 != null && inc15 >= 25 ? 'High' : inc15 != null && inc15 >= 15 ? 'Medium' : 'Moderate',
-            rentPerSqft: 80,
-            benchmarkNote: 'Bengaluru avg ~₹80/sqft. Based on Census 2021.',
+            rentPerSqft: rentCtx.rentPerSqft,
+            marketRentLow: rentCtx.marketRentLow,
+            marketRentHigh: rentCtx.marketRentHigh,
+            listingRentPerSqft: rentCtx.listingRentPerSqft,
+            rentDataSource: rentCtx.rentDataSource,
+            benchmarkNote: rentCtx.benchmarkNote,
             dataSource: 'Estimated' as const,
           }
+        }
+      }
+
+      if (!populationLifestyle) {
+        populationLifestyle = {
+          rentPerSqft: rentCtx.rentPerSqft,
+          marketRentLow: rentCtx.marketRentLow,
+          marketRentHigh: rentCtx.marketRentHigh,
+          listingRentPerSqft: rentCtx.listingRentPerSqft,
+          rentDataSource: rentCtx.rentDataSource,
+          benchmarkNote: rentCtx.benchmarkNote,
+          dataSource: 'Area benchmark',
         }
       }
 
@@ -1144,11 +1178,12 @@ export async function POST(request: NextRequest) {
                 cannCategoryLabel
               )
             : undefined,
+        nearestCommercialAreaKey: nearestArea?.key,
       }
     }
 
     try {
-      const cacheKey = locationIntelCacheKey(lat, lng, propertyType, businessType)
+      const cacheKey = locationIntelCacheKey(lat, lng, propertyType, businessType, { monthlyRent, sizeSqft })
       await cacheSet(cacheKey, response)
     } catch (cacheErr: any) {
       console.warn('[LocationIntelligence API] Cache write failed:', cacheErr?.message)

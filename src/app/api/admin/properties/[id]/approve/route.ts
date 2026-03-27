@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-security'
 import { getPrisma } from '@/lib/get-prisma'
 import { sendPropertyStatusEmail } from '@/lib/lead-email'
+import { triggerLIRGeneration } from '@/lib/intelligence/lir-trigger'
 
 export async function POST(
   request: NextRequest,
@@ -103,6 +104,9 @@ export async function POST(
         throw statusError
       }
     }
+
+    // Fire LIR generation as a background job — do not await
+    triggerLIRGeneration(propertyId)
 
     // Fire owner status email non-blocking (don't hold up the HTTP response)
     if (existingProperty.owner?.email) {

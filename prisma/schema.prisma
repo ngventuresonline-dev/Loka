@@ -489,6 +489,10 @@ model PropertyIntelligence {
   lastUpdated       DateTime @default(now()) @db.Timestamp(6)
   dataQuality       Int      // 0-100
 
+  // CLAUDE LIR REPORT
+  claudeLirReport       Json?    @map("claude_lir_report")
+  claudeLirGeneratedAt  DateTime? @map("claude_lir_generated_at") @db.Timestamp(6)
+
   @@index([propertyId])
   @@index([wardCode])
   @@map("property_intelligence")

@@ -89,6 +89,14 @@ export async function cacheSet<T>(key: string, value: T): Promise<void> {
   })
 }
 
-export function locationIntelCacheKey(lat: number, lng: number, propertyType?: string, businessType?: string): string {
-  return `li:${lat.toFixed(5)}:${lng.toFixed(5)}:${propertyType ?? ''}:${businessType ?? ''}`
+export function locationIntelCacheKey(
+  lat: number,
+  lng: number,
+  propertyType?: string,
+  businessType?: string,
+  opts?: { monthlyRent?: number; sizeSqft?: number }
+): string {
+  const r = opts?.monthlyRent != null && Number.isFinite(opts.monthlyRent) ? String(Math.round(opts.monthlyRent)) : ''
+  const s = opts?.sizeSqft != null && Number.isFinite(opts.sizeSqft) ? String(Math.round(opts.sizeSqft)) : ''
+  return `li:v2:${lat.toFixed(5)}:${lng.toFixed(5)}:${propertyType ?? ''}:${businessType ?? ''}:${r}:${s}`
 }
