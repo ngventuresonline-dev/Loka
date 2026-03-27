@@ -9,6 +9,21 @@ function brandSeeksOffice(profile: { industry?: string | null; category?: string
     test(t)
 }
 
+/** Per-brand exclusions (e.g. duplicate Sarjapur listings); stored on brand_profiles.weight_config_json */
+function parseExcludedMatchPropertyTitles(weightConfigJson: unknown): string[] {
+  if (weightConfigJson == null || typeof weightConfigJson !== 'object') return []
+  const o = weightConfigJson as Record<string, unknown>
+  const raw = o.excludedMatchPropertyTitles
+  if (!Array.isArray(raw)) return []
+  return raw.map((t) => String(t).trim()).filter(Boolean)
+}
+
+function propertyTitleExcludedForBrand(propertyTitle: string, excluded: string[]): boolean {
+  if (excluded.length === 0) return false
+  const t = (propertyTitle || '').trim()
+  return excluded.some((ex) => t === ex)
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
@@ -38,6 +53,7 @@ export async function GET(request: NextRequest) {
               max_size: true,
               industry: true,
               category: true,
+              weight_config_json: true,
             },
           },
         },
@@ -71,6 +87,12 @@ export async function GET(request: NextRequest) {
       })
       .catch(() => [])
 
+    const excludedTitles = parseExcludedMatchPropertyTitles(profile.weight_config_json)
+    const visibleProperties =
+      excludedTitles.length === 0
+        ? properties
+        : properties.filter((p) => !propertyTitleExcludedForBrand(p.title ?? '', excludedTitles))
+
     const budgetMin = Number(profile.budget_min) || 0
     const budgetMax = Number(profile.budget_max) || 9_999_999
     const sizeMin = profile.min_size || 0
@@ -85,7 +107,7 @@ export async function GET(request: NextRequest) {
       coords: { lat: number; lng: number } | null
     }
 
-    const preScoredList = properties
+    const preScoredList = visibleProperties
       .map((p) => {
         const price = Number(p.price)
         const size = p.size
