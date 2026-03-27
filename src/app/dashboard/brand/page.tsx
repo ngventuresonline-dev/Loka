@@ -677,40 +677,51 @@ export default function BrandDashboardPage() {
 
           void (async () => {
             try {
-              const enrichRes = await fetch('/api/dashboard/brand/intel-enrich', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  brandId: brand?.id,
-                  rawIntel: d,
-                  brand: {
-                    name: brand?.name || 'Brand',
-                    companyName: brand?.companyName,
-                    industry: brand?.industry,
-                    budgetMin: brand?.budgetMin,
-                    budgetMax: brand?.budgetMax,
-                    preferredLocations: preferred.length ? preferred : null,
-                  },
-                  property: {
-                    title: property.title,
-                    address: property.address,
-                    city: property.city,
-                    propertyType: property.propertyType,
-                    size: property.size,
-                    price: property.price,
-                    priceType: property.priceType,
-                  },
-                  match: matchMeta
-                    ? {
-                        bfiScore: matchMeta.bfiScore,
-                        locationFit: matchMeta.breakdown.locationFit,
-                        budgetFit: matchMeta.breakdown.budgetFit,
-                        sizeFit: matchMeta.breakdown.sizeFit,
-                      }
-                    : undefined,
-                }),
-              })
-              const enrichJson = await enrichRes.json().catch(() => ({}))
+              const enrichPayload = {
+                brandId: brand?.id,
+                rawIntel: d,
+                brand: {
+                  name: brand?.name || 'Brand',
+                  companyName: brand?.companyName,
+                  industry: brand?.industry,
+                  budgetMin: brand?.budgetMin,
+                  budgetMax: brand?.budgetMax,
+                  preferredLocations: preferred.length ? preferred : null,
+                },
+                property: {
+                  title: property.title,
+                  address: property.address,
+                  city: property.city,
+                  propertyType: property.propertyType,
+                  size: property.size,
+                  price: property.price,
+                  priceType: property.priceType,
+                },
+                match: matchMeta
+                  ? {
+                      bfiScore: matchMeta.bfiScore,
+                      locationFit: matchMeta.breakdown.locationFit,
+                      budgetFit: matchMeta.breakdown.budgetFit,
+                      sizeFit: matchMeta.breakdown.sizeFit,
+                    }
+                  : undefined,
+              }
+              let enrichRes!: Response
+              let enrichJson = {} as { success?: boolean; error?: string; data?: LocationSynthesis }
+              for (let attempt = 0; attempt < 2; attempt++) {
+                if (attempt > 0) {
+                  await new Promise((r) => setTimeout(r, 1800))
+                }
+                enrichRes = await fetch('/api/dashboard/brand/intel-enrich', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(enrichPayload),
+                })
+                enrichJson = (await enrichRes.json().catch(() => ({}))) as typeof enrichJson
+                if (enrichRes.ok && enrichJson.success && enrichJson.data) break
+                const retryable = enrichRes.status === 504 || enrichRes.status === 502
+                if (!retryable || attempt === 1) break
+              }
               if (enrichRes.ok && enrichJson.success && enrichJson.data) {
                 setIntelData((prev) =>
                   prev
@@ -723,13 +734,17 @@ export default function BrandDashboardPage() {
                     : prev
                 )
               } else {
+                const apiErr = typeof enrichJson.error === 'string' ? enrichJson.error.trim() : ''
+                const fallbackMsg = !enrichRes.ok
+                  ? `Location synthesis unavailable (request failed with HTTP ${enrichRes.status}).`
+                  : 'Location synthesis unavailable — the service returned no data. Try again in a moment.'
                 setIntelData((prev) =>
                   prev
                     ? {
                         ...prev,
                         locationSynthesis: null,
                         locationSynthesisLoading: false,
-                        locationSynthesisError: String(enrichJson.error || 'Location synthesis unavailable'),
+                        locationSynthesisError: apiErr || fallbackMsg,
                       }
                     : prev
                 )

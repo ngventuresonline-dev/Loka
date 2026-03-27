@@ -70,10 +70,11 @@ export function middleware(request: NextRequest) {
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
 
-    const cspConnectSrc = "connect-src 'self' https://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.facebook.com https://www.clarity.ms https://scripts.clarity.ms https://f.clarity.ms https://v.clarity.ms https://*.clarity.ms https://demo-1.conversionsapigateway.com;"
+    const cspConnectSrc =
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.facebook.com https://www.clarity.ms https://scripts.clarity.ms https://f.clarity.ms https://v.clarity.ms https://*.clarity.ms https://demo-1.conversionsapigateway.com;"
     response.headers.set(
       'Content-Security-Policy',
-      `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://www.facebook.com; font-src 'self' data:; ${cspConnectSrc} frame-src 'self' https://*.google.com https://www.googletagmanager.com;`
+      `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob: https://www.facebook.com; font-src 'self' data: https://fonts.gstatic.com; ${cspConnectSrc} frame-src 'self' https://*.google.com https://www.googletagmanager.com;`
     )
 
     if (!isDev) {

@@ -1,4 +1,11 @@
-import claude, { CLAUDE_MODEL, MAX_TOKENS } from '@/lib/claude'
+import Anthropic from '@anthropic-ai/sdk'
+import { INTEL_SYNTHESIS_MODEL, MAX_TOKENS } from '@/lib/claude'
+
+/** Narrow client: bounded wait so the HTTP route returns JSON instead of an empty platform 504. */
+const intelAnthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+  timeout: 52 * 1000,
+})
 import type {
   LocationSynthesis,
   BrandIntelStrategicFit,
@@ -115,7 +122,7 @@ export function buildLocationIntelSnapshot(
 ): Record<string, unknown> {
   const competitors = Array.isArray(raw.competitors) ? raw.competitors : []
   const topCompetitors = (competitors as Array<{ name?: string; distanceMeters?: number; placeCategory?: string }>)
-    .slice(0, 12)
+    .slice(0, 8)
     .map((c) => ({
       name: String(c.name || ''),
       km: Math.round(Number(c.distanceMeters) || 0) / 1000,
@@ -199,7 +206,7 @@ export function buildLocationIntelSnapshot(
       corporate: lmByKind('corporate'),
     },
     crowdPullers: (crowdPullers as Array<{ name?: string; category?: string; distanceMeters?: number }>)
-      .slice(0, 6)
+      .slice(0, 4)
       .map((p) => ({ name: p.name, cat: p.category, m: p.distanceMeters })),
     dataSource: raw.dataSource,
   }
@@ -253,8 +260,8 @@ LOCATION SNAPSHOT (modelled inputs)
 ${JSON.stringify(intelSnapshot, null, 0)}
 
 RULES
-- One JSON object only, no markdown.
-- Keep every *ForBrand narrative ≤500 characters. Bullet items ≤120 characters. Max bullets per array: catchment/market/competition/risk = 3; similarMarkets = 2.
+- One JSON object only, no markdown. Be brief: speed matters.
+- executiveSummary ≤900 characters. Every *ForBrand narrative ≤450 characters. Bullet items ≤100 characters. Max bullets per array: catchment/market/competition/risk = 3; similarMarkets = 2. strengths/risks ≤4 items each; opportunities ≤3; nextSteps ≤3.
 - liveEconomics: typical monthly commercial/retail ₹/sqft for THIS micro-market (integers). Anchor on address + nearestCommercialAreaKey + platformEconomics band; adjust if justified. confidence = low|medium|high honestly.
 - Tab fields must reference the brand profile (category, budget fit vs ask, preferred micro-markets) where relevant.
 - competitorTakeaway + competitionForBrand: same-brand / category peers, not repeating executiveSummary verbatim.
@@ -284,9 +291,10 @@ JSON shape (all keys required; use "" or [] if nothing to say):
   "similarMarketsBullets": string[]
 }`
 
-  const message = await claude.messages.create({
-    model: CLAUDE_MODEL,
+  const message = await intelAnthropic.messages.create({
+    model: INTEL_SYNTHESIS_MODEL,
     max_tokens: MAX_TOKENS.insights,
+    temperature: 0.3,
     messages: [{ role: 'user', content: prompt }],
   })
 

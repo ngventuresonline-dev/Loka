@@ -3,7 +3,8 @@ import { getPrisma } from '@/lib/get-prisma'
 import { enrichBrandLocationIntel, buildLocationIntelSnapshot } from '@/lib/intelligence/brand-intel-enrich'
 import type { BrandContextForIntel, PropertyContextForIntel, MatchContextForIntel } from '@/lib/intelligence/brand-intel-enrichment.types'
 
-export const maxDuration = 45
+/** Pro / Enterprise: up to 60s. Keeps synthesis under typical gateway limits when paired with a fast model. */
+export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +53,19 @@ export async function POST(request: NextRequest) {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Intel enrichment failed'
     console.error('[Brand Intel Enrich]', e)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    const errName = e && typeof e === 'object' && 'name' in e ? String((e as { name: string }).name) : ''
+    const timeout =
+      /timeout|timed out|ETIMEDOUT|abort/i.test(msg) ||
+      errName === 'APIConnectionTimeoutError' ||
+      errName === 'AbortError'
+    return NextResponse.json(
+      {
+        success: false,
+        error: timeout
+          ? 'Location synthesis timed out. Please try again; if it persists, try another listing or contact support.'
+          : msg,
+      },
+      { status: timeout ? 504 : 500 }
+    )
   }
 }
