@@ -10,6 +10,10 @@ import { encodePropertyId } from '@/lib/property-slug'
 import Logo from '@/components/Logo'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
+import {
+  brandContextWantsQsrCompetitors,
+  competitorMatchesQsrFocus,
+} from '@/lib/location-intelligence/brand-competitor-segment'
 import { deriveMonthlyRentFromListing } from '@/lib/location-intelligence/location-rent-context'
 import type { LocationSynthesis } from '@/lib/intelligence/brand-intel-enrichment.types'
 
@@ -353,13 +357,16 @@ function deriveStoreClosureRisk(
 }
 
 /**
- * Business context for Places / scoring — company or trade name + industry only.
- * Never use account-holder name (`brand.name`); that skews competitor search and synthesis.
+ * Business context for Places / scoring — **category + industry first** (respects QSR/Café on profile),
+ * then falls back to company + industry. Never lead with account-holder person name.
  */
 function buildLocationBusinessType(
-  brand: { companyName?: string | null; industry?: string | null } | null | undefined
+  brand: { companyName?: string | null; industry?: string | null; category?: string | null } | null | undefined
 ): string {
   if (!brand) return ''
+  const cat = brand.category != null ? String(brand.category).trim() : ''
+  const ind = brand.industry != null ? String(brand.industry).trim() : ''
+  if (cat || ind) return [cat, ind].filter(Boolean).join(' ')
   return [brand.companyName, brand.industry]
     .map((s) => (s != null ? String(s).trim() : ''))
     .filter(Boolean)
@@ -384,7 +391,16 @@ function categoryMatchesBrandIndustry(cat: string, industry: string | null | und
   ) {
     return c === 'optical' || c === 'pharmacy' || c === 'medical' || /\b(optician|optical|eyewear)\b/.test(c)
   }
-  if (ind.includes('qsr') || ind.includes('fast food')) return c === 'qsr' || c === 'restaurant'
+  if (ind.includes('qsr') || ind.includes('fast food')) {
+    const cl = c.toLowerCase()
+    return (
+      cl === 'qsr' ||
+      cl.includes('qsr') ||
+      cl.includes('fast food') ||
+      cl.includes('takeaway') ||
+      cl.includes('meal_takeaway')
+    )
+  }
   if (ind.includes('cafe') || ind.includes('coffee')) return c === 'cafe' || c === 'coffee'
   if (ind.includes('restaurant') || ind.includes('dining')) return c === 'restaurant' || c === 'dining'
   if (ind.includes('bakery') || ind.includes('dessert')) return c === 'bakery' || c === 'dessert'
@@ -446,6 +462,13 @@ function splitCompetitors(
   brandIndustry: string | null | undefined
 ): { competitors: IntelligenceData['competitors']; complementaryBrands: IntelligenceData['complementaryBrands'] } {
   if (!brandIndustry?.trim()) return { competitors: all, complementaryBrands: [] }
+  if (brandContextWantsQsrCompetitors(brandIndustry)) {
+    const competitors = all.filter((c) => competitorMatchesQsrFocus(c.name, c.category))
+    const complementaryBrands = all
+      .filter((c) => !competitorMatchesQsrFocus(c.name, c.category))
+      .slice(0, 10) as IntelligenceData['complementaryBrands']
+    return { competitors, complementaryBrands }
+  }
   return {
     competitors: all.filter((c) => categoryMatchesBrandIndustry(c.category, brandIndustry)),
     complementaryBrands: all.filter((c) => !categoryMatchesBrandIndustry(c.category, brandIndustry)).slice(
@@ -890,6 +913,7 @@ export default function BrandDashboardPage() {
                   name: brand?.companyName?.trim() || 'Brand',
                   companyName: brand?.companyName,
                   industry: brand?.industry,
+                  category: brand?.category,
                   budgetMin: brand?.budgetMin,
                   budgetMax: brand?.budgetMax,
                   preferredLocations: preferred.length ? preferred : null,

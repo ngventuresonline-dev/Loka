@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { getPropertyCoordinatesFromRow, geocodeAddress } from '@/lib/property-coordinates'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
+import {
+  deriveMonthlyRentFromListing,
+  getAreaCommercialRentBand,
+} from '@/lib/location-intelligence/location-rent-context'
 
 function brandSeeksOffice(profile: { industry?: string | null; category?: string | null }): boolean {
   const t = `${profile.industry || ''} ${profile.category || ''}`.toLowerCase()
@@ -22,6 +26,66 @@ function propertyTitleExcludedForBrand(propertyTitle: string, excluded: string[]
   if (excluded.length === 0) return false
   const t = (propertyTitle || '').trim()
   return excluded.some((ex) => t === ex)
+}
+
+/** Visibility / main-road proxy from listing text (retail & QSR). */
+function mainRoadVisibilityScore(title: string, address: string): number {
+  const t = `${title || ''} ${address || ''}`.toLowerCase()
+  const strong = /\b(main road|high street|highway|junction|orbit|mg road|st\s*marks|brigade road|road-facing|road facing|corner|frontage|standalone|ground\s*floor)\b/.test(
+    t
+  )
+  const weak = /\b(basement|interior lot|rear building|back lane|service lane|3rd floor|4th floor|5th floor|upper floor)\b/.test(
+    t
+  )
+  if (weak && !strong) return 38
+  if (strong) return 92
+  const corridor = /\b(sarjapur|whitefield|marathahalli|koramangala|indiranagar|outer ring|orr|100\s*ft|80\s*ft|feet\s*road)\b/.test(
+    t
+  )
+  if (corridor) return 72
+  return 56
+}
+
+function nearestBangaloreAreaKey(address: string, city: string): string | null {
+  const hay = `${address} ${city}`.toLowerCase()
+  for (const a of BANGALORE_AREAS) {
+    if (hay.includes(a.key)) return a.key
+  }
+  return null
+}
+
+/** Rent vs brand budget + vs typical corridor ₹/sqft — “value for money” layer on BFI. */
+function valueForMoneyFit(
+  monthlyRent: number | undefined,
+  sizeSqft: number,
+  budgetMax: number,
+  listingPrice: number,
+  areaMidPerSqft: number
+): number {
+  const month =
+    monthlyRent != null && monthlyRent > 0
+      ? monthlyRent
+      : deriveMonthlyRentFromListing(listingPrice, 'monthly', sizeSqft) ?? listingPrice
+
+  if (!Number.isFinite(month) || month <= 0 || sizeSqft <= 0) return 52
+
+  let s = 52
+  if (budgetMax > 0) {
+    if (month <= budgetMax) s += 20
+    else {
+      const over = (month - budgetMax) / Math.max(1, budgetMax)
+      s -= Math.min(42, Math.round(over * 58))
+    }
+  }
+  if (areaMidPerSqft > 0) {
+    const eff = month / sizeSqft
+    const ratio = eff / areaMidPerSqft
+    if (ratio <= 0.88) s += 16
+    else if (ratio <= 1.02) s += 8
+    else if (ratio >= 1.28) s -= 14
+    else if (ratio >= 1.12) s -= 7
+  }
+  return Math.max(8, Math.min(100, s))
 }
 
 export async function GET(request: NextRequest) {
@@ -111,13 +175,21 @@ export async function GET(request: NextRequest) {
       .map((p) => {
         const price = Number(p.price)
         const size = p.size
+        const priceType = String(p.priceType || 'monthly')
+        const monthlyRent = deriveMonthlyRentFromListing(price, priceType, size)
 
         const budgetFit =
-          price <= budgetMax && price >= budgetMin
-            ? 100
-            : price > budgetMax
-            ? Math.max(0, 100 - Math.round(((price - budgetMax) / (budgetMax || 1)) * 120))
-            : 100
+          monthlyRent != null
+            ? monthlyRent <= budgetMax && monthlyRent >= budgetMin
+              ? 100
+              : monthlyRent > budgetMax
+                ? Math.max(0, 100 - Math.round(((monthlyRent - budgetMax) / (budgetMax || 1)) * 100))
+                : 100
+            : price <= budgetMax && price >= budgetMin
+              ? 100
+              : price > budgetMax
+                ? Math.max(0, 100 - Math.round(((price - budgetMax) / (budgetMax || 1)) * 120))
+                : 100
 
         const sizeFit =
           size >= sizeMin && size <= sizeMax
@@ -133,7 +205,14 @@ export async function GET(request: NextRequest) {
             ? 100
             : 40
 
-        const bfiScore = Math.round(budgetFit * 0.3 + sizeFit * 0.25 + locationFit * 0.3 + 15)
+        const areaKey = nearestBangaloreAreaKey(p.address || '', p.city || '')
+        const band = getAreaCommercialRentBand(areaKey, String(p.propertyType || ''))
+        const visibility = mainRoadVisibilityScore(p.title || '', p.address || '')
+        const vfm = valueForMoneyFit(monthlyRent, size, budgetMax, price, band.mid)
+
+        const bfiScore = Math.round(
+          budgetFit * 0.24 + sizeFit * 0.2 + locationFit * 0.2 + visibility * 0.18 + vfm * 0.14 + 4
+        )
 
         const rawCoords = getPropertyCoordinatesFromRow({
           amenities: p.amenities,

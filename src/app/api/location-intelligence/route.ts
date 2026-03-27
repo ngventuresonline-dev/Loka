@@ -396,16 +396,31 @@ function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string):
   if (/\b(fashion|apparel|clothing|footwear|shoes|shoe|garment|kurta|saree|wear)\b/.test(raw)) {
     return [{ type: 'clothing_store', keyword: 'clothing fashion apparel shoes footwear' }]
   }
-  // Cafe / Coffee
-  if (/\bcafe\b|\bcoffee\b|\bcafé\b/.test(raw)) {
+  // Café/QSR label → QSR-first (vada pav, snack chains); do not run café-only POI skew
+  if (/\bcafé\s*\/\s*qsr\b|\bcafe\s*\/\s*qsr\b/i.test(raw) || (/\bqsr\b/i.test(raw) && /\bcaf[eé]\b/i.test(raw))) {
+    return [
+      {
+        type: 'meal_takeaway',
+        keyword:
+          'vada pav Goli Jumbo King fast food QSR snack chain takeaway street food India',
+      },
+    ]
+  }
+  // Cafe / Coffee — skip when context is explicitly QSR / quick service
+  if ((/\bcafe\b|\bcoffee\b|\bcafé\b/.test(raw)) && !/\bqsr\b|quick service|fast food|vada|vadapav|takeaway chain/i.test(raw)) {
     return [
       { type: 'cafe', keyword: 'cafe coffee' },
       { type: 'meal_takeaway', keyword: 'fast food burger pizza' },
     ]
   }
-  // QSR / Fast Food
-  if (/\b(qsr|quick service|fast food|burger|pizza|biryani|momos|shawarma)\b/.test(raw)) {
-    return [{ type: 'meal_takeaway', keyword: 'fast food burger pizza shawarma biryani qsr' }]
+  // QSR / Fast Food / vada pav
+  if (/\b(qsr|quick service|fast food|vada|vadapav|burger|pizza|biryani|momos|shawarma)\b/i.test(raw)) {
+    return [
+      {
+        type: 'meal_takeaway',
+        keyword: 'vada pav Goli Jumbo King fast food QSR snack momos shawarma takeaway India',
+      },
+    ]
   }
   // Full-service restaurant
   if (/\brestaurant\b|\bdining\b|\bfine dining\b/.test(raw) || p.includes('restaurant')) {

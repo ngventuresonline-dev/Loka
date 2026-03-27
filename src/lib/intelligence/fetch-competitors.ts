@@ -17,9 +17,10 @@ function mapToPlaceTypes(propertyType?: string, businessType?: string): { type: 
   const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
 
   const isQsr =
-    /\b(qsr|quick service|fast food|burger|pizza|shawarma|biryani|momo|rolls?)\b/.test(raw) ||
-    /\bdelivery\b/.test(raw)
-  const isCafe = /\b(cafe|coffee|chai|tea)\b/.test(raw)
+    /\b(qsr|quick service|fast food|burger|pizza|shawarma|biryani|momo|rolls?|vada|vadapav|pav\b|snack chain)\b/.test(
+      raw
+    ) || /\bdelivery\b/.test(raw)
+  const isCafe = /\b(cafe|coffee|chai|tea)\b/.test(raw) && !/\bqsr\b|vada|vadapav|quick service|fast food/i.test(raw)
   const isRestaurant = /\b(restaurant|casual dining|fine dining|dining)\b/.test(raw)
   const isBar = /\b(bar|pub|brew|brewery|taproom)\b/.test(raw)
   const isBakery = /\b(bakery|dessert|sweet|sweets|ice cream|cake)\b/.test(raw)
@@ -28,10 +29,10 @@ function mapToPlaceTypes(propertyType?: string, businessType?: string): { type: 
 
   if (isCafe && isQsr) {
     return [
-      { type: 'cafe', keyword: 'cafe coffee', category: 'Cafe' },
+      { type: 'cafe', keyword: 'cafe coffee chai', category: 'Cafe' },
       {
         type: 'meal_takeaway',
-        keyword: 'fast food burger pizza shawarma biryani momos',
+        keyword: 'vada pav Goli Jumbo King fast food QSR snack momos shawarma takeaway India',
         category: 'QSR',
       },
     ]
@@ -42,7 +43,7 @@ function mapToPlaceTypes(propertyType?: string, businessType?: string): { type: 
     return [
       {
         type: 'meal_takeaway',
-        keyword: 'fast food burger pizza shawarma biryani momos',
+        keyword: 'vada pav Goli Jumbo King fast food QSR snack momos shawarma takeaway India',
         category: 'QSR',
       },
     ]
