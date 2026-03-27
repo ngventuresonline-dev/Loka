@@ -155,16 +155,18 @@ function extractBalancedJsonObject(s: string): string | null {
   return null
 }
 
-function safeJsonParse(text: string, platformRent: { mid: number; low: number; high: number }): LocationSynthesis {
-  const o = extractAndRepairJsonObject(text)
-  if (!o) throw new Error('No valid JSON in synthesis response')
+function asStrArr(v: unknown, max: number): string[] {
+  return Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, max) : []
+}
+
+function synthesisFromObject(
+  o: Record<string, unknown>,
+  platformRent: { mid: number; low: number; high: number }
+): LocationSynthesis {
   const fitRaw = String(o.strategicFit || 'viable').toLowerCase()
   const strategicFit: BrandIntelStrategicFit = ['strong', 'viable', 'cautionary', 'weak'].includes(fitRaw)
     ? (fitRaw as BrandIntelStrategicFit)
     : 'viable'
-
-  const asStrArr = (v: unknown, max: number): string[] =>
-    Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, max) : []
 
   return {
     executiveSummary: String(o.executiveSummary || '').slice(0, 1200),
@@ -196,6 +198,129 @@ function safeJsonParse(text: string, platformRent: { mid: number; low: number; h
     apartmentsBullets: asStrArr(o.apartmentsBullets, 3),
     workplacesForBrand: String(o.workplacesForBrand || '').slice(0, 450),
     workplacesBullets: asStrArr(o.workplacesBullets, 3),
+  }
+}
+
+function trySynthesisFromModelText(
+  text: string,
+  platformRent: { mid: number; low: number; high: number }
+): LocationSynthesis | null {
+  const o = extractAndRepairJsonObject(text)
+  if (!o) return null
+  return synthesisFromObject(o, platformRent)
+}
+
+/**
+ * Always returns a complete LocationSynthesis when the LLM returns bad JSON, empty text, or errors.
+ * Keeps the brand dashboard working; tabs still get coherent copy from the same snapshot.
+ */
+export function buildFallbackLocationSynthesis(
+  brand: BrandContextForIntel,
+  property: PropertyContextForIntel,
+  intelSnapshot: Record<string, unknown>,
+  platformRent: { mid: number; low: number; high: number }
+): LocationSynthesis {
+  const pl = intelSnapshot.populationLifestyle as Record<string, unknown> | undefined
+  const foot = intelSnapshot.footfall as Record<string, unknown> | undefined
+  const mkt = intelSnapshot.market as Record<string, unknown> | undefined
+  const transit = intelSnapshot.transit as Record<string, unknown> | undefined
+  const lm = intelSnapshot.landmarks as Record<string, unknown> | undefined
+  const topComp = Array.isArray(intelSnapshot.topCompetitors)
+    ? (intelSnapshot.topCompetitors as Array<{ name?: string; cat?: string; km?: number }>)
+    : []
+
+  const areaKey = String(intelSnapshot.nearestCommercialAreaKey || '').replace(/-/g, ' ') || property.city
+  const affluence = String(pl?.affluenceIndicator || 'Mixed')
+  const hh = pl?.totalHouseholds != null ? Number(pl.totalHouseholds) : null
+  const footfall = foot?.dailyAverage != null ? Number(foot.dailyAverage) : null
+  const compCountRaw = mkt?.competitorCount != null ? Number(mkt.competitorCount) : topComp.length
+  const compCount = Number.isFinite(compCountRaw) ? compCountRaw : topComp.length
+
+  const resN = Number(lm?.residential) || 0
+  const techN = Number(lm?.tech_park) || 0
+  const corpN = Number(lm?.corporate) || 0
+  const samples = Array.isArray(lm?.samples) ? (lm.samples as Array<{ name?: string; kind?: string }>) : []
+  const sampleResidential = samples.filter((s) => s.kind === 'residential').map((s) => s.name).filter(Boolean).slice(0, 2) as string[]
+  const sampleTech = samples.filter((s) => s.kind === 'tech_park').map((s) => s.name).filter(Boolean).slice(0, 2) as string[]
+
+  const industry = brand.industry?.trim() || 'your category'
+  const exec =
+    `${brand.name} (${industry}) — ${property.title} in ${areaKey}, ${property.city}. ` +
+    `Platform model: ${affluence} affluence proxy` +
+    (hh != null && hh > 0 ? `, ~${hh.toLocaleString('en-IN')} households in the catchment layer.` : '. ') +
+    (footfall != null && footfall > 0
+      ? ` Est. ~${footfall.toLocaleString('en-IN')} daily footfall in the trade-area model.`
+      : '') +
+    ` Full prose synthesis was unavailable; this brief is built from the same live metrics.`
+
+  const live = parseLiveEconomics(undefined, platformRent)
+  live.rationale = `Structured dashboard fallback using your platform rent band (₹${platformRent.low}–${platformRent.high}/sqft/mo typical ₹${platformRent.mid}). ${live.rationale}`
+
+  const metroLine = transit?.metroName ? `Transit model includes ${String(transit.metroName)}.` : null
+
+  return {
+    executiveSummary: exec.slice(0, 1200),
+    strategicFit: 'viable',
+    strengths: [
+      'Location intelligence loaded for this listing.',
+      compCount > 0 ? `~${compCount} competitor POIs in the modelled trade area.` : 'Sparse competition signal in mapped radius — validate on site.',
+      affluence === 'High' ? 'High affluence proxy in the catchment layer.' : 'Affluence and demand signals are in the scorecard and tabs.',
+    ].slice(0, 4),
+    risks: [
+      'Short automated brief only — use maps, comps, and legal diligence before signing.',
+      'Modelled footfall and demographics are directional, not audited census data.',
+    ],
+    opportunities: [
+      'Cross-check rents with brokers for this micro-street.',
+      'Compare segment peers in the Competitors tab.',
+    ].slice(0, 3),
+    competitorTakeaway: topComp.length
+      ? `Mapped peers include: ${topComp
+          .slice(0, 4)
+          .map((c) => c.name)
+          .filter(Boolean)
+          .join(', ')}.`
+      : 'Few named peers in radius — whitespace or data gap; site visit recommended.',
+    footfallInterpretation:
+      footfall != null && footfall > 0
+        ? `Model estimates ~${footfall.toLocaleString('en-IN')} average daily footfall near this pin; peaks vary by weekday.`
+        : 'Footfall proxy unavailable — use Market tab charts when data exists.',
+    nextSteps: ['Validate rent and terms with a broker.', 'Walk the catchment at lunch and evening peaks.', 'Confirm competitor list on maps.'].slice(0, 3),
+    disclaimer:
+      'Structured Lokazen fallback from modelled POI and census-proxy inputs — not investment or legal advice. Prose engine may return on the next load.',
+    liveEconomics: live,
+    catchmentForBrand: `Catchment centres on ${property.city} with ${areaKey} as the nearest commercial micro-market key.`,
+    catchmentBullets: [
+      hh != null && hh > 0 ? `~${hh.toLocaleString('en-IN')} households in lifestyle proxy` : 'Household proxy loaded where available',
+      affluence ? `${affluence} affluence indicator` : 'See Population & Lifestyle metrics',
+    ].slice(0, 3),
+    residentsForBrand: `${affluence} spending-power proxy for residents around this trade area.${
+      hh != null && hh > 0 ? ` Household estimate ~${hh.toLocaleString('en-IN')}.` : ''
+    } Use the Catchment tab for pin mix.`,
+    residentsBullets: [affluence ? `${affluence}-affluence cluster in model` : 'Demographics in dashboard metrics'].filter(Boolean).slice(0, 3),
+    apartmentsForBrand:
+      resN > 0 || sampleResidential.length
+        ? `Residential anchors: ${resN} mapped residential nodes${sampleResidential.length ? ` (e.g. ${sampleResidential.join(', ')})` : ''}.`
+        : 'Few labelled residential towers in snapshot — area may still be residential-dense; verify locally.',
+    apartmentsBullets: sampleResidential.slice(0, 3),
+    workplacesForBrand:
+      techN + corpN > 0 || sampleTech.length
+        ? `Workplace density: ${techN} tech-park + ${corpN} corporate anchors in model.${sampleTech.length ? ` Examples: ${sampleTech.join(', ')}.` : ''}`
+        : 'Office/tech anchors thin in mapped sample — check nearby corporate pockets.',
+    workplacesBullets: [metroLine, techN + corpN > 0 ? `${techN + corpN} workplace anchor types mapped` : null].filter((x): x is string => Boolean(x)).slice(0, 3),
+    marketForBrand: `Rent band centres on ₹${platformRent.mid}/sqft/mo typical in platform economics for ${areaKey}. Demand and saturation in Market tab.`,
+    marketBullets: [`Competitor count ~${compCount}`, `Micro-market: ${areaKey}`].slice(0, 3),
+    competitionForBrand: topComp.length
+      ? `Segment-relevant peers in radius: ${topComp
+          .slice(0, 5)
+          .map((c) => `${c.name} (${c.cat})`)
+          .join('; ')}.`
+      : 'No peer list in fallback snapshot — open Competitors tab for the map.',
+    competitionBullets: topComp.slice(0, 3).map((c) => `${c.name} · ~${(c.km ?? 0).toFixed(1)}km`),
+    riskForBrand: 'Cannibalisation and crowding are modelled in the Risk tab; lease stress is unverified without your contract terms.',
+    riskBullets: ['Validate same-brand clusters on the map', 'Stress-test rent vs. revenue plan'].slice(0, 3),
+    similarMarketsForBrand: 'Use Similar Markets for analogue Bengaluru sub-markets scored vs this pin.',
+    similarMarketsBullets: ['Compare 2–3 analogues before shortlisting'],
   }
 }
 
@@ -392,18 +517,26 @@ JSON shape (all keys required; use "" or [] if nothing to say):
   "similarMarketsBullets": string[]
 }`
 
-  const message = await intelAnthropic.messages.create({
-    model: INTEL_SYNTHESIS_MODEL,
-    max_tokens: MAX_TOKENS.insights,
-    temperature: 0.3,
-    messages: [{ role: 'user', content: prompt }],
-  })
+  try {
+    const message = await intelAnthropic.messages.create({
+      model: INTEL_SYNTHESIS_MODEL,
+      max_tokens: MAX_TOKENS.insights,
+      temperature: 0.3,
+      messages: [{ role: 'user', content: prompt }],
+    })
 
-  const rawText = message.content
-    .filter((block) => block.type === 'text')
-    .map((block) => (block as { type: 'text'; text: string }).text)
-    .join('')
-    .trim()
+    const rawText = message.content
+      .filter((block) => block.type === 'text')
+      .map((block) => (block as { type: 'text'; text: string }).text)
+      .join('')
+      .trim()
 
-  return safeJsonParse(rawText, platformRent)
+    const fromModel = trySynthesisFromModelText(rawText, platformRent)
+    if (fromModel) return fromModel
+    console.warn('[Brand Intel] Unparseable model output; using structured fallback. length=', rawText.length)
+    return buildFallbackLocationSynthesis(brand, property, intelSnapshot, platformRent)
+  } catch (err) {
+    console.error('[Brand Intel] enrich error', err)
+    return buildFallbackLocationSynthesis(brand, property, intelSnapshot, platformRent)
+  }
 }
