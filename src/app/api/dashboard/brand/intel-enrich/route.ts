@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { enrichBrandLocationIntel, buildLocationIntelSnapshot } from '@/lib/intelligence/brand-intel-enrich'
-import type {
-  BrandContextForIntel,
-  PropertyContextForIntel,
-  MatchContextForIntel,
-} from '@/lib/intelligence/brand-intel-enrichment.types'
+import type { BrandContextForIntel, PropertyContextForIntel, MatchContextForIntel } from '@/lib/intelligence/brand-intel-enrichment.types'
 
 export const maxDuration = 45
 
@@ -13,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
-        { success: false, error: 'Claude is not configured (ANTHROPIC_API_KEY).' },
+        { success: false, error: 'Location synthesis is not configured on the server.' },
         { status: 503 }
       )
     }

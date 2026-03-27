@@ -1,6 +1,6 @@
 import claude, { CLAUDE_MODEL, MAX_TOKENS } from '@/lib/claude'
 import type {
-  BrandIntelClaudeEnrichment,
+  LocationSynthesis,
   BrandIntelStrategicFit,
   BrandContextForIntel,
   PropertyContextForIntel,
@@ -10,7 +10,7 @@ import type {
 } from '@/lib/intelligence/brand-intel-enrichment.types'
 
 export type {
-  BrandIntelClaudeEnrichment,
+  LocationSynthesis,
   BrandIntelStrategicFit,
   BrandContextForIntel,
   PropertyContextForIntel,
@@ -31,7 +31,7 @@ function parseLiveEconomics(raw: unknown, fb: { mid: number; low: number; high: 
       commercialRentLow: fb.low,
       commercialRentHigh: fb.high,
       confidence: 'low',
-      rationale: 'Rent fields were missing from the AI response; showing the platform benchmark band only.',
+      rationale: 'Rent detail was incomplete in synthesis; showing platform benchmark band.',
     }
   }
   const o = raw as Record<string, unknown>
@@ -62,14 +62,14 @@ function parseLiveEconomics(raw: unknown, fb: { mid: number; low: number; high: 
   }
 }
 
-function safeJsonParse(text: string, platformRent: { mid: number; low: number; high: number }): BrandIntelClaudeEnrichment {
+function safeJsonParse(text: string, platformRent: { mid: number; low: number; high: number }): LocationSynthesis {
   const trimmed = text.trim().replace(/^```json\s*|\s*```$/g, '')
   let parsed: unknown
   try {
     parsed = JSON.parse(trimmed)
   } catch {
     const m = trimmed.match(/\{[\s\S]*\}/)
-    if (!m) throw new Error('No JSON in Claude response')
+    if (!m) throw new Error('No JSON in synthesis response')
     parsed = JSON.parse(m[0])
   }
   const o = parsed as Record<string, unknown>
@@ -92,13 +92,23 @@ function safeJsonParse(text: string, platformRent: { mid: number; low: number; h
     nextSteps: asStrArr(o.nextSteps, 4),
     disclaimer: String(
       o.disclaimer ||
-        'Uses modelled POI and census-proxy data plus AI interpretation—not a substitute for brokers, comps, or legal advice.'
+        'Uses modelled POI and census-proxy data plus Lokazen synthesis—not a substitute for brokers, comps, or legal advice.'
     ).slice(0, 400),
     liveEconomics: parseLiveEconomics(o.liveEconomics, platformRent),
+    catchmentForBrand: String(o.catchmentForBrand || '').slice(0, 500),
+    catchmentBullets: asStrArr(o.catchmentBullets, 3),
+    marketForBrand: String(o.marketForBrand || '').slice(0, 500),
+    marketBullets: asStrArr(o.marketBullets, 3),
+    competitionForBrand: String(o.competitionForBrand || '').slice(0, 500),
+    competitionBullets: asStrArr(o.competitionBullets, 3),
+    riskForBrand: String(o.riskForBrand || '').slice(0, 500),
+    riskBullets: asStrArr(o.riskBullets, 3),
+    similarMarketsForBrand: String(o.similarMarketsForBrand || '').slice(0, 500),
+    similarMarketsBullets: asStrArr(o.similarMarketsBullets, 2),
   }
 }
 
-/** Compact payload for Claude: avoids sending full coordinate lists. */
+/** Compact snapshot for synthesis: avoids sending full coordinate lists. */
 export function buildLocationIntelSnapshot(
   raw: Record<string, unknown>,
   match?: MatchContextForIntel | null
@@ -199,7 +209,7 @@ export async function enrichBrandLocationIntel(params: {
   brand: BrandContextForIntel
   property: PropertyContextForIntel
   intelSnapshot: Record<string, unknown>
-}): Promise<BrandIntelClaudeEnrichment> {
+}): Promise<LocationSynthesis> {
   const { brand, property, intelSnapshot } = params
 
   const pl = intelSnapshot.populationLifestyle as Record<string, unknown> | undefined
@@ -218,9 +228,11 @@ export async function enrichBrandLocationIntel(params: {
     platformRent.high = t
   }
 
-  const prompt = `You are a senior retail and commercial real estate analyst for India (Bangalore focus). The client is a BRAND evaluating a specific property. Below is MODELLED / ESTIMATED location intelligence from our platform (Google/Mappls POIs, census-style demographics proxies, heuristic scores)—not ground-truth.
+  const prompt = `You are the Lokazen proprietary location intelligence engine. Output helps a BRAND user on their dashboard: everything must be tailored to their industry, budget, preferred areas, and the specific listing—never generic city talk.
 
-BRAND
+The data below is MODELLED (POIs, demographics proxies, heuristics)—not transactional truth. Be precise, India/Bangalore-aware, and concise to save tokens.
+
+BRAND PROFILE
 ${JSON.stringify(
   {
     name: brand.name,
@@ -234,38 +246,43 @@ ${JSON.stringify(
   0
 )}
 
-PROPERTY
+LISTING
 ${JSON.stringify(property, null, 0)}
 
-LOCATION INTEL SNAPSHOT (modelled)
+LOCATION SNAPSHOT (modelled inputs)
 ${JSON.stringify(intelSnapshot, null, 0)}
 
-PART A — LIVE COMMERCIAL RENT (mandatory): Use the property address, city, nearestCommercialAreaKey, propertyType, and platformEconomics (band + listing-implied ₹/sqft if present). Produce a CURRENT, micro-market-specific estimate for typical monthly commercial / retail rent in INR per sq ft (not saleable area CAM-loaded office packs—use what a brand would expect for similar high-street or mall-adjacent retail in that sub-market as of your knowledge cutoff). Adjust within the platform band or justify moving outside it (e.g. premium frontage, IT corridor vs inner lane). Integers only for rupee amounts. Set confidence low|medium|high honestly.
+RULES
+- One JSON object only, no markdown.
+- Keep every *ForBrand narrative ≤500 characters. Bullet items ≤120 characters. Max bullets per array: catchment/market/competition/risk = 3; similarMarkets = 2.
+- liveEconomics: typical monthly commercial/retail ₹/sqft for THIS micro-market (integers). Anchor on address + nearestCommercialAreaKey + platformEconomics band; adjust if justified. confidence = low|medium|high honestly.
+- Tab fields must reference the brand profile (category, budget fit vs ask, preferred micro-markets) where relevant.
+- competitorTakeaway + competitionForBrand: same-brand / category peers, not repeating executiveSummary verbatim.
+- riskForBrand: cannibalisation, crowding, lease/rent stress for this brand—not generic.
 
-PART B — Briefing: Strategic narrative for the dashboard.
-
-Return ONLY valid JSON (no markdown) with this exact shape:
+JSON shape (all keys required; use "" or [] if nothing to say):
 {
-  "liveEconomics": {
-    "commercialRentPerSqftTypical": <number>,
-    "commercialRentLow": <number>,
-    "commercialRentHigh": <number>,
-    "confidence": "low" | "medium" | "high",
-    "rationale": "1-3 sentences on why this range fits this micro-location",
-    "listingVsMarketNote": "optional: compare listing-implied rent vs your band, or empty string"
-  },
-  "executiveSummary": "2-4 sentences",
-  "strategicFit": "strong" | "viable" | "cautionary" | "weak",
-  "strengths": ["max 5 short bullets"],
-  "risks": ["max 5 short bullets"],
-  "opportunities": ["max 4 short bullets"],
-  "competitorTakeaway": "one sentence on competitive context",
-  "footfallInterpretation": "one sentence interpreting modelled footfall vs category",
-  "nextSteps": ["max 3 concrete next steps"],
-  "disclaimer": "one short sentence that estimates are not transactional quotes"
-}
-
-Tone: professional, India / Bangalore market-aware, honest about uncertainty.`
+  "liveEconomics": { "commercialRentPerSqftTypical": number, "commercialRentLow": number, "commercialRentHigh": number, "confidence": "low"|"medium"|"high", "rationale": string, "listingVsMarketNote": string },
+  "executiveSummary": string,
+  "strategicFit": "strong"|"viable"|"cautionary"|"weak",
+  "strengths": string[],
+  "risks": string[],
+  "opportunities": string[],
+  "competitorTakeaway": string,
+  "footfallInterpretation": string,
+  "nextSteps": string[],
+  "disclaimer": string,
+  "catchmentForBrand": string,
+  "catchmentBullets": string[],
+  "marketForBrand": string,
+  "marketBullets": string[],
+  "competitionForBrand": string,
+  "competitionBullets": string[],
+  "riskForBrand": string,
+  "riskBullets": string[],
+  "similarMarketsForBrand": string,
+  "similarMarketsBullets": string[]
+}`
 
   const message = await claude.messages.create({
     model: CLAUDE_MODEL,

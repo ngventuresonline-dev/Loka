@@ -11,7 +11,7 @@ import Logo from '@/components/Logo'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 import { deriveMonthlyRentFromListing } from '@/lib/location-intelligence/location-rent-context'
-import type { BrandIntelClaudeEnrichment } from '@/lib/intelligence/brand-intel-enrichment.types'
+import type { LocationSynthesis } from '@/lib/intelligence/brand-intel-enrichment.types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,16 +141,16 @@ type IntelligenceData = {
   metroName: string | null
   busStops: number
   rentPerSqftCommercial: number | null
-  /** Area / listing model band (before Claude) */
+  /** Area / listing model band (before synthesis) */
   marketRentLow: number | null
   marketRentHigh: number | null
   rentDataSource: 'listing' | 'area_benchmark' | null
   nearestCommercialAreaKey: string | null
   incomeLevel: string | null
-  /** Claude interpretation of modelled intel + match context */
-  aiEnrichment: BrandIntelClaudeEnrichment | null
-  aiEnrichmentLoading: boolean
-  aiEnrichmentError: string | null
+  /** Proprietary Lokazen location synthesis (one pass, all tabs) */
+  locationSynthesis: LocationSynthesis | null
+  locationSynthesisLoading: boolean
+  locationSynthesisError: string | null
 }
 
 type RightPanelMode = 'map' | 'intelligence'
@@ -174,6 +174,46 @@ function shortenText(s: string, max: number) {
   const t = (s || '').trim()
   if (t.length <= max) return t
   return `${t.slice(0, max - 1)}…`
+}
+
+function TabSynthesisCallout({
+  title,
+  narrative,
+  bullets,
+  loading,
+}: {
+  title: string
+  narrative?: string
+  bullets?: string[]
+  loading?: boolean
+}) {
+  if (loading) {
+    return (
+      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/50 to-transparent">
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
+        <div className="space-y-2 animate-pulse">
+          <div className="h-2.5 bg-orange-100/80 rounded w-full" />
+          <div className="h-2.5 bg-orange-100/80 rounded w-10/12" />
+        </div>
+      </div>
+    )
+  }
+  const hasN = Boolean(narrative?.trim())
+  const bs = (bullets || []).filter(Boolean)
+  if (!hasN && bs.length === 0) return null
+  return (
+    <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
+      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
+      {hasN && <p className="text-xs text-gray-800 leading-relaxed mb-2">{narrative}</p>}
+      {bs.length > 0 && (
+        <ul className="space-y-1 list-disc list-inside text-[11px] text-gray-700">
+          {bs.map((b, i) => (
+            <li key={i}>{b}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 function statusBadge(status: string) {
@@ -349,9 +389,9 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
       : null,
     nearestCommercialAreaKey: data.nearestCommercialAreaKey != null ? String(data.nearestCommercialAreaKey) : null,
     incomeLevel: data.demographics?.incomeLevel ? String(data.demographics.incomeLevel) : null,
-    aiEnrichment: null,
-    aiEnrichmentLoading: false,
-    aiEnrichmentError: null,
+    locationSynthesis: null,
+    locationSynthesisLoading: false,
+    locationSynthesisError: null,
   }
 }
 
@@ -614,9 +654,9 @@ export default function BrandDashboardPage() {
             ...intel,
             competitors: sameCat,
             complementaryBrands: compBrands,
-            aiEnrichment: null,
-            aiEnrichmentLoading: true,
-            aiEnrichmentError: null,
+            locationSynthesis: null,
+            locationSynthesisLoading: true,
+            locationSynthesisError: null,
           })
 
           const preferred =
@@ -676,9 +716,9 @@ export default function BrandDashboardPage() {
                   prev
                     ? {
                         ...prev,
-                        aiEnrichment: enrichJson.data as BrandIntelClaudeEnrichment,
-                        aiEnrichmentLoading: false,
-                        aiEnrichmentError: null,
+                        locationSynthesis: enrichJson.data as LocationSynthesis,
+                        locationSynthesisLoading: false,
+                        locationSynthesisError: null,
                       }
                     : prev
                 )
@@ -687,9 +727,9 @@ export default function BrandDashboardPage() {
                   prev
                     ? {
                         ...prev,
-                        aiEnrichment: null,
-                        aiEnrichmentLoading: false,
-                        aiEnrichmentError: String(enrichJson.error || 'AI briefing unavailable'),
+                        locationSynthesis: null,
+                        locationSynthesisLoading: false,
+                        locationSynthesisError: String(enrichJson.error || 'Location synthesis unavailable'),
                       }
                     : prev
                 )
@@ -697,7 +737,7 @@ export default function BrandDashboardPage() {
             } catch {
               setIntelData((prev) =>
                 prev
-                  ? { ...prev, aiEnrichment: null, aiEnrichmentLoading: false, aiEnrichmentError: 'AI briefing failed' }
+                  ? { ...prev, locationSynthesis: null, locationSynthesisLoading: false, locationSynthesisError: 'Location synthesis failed' }
                   : prev
               )
             }
@@ -726,7 +766,7 @@ export default function BrandDashboardPage() {
             rentDataSource: null,
             nearestCommercialAreaKey: null,
             incomeLevel: null,
-            aiEnrichment: null, aiEnrichmentLoading: false, aiEnrichmentError: null,
+            locationSynthesis: null, locationSynthesisLoading: false, locationSynthesisError: null,
           })
           return
         }
@@ -1414,64 +1454,64 @@ export default function BrandDashboardPage() {
                       </div>
                     )}
 
-                    {/* Claude AI briefing — enriches modelled intel */}
-                    <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-violet-50/40 to-transparent">
+                    {/* Lokazen location synthesis — one engine pass, surfaced on every intelligence tab */}
+                    <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-orange-50/45 to-transparent">
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                          AI location read
-                          <span className="ml-1.5 normal-case font-normal text-violet-600">Claude</span>
+                          Location synthesis
+                          <span className="ml-1.5 normal-case font-normal text-[#FF5200]">· Lokazen intelligence</span>
                         </p>
-                        {intelData.aiEnrichmentLoading && (
-                          <span className="text-[10px] text-violet-600 animate-pulse">Synthesizing…</span>
+                        {intelData.locationSynthesisLoading && (
+                          <span className="text-[10px] text-[#FF5200] animate-pulse">Synthesizing…</span>
                         )}
-                        {intelData.aiEnrichment && (
+                        {intelData.locationSynthesis && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                              intelData.aiEnrichment.strategicFit === 'strong'
+                              intelData.locationSynthesis.strategicFit === 'strong'
                                 ? 'bg-emerald-100 text-emerald-800'
-                                : intelData.aiEnrichment.strategicFit === 'viable'
+                                : intelData.locationSynthesis.strategicFit === 'viable'
                                   ? 'bg-amber-100 text-amber-800'
-                                  : intelData.aiEnrichment.strategicFit === 'cautionary'
+                                  : intelData.locationSynthesis.strategicFit === 'cautionary'
                                     ? 'bg-orange-100 text-orange-800'
                                     : 'bg-red-100 text-red-800'
                             }`}
                           >
-                            {intelData.aiEnrichment.strategicFit} fit
+                            {intelData.locationSynthesis.strategicFit} fit
                           </span>
                         )}
                       </div>
-                      {intelData.aiEnrichmentError && (
-                        <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">{intelData.aiEnrichmentError}</p>
+                      {intelData.locationSynthesisError && (
+                        <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">{intelData.locationSynthesisError}</p>
                       )}
-                      {intelData.aiEnrichmentLoading && !intelData.aiEnrichment && !intelData.aiEnrichmentError && (
+                      {intelData.locationSynthesisLoading && !intelData.locationSynthesis && !intelData.locationSynthesisError && (
                         <div className="space-y-2 animate-pulse">
-                          <div className="h-3 bg-violet-100 rounded w-full" />
-                          <div className="h-3 bg-violet-100 rounded w-11/12" />
-                          <div className="h-3 bg-violet-100 rounded w-4/5" />
+                          <div className="h-3 bg-orange-100/90 rounded w-full" />
+                          <div className="h-3 bg-orange-100/90 rounded w-11/12" />
+                          <div className="h-3 bg-orange-100/90 rounded w-4/5" />
                         </div>
                       )}
-                      {intelData.aiEnrichment && (
+                      {intelData.locationSynthesis && (
                         <div className="space-y-3 text-xs text-gray-700">
-                          <p className="leading-relaxed text-gray-800">{intelData.aiEnrichment.executiveSummary}</p>
-                          {intelData.aiEnrichment.liveEconomics && (
-                            <div className="rounded-lg border border-violet-100 bg-white/90 px-3 py-2">
-                              <p className="text-[9px] font-bold text-violet-700 uppercase tracking-wide mb-0.5">Live commercial rent (AI)</p>
+                          <p className="leading-relaxed text-gray-800">{intelData.locationSynthesis.executiveSummary}</p>
+                          {intelData.locationSynthesis.liveEconomics && (
+                            <div className="rounded-lg border border-orange-100 bg-white/90 px-3 py-2">
+                              <p className="text-[9px] font-bold text-orange-800 uppercase tracking-wide mb-0.5">Live commercial rent</p>
                               <p className="text-sm font-bold text-gray-900">
-                                ₹{intelData.aiEnrichment.liveEconomics.commercialRentPerSqftTypical}/sqft/mo typical
+                                ₹{intelData.locationSynthesis.liveEconomics.commercialRentPerSqftTypical}/sqft/mo typical
                                 <span className="text-[11px] font-normal text-gray-500">
-                                  {' '}· band ₹{intelData.aiEnrichment.liveEconomics.commercialRentLow}–
-                                  {intelData.aiEnrichment.liveEconomics.commercialRentHigh}
-                                  <span className="capitalize"> · {intelData.aiEnrichment.liveEconomics.confidence} confidence</span>
+                                  {' '}· band ₹{intelData.locationSynthesis.liveEconomics.commercialRentLow}–
+                                  {intelData.locationSynthesis.liveEconomics.commercialRentHigh}
+                                  <span className="capitalize"> · {intelData.locationSynthesis.liveEconomics.confidence} confidence</span>
                                 </span>
                               </p>
-                              <p className="text-[10px] text-gray-600 mt-1">{shortenText(intelData.aiEnrichment.liveEconomics.rationale, 220)}</p>
+                              <p className="text-[10px] text-gray-600 mt-1">{shortenText(intelData.locationSynthesis.liveEconomics.rationale, 220)}</p>
                             </div>
                           )}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                               <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Strengths</p>
                               <ul className="space-y-1 list-disc list-inside text-[11px] text-gray-700">
-                                {intelData.aiEnrichment.strengths.map((s, i) => (
+                                {intelData.locationSynthesis.strengths.map((s, i) => (
                                   <li key={i}>{s}</li>
                                 ))}
                               </ul>
@@ -1479,17 +1519,17 @@ export default function BrandDashboardPage() {
                             <div>
                               <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Risks</p>
                               <ul className="space-y-1 list-disc list-inside text-[11px] text-gray-700">
-                                {intelData.aiEnrichment.risks.map((s, i) => (
+                                {intelData.locationSynthesis.risks.map((s, i) => (
                                   <li key={i}>{s}</li>
                                 ))}
                               </ul>
                             </div>
                           </div>
-                          {intelData.aiEnrichment.opportunities.length > 0 && (
+                          {intelData.locationSynthesis.opportunities.length > 0 && (
                             <div>
                               <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Opportunities</p>
                               <ul className="space-y-1 list-disc list-inside text-[11px] text-gray-700">
-                                {intelData.aiEnrichment.opportunities.map((s, i) => (
+                                {intelData.locationSynthesis.opportunities.map((s, i) => (
                                   <li key={i}>{s}</li>
                                 ))}
                               </ul>
@@ -1497,24 +1537,24 @@ export default function BrandDashboardPage() {
                           )}
                           <p className="text-[11px] text-gray-600">
                             <span className="font-semibold text-gray-700">Competition: </span>
-                            {intelData.aiEnrichment.competitorTakeaway}
+                            {intelData.locationSynthesis.competitorTakeaway}
                           </p>
                           <p className="text-[11px] text-gray-600">
                             <span className="font-semibold text-gray-700">Footfall: </span>
-                            {intelData.aiEnrichment.footfallInterpretation}
+                            {intelData.locationSynthesis.footfallInterpretation}
                           </p>
-                          {intelData.aiEnrichment.nextSteps.length > 0 && (
-                            <div className="rounded-lg bg-white/80 border border-violet-100 px-3 py-2">
-                              <p className="text-[9px] font-bold text-violet-700 uppercase mb-1">Suggested next steps</p>
+                          {intelData.locationSynthesis.nextSteps.length > 0 && (
+                            <div className="rounded-lg bg-white/80 border border-orange-100 px-3 py-2">
+                              <p className="text-[9px] font-bold text-orange-800 uppercase mb-1">Suggested next steps</p>
                               <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-800">
-                                {intelData.aiEnrichment.nextSteps.map((s, i) => (
+                                {intelData.locationSynthesis.nextSteps.map((s, i) => (
                                   <li key={i}>{s}</li>
                                 ))}
                               </ol>
                             </div>
                           )}
                           <p className="text-[9px] text-gray-400 leading-snug pt-1 border-t border-gray-100">
-                            {intelData.aiEnrichment.disclaimer}
+                            {intelData.locationSynthesis.disclaimer}
                           </p>
                         </div>
                       )}
@@ -1673,6 +1713,12 @@ export default function BrandDashboardPage() {
                         <MetricCell label="AFFLUENCE INDICATOR" value={intelData.affluenceIndicator || '—'} trend="up" benchmark="Bengaluru Avg 0.49" />
                       </div>
                     </div>
+                    <TabSynthesisCallout
+                      title="For your brand — catchment"
+                      narrative={intelData.locationSynthesis?.catchmentForBrand}
+                      bullets={intelData.locationSynthesis?.catchmentBullets}
+                      loading={intelData.locationSynthesisLoading}
+                    />
                     {/* Catchment Quality Scorecard — LIR Section 03 style */}
                     <div className="px-5 py-4 border-b border-gray-100">
                       <div className="flex items-center gap-2 mb-3">
@@ -1803,19 +1849,25 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: MARKET ── */}
                 {rightPanelTab === 'market' && (
                   <div>
+                    <TabSynthesisCallout
+                      title="For your brand — market"
+                      narrative={intelData.locationSynthesis?.marketForBrand}
+                      bullets={intelData.locationSynthesis?.marketBullets}
+                      loading={intelData.locationSynthesisLoading}
+                    />
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Catchment economics</h3>
                         <span className={`text-xs rounded-full px-2 py-0.5 ${
-                          intelData.aiEnrichment?.liveEconomics
-                            ? 'bg-violet-100 text-violet-800 font-medium'
-                            : intelData.aiEnrichmentLoading
+                          intelData.locationSynthesis?.liveEconomics
+                            ? 'bg-orange-100 text-orange-900 font-medium'
+                            : intelData.locationSynthesisLoading
                               ? 'bg-amber-50 text-amber-800'
                               : 'bg-slate-100 text-slate-600'
                         }`}>
-                          {intelData.aiEnrichment?.liveEconomics
-                            ? 'Claude live rent + platform band'
-                            : intelData.aiEnrichmentLoading
+                          {intelData.locationSynthesis?.liveEconomics
+                            ? 'Synthesized rent + platform band'
+                            : intelData.locationSynthesisLoading
                               ? 'Updating live rent…'
                               : intelData.rentDataSource === 'listing'
                                 ? 'Listing + area band'
@@ -1831,20 +1883,20 @@ export default function BrandDashboardPage() {
                       <div className="grid grid-cols-2 gap-3 mb-1">
                         <MetricCell
                           label={
-                            intelData.aiEnrichment?.liveEconomics
+                            intelData.locationSynthesis?.liveEconomics
                               ? 'COMM. RENT (LIVE)'
-                              : intelData.aiEnrichmentLoading
+                              : intelData.locationSynthesisLoading
                                 ? 'COMM. RENT (…)'
                                 : 'COMM. RENT (MODEL)'
                           }
                           value={(() => {
-                            const le = intelData.aiEnrichment?.liveEconomics
+                            const le = intelData.locationSynthesis?.liveEconomics
                             const v = le?.commercialRentPerSqftTypical ?? intelData.rentPerSqftCommercial
                             return v != null && Number.isFinite(Number(v)) ? `₹${Math.round(Number(v))}/sqft` : '—'
                           })()}
                           trend="up"
                           benchmark={(() => {
-                            const le = intelData.aiEnrichment?.liveEconomics
+                            const le = intelData.locationSynthesis?.liveEconomics
                             if (le) return `₹${le.commercialRentLow}–${le.commercialRentHigh}/sqft (${le.confidence})`
                             if (intelData.marketRentLow != null && intelData.marketRentHigh != null) {
                               return `₹${intelData.marketRentLow}–${intelData.marketRentHigh}/sqft`
@@ -1852,7 +1904,7 @@ export default function BrandDashboardPage() {
                             return undefined
                           })()}
                           tooltip={(() => {
-                            const le = intelData.aiEnrichment?.liveEconomics
+                            const le = intelData.locationSynthesis?.liveEconomics
                             if (le) return `${le.rationale} Not a quote—validate with brokers/comps.`
                             return 'Typical commercial ₹/sqft/month band for the nearest mapped Bengaluru sub-market, adjusted for property type. Pass listing rent + size for listing-implied ₹/sqft.'
                           })()}
@@ -1878,10 +1930,10 @@ export default function BrandDashboardPage() {
                           tooltip="Estimated household count where Census ward data is available."
                         />
                       </div>
-                      {intelData.aiEnrichment?.liveEconomics?.listingVsMarketNote ? (
+                      {intelData.locationSynthesis?.liveEconomics?.listingVsMarketNote ? (
                         <p className="text-[11px] text-gray-600 mt-2 leading-snug border-t border-gray-100 pt-2">
                           <span className="font-semibold text-gray-700">Listing vs market: </span>
-                          {intelData.aiEnrichment.liveEconomics.listingVsMarketNote}
+                          {intelData.locationSynthesis.liveEconomics.listingVsMarketNote}
                         </p>
                       ) : null}
                     </div>
@@ -1969,6 +2021,12 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: COMPETITORS ── */}
                 {rightPanelTab === 'competitors' && (
                   <div>
+                    <TabSynthesisCallout
+                      title="For your brand — competition"
+                      narrative={intelData.locationSynthesis?.competitionForBrand}
+                      bullets={intelData.locationSynthesis?.competitionBullets}
+                      loading={intelData.locationSynthesisLoading}
+                    />
                     {/* Competitor map — show pins of all competitors around selected property */}
                     {selectedMatch?.coords && isLoaded && (
                       <div className="h-[220px] relative border-b border-gray-100">
@@ -2077,6 +2135,12 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: RISK ── */}
                 {rightPanelTab === 'risk' && (
                   <div>
+                    <TabSynthesisCallout
+                      title="For your brand — risk"
+                      narrative={intelData.locationSynthesis?.riskForBrand}
+                      bullets={intelData.locationSynthesis?.riskBullets}
+                      loading={intelData.locationSynthesisLoading}
+                    />
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Cannibalisation Effects</h3>
@@ -2221,6 +2285,12 @@ export default function BrandDashboardPage() {
                         <button className="text-xs px-2.5 py-1 text-gray-500 rounded-full">Within City</button>
                       </div>
                     </div>
+                    <TabSynthesisCallout
+                      title="For your brand — similar markets"
+                      narrative={intelData.locationSynthesis?.similarMarketsForBrand}
+                      bullets={intelData.locationSynthesis?.similarMarketsBullets}
+                      loading={intelData.locationSynthesisLoading}
+                    />
                     {intelData.similarMarkets.length === 0 ? (
                       <p className="text-sm text-gray-400 italic">No similar market data available.</p>
                     ) : (

@@ -2,18 +2,21 @@ export type BrandIntelStrategicFit = 'strong' | 'viable' | 'cautionary' | 'weak'
 
 export type LiveEconomicsConfidence = 'low' | 'medium' | 'high'
 
-/** Claude micro-market commercial rent (₹/sqft/month) — real-time interpretation vs platform band. */
+/** Micro-market commercial rent (₹/sqft/month) — synthesis vs platform band. */
 export type LiveEconomicsEnrichment = {
   commercialRentPerSqftTypical: number
   commercialRentLow: number
   commercialRentHigh: number
   confidence: LiveEconomicsConfidence
   rationale: string
-  /** Compare ask vs band when listing rent known */
   listingVsMarketNote?: string
 }
 
-export type BrandIntelClaudeEnrichment = {
+/**
+ * Single cost-effective response: proprietary location synthesis for the brand dashboard.
+ * Populated in one engine pass; surfaced across Overview, Catchment, Market, Competitors, Risk, Similar.
+ */
+export type LocationSynthesis = {
   executiveSummary: string
   strategicFit: BrandIntelStrategicFit
   strengths: string[]
@@ -24,7 +27,25 @@ export type BrandIntelClaudeEnrichment = {
   nextSteps: string[]
   disclaimer: string
   liveEconomics: LiveEconomicsEnrichment
+  /** Catchment tab: shoppers, landmarks, affluence — tailored to this brand */
+  catchmentForBrand: string
+  catchmentBullets: string[]
+  /** Market tab: demand, saturation, rent — tailored */
+  marketForBrand: string
+  marketBullets: string[]
+  /** Competitors tab */
+  competitionForBrand: string
+  competitionBullets: string[]
+  /** Risk tab: cannibalisation, crowding, lease */
+  riskForBrand: string
+  riskBullets: string[]
+  /** Similar markets tab */
+  similarMarketsForBrand: string
+  similarMarketsBullets: string[]
 }
+
+/** @deprecated use LocationSynthesis */
+export type BrandIntelClaudeEnrichment = LocationSynthesis
 
 export type BrandContextForIntel = {
   name: string
