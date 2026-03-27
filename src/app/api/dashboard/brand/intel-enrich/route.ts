@@ -7,8 +7,11 @@ import {
 } from '@/lib/intelligence/brand-intel-enrich'
 import type { BrandContextForIntel, PropertyContextForIntel, MatchContextForIntel } from '@/lib/intelligence/brand-intel-enrichment.types'
 
-/** Pro / Enterprise: up to 60s. Keeps synthesis under typical gateway limits when paired with a fast model. */
-export const maxDuration = 60
+/**
+ * Sonnet synthesis + large JSON can exceed 60s. Vercel kills the function at this cap → gateway 504.
+ * Pro: up to 300s (must match vercel.json for this route).
+ */
+export const maxDuration = 300
 
 /** Never surface raw upstream payloads or model identifiers to the brand dashboard. */
 function publicIntelErrorMessage(raw: string, isTimeout: boolean): string {

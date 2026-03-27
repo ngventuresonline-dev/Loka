@@ -11,18 +11,18 @@ const claude = new Anthropic({
 export const CLAUDE_MODEL = 'claude-sonnet-4-5'
 
 /**
- * Brand dashboard location synthesis: gap-filling analysis on structured intel.
- * Default Sonnet for reasoning about named places, DB enrichment, and category trade-offs.
- * Override with ANTHROPIC_INTEL_MODEL (e.g. Haiku) if needed.
+ * Brand dashboard synthesis — Sonnet only (faster models were retired for this path).
+ * If ANTHROPIC_INTEL_MODEL is set, it must be a Sonnet id or we fall back to 4.5.
  */
+const envIntel = process.env.ANTHROPIC_INTEL_MODEL?.trim()
 export const INTEL_SYNTHESIS_MODEL =
-  process.env.ANTHROPIC_INTEL_MODEL?.trim() || 'claude-sonnet-4-5'
+  envIntel && /sonnet/i.test(envIntel) ? envIntel : 'claude-sonnet-4-5'
 
 export const MAX_TOKENS = {
   scoring: 2000,
   reports: 4000,
-  /** Synthesis JSON incl. catchment residents / apartments / workplaces */
-  insights: 3500,
+  /** Full LocationSynthesis JSON — allow headroom; cost acceptable for this product surface */
+  insights: 8192,
 } as const
 
 export default claude

@@ -19,10 +19,17 @@ export type {
   LiveEconomicsEnrichment,
 } from '@/lib/intelligence/brand-intel-enrichment.types'
 
-/** Sonnet + richer payload: allow longer wall time than Haiku-only path. */
+/** Stay slightly under route maxDuration so we can return a JSON error instead of a platform 504. */
+const INTEL_ANTHROPIC_TIMEOUT_MS = Math.min(
+  (Number(process.env.INTEL_ENRICH_TIMEOUT_MS) > 0
+    ? Number(process.env.INTEL_ENRICH_TIMEOUT_MS)
+    : 290) * 1000,
+  295_000
+)
+
 const intelAnthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY ?? '',
-  timeout: 120 * 1000,
+  timeout: INTEL_ANTHROPIC_TIMEOUT_MS,
 })
 
 function clampRentRupee(n: unknown, fallback: number): number {
