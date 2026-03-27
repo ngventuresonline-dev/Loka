@@ -59,6 +59,7 @@ export type BrandIntelClaudeEnrichment = LocationSynthesis
 export type BrandContextForIntel = {
   name: string
   companyName?: string | null
+  category?: string | null
   industry?: string | null
   budgetMin?: number | null
   budgetMax?: number | null
