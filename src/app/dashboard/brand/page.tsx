@@ -1004,6 +1004,10 @@ export default function BrandDashboardPage() {
     fetchPropertyIntelligence(m.property.id, m.property, m.coords, m)
   }
 
+  const brand = data?.brand ?? null
+  const preferredList = useMemo(() => normalizePreferredLocationsList(brand), [brand])
+  const dashboardBadges = useMemo(() => resolveDashboardBadges(brand, matches.length), [brand, matches.length])
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#F7F7F5]">
@@ -1016,9 +1020,6 @@ export default function BrandDashboardPage() {
   }
 
   const stats = data?.stats ?? { totalViews: 0, totalSaved: 0, totalInquiries: 0, pendingInquiries: 0 }
-  const brand = data?.brand ?? null
-  const preferredList = useMemo(() => normalizePreferredLocationsList(brand), [brand])
-  const dashboardBadges = useMemo(() => resolveDashboardBadges(brand, matches.length), [brand, matches.length])
   const showBrief = brandHasBrief(brand, preferredList)
   const recentViews = data?.recentViews ?? []
   const savedProperties = data?.savedProperties ?? []
