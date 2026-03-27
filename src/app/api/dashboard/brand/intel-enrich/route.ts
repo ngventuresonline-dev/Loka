@@ -6,6 +6,28 @@ import type { BrandContextForIntel, PropertyContextForIntel, MatchContextForInte
 /** Pro / Enterprise: up to 60s. Keeps synthesis under typical gateway limits when paired with a fast model. */
 export const maxDuration = 60
 
+/** Never surface raw upstream payloads or model identifiers to the brand dashboard. */
+function publicIntelErrorMessage(raw: string, isTimeout: boolean): string {
+  if (isTimeout) {
+    return 'Location synthesis timed out. Please try again; if it persists, try another listing or contact support.'
+  }
+  const t = raw.trim()
+  if (
+    !t ||
+    t.includes('"type":"error"') ||
+    /not_found_error/i.test(t) ||
+    /^404\s*\{/.test(t) ||
+    (t.includes('request_id') && t.includes('{')) ||
+    (t.length > 200 && /claude-[a-z0-9-]+/i.test(t))
+  ) {
+    return 'Location synthesis is temporarily unavailable. Please try again in a moment.'
+  }
+  if (t.length > 400 || (t.startsWith('{') && t.endsWith('}'))) {
+    return 'Location synthesis is temporarily unavailable. Please try again in a moment.'
+  }
+  return t.length > 320 ? `${t.slice(0, 317)}…` : t
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -61,9 +83,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: timeout
-          ? 'Location synthesis timed out. Please try again; if it persists, try another listing or contact support.'
-          : msg,
+        error: publicIntelErrorMessage(msg, timeout),
       },
       { status: timeout ? 504 : 500 }
     )

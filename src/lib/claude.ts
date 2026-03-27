@@ -12,10 +12,11 @@ export const CLAUDE_MODEL = 'claude-sonnet-4-5'
 
 /**
  * Brand dashboard location synthesis: structured JSON from pre-modelled intel.
- * Defaults to Haiku for latency (avoids 504s on typical ~30s gateways). Set ANTHROPIC_INTEL_MODEL for Sonnet.
+ * Defaults to Haiku 4.5 (fast). `claude-3-5-haiku-20241022` was retired from the API.
+ * Override with ANTHROPIC_INTEL_MODEL if needed.
  */
 export const INTEL_SYNTHESIS_MODEL =
-  process.env.ANTHROPIC_INTEL_MODEL?.trim() || 'claude-3-5-haiku-20241022'
+  process.env.ANTHROPIC_INTEL_MODEL?.trim() || 'claude-haiku-4-5'
 
 export const MAX_TOKENS = {
   scoring: 2000,
