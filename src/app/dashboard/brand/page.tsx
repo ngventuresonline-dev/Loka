@@ -255,37 +255,86 @@ function deriveStoreClosureRisk(
   return retailMix.map((r) => ({ category: r.category, totalPois: r.branded + r.nonBranded })).slice(0, 5)
 }
 
+/** POI category (matches location-intelligence place categories / retail mix keys). */
+function categoryMatchesBrandIndustry(cat: string, industry: string | null | undefined): boolean {
+  if (!industry?.trim()) return false
+  const ind = industry.toLowerCase()
+  const c = cat.toLowerCase()
+  if (
+    ind.includes('sunglass') ||
+    ind.includes('eye') ||
+    ind.includes('optical') ||
+    ind.includes('eyewear') ||
+    ind.includes('spectacle') ||
+    (ind.includes('lens') && !ind.includes('contact'))
+  ) {
+    return c === 'optical' || c === 'pharmacy' || c === 'medical' || /\b(optician|optical|eyewear)\b/.test(c)
+  }
+  if (ind.includes('qsr') || ind.includes('fast food')) return c === 'qsr' || c === 'restaurant'
+  if (ind.includes('cafe') || ind.includes('coffee')) return c === 'cafe' || c === 'coffee'
+  if (ind.includes('restaurant') || ind.includes('dining')) return c === 'restaurant' || c === 'dining'
+  if (ind.includes('bakery') || ind.includes('dessert')) return c === 'bakery' || c === 'dessert'
+  if (ind.includes('bar') || ind.includes('brew') || ind.includes('pub')) return c === 'bar' || c === 'brew'
+  if (ind.includes('pharma') || ind.includes('pharmacy') || ind.includes('wellness')) return c === 'pharmacy' || c === 'medical'
+  if (ind.includes('salon') || ind.includes('beauty') || ind.includes('spa')) return c === 'salon' || c === 'beauty_salon'
+  if (ind.includes('gym') || ind.includes('fitness')) return c === 'gym'
+  if (ind.includes('fashion') || ind.includes('apparel') || ind.includes('clothing')) return c === 'retail' || c === 'clothing'
+  if (ind.includes('jewellery') || ind.includes('jewelry') || ind.includes('watch')) return c === 'retail' || c === 'other'
+  if (ind.includes('electronics') || ind.includes('mobile')) return c === 'retail'
+  if (ind.includes('retail')) return c === 'retail' || c === 'optical' || c === 'salon'
+  return c === ind || ind.includes(c)
+}
+
+function primarySegmentLabel(industry: string | null | undefined): string | null {
+  if (!industry?.trim()) return null
+  const ind = industry.toLowerCase()
+  if (
+    ind.includes('sunglass') ||
+    ind.includes('eye') ||
+    ind.includes('optical') ||
+    ind.includes('eyewear') ||
+    ind.includes('spectacle') ||
+    (ind.includes('lens') && !ind.includes('contact'))
+  ) {
+    return 'Eyewear & optical'
+  }
+  if (ind.includes('qsr') || ind.includes('fast food')) return 'Quick-service food'
+  if (ind.includes('cafe') || ind.includes('coffee')) return 'Cafés & coffee'
+  if (ind.includes('restaurant') || ind.includes('dining')) return 'Restaurants & dining'
+  if (ind.includes('bakery') || ind.includes('dessert')) return 'Bakery & desserts'
+  if (ind.includes('bar') || ind.includes('brew') || ind.includes('pub')) return 'Bars & pubs'
+  if (ind.includes('pharma') || ind.includes('pharmacy')) return 'Pharmacy & health'
+  if (ind.includes('salon') || ind.includes('beauty') || ind.includes('spa')) return 'Salons & beauty'
+  if (ind.includes('gym') || ind.includes('fitness')) return 'Fitness & gyms'
+  if (ind.includes('fashion') || ind.includes('apparel')) return 'Fashion & apparel'
+  if (ind.includes('retail')) return 'Retail'
+  return industry.trim()
+}
+
+function sortRetailMixForBrand(
+  mix: IntelligenceData['retailMix'],
+  industry: string | null | undefined
+): IntelligenceData['retailMix'] {
+  if (!mix.length || !industry?.trim()) return mix
+  return [...mix].sort((a, b) => {
+    const ap = categoryMatchesBrandIndustry(a.category, industry)
+    const bp = categoryMatchesBrandIndustry(b.category, industry)
+    if (ap !== bp) return ap ? -1 : 1
+    return b.branded + b.nonBranded - (a.branded + a.nonBranded)
+  })
+}
+
 function splitCompetitors(
   all: IntelligenceData['competitors'],
   brandIndustry: string | null | undefined
 ): { competitors: IntelligenceData['competitors']; complementaryBrands: IntelligenceData['complementaryBrands'] } {
-  if (!brandIndustry) return { competitors: all, complementaryBrands: [] }
-  const ind = brandIndustry.toLowerCase()
-  const isSame = (cat: string) => {
-    const c = cat.toLowerCase()
-    if (
-      ind.includes('eye') ||
-      ind.includes('optical') ||
-      ind.includes('eyewear') ||
-      ind.includes('spectacle') ||
-      (ind.includes('lens') && !ind.includes('contact'))
-    ) {
-      return c === 'optical' || c === 'pharmacy' || /\b(optician|optical|eyewear)\b/.test(c)
-    }
-    if (ind.includes('qsr') || ind.includes('fast food')) return c === 'qsr' || c === 'restaurant'
-    if (ind.includes('cafe') || ind.includes('coffee')) return c === 'cafe' || c === 'coffee'
-    if (ind.includes('restaurant') || ind.includes('dining')) return c === 'restaurant' || c === 'dining'
-    if (ind.includes('bakery') || ind.includes('dessert')) return c === 'bakery' || c === 'dessert'
-    if (ind.includes('bar') || ind.includes('brew')) return c === 'bar' || c === 'brew'
-    if (ind.includes('pharma') || ind.includes('pharmacy')) return c === 'pharmacy' || c === 'medical'
-    if (ind.includes('salon') || ind.includes('beauty') || ind.includes('spa')) return c === 'salon' || c === 'beauty_salon'
-    if (ind.includes('gym') || ind.includes('fitness')) return c === 'gym'
-    if (ind.includes('retail') || ind.includes('fashion')) return c === 'retail' || c === 'clothing'
-    return c === ind
-  }
+  if (!brandIndustry?.trim()) return { competitors: all, complementaryBrands: [] }
   return {
-    competitors: all.filter((c) => isSame(c.category)),
-    complementaryBrands: all.filter((c) => !isSame(c.category)).slice(0, 8) as IntelligenceData['complementaryBrands'],
+    competitors: all.filter((c) => categoryMatchesBrandIndustry(c.category, brandIndustry)),
+    complementaryBrands: all.filter((c) => !categoryMatchesBrandIndustry(c.category, brandIndustry)).slice(
+      0,
+      10
+    ) as IntelligenceData['complementaryBrands'],
   }
 }
 
@@ -650,10 +699,15 @@ export default function BrandDashboardPage() {
                 : null)
           const intel = transformLiveIntelligence(d, resolvedCoords)
           const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brand?.industry)
+          const retailMixOrdered = sortRetailMixForBrand(intel.retailMix, brand?.industry)
+          const segmentStoreCount = brand?.industry?.trim() ? sameCat.length : intel.numberOfStores
           setIntelData({
             ...intel,
             competitors: sameCat,
             complementaryBrands: compBrands,
+            retailMix: retailMixOrdered,
+            storeClosureRisk: deriveStoreClosureRisk(retailMixOrdered),
+            numberOfStores: segmentStoreCount,
             locationSynthesis: null,
             locationSynthesisLoading: true,
             locationSynthesisError: null,
@@ -1718,6 +1772,18 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: CATCHMENT ── */}
                 {rightPanelTab === 'catchment' && (
                   <div>
+                    {primarySegmentLabel(brand?.industry) && (
+                      <div className="px-4 py-2.5 border-b border-orange-100 bg-gradient-to-r from-orange-50/80 to-transparent">
+                        <p className="text-[11px] text-gray-800 leading-snug">
+                          <span className="font-semibold text-[#FF5200]">Primary trade focus — </span>
+                          {primarySegmentLabel(brand?.industry)}.
+                          <span className="text-gray-600">
+                            {' '}
+                            Catchment describes households and movement for the wider area. Competitor and mix views prioritize this segment first, then other retail nearby.
+                          </span>
+                        </p>
+                      </div>
+                    )}
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Population & Lifestyle</h3>
@@ -1746,6 +1812,7 @@ export default function BrandDashboardPage() {
                         </div>
                       </div>
                       {(() => {
+                        const seg = primarySegmentLabel(brand?.industry)
                         const axes = [
                           {
                             label: 'Density (Daily Footfall)',
@@ -1760,7 +1827,14 @@ export default function BrandDashboardPage() {
                           {
                             label: 'Competitive Void',
                             score: intelData.numberOfStores === 0 ? 10 : Math.max(2, 10 - intelData.numberOfStores),
-                            signal: intelData.numberOfStores === 0 ? 'Zero competition — category void' : `${intelData.numberOfStores} competitors mapped`,
+                            signal:
+                              intelData.numberOfStores === 0
+                                ? seg
+                                  ? `No direct peers mapped in ${seg.toLowerCase()} — whitespace opportunity`
+                                  : 'Zero competition — category void'
+                                : seg
+                                  ? `${intelData.numberOfStores} mapped in your segment (${seg})`
+                                  : `${intelData.numberOfStores} competitors mapped`,
                           },
                           {
                             label: 'Occasion Spread',
@@ -1997,14 +2071,37 @@ export default function BrandDashboardPage() {
 
                     {intelData.retailMix.length > 0 && (
                       <div className="p-5 border-b border-gray-100">
-                        <h3 className="font-bold text-gray-900 mb-3">Retail Mix by Category</h3>
+                        <h3 className="font-bold text-gray-900 mb-1">Trade-area retail mix</h3>
+                        <p className="text-[10px] text-gray-500 mb-3">
+                          {primarySegmentLabel(brand?.industry)
+                            ? `Your segment (${primarySegmentLabel(brand?.industry)}) is ordered first; other categories follow by footprint.`
+                            : 'POI-weighted category counts near this listing.'}
+                        </p>
                         <ResponsiveContainer width="100%" height={160}>
                           <BarChart data={intelData.retailMix} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
                             <XAxis dataKey="category" tick={{ fontSize: 9 }} axisLine={false} />
                             <YAxis tick={{ fontSize: 9 }} axisLine={false} />
                             <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                            <Bar dataKey="nonBranded" stackId="a" fill="#e57373" name="Non-Branded" />
-                            <Bar dataKey="branded" stackId="a" fill="#4caf93" name="Branded" radius={[2, 2, 0, 0]} />
+                            <Bar dataKey="nonBranded" stackId="a" name="Non-Branded">
+                              {intelData.retailMix.map((row, i) => (
+                                <Cell
+                                  key={`nb-${i}`}
+                                  fill={
+                                    categoryMatchesBrandIndustry(row.category, brand?.industry) ? '#c62828' : '#e57373'
+                                  }
+                                />
+                              ))}
+                            </Bar>
+                            <Bar dataKey="branded" stackId="a" name="Branded" radius={[2, 2, 0, 0]}>
+                              {intelData.retailMix.map((row, i) => (
+                                <Cell
+                                  key={`b-${i}`}
+                                  fill={
+                                    categoryMatchesBrandIndustry(row.category, brand?.industry) ? '#2e7d32' : '#4caf93'
+                                  }
+                                />
+                              ))}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -2087,18 +2184,25 @@ export default function BrandDashboardPage() {
                         </GoogleMap>
                         <div className="absolute bottom-2 left-2 bg-white/90 rounded-lg px-2 py-1 flex items-center gap-3 text-[9px] text-gray-600">
                           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#FF5200] inline-block" /> Your property</span>
-                          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> Competitors</span>
-                          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" /> Complementary</span>
+                          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> Your segment</span>
+                          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" /> Other categories</span>
                         </div>
                       </div>
                     )}
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-gray-900">Competitor Brands</h3>
+                        <div>
+                          <h3 className="font-bold text-gray-900">Your segment — competitors</h3>
+                          {primarySegmentLabel(brand?.industry) && (
+                            <p className="text-[10px] text-gray-500 mt-0.5">{primarySegmentLabel(brand?.industry)}</p>
+                          )}
+                        </div>
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
                       </div>
                       {intelData.competitors.length === 0 ? (
-                        <p className="text-sm text-gray-400 italic">No competitors found in this market.</p>
+                        <p className="text-sm text-gray-400 italic">
+                          No direct segment peers mapped here — check complementary retail below or widen the trade area.
+                        </p>
                       ) : (
                         <table className="w-full text-xs">
                           <thead><tr className="text-gray-400 border-b"><th className="text-left py-1">BRAND</th><th className="text-left">CAT</th><th className="text-right">DIST</th></tr></thead>
@@ -2125,7 +2229,10 @@ export default function BrandDashboardPage() {
                       <div className="p-5">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-gray-900">Complementary Brands</h3>
+                            <div>
+                              <h3 className="font-bold text-gray-900">Other categories nearby</h3>
+                              <p className="text-[10px] text-gray-500 font-normal">Broader trade-area retail — context, not direct substitutes</p>
+                            </div>
                             <span className="text-xs bg-green-100 text-green-600 rounded-full px-1.5 py-0.5">Low Risk</span>
                           </div>
                           <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
