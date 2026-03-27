@@ -1895,40 +1895,77 @@ export default function BrandDashboardPage() {
                         </div>
                       )}
 
-                      {intelData.catchmentLandmarks.length > 0 && (
+                      {(intelData.locationSynthesisLoading ||
+                        intelData.catchmentLandmarks.length > 0 ||
+                        intelData.locationSynthesis?.residentsForBrand ||
+                        intelData.locationSynthesis?.apartmentsForBrand ||
+                        intelData.locationSynthesis?.workplacesForBrand ||
+                        (intelData.locationSynthesis?.residentsBullets?.length ?? 0) > 0 ||
+                        (intelData.locationSynthesis?.apartmentsBullets?.length ?? 0) > 0 ||
+                        (intelData.locationSynthesis?.workplacesBullets?.length ?? 0) > 0) && (
                         <div className="mt-6 pt-4 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-bold text-gray-900">Residents, apartments &amp; workplaces</h4>
-                            <span className="text-[10px] bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">Heatmap density</span>
+                            <span className="text-[10px] bg-orange-50 text-orange-800 rounded-full px-2 py-0.5 font-medium">
+                              Lokazen intelligence
+                            </span>
                           </div>
                           <p className="text-[10px] text-gray-500 mb-3">
-                            Anchors that drive daytime and evening demand. Same points are weighted on the map heatmap.
+                            Narrative is synthesized from your catchment model (households, pins, mapped anchors). Mapped list below powers the heatmap.
                           </p>
-                          <ul className="space-y-1.5 max-h-[220px] overflow-y-auto">
-                            {intelData.catchmentLandmarks.slice(0, 12).map((lm) => {
-                              const chip =
-                                lm.kind === 'residential'
-                                  ? 'Residential'
-                                  : lm.kind === 'tech_park'
-                                    ? 'Tech park'
-                                    : 'Corporate'
-                              const chipCls =
-                                lm.kind === 'residential'
-                                  ? 'bg-green-50 text-green-800'
-                                  : lm.kind === 'tech_park'
-                                    ? 'bg-indigo-50 text-indigo-700'
-                                    : 'bg-slate-100 text-slate-700'
-                              return (
-                                <li key={`${lm.name}-${lm.lat}`} className="flex items-center justify-between gap-2 text-xs py-1 border-b border-gray-50">
-                                  <span className="text-gray-800 truncate min-w-0 font-medium">{lm.name}</span>
-                                  <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${chipCls}`}>{chip}</span>
-                                    <span className="text-gray-500 w-14 text-right">{(lm.distance / 1000).toFixed(2)} km</span>
-                                  </div>
-                                </li>
-                              )
-                            })}
-                          </ul>
+                          <div className="rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-100 bg-white">
+                            <TabSynthesisCallout
+                              title="Residents — profile & spending context"
+                              narrative={intelData.locationSynthesis?.residentsForBrand}
+                              bullets={intelData.locationSynthesis?.residentsBullets}
+                              loading={intelData.locationSynthesisLoading}
+                            />
+                            <TabSynthesisCallout
+                              title="Apartments & housing stock"
+                              narrative={intelData.locationSynthesis?.apartmentsForBrand}
+                              bullets={intelData.locationSynthesis?.apartmentsBullets}
+                              loading={intelData.locationSynthesisLoading}
+                            />
+                            <TabSynthesisCallout
+                              title="Workplaces — offices & commute pockets"
+                              narrative={intelData.locationSynthesis?.workplacesForBrand}
+                              bullets={intelData.locationSynthesis?.workplacesBullets}
+                              loading={intelData.locationSynthesisLoading}
+                            />
+                          </div>
+                          {intelData.catchmentLandmarks.length > 0 && (
+                            <div className="mt-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="text-xs font-bold text-gray-800 uppercase tracking-wide">Mapped anchors</h5>
+                                <span className="text-[10px] bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">Heatmap density</span>
+                              </div>
+                              <ul className="space-y-1.5 max-h-[220px] overflow-y-auto">
+                                {intelData.catchmentLandmarks.slice(0, 12).map((lm) => {
+                                  const chip =
+                                    lm.kind === 'residential'
+                                      ? 'Residential'
+                                      : lm.kind === 'tech_park'
+                                        ? 'Tech park'
+                                        : 'Corporate'
+                                  const chipCls =
+                                    lm.kind === 'residential'
+                                      ? 'bg-green-50 text-green-800'
+                                      : lm.kind === 'tech_park'
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'bg-slate-100 text-slate-700'
+                                  return (
+                                    <li key={`${lm.name}-${lm.lat}`} className="flex items-center justify-between gap-2 text-xs py-1 border-b border-gray-50">
+                                      <span className="text-gray-800 truncate min-w-0 font-medium">{lm.name}</span>
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${chipCls}`}>{chip}</span>
+                                        <span className="text-gray-500 w-14 text-right">{(lm.distance / 1000).toFixed(2)} km</span>
+                                      </div>
+                                    </li>
+                                  )
+                                })}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

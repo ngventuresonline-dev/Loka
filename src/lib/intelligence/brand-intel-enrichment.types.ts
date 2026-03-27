@@ -30,6 +30,15 @@ export type LocationSynthesis = {
   /** Catchment tab: shoppers, landmarks, affluence — tailored to this brand */
   catchmentForBrand: string
   catchmentBullets: string[]
+  /** Catchment: resident/profile narrative (grounded in modelled demographics + catchment) */
+  residentsForBrand: string
+  residentsBullets: string[]
+  /** Housing stock — apartments, towers, gated pockets near the listing */
+  apartmentsForBrand: string
+  apartmentsBullets: string[]
+  /** Offices, tech parks, corporate nodes — daytime population & commute */
+  workplacesForBrand: string
+  workplacesBullets: string[]
   /** Market tab: demand, saturation, rent — tailored */
   marketForBrand: string
   marketBullets: string[]

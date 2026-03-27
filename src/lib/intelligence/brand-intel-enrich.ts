@@ -112,6 +112,12 @@ function safeJsonParse(text: string, platformRent: { mid: number; low: number; h
     riskBullets: asStrArr(o.riskBullets, 3),
     similarMarketsForBrand: String(o.similarMarketsForBrand || '').slice(0, 500),
     similarMarketsBullets: asStrArr(o.similarMarketsBullets, 2),
+    residentsForBrand: String(o.residentsForBrand || '').slice(0, 450),
+    residentsBullets: asStrArr(o.residentsBullets, 3),
+    apartmentsForBrand: String(o.apartmentsForBrand || '').slice(0, 450),
+    apartmentsBullets: asStrArr(o.apartmentsBullets, 3),
+    workplacesForBrand: String(o.workplacesForBrand || '').slice(0, 450),
+    workplacesBullets: asStrArr(o.workplacesBullets, 3),
   }
 }
 
@@ -204,6 +210,7 @@ export function buildLocationIntelSnapshot(
       residential: lmByKind('residential'),
       tech_park: lmByKind('tech_park'),
       corporate: lmByKind('corporate'),
+      samples: landmarkSamples,
     },
     crowdPullers: (crowdPullers as Array<{ name?: string; category?: string; distanceMeters?: number }>)
       .slice(0, 4)
@@ -266,6 +273,7 @@ RULES
 - Tab fields must reference the brand profile (category, budget fit vs ask, preferred micro-markets) where relevant.
 - competitorTakeaway + competitionForBrand: same-brand / category peers, not repeating executiveSummary verbatim.
 - riskForBrand: cannibalisation, crowding, lease/rent stress for this brand—not generic.
+- residentsForBrand / apartmentsForBrand / workplacesForBrand: use ONLY snapshot fields (catchmentTop, demographics, populationLifestyle, landmarks.samples + counts, transit). Describe who lives here, housing/apartment context, and daytime offices/tech parks—each ≤380 characters; 3 bullets max each, ≤90 chars. If data is thin, say so honestly. Do not invent specific building names not in landmarks.samples.
 
 JSON shape (all keys required; use "" or [] if nothing to say):
 {
@@ -281,6 +289,12 @@ JSON shape (all keys required; use "" or [] if nothing to say):
   "disclaimer": string,
   "catchmentForBrand": string,
   "catchmentBullets": string[],
+  "residentsForBrand": string,
+  "residentsBullets": string[],
+  "apartmentsForBrand": string,
+  "apartmentsBullets": string[],
+  "workplacesForBrand": string,
+  "workplacesBullets": string[],
   "marketForBrand": string,
   "marketBullets": string[],
   "competitionForBrand": string,

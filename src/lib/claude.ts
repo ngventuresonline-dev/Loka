@@ -21,8 +21,8 @@ export const INTEL_SYNTHESIS_MODEL =
 export const MAX_TOKENS = {
   scoring: 2000,
   reports: 4000,
-  /** Synthesis JSON only — keep moderate so generation finishes within serverless limits */
-  insights: 2200,
+  /** Synthesis JSON incl. catchment residents / apartments / workplaces */
+  insights: 2800,
 } as const
 
 export default claude
