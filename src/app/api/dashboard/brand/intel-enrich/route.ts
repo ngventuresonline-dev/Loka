@@ -18,7 +18,8 @@ function publicIntelErrorMessage(raw: string, isTimeout: boolean): string {
     /not_found_error/i.test(t) ||
     /^404\s*\{/.test(t) ||
     (t.includes('request_id') && t.includes('{')) ||
-    (t.length > 200 && /claude-[a-z0-9-]+/i.test(t))
+    (t.length > 200 && /claude-[a-z0-9-]+/i.test(t)) ||
+    /syntaxerror|json\.parse|expected ['\u2018].*json|position \d+|unexpected token/i.test(t)
   ) {
     return 'Location synthesis is temporarily unavailable. Please try again in a moment.'
   }

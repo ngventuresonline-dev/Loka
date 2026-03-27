@@ -1,11 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { INTEL_SYNTHESIS_MODEL, MAX_TOKENS } from '@/lib/claude'
-
-/** Narrow client: bounded wait so the HTTP route returns JSON instead of an empty platform 504. */
-const intelAnthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY ?? '',
-  timeout: 52 * 1000,
-})
 import type {
   LocationSynthesis,
   BrandIntelStrategicFit,
@@ -24,6 +18,12 @@ export type {
   MatchContextForIntel,
   LiveEconomicsEnrichment,
 } from '@/lib/intelligence/brand-intel-enrichment.types'
+
+/** Narrow client: bounded wait so the HTTP route returns JSON instead of an empty platform 504. */
+const intelAnthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+  timeout: 52 * 1000,
+})
 
 function clampRentRupee(n: unknown, fallback: number): number {
   const x = Math.round(Number(n))
@@ -69,17 +69,95 @@ function parseLiveEconomics(raw: unknown, fb: { mid: number; low: number; high: 
   }
 }
 
-function safeJsonParse(text: string, platformRent: { mid: number; low: number; high: number }): LocationSynthesis {
-  const trimmed = text.trim().replace(/^```json\s*|\s*```$/g, '')
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(trimmed)
-  } catch {
-    const m = trimmed.match(/\{[\s\S]*\}/)
-    if (!m) throw new Error('No JSON in synthesis response')
-    parsed = JSON.parse(m[0])
+/** Fixes common LLM JSON mistakes (trailing commas, smart quotes, extra prose). */
+function extractAndRepairJsonObject(raw: string): Record<string, unknown> | null {
+  let t = raw.trim().replace(/^```json\s*/i, '').replace(/\s*```$/g, '').trim()
+  const first = t.indexOf('{')
+  const last = t.lastIndexOf('}')
+  if (first >= 0 && last > first) t = t.slice(first, last + 1)
+
+  const tryParse = (s: string): Record<string, unknown> | null => {
+    try {
+      const v = JSON.parse(s) as unknown
+      if (v && typeof v === 'object' && !Array.isArray(v)) return v as Record<string, unknown>
+    } catch {
+      /* try repaired */
+    }
+    let fixed = s
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/\r\n/g, '\n')
+    for (let i = 0; i < 6; i++) {
+      const next = fixed.replace(/,\s*([\]}])/g, '$1')
+      if (next === fixed) break
+      fixed = next
+    }
+    try {
+      const v = JSON.parse(fixed) as unknown
+      if (v && typeof v === 'object' && !Array.isArray(v)) return v as Record<string, unknown>
+    } catch {
+      /* fall through */
+    }
+    return null
   }
-  const o = parsed as Record<string, unknown>
+
+  let o = tryParse(t)
+  if (o) return o
+
+  const greedy = raw.match(/\{[\s\S]*\}/)
+  if (greedy) {
+    o = tryParse(greedy[0])
+    if (o) return o
+  }
+
+  const balanced = extractBalancedJsonObject(raw)
+  if (balanced) {
+    o = tryParse(balanced)
+    if (o) return o
+  }
+
+  return null
+}
+
+/** First top-level `{ ... }` with brace matching (greedy regex can pull two objects). */
+function extractBalancedJsonObject(s: string): string | null {
+  const start = s.indexOf('{')
+  if (start < 0) return null
+  let depth = 0
+  let inStr = false
+  let esc = false
+  for (let i = start; i < s.length; i++) {
+    const c = s[i]
+    if (inStr) {
+      if (esc) {
+        esc = false
+        continue
+      }
+      if (c === '\\') {
+        esc = true
+        continue
+      }
+      if (c === '"') inStr = false
+      continue
+    }
+    if (c === '"') {
+      inStr = true
+      continue
+    }
+    if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) return s.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
+function safeJsonParse(text: string, platformRent: { mid: number; low: number; high: number }): LocationSynthesis {
+  const o = extractAndRepairJsonObject(text)
+  if (!o) throw new Error('No valid JSON in synthesis response')
   const fitRaw = String(o.strategicFit || 'viable').toLowerCase()
   const strategicFit: BrandIntelStrategicFit = ['strong', 'viable', 'cautionary', 'weak'].includes(fitRaw)
     ? (fitRaw as BrandIntelStrategicFit)
@@ -276,6 +354,7 @@ ${JSON.stringify(intelSnapshot, null, 0)}
 
 RULES
 - One JSON object only, no markdown. Be brief: speed matters.
+- Strict JSON: double quotes on all keys/strings only; escape any " inside a string as \\"; no trailing commas; no // or /* */ comments; no raw line breaks inside string values.
 - executiveSummary ≤900 characters. Every *ForBrand narrative ≤450 characters. Bullet items ≤100 characters. Max bullets per array: catchment/market/competition/risk = 3; similarMarkets = 2. strengths/risks ≤4 items each; opportunities ≤3; nextSteps ≤3.
 - liveEconomics: typical monthly commercial/retail ₹/sqft for THIS micro-market (integers). Anchor on address + nearestCommercialAreaKey + platformEconomics band; adjust if justified. confidence = low|medium|high honestly.
 - Tab fields must reference the brand profile (category, budget fit vs ask, preferred micro-markets) where relevant.
