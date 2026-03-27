@@ -1,6 +1,6 @@
 /**
- * Tracking utility for Google Tag Manager, Google Analytics, and Meta Pixel
- * Centralized event tracking for the Lokazen platform
+ * Tracking utility for Google Tag Manager and Google Analytics.
+ * Meta Pixel is not embedded in the app shell (strict CSP); use GTM or Conversions API for Meta.
  */
 
 declare global {
@@ -47,7 +47,7 @@ export function trackMeta(eventName: string, eventData?: Record<string, any>) {
 export function trackEvent(
   eventName: string,
   eventData?: Record<string, any>,
-  platforms: { gtm?: boolean; ga?: boolean; meta?: boolean } = { gtm: true, ga: true, meta: true }
+  platforms: { gtm?: boolean; ga?: boolean; meta?: boolean } = { gtm: true, ga: true, meta: false }
 ) {
   if (platforms.gtm) trackGTM(eventName, eventData)
   if (platforms.ga) trackGA(eventName, eventData)
