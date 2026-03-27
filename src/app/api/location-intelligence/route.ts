@@ -257,7 +257,13 @@ function inferPlaceCategory(
 ): string {
   const n = placeName.toLowerCase()
   const bt = (businessType || '').toLowerCase()
-  if (/\b(eye|optical|optician|lenskart|spectacles|eyewear|vision)\b/.test(n) || /\b(eye|optical|eyewear|optician|lens)\b/.test(bt)) {
+  if (
+    /\b(eye|optical|optician|lenskart|spectacles?|eyewear|vision|sunglass(?:es)?|goggles|frames?\b|optometry|specsmakers|titan\s*eye|eye\s*plus|eyeplus|john\s+jacobs|gkb\b|vision\s*express|cleardekho|coolwinks|iyoga)\b/.test(
+      n
+    ) ||
+    /\blawrence(?:\s*(?:&|and)\s*)?mayo\b/.test(n) ||
+    /\b(eye|optical|eyewear|optician|lens)\b/.test(bt)
+  ) {
     return 'optical'
   }
   if (googleTypes?.includes('pharmacy')) return 'pharmacy'
@@ -335,14 +341,32 @@ async function fetchCatchmentLandmarks(
   return out.sort((x, y) => x.distanceMeters - y.distanceMeters).slice(0, 20)
 }
 
+/** True when we intentionally run paired cafe + QSR Mappls queries (not any 2-entry placeTypes). */
+function isCafeQsrPlaceTypes(placeTypes: { type: string; keyword: string }[]): boolean {
+  return (
+    placeTypes.some((p) => p.type === 'cafe') &&
+    placeTypes.some((p) => p.type === 'meal_takeaway')
+  )
+}
+
 /** Google Places: type + keyword. When Cafe/QSR, returns multiple so we fetch both. */
 function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string): { type: string; keyword: string }[] {
   const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
   const p = (propertyType || '').toLowerCase()
 
-  // Eyewear / Optical
-  if (/\b(eye|eyewear|optical|optician|spectacles|glasses|lenses|vision)\b/.test(raw)) {
-    return [{ type: '', keyword: 'optician optical eyewear Lenskart spectacles glasses' }]
+  // Eyewear / optical retail (premium chains + India keywords — before generic "retail" → clothing)
+  const opticalContext = /\b(eye|eyewear|optical|optician|spectacles?|glasses|sunglass(?:es)?|lenses\b|\blens\b|vision|goggles|frames?\b|frame\s+store|optometry|lenskart|specsmakers|titan\s*eye|eye\s*plus|eyeplus|john\s+jacobs|gkb|lawrence\s*(?:&|and)?\s*mayo|vision\s*express|cleardekho|coolwinks|iyoga|himalaya\s+optical|aqualens)\b/.test(
+    raw
+  )
+  if (opticalContext) {
+    return [
+      {
+        type: '',
+        keyword:
+          'optician optical eyewear Lenskart Titan Eye Specsmakers spectacles eyeglasses sunglasses glasses shop India',
+      },
+      { type: 'point_of_interest', keyword: 'optometrist eyeglass store vision care' },
+    ]
   }
   // Jewelry
   if (/\b(jewel|jewellery|jewelry|gold|diamond|ornament)\b/.test(raw)) {
@@ -684,7 +708,7 @@ export async function POST(request: NextRequest) {
           const rev = cached.scores.revenueProjectionMonthly
           const rentPct = (monthlyRent / rev) * 100
           const placeTypes = mapToPlaceTypeAndKeyword(propertyType, businessType)
-          const primaryPlaceType = placeTypes[0]?.type ?? 'point_of_interest'
+          const primaryPlaceType = placeTypes[0]?.type || 'point_of_interest'
           const isFbCache = ['restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway'].includes(primaryPlaceType)
           const healthyPctCache = isFbCache ? RENT_VIABILITY.fnbHealthyRentToRevenuePct : RENT_VIABILITY.healthyRentToRevenuePct
           cached.scores.rentViability = {
@@ -729,14 +753,14 @@ export async function POST(request: NextRequest) {
     }
     
     const placeTypes = mapToPlaceTypeAndKeyword(propertyType, businessType)
-    const primaryPlaceType = placeTypes[0]?.type ?? 'point_of_interest'
+    const primaryPlaceType = placeTypes[0]?.type || 'point_of_interest'
     const mapplsParams = mapToMapplsNearbyParams(propertyType, businessType)
 
     let competitors: Competitor[] = []
     let competitorsSource: 'mappls' | 'google' | 'none' | 'mixed' = 'none'
 
     // Phase 2: Mappls first for competitors (India-native POI), fallback to Google
-    const isCafeQSR = placeTypes.length >= 2
+    const isCafeQSR = isCafeQsrPlaceTypes(placeTypes)
     if (isMapplsConfigured() && typeof lat === 'number' && typeof lng === 'number') {
       try {
         if (isCafeQSR) {

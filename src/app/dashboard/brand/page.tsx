@@ -255,6 +255,20 @@ function deriveStoreClosureRisk(
   return retailMix.map((r) => ({ category: r.category, totalPois: r.branded + r.nonBranded })).slice(0, 5)
 }
 
+/**
+ * Business context for Places / scoring — company or trade name + industry only.
+ * Never use account-holder name (`brand.name`); that skews competitor search and synthesis.
+ */
+function buildLocationBusinessType(
+  brand: { companyName?: string | null; industry?: string | null } | null | undefined
+): string {
+  if (!brand) return ''
+  return [brand.companyName, brand.industry]
+    .map((s) => (s != null ? String(s).trim() : ''))
+    .filter(Boolean)
+    .join(' ')
+}
+
 /** POI category (matches location-intelligence place categories / retail mix keys). */
 function categoryMatchesBrandIndustry(cat: string, industry: string | null | undefined): boolean {
   if (!industry?.trim()) return false
@@ -266,6 +280,9 @@ function categoryMatchesBrandIndustry(cat: string, industry: string | null | und
     ind.includes('optical') ||
     ind.includes('eyewear') ||
     ind.includes('spectacle') ||
+    ind.includes('optometry') ||
+    ind.includes('frames') ||
+    /\blenskart\b/.test(ind) ||
     (ind.includes('lens') && !ind.includes('contact'))
   ) {
     return c === 'optical' || c === 'pharmacy' || c === 'medical' || /\b(optician|optical|eyewear)\b/.test(c)
@@ -294,6 +311,9 @@ function primarySegmentLabel(industry: string | null | undefined): string | null
     ind.includes('optical') ||
     ind.includes('eyewear') ||
     ind.includes('spectacle') ||
+    ind.includes('optometry') ||
+    ind.includes('frames') ||
+    /\blenskart\b/.test(ind) ||
     (ind.includes('lens') && !ind.includes('contact'))
   ) {
     return 'Eyewear & optical'
@@ -647,7 +667,9 @@ export default function BrandDashboardPage() {
       if (res.ok) {
         const json = await res.json()
         setData(json)
-        if (json.brand?.name) setBrandName(json.brand.name)
+        if (json.brand) {
+          setBrandName(json.brand.companyName || json.brand.name || '')
+        }
       }
     } catch (err) { console.error('[Brand Dashboard] fetch error:', err) }
     finally { setLoading(false) }
@@ -682,7 +704,7 @@ export default function BrandDashboardPage() {
           state: 'Karnataka',
           title: property.title,
           propertyType: property.propertyType,
-          businessType: brand?.industry || '',
+          businessType: buildLocationBusinessType(brand),
           monthlyRent: deriveMonthlyRentFromListing(property.price, property.priceType, property.size),
           sizeSqft: property.size,
         }),
@@ -701,9 +723,10 @@ export default function BrandDashboardPage() {
                 ? { lat: Number(d.lat), lng: Number(d.lng) }
                 : null)
           const intel = transformLiveIntelligence(d, resolvedCoords)
-          const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brand?.industry)
-          const retailMixOrdered = sortRetailMixForBrand(intel.retailMix, brand?.industry)
-          const segmentStoreCount = brand?.industry?.trim() ? sameCat.length : intel.numberOfStores
+          const brandIntelContext = buildLocationBusinessType(brand)
+          const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brandIntelContext)
+          const retailMixOrdered = sortRetailMixForBrand(intel.retailMix, brandIntelContext)
+          const segmentStoreCount = brandIntelContext.trim() ? sameCat.length : intel.numberOfStores
           setIntelData({
             ...intel,
             competitors: sameCat,
@@ -738,7 +761,7 @@ export default function BrandDashboardPage() {
                 brandId: brand?.id,
                 rawIntel: d,
                 brand: {
-                  name: brand?.name || 'Brand',
+                  name: brand?.companyName?.trim() || 'Brand',
                   companyName: brand?.companyName,
                   industry: brand?.industry,
                   budgetMin: brand?.budgetMin,
@@ -906,7 +929,9 @@ export default function BrandDashboardPage() {
               {(brandName || 'B')[0].toUpperCase()}
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-base leading-tight">{brandName || brand?.companyName || 'Brand'}</p>
+              <p className="font-bold text-gray-900 text-base leading-tight">
+                {brand?.companyName || brandName || brand?.name || 'Brand'}
+              </p>
               <p className="text-xs text-gray-500">
                 {brand?.industry ? `${brand.industry} · ` : ''}{brand?.phone || brand?.email || ''}
               </p>
@@ -1775,11 +1800,11 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: CATCHMENT ── */}
                 {rightPanelTab === 'catchment' && (
                   <div>
-                    {primarySegmentLabel(brand?.industry) && (
+                    {primarySegmentLabel(buildLocationBusinessType(brand)) && (
                       <div className="px-4 py-2.5 border-b border-orange-100 bg-gradient-to-r from-orange-50/80 to-transparent">
                         <p className="text-[11px] text-gray-800 leading-snug">
                           <span className="font-semibold text-[#FF5200]">Primary trade focus — </span>
-                          {primarySegmentLabel(brand?.industry)}.
+                          {primarySegmentLabel(buildLocationBusinessType(brand))}.
                           <span className="text-gray-600">
                             {' '}
                             Catchment describes households and movement for the wider area. Competitor and mix views prioritize this segment first, then other retail nearby.
@@ -1815,7 +1840,7 @@ export default function BrandDashboardPage() {
                         </div>
                       </div>
                       {(() => {
-                        const seg = primarySegmentLabel(brand?.industry)
+                        const seg = primarySegmentLabel(buildLocationBusinessType(brand))
                         const axes = [
                           {
                             label: 'Density (Daily Footfall)',
@@ -2113,8 +2138,8 @@ export default function BrandDashboardPage() {
                       <div className="p-5 border-b border-gray-100">
                         <h3 className="font-bold text-gray-900 mb-1">Trade-area retail mix</h3>
                         <p className="text-[10px] text-gray-500 mb-3">
-                          {primarySegmentLabel(brand?.industry)
-                            ? `Your segment (${primarySegmentLabel(brand?.industry)}) is ordered first; other categories follow by footprint.`
+                          {primarySegmentLabel(buildLocationBusinessType(brand))
+                            ? `Your segment (${primarySegmentLabel(buildLocationBusinessType(brand))}) is ordered first; other categories follow by footprint.`
                             : 'POI-weighted category counts near this listing.'}
                         </p>
                         <ResponsiveContainer width="100%" height={160}>
@@ -2127,7 +2152,7 @@ export default function BrandDashboardPage() {
                                 <Cell
                                   key={`nb-${i}`}
                                   fill={
-                                    categoryMatchesBrandIndustry(row.category, brand?.industry) ? '#c62828' : '#e57373'
+                                    categoryMatchesBrandIndustry(row.category, buildLocationBusinessType(brand)) ? '#c62828' : '#e57373'
                                   }
                                 />
                               ))}
@@ -2137,7 +2162,7 @@ export default function BrandDashboardPage() {
                                 <Cell
                                   key={`b-${i}`}
                                   fill={
-                                    categoryMatchesBrandIndustry(row.category, brand?.industry) ? '#2e7d32' : '#4caf93'
+                                    categoryMatchesBrandIndustry(row.category, buildLocationBusinessType(brand)) ? '#2e7d32' : '#4caf93'
                                   }
                                 />
                               ))}
@@ -2233,8 +2258,8 @@ export default function BrandDashboardPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h3 className="font-bold text-gray-900">Your segment — competitors</h3>
-                          {primarySegmentLabel(brand?.industry) && (
-                            <p className="text-[10px] text-gray-500 mt-0.5">{primarySegmentLabel(brand?.industry)}</p>
+                          {primarySegmentLabel(buildLocationBusinessType(brand)) && (
+                            <p className="text-[10px] text-gray-500 mt-0.5">{primarySegmentLabel(buildLocationBusinessType(brand))}</p>
                           )}
                         </div>
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>

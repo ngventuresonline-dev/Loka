@@ -125,7 +125,8 @@ export async function GET(request: NextRequest) {
             name: user.name,
             email: user.email,
             phone: user.phone,
-            companyName: user.brandProfiles?.company_name ?? user.name,
+            // Trade / legal name for intelligence & UI — never substitute account holder here (that's `name`).
+            companyName: user.brandProfiles?.company_name?.trim() || null,
             industry: user.brandProfiles?.industry ?? null,
             preferredLocations: user.brandProfiles?.preferred_locations ?? null,
             budgetMin: user.brandProfiles?.budget_min

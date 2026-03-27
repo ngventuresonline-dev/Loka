@@ -16,6 +16,17 @@ export function mapToMapplsNearbyParams(propertyType?: string, businessType?: st
   const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
   const p = (propertyType || '').toLowerCase()
 
+  if (
+    /\b(eye|eyewear|optical|optician|spectacles?|glasses|sunglass(?:es)?|lenses\b|\blens\b|vision|goggles|frames?\b|optometry|lenskart|specsmakers|titan\s*eye|eye\s*plus|eyeplus|john\s+jacobs|gkb|lawrence\s*(?:&|and)?\s*mayo|vision\s*express)\b/.test(
+      raw
+    )
+  ) {
+    return {
+      keywords:
+        'optical;optician;eyewear;spectacles;glasses;Lenskart;Specsmakers;Titan Eye;eyeglass;vision',
+    }
+  }
+
   if (/\b(qsr|quick service|fast food)\b/.test(raw) || /\b(cafe|coffee)\b/.test(raw)) {
     return { keywords: 'coffee;cafe;fast food;burger;pizza;qsr;shawarma;biryani', categoryCode: 'FODCOF' }
   }
