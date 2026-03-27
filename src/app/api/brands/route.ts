@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { getCacheHeaders, CACHE_CONFIGS } from '@/lib/api-cache'
 
+export const revalidate = 300 // Cache for 5 minutes — brands don't change frequently
+
 // Public endpoint to fetch brands (no authentication required)
 export async function GET(request: NextRequest) {
   try {

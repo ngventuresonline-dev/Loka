@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { requireOwnerOrAdmin, getAuthenticatedUser } from '@/lib/api-auth'
+
+export const revalidate = 120 // 2 minutes — properties update infrequently
 import { CreatePropertySchema, PropertyQuerySchema } from '@/lib/validations/property'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'

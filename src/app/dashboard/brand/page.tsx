@@ -124,9 +124,12 @@ type IntelligenceData = {
   hourlyPattern: number[]
   totalHouseholds: number
   affluenceIndicator: string
+  /** Census-style pincode catchment */
   catchment: Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType?: string }>
-  competitors: Array<{ name: string; category: string; distance: number; rating?: number; branded: boolean }>
-  complementaryBrands: Array<{ name: string; category: string; distance: number }>
+  /** Apartments, tech parks, corporate nodes — feeds heatmap density */
+  catchmentLandmarks: Array<{ name: string; kind: string; distance: number; lat: number; lng: number }>
+  competitors: Array<{ name: string; category: string; distance: number; rating?: number; branded: boolean; lat?: number; lng?: number }>
+  complementaryBrands: Array<{ name: string; category: string; distance: number; lat?: number; lng?: number }>
   crowdPullers: Array<{ name: string; category: string; distance: number }>
   retailMix: Array<{ category: string; branded: number; nonBranded: number }>
   cannibalisationRisk: Array<{ name: string; distance: number; cannibalisation: number }>
@@ -135,6 +138,8 @@ type IntelligenceData = {
   metroDistance: number | null
   metroName: string | null
   busStops: number
+  rentPerSqftCommercial: number | null
+  incomeLevel: string | null
 }
 
 type RightPanelMode = 'map' | 'intelligence'
@@ -201,11 +206,23 @@ function splitCompetitors(
   const ind = brandIndustry.toLowerCase()
   const isSame = (cat: string) => {
     const c = cat.toLowerCase()
+    if (
+      ind.includes('eye') ||
+      ind.includes('optical') ||
+      ind.includes('eyewear') ||
+      ind.includes('spectacle') ||
+      (ind.includes('lens') && !ind.includes('contact'))
+    ) {
+      return c === 'optical' || c === 'pharmacy' || /\b(optician|optical|eyewear)\b/.test(c)
+    }
     if (ind.includes('qsr') || ind.includes('fast food')) return c === 'qsr' || c === 'restaurant'
     if (ind.includes('cafe') || ind.includes('coffee')) return c === 'cafe' || c === 'coffee'
     if (ind.includes('restaurant') || ind.includes('dining')) return c === 'restaurant' || c === 'dining'
     if (ind.includes('bakery') || ind.includes('dessert')) return c === 'bakery' || c === 'dessert'
     if (ind.includes('bar') || ind.includes('brew')) return c === 'bar' || c === 'brew'
+    if (ind.includes('pharma') || ind.includes('pharmacy')) return c === 'pharmacy' || c === 'medical'
+    if (ind.includes('salon') || ind.includes('beauty') || ind.includes('spa')) return c === 'salon' || c === 'beauty_salon'
+    if (ind.includes('gym') || ind.includes('fitness')) return c === 'gym'
     if (ind.includes('retail') || ind.includes('fashion')) return c === 'retail' || c === 'clothing'
     return c === ind
   }
@@ -226,6 +243,8 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
       distance: Number(c.distanceMeters) || 0,
       rating: c.rating != null ? Number(c.rating) : undefined,
       branded: c.brandType === 'popular',
+      lat: c.lat != null && Number.isFinite(Number(c.lat)) ? Number(c.lat) : undefined,
+      lng: c.lng != null && Number.isFinite(Number(c.lng)) ? Number(c.lng) : undefined,
     })
   )
   const cannibalisationRisk: IntelligenceData['cannibalisationRisk'] = (data.cannibalisationRisk || []).map(
@@ -262,6 +281,16 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
     distanceM: Number(c.distanceM) || 0,
     areaType: String(c.areaType || 'mixed'),
   }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const catchmentLandmarks: IntelligenceData['catchmentLandmarks'] = (data.catchmentLandmarks || [])
+    .map((l: any) => ({
+      name: String(l.name || ''),
+      kind: String(l.kind || 'mixed'),
+      distance: Number(l.distanceMeters) || 0,
+      lat: Number(l.lat),
+      lng: Number(l.lng),
+    }))
+    .filter((l: { lat: number; lng: number }) => Number.isFinite(l.lat) && Number.isFinite(l.lng))
   return {
     coords: resolvedCoords,
     overallScore: Number(data.marketPotentialScore) || 50,
@@ -281,6 +310,7 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
     totalHouseholds: Number(data.populationLifestyle?.totalHouseholds || data.projections2026?.totalHouseholds) || 0,
     affluenceIndicator: String(data.populationLifestyle?.affluenceIndicator || data.projections2026?.affluenceIndicator || 'Medium'),
     catchment,
+    catchmentLandmarks,
     competitors,
     complementaryBrands: [],
     crowdPullers,
@@ -291,6 +321,9 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
     metroDistance: data.accessibility?.nearestMetro?.distanceMeters != null ? Number(data.accessibility.nearestMetro.distanceMeters) : null,
     metroName: data.accessibility?.nearestMetro?.name ? String(data.accessibility.nearestMetro.name) : null,
     busStops: data.accessibility?.nearestBusStop ? 1 : 0,
+    rentPerSqftCommercial:
+      data.populationLifestyle?.rentPerSqft != null ? Number(data.populationLifestyle.rentPerSqft) : null,
+    incomeLevel: data.demographics?.incomeLevel ? String(data.demographics.incomeLevel) : null,
   }
 }
 
@@ -534,11 +567,17 @@ export default function BrandDashboardPage() {
       if (liveRes.ok) {
         const liveData = await liveRes.json()
         if (liveData.success) {
+          const d = liveData.data
           const resolvedCoords: { lat: number; lng: number } | null =
-            coords ?? (liveData.data?.lat != null && liveData.data?.lng != null
-              ? { lat: liveData.data.lat, lng: liveData.data.lng }
-              : null)
-          const intel = transformLiveIntelligence(liveData.data, resolvedCoords)
+            coords ??
+            (d?.coordinates &&
+            typeof d.coordinates.lat === 'number' &&
+            typeof d.coordinates.lng === 'number'
+              ? { lat: d.coordinates.lat, lng: d.coordinates.lng }
+              : d?.lat != null && d?.lng != null
+                ? { lat: Number(d.lat), lng: Number(d.lng) }
+                : null)
+          const intel = transformLiveIntelligence(d, resolvedCoords)
           const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brand?.industry)
           setIntelData({ ...intel, competitors: sameCat, complementaryBrands: compBrands })
           return
@@ -556,9 +595,10 @@ export default function BrandDashboardPage() {
             coords: fallbackCoords, overallScore: Number(intel.marketPotentialScore) || 50, highlights: [],
             totalFootfall: Number(intel.dailyFootfall) || 0, growthTrend: 0, spendingCapacity: 0,
             numberOfStores: 0, retailIndex: 0.5, hourlyPattern: [], totalHouseholds: 0,
-            affluenceIndicator: 'Medium', catchment: [], competitors: [], complementaryBrands: [],
+            affluenceIndicator: 'Medium', catchment: [], catchmentLandmarks: [], competitors: [], complementaryBrands: [],
             crowdPullers: [], retailMix: [], cannibalisationRisk: [], storeClosureRisk: [], similarMarkets: [],
             metroDistance: null, metroName: null, busStops: 0,
+            rentPerSqftCommercial: null, incomeLevel: null,
           })
           return
         }
@@ -1016,16 +1056,33 @@ export default function BrandDashboardPage() {
               {/* Competitor pins when in intelligence mode */}
               {isLoaded && rightMode === 'intelligence' && intelData && [...intelData.competitors, ...intelData.complementaryBrands].map((c, i) => {
                 if (!selectedMatch?.coords) return null
-                // approximate nearby coords — slight offset
-                const angle = (i / Math.max(1, intelData.competitors.length + intelData.complementaryBrands.length)) * 2 * Math.PI
-                const dist = c.distance / 111320
-                const lat = selectedMatch.coords.lat + dist * Math.cos(angle)
-                const lng = selectedMatch.coords.lng + dist * Math.sin(angle)
+                const total = Math.max(1, intelData.competitors.length + intelData.complementaryBrands.length)
+                const isDirect =
+                  'lat' in c &&
+                  'lng' in c &&
+                  typeof (c as { lat?: number }).lat === 'number' &&
+                  typeof (c as { lng?: number }).lng === 'number' &&
+                  Number.isFinite((c as { lat: number }).lat) &&
+                  Number.isFinite((c as { lng: number }).lng)
+                const lat = isDirect
+                  ? (c as { lat: number }).lat
+                  : selectedMatch.coords.lat + (c.distance / 111320) * Math.cos((i / total) * 2 * Math.PI)
+                const lng = isDirect
+                  ? (c as { lng: number }).lng
+                  : selectedMatch.coords.lng + (c.distance / 111320) * Math.sin((i / total) * 2 * Math.PI)
+                const isCompetitor = intelData.competitors.some((x) => x.name === c.name && x.distance === c.distance)
                 return (
                   <Marker
-                    key={`comp-${i}`}
+                    key={`comp-${i}-${c.name}`}
                     position={{ lat, lng }}
-                    icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#6366f1', fillOpacity: 0.8, strokeColor: '#fff', strokeWeight: 1.5 }}
+                    icon={{
+                      path: google.maps.SymbolPath.CIRCLE,
+                      scale: 8,
+                      fillColor: isCompetitor ? '#ef4444' : '#6366f1',
+                      fillOpacity: 0.85,
+                      strokeColor: '#fff',
+                      strokeWeight: 1.5,
+                    }}
                   />
                 )
               })}
@@ -1050,25 +1107,30 @@ export default function BrandDashboardPage() {
               {isLoaded && mapMode === 'heatmap' && (() => {
                 let heatPoints: google.maps.LatLng[] = []
                 if (rightMode === 'intelligence' && intelData && selectedMatch?.coords) {
-                  // Show competitor/activity density around selected property
                   const base = selectedMatch.coords
                   const allPlaces = [...(intelData.competitors ?? []), ...(intelData.complementaryBrands ?? []), ...(intelData.crowdPullers ?? [])]
+                  const n = Math.max(1, allPlaces.length)
                   heatPoints = allPlaces
                     .filter((c) => c.distance > 0)
                     .map((c, i) => {
-                      const angle = (i / Math.max(1, allPlaces.length)) * 2 * Math.PI
+                      const po = c as { distance: number; lat?: number; lng?: number }
+                      if (po.lat != null && po.lng != null && Number.isFinite(po.lat) && Number.isFinite(po.lng)) {
+                        return new google.maps.LatLng(po.lat, po.lng)
+                      }
+                      const angle = (i / n) * 2 * Math.PI
                       const dist = c.distance / 111320
-                      return new google.maps.LatLng(
-                        base.lat + dist * Math.cos(angle),
-                        base.lng + dist * Math.sin(angle)
-                      )
+                      return new google.maps.LatLng(base.lat + dist * Math.cos(angle), base.lng + dist * Math.sin(angle))
                     })
-                  // Also add a cluster at the property itself
+                  for (const lm of intelData.catchmentLandmarks ?? []) {
+                    const weight = lm.kind === 'residential' ? 5 : lm.kind === 'tech_park' ? 4 : 3
+                    for (let w = 0; w < weight; w++) {
+                      heatPoints.push(new google.maps.LatLng(lm.lat, lm.lng))
+                    }
+                  }
                   for (let j = 0; j < 5; j++) {
-                    heatPoints.push(new google.maps.LatLng(
-                      base.lat + (Math.random() - 0.5) * 0.002,
-                      base.lng + (Math.random() - 0.5) * 0.002
-                    ))
+                    heatPoints.push(
+                      new google.maps.LatLng(base.lat + (Math.random() - 0.5) * 0.002, base.lng + (Math.random() - 0.5) * 0.002)
+                    )
                   }
                 } else {
                   heatPoints = matches
@@ -1463,6 +1525,43 @@ export default function BrandDashboardPage() {
                           })}
                         </div>
                       )}
+
+                      {intelData.catchmentLandmarks.length > 0 && (
+                        <div className="mt-6 pt-4 border-t border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-bold text-gray-900">Residents, apartments &amp; workplaces</h4>
+                            <span className="text-[10px] bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">Heatmap density</span>
+                          </div>
+                          <p className="text-[10px] text-gray-500 mb-3">
+                            Anchors that drive daytime and evening demand. Same points are weighted on the map heatmap.
+                          </p>
+                          <ul className="space-y-1.5 max-h-[220px] overflow-y-auto">
+                            {intelData.catchmentLandmarks.slice(0, 12).map((lm) => {
+                              const chip =
+                                lm.kind === 'residential'
+                                  ? 'Residential'
+                                  : lm.kind === 'tech_park'
+                                    ? 'Tech park'
+                                    : 'Corporate'
+                              const chipCls =
+                                lm.kind === 'residential'
+                                  ? 'bg-green-50 text-green-800'
+                                  : lm.kind === 'tech_park'
+                                    ? 'bg-indigo-50 text-indigo-700'
+                                    : 'bg-slate-100 text-slate-700'
+                              return (
+                                <li key={`${lm.name}-${lm.lat}`} className="flex items-center justify-between gap-2 text-xs py-1 border-b border-gray-50">
+                                  <span className="text-gray-800 truncate min-w-0 font-medium">{lm.name}</span>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${chipCls}`}>{chip}</span>
+                                    <span className="text-gray-500 w-14 text-right">{(lm.distance / 1000).toFixed(2)} km</span>
+                                  </div>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1470,6 +1569,45 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: MARKET ── */}
                 {rightPanelTab === 'market' && (
                   <div>
+                    <div className="p-5 border-b border-gray-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-gray-900">Catchment economics</h3>
+                        <span className="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">Modelled</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mb-1">
+                        <MetricCell
+                          label="COMM. RENT (INDICATOR)"
+                          value={
+                            intelData.rentPerSqftCommercial != null
+                              ? `₹${intelData.rentPerSqftCommercial}/sqft`
+                              : '—'
+                          }
+                          trend="up"
+                          benchmark="~80"
+                          tooltip="Typical commercial rent per sqft benchmark for the ward / city tier (Census-derived estimates)."
+                        />
+                        <MetricCell
+                          label="INCOME BAND (AREA)"
+                          value={intelData.incomeLevel ? intelData.incomeLevel.charAt(0).toUpperCase() + intelData.incomeLevel.slice(1) : '—'}
+                          trend="up"
+                          benchmark="medium"
+                          tooltip="Household income mix proxy from Census demographics for the surrounding ward."
+                        />
+                        <MetricCell
+                          label="AFFLUENCE"
+                          value={intelData.affluenceIndicator}
+                          trend="up"
+                          benchmark="Medium"
+                          tooltip="Spending-power indicator from projected household income / affluence labels."
+                        />
+                        <MetricCell
+                          label="HOUSEHOLDS (EST.)"
+                          value={intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString() : '—'}
+                          trend="up"
+                          tooltip="Estimated household count where Census ward data is available."
+                        />
+                      </div>
+                    </div>
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Retail Indicators</h3>
@@ -1565,13 +1703,34 @@ export default function BrandDashboardPage() {
                         >
                           <Marker position={selectedMatch.coords} icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} label={{ text: 'P', color: '#fff', fontWeight: 'bold', fontSize: '10px' }} />
                           {[...intelData.competitors, ...intelData.complementaryBrands].map((c, i) => {
-                            if (!c.distance || !selectedMatch.coords) return null
-                            const angle = (i / Math.max(1, intelData.competitors.length + intelData.complementaryBrands.length)) * 2 * Math.PI
-                            const dist = c.distance / 111320
+                            if (!selectedMatch.coords) return null
+                            const row = c as { name: string; distance: number; lat?: number; lng?: number }
+                            const total = Math.max(1, intelData.competitors.length + intelData.complementaryBrands.length)
+                            const hasGeo =
+                              row.lat != null &&
+                              row.lng != null &&
+                              Number.isFinite(row.lat) &&
+                              Number.isFinite(row.lng)
+                            if (!hasGeo && !row.distance) return null
+                            const lat = hasGeo
+                              ? row.lat!
+                              : selectedMatch.coords.lat + (row.distance / 111320) * Math.cos((i / total) * 2 * Math.PI)
+                            const lng = hasGeo
+                              ? row.lng!
+                              : selectedMatch.coords.lng + (row.distance / 111320) * Math.sin((i / total) * 2 * Math.PI)
+                            const isCompetitorRow = intelData.competitors.some((x) => x.name === row.name && x.distance === row.distance)
                             return (
-                              <Marker key={`comp-map-${i}`}
-                                position={{ lat: selectedMatch.coords.lat + dist * Math.cos(angle), lng: selectedMatch.coords.lng + dist * Math.sin(angle) }}
-                                icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: intelData.competitors.includes(c as typeof intelData.competitors[0]) ? '#ef4444' : '#6366f1', fillOpacity: 0.85, strokeColor: '#fff', strokeWeight: 1.5 }}
+                              <Marker
+                                key={`comp-map-${i}-${row.name}`}
+                                position={{ lat, lng }}
+                                icon={{
+                                  path: google.maps.SymbolPath.CIRCLE,
+                                  scale: 8,
+                                  fillColor: isCompetitorRow ? '#ef4444' : '#6366f1',
+                                  fillOpacity: 0.85,
+                                  strokeColor: '#fff',
+                                  strokeWeight: 1.5,
+                                }}
                               />
                             )
                           })}
@@ -1647,9 +1806,29 @@ export default function BrandDashboardPage() {
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
                       </div>
                       {intelData.cannibalisationRisk.length === 0 ? (
-                        <div className="bg-green-50 rounded-xl p-4 text-center">
-                          <p className="text-sm text-green-700 font-medium">✓ No cannibalisation risk detected</p>
-                          <p className="text-xs text-green-600 mt-1">No same-brand outlets found nearby.</p>
+                        <div
+                          className={`rounded-xl p-4 text-center ${
+                            intelData.numberOfStores >= 4 ? 'bg-amber-50 border border-amber-100' : 'bg-green-50'
+                          }`}
+                        >
+                          <p
+                            className={`text-sm font-medium ${
+                              intelData.numberOfStores >= 4 ? 'text-amber-900' : 'text-green-700'
+                            }`}
+                          >
+                            {intelData.numberOfStores >= 4
+                              ? 'No duplicate-chain signal — category may still be crowded'
+                              : '✓ No cannibalisation risk detected'}
+                          </p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              intelData.numberOfStores >= 4 ? 'text-amber-800' : 'text-green-600'
+                            }`}
+                          >
+                            {intelData.numberOfStores >= 4
+                              ? `${intelData.numberOfStores} POIs in the trade area. Charts fill when same-brand clusters or crowding are estimated.`
+                              : 'No same-brand outlets found nearby.'}
+                          </p>
                         </div>
                       ) : (
                         <ResponsiveContainer width="100%" height={Math.max(120, intelData.cannibalisationRisk.length * 32)}>

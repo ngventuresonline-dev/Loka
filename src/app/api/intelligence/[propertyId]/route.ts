@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 
+export const revalidate = 3600 // 1 hour — intelligence data is stable
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ propertyId: string }> }

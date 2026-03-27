@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Note: This is POST so revalidate doesn't apply, but Redis cache is already wired
+export const maxDuration = 30 // Allow 30s for Google Places calls
+
 import {
   mapplsGeocode,
   mapplsNearby,
@@ -53,8 +56,8 @@ type Competitor = {
   userRatingsTotal?: number
   address?: string
   brandType?: 'popular' | 'new'
-  /** From Google: 'cafe' or 'qsr' based on which search returned it. Used for filter. */
-  placeCategory?: 'cafe' | 'qsr'
+  /** Inferred category for retail mix / competitor tab (optical, cafe, qsr, …). */
+  placeCategory?: string
 }
 
 type LocationIntelligenceResponse = {
@@ -109,12 +112,20 @@ type LocationIntelligenceResponse = {
     }
   }
   dataSource?: {
-    competitors: 'mappls' | 'google' | 'none'
+    competitors: 'mappls' | 'google' | 'none' | 'mixed'
     transit: 'mappls' | 'google' | 'none'
     geocoding: 'mappls' | 'google' | 'none'
   }
   /** GeoIQ-style: catchment (where shoppers come from) */
-  catchment?: Array<{ pincode: string; name: string; sharePct: number; distanceM: number }>
+  catchment?: Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType?: string }>
+  /** Apartments, tech parks, corporate clusters — for catchment list + heatmap density */
+  catchmentLandmarks?: Array<{
+    name: string
+    kind: 'residential' | 'tech_park' | 'corporate'
+    lat: number
+    lng: number
+    distanceMeters: number
+  }>
   /** Crowd pullers: malls, offices, hospitals that drive traffic */
   crowdPullers?: Array<{ name: string; category: string; distanceMeters: number; footfallTag?: string }>
   /** Retail mix by category: branded vs non-branded */
@@ -165,6 +176,160 @@ function haversineDistanceMeters(a: { lat: number; lng: number }, b: { lat: numb
   return EARTH_RADIUS_M * c
 }
 
+/** Nearby Search `type` must be a supported Places type — `store` is not valid and yields INVALID_REQUEST. */
+const VALID_NEARBY_TYPES = new Set([
+  'restaurant',
+  'cafe',
+  'meal_takeaway',
+  'bakery',
+  'bar',
+  'pharmacy',
+  'beauty_salon',
+  'gym',
+  'electronics_store',
+  'jewelry_store',
+  'clothing_store',
+  'supermarket',
+  'shopping_mall',
+  'lodging',
+  'hospital',
+  'doctor',
+  'dentist',
+  'furniture_store',
+  'hardware_store',
+  'home_goods_store',
+  'shoe_store',
+  'book_store',
+  'convenience_store',
+  'department_store',
+  'florist',
+  'liquor_store',
+  'pet_store',
+  'point_of_interest',
+  'establishment',
+])
+
+type GoogleNearbyPlace = {
+  name?: string
+  geometry?: { location?: { lat?: number; lng?: number } }
+  rating?: number
+  user_ratings_total?: number
+  vicinity?: string
+  formatted_address?: string
+  types?: string[]
+}
+
+async function fetchGoogleNearbyPlaces(
+  lat: number,
+  lng: number,
+  googleApiKey: string,
+  opts: { keyword: string; type?: string },
+  radiusMeters = 2000
+): Promise<GoogleNearbyPlace[]> {
+  const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
+  url.searchParams.set('location', `${lat},${lng}`)
+  url.searchParams.set('radius', String(radiusMeters))
+  if (opts.keyword) url.searchParams.set('keyword', opts.keyword)
+  if (opts.type && VALID_NEARBY_TYPES.has(opts.type)) url.searchParams.set('type', opts.type)
+  url.searchParams.set('key', googleApiKey)
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15000) })
+  if (!res.ok) return []
+  const json = await res.json()
+  if (json.status && json.status !== 'OK' && json.status !== 'ZERO_RESULTS') {
+    if (json.status === 'INVALID_REQUEST') {
+      console.warn('[LocationIntelligence API] Places INVALID_REQUEST:', json.error_message || '')
+    }
+    return []
+  }
+  return Array.isArray(json.results) ? json.results : []
+}
+
+function inferPlaceCategory(
+  placeName: string,
+  googleTypes: string[] | undefined,
+  searchPlaceType: string,
+  businessType?: string
+): string {
+  const n = placeName.toLowerCase()
+  const bt = (businessType || '').toLowerCase()
+  if (/\b(eye|optical|optician|lenskart|spectacles|eyewear|vision)\b/.test(n) || /\b(eye|optical|eyewear|optician|lens)\b/.test(bt)) {
+    return 'optical'
+  }
+  if (googleTypes?.includes('pharmacy')) return 'pharmacy'
+  if (googleTypes?.includes('jewelry_store')) return 'retail'
+  if (googleTypes?.includes('beauty_salon')) return 'salon'
+  if (googleTypes?.includes('gym')) return 'gym'
+  const st = searchPlaceType || 'point_of_interest'
+  if (st === 'cafe') return 'cafe'
+  if (st === 'meal_takeaway') return 'qsr'
+  if (st === 'restaurant') return 'restaurant'
+  if (st === 'bakery') return 'bakery'
+  if (st === 'bar') return 'bar'
+  if (st === 'pharmacy') return 'pharmacy'
+  if (st === 'clothing_store' || st === 'electronics_store' || st === 'supermarket' || st === 'shopping_mall') return 'retail'
+  if (st === 'jewelry_store') return 'retail'
+  if (st === 'beauty_salon') return 'salon'
+  if (st === 'gym') return 'gym'
+  if (/\b(cafe|coffee|chaayos|starbucks)\b/.test(n)) return 'cafe'
+  return 'other'
+}
+
+function mergeDedupeCompetitors(a: Competitor[], b: Competitor[]): Competitor[] {
+  const seen = new Set<string>()
+  const out: Competitor[] = []
+  for (const c of [...a, ...b]) {
+    const key = `${String(c.name).toLowerCase()}|${Number(c.lat).toFixed(5)}|${Number(c.lng).toFixed(5)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(c)
+  }
+  out.sort((x, y) => x.distanceMeters - y.distanceMeters)
+  return out
+}
+
+async function fetchCatchmentLandmarks(
+  lat: number,
+  lng: number,
+  googleApiKey: string
+): Promise<
+  Array<{
+    name: string
+    kind: 'residential' | 'tech_park' | 'corporate'
+    lat: number
+    lng: number
+    distanceMeters: number
+  }>
+> {
+  const queries: { keyword: string; kind: 'residential' | 'tech_park' | 'corporate' }[] = [
+    { keyword: 'apartment society residential complex gated community', kind: 'residential' },
+    { keyword: 'IT park technology park tech campus software park', kind: 'tech_park' },
+    { keyword: 'corporate tower business park SEZ office campus', kind: 'corporate' },
+  ]
+  const out: Array<{
+    name: string
+    kind: 'residential' | 'tech_park' | 'corporate'
+    lat: number
+    lng: number
+    distanceMeters: number
+  }> = []
+  const seen = new Set<string>()
+  for (const q of queries) {
+    const results = await fetchGoogleNearbyPlaces(lat, lng, googleApiKey, { keyword: q.keyword, type: 'point_of_interest' }, 3500)
+    for (const place of results.slice(0, 8)) {
+      const plat = place.geometry?.location?.lat
+      const plng = place.geometry?.location?.lng
+      const placeName = typeof place.name === 'string' ? place.name : String(place.name ?? '')
+      if (typeof plat !== 'number' || typeof plng !== 'number') continue
+      const key = `${placeName}|${plat}|${plng}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const distanceMeters = Math.round(haversineDistanceMeters({ lat, lng }, { lat: plat, lng: plng }))
+      out.push({ name: placeName, kind: q.kind, lat: plat, lng: plng, distanceMeters })
+    }
+  }
+  return out.sort((x, y) => x.distanceMeters - y.distanceMeters).slice(0, 20)
+}
+
 /** Google Places: type + keyword. When Cafe/QSR, returns multiple so we fetch both. */
 function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string): { type: string; keyword: string }[] {
   const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
@@ -172,7 +337,7 @@ function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string):
 
   // Eyewear / Optical
   if (/\b(eye|eyewear|optical|optician|spectacles|glasses|lenses|vision)\b/.test(raw)) {
-    return [{ type: 'store', keyword: 'eyewear optical spectacles glasses lenses optician' }]
+    return [{ type: '', keyword: 'optician optical eyewear Lenskart spectacles glasses' }]
   }
   // Jewelry
   if (/\b(jewel|jewellery|jewelry|gold|diamond|ornament)\b/.test(raw)) {
@@ -227,10 +392,10 @@ function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string):
   }
   // Generic retail fallback
   if (/\bretail\b/.test(raw) || p.includes('retail')) {
-    return [{ type: 'store', keyword: 'retail store shop' }]
+    return [{ type: 'clothing_store', keyword: 'retail shopping store mall fashion' }]
   }
 
-  return [{ type: 'point_of_interest', keyword: businessType || '' }]
+  return [{ type: 'point_of_interest', keyword: businessType || 'retail store' }]
 }
 
 /** Deterministic seed from location + business + competitor count for varied peak hours */
@@ -574,7 +739,7 @@ export async function POST(request: NextRequest) {
     const mapplsParams = mapToMapplsNearbyParams(propertyType, businessType)
 
     let competitors: Competitor[] = []
-    let competitorsSource: 'mappls' | 'google' | 'none' = 'none'
+    let competitorsSource: 'mappls' | 'google' | 'none' | 'mixed' = 'none'
 
     // Phase 2: Mappls first for competitors (India-native POI), fallback to Google
     const isCafeQSR = placeTypes.length >= 2
@@ -631,6 +796,7 @@ export async function POST(request: NextRequest) {
               distanceMeters: m.distanceMeters,
               address: m.address,
               brandType: classifyBrand(m.name),
+              placeCategory: inferPlaceCategory(m.name, undefined, primaryPlaceType, businessType),
             }))
             competitorsSource = 'mappls'
           }
@@ -640,88 +806,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (competitors.length === 0 && googleApiKey) {
+    const hadMapplsCompetitors = competitors.length > 0 && competitorsSource === 'mappls'
+
+    if (googleApiKey && typeof lat === 'number' && typeof lng === 'number') {
       try {
-        const seen = new Set<string>()
+        const googleAdds: Competitor[] = []
+        const searchRadius = 2000
         for (const { type: placeType, keyword: placeKeyword } of placeTypes) {
-          const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
-          url.searchParams.set('location', `${lat},${lng}`)
-          url.searchParams.set('radius', '1000')
-          url.searchParams.set('type', placeType)
-          if (placeKeyword) url.searchParams.set('keyword', placeKeyword)
-          url.searchParams.set('key', googleApiKey)
-
-          const res = await fetch(url.toString(), {
-          signal: AbortSignal.timeout(15000) // 15 second timeout
-        })
-        
-        if (!res.ok) {
-          const errorText = await res.text().catch(() => 'Unknown error')
-          console.warn('[LocationIntelligence API] Places API HTTP error:', res.status, errorText.substring(0, 200))
-        } else {
-          const json = await res.json()
-
-          // Check for Places API errors in response
-          if (json.status && json.status !== 'OK' && json.status !== 'ZERO_RESULTS') {
-            const errorMsg = json.error_message || ''
-            console.error('[LocationIntelligence API] Places API error status:', json.status, errorMsg)
-            // If REQUEST_DENIED, INVALID_REQUEST, etc. - log error but continue to return location-based data
-            if (json.status === 'REQUEST_DENIED') {
-              const deniedError = 'Google Places API access denied. Check API key restrictions, enabled APIs (Places API, Geocoding API), domain restrictions, and billing in Google Cloud Console.'
-              console.error('[LocationIntelligence API]', deniedError)
-              console.error('[LocationIntelligence API] Full error:', errorMsg)
-              // In production, we might want to surface this more prominently, but for now we continue with other data
-            } else if (json.status === 'OVER_QUERY_LIMIT') {
-              const quotaError = 'Google Places API quota exceeded. Check billing and quota limits in Google Cloud Console.'
-              console.error('[LocationIntelligence API]', quotaError)
-              // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
-            } else if (json.status === 'INVALID_REQUEST') {
-              console.error('[LocationIntelligence API] Places API invalid request:', errorMsg)
-            }
-            // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
-          } else {
-            // Process results - OK or ZERO_RESULTS are both valid
-            if (Array.isArray(json.results)) {
-            for (const place of json.results) {
-              const compLat = place.geometry?.location?.lat
-              const compLng = place.geometry?.location?.lng
-              const placeName = typeof place.name === 'string' ? place.name : String(place.name ?? 'Unknown')
-              const key = `${placeName}|${compLat}|${compLng}`
-              if (seen.has(key)) continue
-              seen.add(key)
-
-              const hasCoords = typeof compLat === 'number' && typeof compLng === 'number'
-              const distanceMeters = hasCoords
-                ? haversineDistanceMeters({ lat: lat as number, lng: lng as number }, { lat: compLat, lng: compLng })
-                : Number.NaN
-
-              const placeCategory: 'cafe' | 'qsr' | undefined =
-                placeType === 'cafe' ? 'cafe' : placeType === 'meal_takeaway' ? 'qsr' : undefined
-              const c: Competitor = {
-                name: placeName,
-                lat: compLat ?? 0,
-                lng: compLng ?? 0,
-                distanceMeters,
-                rating: typeof place.rating === 'number' ? place.rating : undefined,
-                userRatingsTotal: typeof place.user_ratings_total === 'number' ? place.user_ratings_total : undefined,
-                address: place.vicinity || place.formatted_address,
-                brandType: classifyBrand(placeName, typeof place.user_ratings_total === 'number' ? place.user_ratings_total : undefined),
-                placeCategory,
-              }
-              competitors.push(c)
-            }
-            }
+          const gType = placeType && VALID_NEARBY_TYPES.has(placeType) ? placeType : undefined
+          const results = await fetchGoogleNearbyPlaces(lat, lng, googleApiKey, { keyword: placeKeyword, type: gType }, searchRadius)
+          for (const place of results) {
+            const compLat = place.geometry?.location?.lat
+            const compLng = place.geometry?.location?.lng
+            const placeName = typeof place.name === 'string' ? place.name : String(place.name ?? 'Unknown')
+            const hasCoords = typeof compLat === 'number' && typeof compLng === 'number'
+            const distanceMeters = hasCoords
+              ? haversineDistanceMeters({ lat: lat as number, lng: lng as number }, { lat: compLat, lng: compLng })
+              : Number.NaN
+            const urt = typeof place.user_ratings_total === 'number' ? place.user_ratings_total : undefined
+            const placeCategory = inferPlaceCategory(placeName, place.types, placeType || 'point_of_interest', businessType)
+            googleAdds.push({
+              name: placeName,
+              lat: compLat ?? 0,
+              lng: compLng ?? 0,
+              distanceMeters,
+              rating: typeof place.rating === 'number' ? place.rating : undefined,
+              userRatingsTotal: urt,
+              address: place.vicinity || place.formatted_address,
+              brandType: classifyBrand(placeName, urt),
+              placeCategory,
+            })
           }
         }
-        }
 
-        // Filter and sort after merging all place types
+        const beforeCount = competitors.length
+        competitors = mergeDedupeCompetitors(competitors, googleAdds)
         competitors = competitors.filter((c) => Number.isFinite(c.distanceMeters) && c.distanceMeters >= 0)
-        competitors.sort((a, b) => a.distanceMeters - b.distanceMeters)
-        if (competitors.length > 0) competitorsSource = 'google'
+
+        if (googleAdds.length > 0) {
+          if (hadMapplsCompetitors && beforeCount > 0) competitorsSource = 'mixed'
+          else if (!hadMapplsCompetitors) competitorsSource = 'google'
+        }
       } catch (placesError: any) {
         console.error('[LocationIntelligence API] Places API fetch failed:', placesError.message)
-        // Continue - we'll still return location-based demographics/footfall even if competitors fetch failed
       }
     }
 
@@ -790,6 +917,15 @@ export async function POST(request: NextRequest) {
         crowdPullers.sort((a, b) => a.distanceMeters - b.distanceMeters)
       } catch {
         // ignore
+      }
+    }
+
+    let catchmentLandmarks: LocationIntelligenceResponse['catchmentLandmarks'] = undefined
+    if (googleApiKey && typeof lat === 'number' && typeof lng === 'number') {
+      try {
+        catchmentLandmarks = await fetchCatchmentLandmarks(lat, lng, googleApiKey)
+      } catch {
+        catchmentLandmarks = undefined
       }
     }
 
@@ -953,6 +1089,8 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      const cannCategoryLabel = (businessType || '').split(/[,;]/)[0]?.trim().slice(0, 48) || 'Trade area'
+
       response = {
         competitors,
         footfall,
@@ -987,6 +1125,7 @@ export async function POST(request: NextRequest) {
           geocoding: hasMappls ? 'mappls' : googleApiKey ? 'google' : 'none',
         },
         catchment: computeCatchment(lat, lng),
+        catchmentLandmarks: catchmentLandmarks && catchmentLandmarks.length > 0 ? catchmentLandmarks : undefined,
         crowdPullers: crowdPullers.length > 0 ? crowdPullers : undefined,
         retailMix: competitors.length > 0 ? computeRetailMix(competitors) : undefined,
         marketPotentialScore,
@@ -1001,7 +1140,8 @@ export async function POST(request: NextRequest) {
                   lat: c.lat,
                   lng: c.lng,
                   distanceMeters: c.distanceMeters,
-                }))
+                })),
+                cannCategoryLabel
               )
             : undefined,
       }

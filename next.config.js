@@ -28,7 +28,10 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['framer-motion', 'recharts', '@react-google-maps/api'],
+    optimizePackageImports: [
+      'framer-motion', 'recharts', '@react-google-maps/api',
+      'lucide-react', 'date-fns', '@anthropic-ai/sdk'
+    ],
   },
   // Turbopack configuration (Next.js 16+)
   turbopack: {},
@@ -105,6 +108,18 @@ const nextConfig = {
   // Security headers (additional ones in middleware)
   async headers() {
     return [
+      {
+        source: '/',
+        headers: [
+          {
+            key: 'Link',
+            value: [
+              '</api/properties?limit=20>; rel=prefetch',
+              '</api/brands>; rel=prefetch',
+            ].join(', ')
+          }
+        ]
+      },
       {
         source: '/:path*',
         headers: [

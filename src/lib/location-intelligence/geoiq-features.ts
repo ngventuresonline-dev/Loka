@@ -4,6 +4,7 @@
  */
 
 import { BANGALORE_AREAS, BANGALORE_PINCODES } from './bangalore-areas'
+import { POPULAR_BRAND_PATTERNS } from './brand-classifier'
 
 const EARTH_RADIUS_M = 6371000
 
@@ -48,19 +49,14 @@ export function computeCatchment(
 }
 
 /** Categories for retail mix (from POI names/types). */
-const RETAIL_CATEGORIES = ['restaurant', 'cafe', 'qsr', 'retail', 'bakery', 'bar', 'other'] as const
-
-/** Known branded patterns (subset of brand-classifier + retail). */
-const BRANDED_PATTERNS = [
-  'starbucks', 'ccd', 'cafe coffee day', 'blue tokai', 'third wave', 'chaayos', 'chai point',
-  'mcdonald', 'kfc', 'pizza hut', 'domino', 'subway', 'haldiram', 'bikanervala', 'barista',
-  'costa', 'dunkin', 'faasos', 'wow momo', 'saravana', 'sagar ratna', 'dmart', 'reliance',
-  'decathlon', 'ikea', 'miniso', 'westside', 'titan', 'tanishq', 'levi', 'crocs', 'zara',
-  'h&m', 'pantaloons', 'big bazaar',
-]
+const RETAIL_CATEGORIES = ['restaurant', 'cafe', 'qsr', 'optical', 'retail', 'bakery', 'bar', 'pharmacy', 'salon', 'other'] as const
 
 function categorizePlace(name: string, placeCategory?: string): (typeof RETAIL_CATEGORIES)[number] {
   const n = name.toLowerCase()
+  const pc = (placeCategory || '').toLowerCase()
+  if (pc === 'optical' || /\b(optician|optical|eyewear|spectacles|lenskart|eye\s*plus|vision)\b/.test(n)) return 'optical'
+  if (pc === 'pharmacy' || /\b(pharmacy|medical store|apollo)\b/.test(n)) return 'pharmacy'
+  if (pc === 'salon' || pc === 'beauty_salon' || /\b(salon|spa|hair cut)\b/.test(n)) return 'salon'
   if (placeCategory === 'cafe' || /\b(cafe|coffee|ccd|starbucks|chaayos|barista)\b/.test(n)) return 'cafe'
   if (placeCategory === 'qsr' || /\b(burger|pizza|shawarma|biryani|momo|kfc|mcdonald|domino)\b/.test(n)) return 'qsr'
   if (/\brestaurant\b|\b(dining|fine dining)\b/.test(n) || placeCategory === 'restaurant') return 'restaurant'
@@ -71,7 +67,8 @@ function categorizePlace(name: string, placeCategory?: string): (typeof RETAIL_C
 }
 
 function isBranded(name: string): boolean {
-  return BRANDED_PATTERNS.some((p) => name.toLowerCase().includes(p))
+  const n = name.toLowerCase()
+  return POPULAR_BRAND_PATTERNS.some((p) => n.includes(p)) || /\b(lenskart|titan eye|specsmakers)\b/.test(n)
 }
 
 export interface RetailMixItem {
@@ -82,12 +79,21 @@ export interface RetailMixItem {
 }
 
 /** Retail mix from competitor POIs: category counts, branded vs non-branded. */
-export function computeRetailMix(competitors: Array<{ name: string; placeCategory?: string }>): RetailMixItem[] {
+export function computeRetailMix(
+  competitors: Array<{
+    name: string
+    placeCategory?: string
+    brandType?: 'popular' | 'new'
+    userRatingsTotal?: number
+  }>
+): RetailMixItem[] {
   const byCat: Record<string, { branded: number; nonBranded: number }> = {}
   for (const c of competitors) {
     const cat = categorizePlace(c.name, c.placeCategory)
     if (!byCat[cat]) byCat[cat] = { branded: 0, nonBranded: 0 }
-    if (isBranded(c.name)) byCat[cat].branded++
+    const ur = c.userRatingsTotal ?? 0
+    const chain = c.brandType === 'popular' || isBranded(c.name) || ur >= 200
+    if (chain) byCat[cat].branded++
     else byCat[cat].nonBranded++
   }
   return Object.entries(byCat)
@@ -156,10 +162,26 @@ export function findSimilarMarkets(
 /** Extract brand key from place name for grouping same-brand outlets. */
 function extractBrandKey(name: string): string | null {
   const n = name.toLowerCase()
-  for (const p of BRANDED_PATTERNS) {
-    if (n.includes(p)) return p
+  for (const p of POPULAR_BRAND_PATTERNS) {
+    if (n.includes(p.toLowerCase())) return p
   }
   return null
+}
+
+const TOKEN_STOP = new Set([
+  'the', 'near', 'opp', 'opposite', 'store', 'shop', 'and', 'at', 'in', 'no', 'road', 'main', 'cross', 'layout', 'block',
+])
+
+/** First significant word — groups "Lenskart - Whitefield" + "Lenskart Brookefield". */
+function tokenClusterKey(name: string): string | null {
+  const parts = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/[\s-]+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length > 2 && !TOKEN_STOP.has(w))
+  if (parts.length === 0) return null
+  return parts[0]
 }
 
 /** Distance-based cannibalisation %: <500m High, 500–1k Medium, 1–2k Low, >2k Minimal */
@@ -177,10 +199,14 @@ export interface CannibalisationRiskItem {
   cannibalisationPct: number
 }
 
-/** Cannibalisation proxy: brands with 2+ outlets in area; risk % by nearest same-brand distance. */
+/** Cannibalisation proxy: known chains + first-token clusters + category crowding. */
 export function computeCannibalisationRisk(
-  competitors: Array<{ name: string; lat: number; lng: number; distanceMeters: number }>
+  competitors: Array<{ name: string; lat: number; lng: number; distanceMeters: number }>,
+  categoryLabel = 'Same category'
 ): CannibalisationRiskItem[] {
+  const result: CannibalisationRiskItem[] = []
+  const usedDisplay = new Set<string>()
+
   const byBrand = new Map<string, Array<{ name: string; lat: number; lng: number }>>()
   for (const c of competitors) {
     const brand = extractBrandKey(c.name)
@@ -188,7 +214,6 @@ export function computeCannibalisationRisk(
     if (!byBrand.has(brand)) byBrand.set(brand, [])
     byBrand.get(brand)!.push({ name: c.name, lat: c.lat, lng: c.lng })
   }
-  const result: CannibalisationRiskItem[] = []
   for (const [brand, outlets] of byBrand) {
     if (outlets.length < 2) continue
     let minDist = Infinity
@@ -199,12 +224,54 @@ export function computeCannibalisationRisk(
       }
     }
     if (!Number.isFinite(minDist)) continue
+    const display = brand.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    usedDisplay.add(display.toLowerCase())
     result.push({
-      brand: brand.charAt(0).toUpperCase() + brand.slice(1),
+      brand: display,
       outletCount: outlets.length,
       nearestSameBrandDistanceM: Math.round(minDist),
       cannibalisationPct: distanceToCannibalisationPct(minDist),
     })
   }
+
+  const byToken = new Map<string, Array<{ name: string; lat: number; lng: number }>>()
+  for (const c of competitors) {
+    const token = tokenClusterKey(c.name)
+    if (!token || token.length < 3) continue
+    if (extractBrandKey(c.name)) continue
+    if (!byToken.has(token)) byToken.set(token, [])
+    byToken.get(token)!.push({ name: c.name, lat: c.lat, lng: c.lng })
+  }
+  for (const [token, outlets] of byToken) {
+    if (outlets.length < 2) continue
+    let minDist = Infinity
+    for (let i = 0; i < outlets.length; i++) {
+      for (let j = i + 1; j < outlets.length; j++) {
+        const d = haversineMeters(outlets[i], outlets[j])
+        if (d < minDist) minDist = d
+      }
+    }
+    if (!Number.isFinite(minDist) || minDist > 2000) continue
+    const display = token.charAt(0).toUpperCase() + token.slice(1)
+    if (usedDisplay.has(display.toLowerCase())) continue
+    usedDisplay.add(display.toLowerCase())
+    result.push({
+      brand: `${display} (${outlets.length} outlets)`,
+      outletCount: outlets.length,
+      nearestSameBrandDistanceM: Math.round(minDist),
+      cannibalisationPct: distanceToCannibalisationPct(minDist),
+    })
+  }
+
+  const inCatchment = competitors.filter((c) => c.distanceMeters <= 1200)
+  if (inCatchment.length >= 4 && result.length === 0) {
+    result.push({
+      brand: `${categoryLabel} crowding`,
+      outletCount: inCatchment.length,
+      nearestSameBrandDistanceM: 400,
+      cannibalisationPct: Math.min(78, 35 + inCatchment.length * 5),
+    })
+  }
+
   return result.sort((a, b) => b.cannibalisationPct - a.cannibalisationPct)
 }

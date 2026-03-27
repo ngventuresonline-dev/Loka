@@ -208,9 +208,7 @@ function PropertiesResultsContent() {
       setAiMatching(true)
       setMatchingStep(0)
       
-      // Reduced AI matching steps delay - only show 2 steps quickly
       setMatchingStep(1) // "Scanning property database..."
-      await new Promise(resolve => setTimeout(resolve, 300))
       setMatchingStep(2) // "Calculating Brand Fit Index (BFI)..."
       
       // Check if user is logged in as a brand - if yes, use brand profile automatically
@@ -489,7 +487,6 @@ function PropertiesResultsContent() {
       }
       
       setMatchingStep(4) // "Finalizing results..."
-      await new Promise(resolve => setTimeout(resolve, 200))
       setAiMatching(false)
     } catch (error: any) {
       console.error('Error fetching matches:', error)

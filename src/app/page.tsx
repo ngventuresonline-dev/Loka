@@ -651,6 +651,7 @@ export default function Home() {
     entryPage: typeof window !== 'undefined' ? window.location.pathname : '/'
   })
   
+  const hasInitialized = useRef(false)
   const [currentStep, setCurrentStep] = useState<AppStep>('home')
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null)
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null)
@@ -827,28 +828,26 @@ export default function Home() {
 
   useEffect(() => {
     // Only run once on mount (client-side only)
+    if (hasInitialized.current) return
+    hasInitialized.current = true
+
     if (typeof window === 'undefined') return
-    
-    if (!isInitialized) {
-      try {
+
+    try {
       // Initialize default admin account
       initializeAdminAccount()
-      
+
       // Load current theme
       const currentTheme = getTheme()
       setThemeState(currentTheme)
-      
-      // Note: Removed auto-redirect for admins - they can navigate freely
-      // Admins can access homepage and use "Dashboard" link in navbar to go to /admin
-      
+
       setIsInitialized(true)
-      } catch (error) {
-        console.error('Error initializing page:', error)
-        setIsInitialized(true) // Set to true anyway to prevent infinite loops
-      }
+    } catch (error) {
+      console.error('Error initializing page:', error)
+      setIsInitialized(true)
     }
     setIsMounted(true)
-  }, [isInitialized])
+  }, [])
 
   // Generate bar heights for data visualization
   useEffect(() => {

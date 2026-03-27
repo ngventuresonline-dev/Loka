@@ -3,7 +3,15 @@ import { findMatches } from '@/lib/matching-engine'
 import { Property } from '@/types/workflow'
 import { getPrisma } from '@/lib/get-prisma'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
-import { getPropertyCoordinatesFromRow, getMapLinkFromAmenities, geocodeAddress } from '@/lib/property-coordinates'
+import { getPropertyCoordinatesFromRow, getMapLinkFromAmenities } from '@/lib/property-coordinates'
+
+// Simple in-memory cache for match results — 5 minute TTL
+const matchCache = new Map<string, { data: any; expires: number }>()
+
+function getMatchCacheKey(body: any): string {
+  const { businessType, locations, budgetRange, sizeRange } = body
+  return JSON.stringify({ businessType, locations: (locations || []).sort(), budgetRange, sizeRange })
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +34,17 @@ export async function POST(request: NextRequest) {
       timeline,
       propertyType
     } = body || {}
+
+    // Check in-memory cache for repeated identical searches (skip for single-property lookups)
+    if (!body.propertyId) {
+      const cacheKey = getMatchCacheKey(body)
+      const cached = matchCache.get(cacheKey)
+      if (cached && cached.expires > Date.now()) {
+        return NextResponse.json(cached.data, {
+          headers: { 'X-Cache': 'HIT', 'Cache-Control': 'private, max-age=300' }
+        })
+      }
+    }
 
     const prisma = await getPrisma()
     if (!prisma) {
@@ -242,37 +261,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Geocode only when fetching a single property (match page); skip for full list to keep results page fast
-    if (requestedPropertyId) {
-      const needGeocode = typedProperties
-        .map((prop, i) => ({ prop, row: properties[i] }))
-        .filter(({ prop, row }) => {
-          const hasCoords = (prop as any).latitude != null && (prop as any).longitude != null
-          const hasAddress = (row?.address || row?.city || '').toString().trim()
-          return !hasCoords && !!hasAddress
-        })
-      if (needGeocode.length > 0) {
-        const geocodeResults = await Promise.all(
-          needGeocode.map(({ row }) =>
-            geocodeAddress(
-              (row?.address ?? '').toString().trim(),
-              (row?.city ?? '').toString().trim(),
-              (row?.state ?? '').toString().trim(),
-              (row?.title ?? '').toString().trim() || undefined
-            )
-          )
-        )
-        geocodeResults.forEach((coords, idx) => {
-          if (coords && needGeocode[idx]) {
-            const prop = needGeocode[idx].prop
-            ;(prop as any).latitude = coords.lat
-            ;(prop as any).longitude = coords.lng
-            prop.coordinates = coords
-          }
-        })
-      }
-    }
-
     // Prepare brand requirements for BFI calculation
     const brandRequirements = {
       locations: locations || [],
@@ -363,6 +351,17 @@ export async function POST(request: NextRequest) {
     const responseSize = estimateJsonSize(responseData)
     logQuerySize('/api/properties/match', responseSize, topMatches.length)
     
+    // Write to in-memory cache (skip for single-property lookups)
+    if (!body.propertyId) {
+      const cacheKey = getMatchCacheKey(body)
+      matchCache.set(cacheKey, { data: responseData, expires: Date.now() + 5 * 60 * 1000 })
+      // Cleanup expired entries when cache grows large
+      if (matchCache.size > 100) {
+        const now = Date.now()
+        for (const [k, v] of matchCache) { if (v.expires < now) matchCache.delete(k) }
+      }
+    }
+
     // Add caching headers
     const headers = getCacheHeaders(CACHE_CONFIGS.PROPERTY_MATCHES)
     

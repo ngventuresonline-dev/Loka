@@ -6,6 +6,8 @@ import {
   getAuthenticatedUser,
   checkPropertyOwnership,
 } from '@/lib/api-auth'
+
+export const revalidate = 300 // 5 minutes
 import { UpdatePropertySchema } from '@/lib/validations/property'
 import { getCacheHeaders, CACHE_CONFIGS } from '@/lib/api-cache'
 import {

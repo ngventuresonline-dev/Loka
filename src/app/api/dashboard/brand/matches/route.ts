@@ -3,6 +3,12 @@ import { getPrisma } from '@/lib/get-prisma'
 import { getPropertyCoordinatesFromRow, geocodeAddress } from '@/lib/property-coordinates'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 
+function brandSeeksOffice(profile: { industry?: string | null; category?: string | null }): boolean {
+  const t = `${profile.industry || ''} ${profile.category || ''}`.toLowerCase()
+  return /\b(office|coworking|co-?working|workspace|b2b office|business centre|business center|serviced office)\b/.
+    test(t)
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
@@ -130,7 +136,12 @@ export async function GET(request: NextRequest) {
 
         return { p, bfiScore, budgetFit, sizeFit, locationFit, coords }
       })
-      .filter((m) => m.bfiScore >= 45)
+      .filter((m) => {
+        if (m.bfiScore < 45) return false
+        const pt = String(m.p.propertyType || '').toLowerCase()
+        if (pt.includes('office') && !brandSeeksOffice(profile)) return false
+        return true
+      })
       .sort((a, b) => b.bfiScore - a.bfiScore)
       .slice(0, 15)
 
