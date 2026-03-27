@@ -274,7 +274,7 @@ export function buildFallbackLocationSynthesis(
       affluence === 'High' ? 'High affluence proxy in the catchment layer.' : 'Affluence and demand signals are in the scorecard and tabs.',
     ].slice(0, 4),
     risks: [
-      'Short automated brief only — use maps, comps, and legal diligence before signing.',
+      'Short automated brief only — use on-site visits, broker comps, and legal diligence before signing.',
       'Modelled footfall and demographics are directional, not audited census data.',
     ],
     opportunities: [
@@ -292,7 +292,11 @@ export function buildFallbackLocationSynthesis(
       footfall != null && footfall > 0
         ? `Model estimates ~${footfall.toLocaleString('en-IN')} average daily footfall near this pin; peaks vary by weekday.`
         : 'Footfall proxy unavailable — use Market tab charts when data exists.',
-    nextSteps: ['Validate rent and terms with a broker.', 'Walk the catchment at lunch and evening peaks.', 'Confirm competitor list on maps.'].slice(0, 3),
+    nextSteps: [
+      'Validate rent and terms with a broker.',
+      'Walk the catchment at lunch and evening peaks.',
+      'Confirm competitor list on the ground and with local brokers.',
+    ].slice(0, 3),
     disclaimer:
       'Structured Lokazen fallback from modelled POI and census-proxy inputs — not investment or legal advice. Prose engine may return on the next load.',
     liveEconomics: live,
@@ -681,7 +685,7 @@ export async function enrichBrandLocationIntel(params: {
 
   const promptContext = slimIntelSnapshotForPrompt(intelSnapshot)
 
-  const prompt = `You are Lokazen's location intelligence analyst. Your job is NOT to summarise the data shown in charts — the brand can already see those numbers. Your job is to FILL THE GAPS: surface insights the data doesn't make obvious, name specific places and businesses the Google scan missed, and give the brand concrete, actionable intelligence they cannot get from looking at the dashboard themselves.
+  const prompt = `You are Lokazen's location intelligence analyst. Your job is NOT to summarise the data shown in charts — the brand can already see those numbers. Your job is to FILL THE GAPS: surface insights the data doesn't make obvious, name specific places and businesses the surface POI layer undercounted, and give the brand concrete, actionable intelligence they cannot get from the charts alone. All user-facing text must read as Lokazen proprietary intelligence — never cite or name map providers, search engines, or other vendors.
 
 BRAND
 ${JSON.stringify(
@@ -718,7 +722,7 @@ ${JSON.stringify(promptContext, null, 0)}
 
 YOUR TASK — FILL GAPS, DON'T SUMMARISE:
 
-1. CATCHMENT TAB: The Google Places scan only picks up what's labelled on Maps. Use nearbySocieties (from our DB) to name actual apartment complexes the scan missed. If nearbySocieties has data (e.g. Prestige City: 12,000 units, Sobha Royal Pavilion: 600 units), cite them by name with unit counts. Total them up. That's the real residential catchment. landmarkBreakdown.residential is Google's scan — compare the two. If DB societies show far more units than Google found, say so explicitly.
+1. CATCHMENT TAB: The mapped landmark sample is incomplete for labelled residential stock. Use nearbySocieties (Lokazen locality database) to name apartment complexes that density implies but the POI sample may omit. If nearbySocieties has data (e.g. Prestige City: 12,000 units, Sobha Royal Pavilion: 600 units), cite them by name with unit counts. Total them up. Compare landmarkBreakdown.residential vs DB society unit totals — if the database shows far more units than the landmark sample, say so in neutral terms ("Lokazen database shows … vs … mapped residential anchors") without naming any third-party product.
 
 2. TECH PARK / OFFICE CATCHMENT: Use nearbyTechParks to name the actual tech parks and their employee counts. Don't say "good office catchment" — say "Wipro Campus (50,000 employees), Embassy Tech Village (110,000 employees) within 2km — estimated 160,000 daytime workers in the trade area." Use localityIntel.totalOfficeEmployees for the aggregate when present.
 
@@ -731,6 +735,7 @@ YOUR TASK — FILL GAPS, DON'T SUMMARISE:
 6. CATEGORY-SPECIFIC VERDICT: Use localityIntel.lokazenScores to give the brand a direct verdict for their category. If lokazenScores.cafe = 82 and cafeSaturation = "high" — say so. Then say whether this specific location within that micro-market has an advantage (e.g. lower competition sub-zone, proximity to tech park).
 
 OUTPUT RULES:
+- NEVER in JSON strings: Google, Alphabet, Maps, Apple Maps, Bing, “street view”, or any map/search vendor. Say “Lokazen model”, “mapped POIs”, “trade-area scan”, “platform intelligence”, or “listing pin context” instead.
 - All *ForBrand fields: be specific, cite actual names from the data. Never say "good catchment" — say "Prestige City (12,000 units, ₹13,500/sqft), Sobha Royal Pavilion (600 units) within 1.5km — estimated 30,000+ apartment residents in the primary catchment."
 - executiveSummary ≤900 chars. Tab narratives ≤450 chars. Bullets ≤100 chars each.
 - competitionForBrand: name actual category competitors by brand name. Never say "multiple restaurants" — say which ones.

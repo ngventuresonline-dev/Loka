@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
               budget_max: true,
               min_size: true,
               max_size: true,
+              must_have_amenities: true,
             },
           },
         },
@@ -118,6 +119,8 @@ export async function GET(request: NextRequest) {
     const totalInquiries = inquiries.length
     const pendingInquiries = inquiries.filter((i) => i.status === 'pending').length
 
+    const requirements = user?.brandProfiles?.must_have_amenities as Record<string, unknown> | null | undefined
+
     return NextResponse.json({
       brand: user
         ? {
@@ -128,6 +131,7 @@ export async function GET(request: NextRequest) {
             // Trade / legal name for intelligence & UI — never substitute account holder here (that's `name`).
             companyName: user.brandProfiles?.company_name?.trim() || null,
             industry: user.brandProfiles?.industry ?? null,
+            category: user.brandProfiles?.category ?? null,
             preferredLocations: user.brandProfiles?.preferred_locations ?? null,
             budgetMin: user.brandProfiles?.budget_min
               ? Number(user.brandProfiles.budget_min)
@@ -137,6 +141,24 @@ export async function GET(request: NextRequest) {
               : null,
             minSize: user.brandProfiles?.min_size ?? null,
             maxSize: user.brandProfiles?.max_size ?? null,
+            brandProfile: {
+              timeline:
+                typeof requirements?.timeline === 'string' ? requirements.timeline : null,
+              storeType:
+                typeof requirements?.storeType === 'string' ? requirements.storeType : null,
+              targetAudience:
+                typeof requirements?.targetAudience === 'string' ? requirements.targetAudience : null,
+              targetAudienceTags: Array.isArray(requirements?.targetAudienceTags)
+                ? (requirements.targetAudienceTags as unknown[]).map(String)
+                : [],
+              additionalRequirements:
+                typeof requirements?.additionalRequirements === 'string'
+                  ? requirements.additionalRequirements
+                  : null,
+              badges: Array.isArray(requirements?.badges)
+                ? (requirements.badges as unknown[]).map(String)
+                : [],
+            },
           }
         : null,
       stats: { totalViews, totalSaved, totalInquiries, pendingInquiries },

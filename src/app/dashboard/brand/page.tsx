@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -15,6 +15,15 @@ import type { LocationSynthesis } from '@/lib/intelligence/brand-intel-enrichmen
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type BrandProfileBrief = {
+  timeline: string | null
+  storeType: string | null
+  targetAudience: string | null
+  targetAudienceTags: string[]
+  additionalRequirements: string | null
+  badges: string[]
+}
+
 type BrandInfo = {
   id: string
   name: string
@@ -22,11 +31,13 @@ type BrandInfo = {
   phone?: string | null
   companyName?: string | null
   industry?: string | null
+  category?: string | null
   preferredLocations?: string[] | null
   budgetMin?: number | null
   budgetMax?: number | null
   minSize?: number | null
   maxSize?: number | null
+  brandProfile?: BrandProfileBrief | null
 }
 
 type Stats = {
@@ -176,30 +187,116 @@ function shortenText(s: string, max: number) {
   return `${t.slice(0, max - 1)}…`
 }
 
+function companyInitials(companyOrName: string) {
+  const parts = companyOrName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  const one = parts[0] || 'B'
+  return one.slice(0, 2).toUpperCase()
+}
+
+function normalizePreferredLocationsList(brand: BrandInfo | null): string[] {
+  if (!brand?.preferredLocations) return []
+  const raw = brand.preferredLocations
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean)
+  if (typeof raw === 'string') {
+    try {
+      const p = JSON.parse(raw)
+      return Array.isArray(p) ? p.map(String).filter(Boolean) : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+function resolveDashboardBadges(brand: BrandInfo | null, matchCount: number): string[] {
+  const raw = brand?.brandProfile?.badges ?? []
+  const out = [...raw]
+  if (matchCount >= 2 && !out.includes('Multiple Properties Matched')) {
+    out.push('Multiple Properties Matched')
+  }
+  return out
+}
+
+function brandHasBrief(brand: BrandInfo | null, preferredList: string[]): boolean {
+  if (!brand) return false
+  const p = brand.brandProfile
+  return !!(
+    (brand.budgetMin && brand.budgetMax) ||
+    (brand.minSize && brand.maxSize) ||
+    preferredList.length > 0 ||
+    (brand.category && brand.category.trim()) ||
+    (p?.timeline && p.timeline.trim()) ||
+    (p?.storeType && p.storeType.trim()) ||
+    (p?.targetAudience && p.targetAudience.trim()) ||
+    (p?.targetAudienceTags && p.targetAudienceTags.length > 0) ||
+    (p?.additionalRequirements && p.additionalRequirements.trim()) ||
+    (p?.badges && p.badges.length > 0)
+  )
+}
+
+function SynthesisSkeletonLine({ width = 'w-full', short = false }: { width?: string; short?: boolean }) {
+  const w = short ? 'w-1/2' : width
+  return (
+    <div
+      className={`h-3.5 ${w} rounded-full bg-gradient-to-r from-orange-50 via-orange-100 to-orange-50 animate-pulse`}
+    />
+  )
+}
+
+function SynthesisSectionSkeleton({ label, lines = 2 }: { label: string; lines?: number }) {
+  return (
+    <div className="py-3 space-y-2">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-[#FF5200] animate-pulse" />
+        <span className="text-[10px] font-semibold text-[#FF5200] uppercase tracking-wide animate-pulse">
+          {label}
+        </span>
+      </div>
+      {Array.from({ length: lines }).map((_, i) => (
+        <SynthesisSkeletonLine key={i} width={i === lines - 1 ? 'w-3/4' : 'w-full'} />
+      ))}
+    </div>
+  )
+}
+
 function TabSynthesisCallout({
   title,
   narrative,
   bullets,
   loading,
+  analysisLabel = 'Analysing…',
+  analysisLines = 2,
+  synthesisUnavailable,
 }: {
   title: string
   narrative?: string
   bullets?: string[]
   loading?: boolean
+  analysisLabel?: string
+  analysisLines?: number
+  synthesisUnavailable?: boolean
 }) {
   if (loading) {
     return (
       <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/50 to-transparent">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
-        <div className="space-y-2 animate-pulse">
-          <div className="h-2.5 bg-orange-100/80 rounded w-full" />
-          <div className="h-2.5 bg-orange-100/80 rounded w-10/12" />
-        </div>
+        <SynthesisSectionSkeleton label={analysisLabel} lines={analysisLines} />
       </div>
     )
   }
   const hasN = Boolean(narrative?.trim())
   const bs = (bullets || []).filter(Boolean)
+  if (synthesisUnavailable && !hasN && bs.length === 0) {
+    return (
+      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
+        <div className="text-[11px] text-gray-400 italic py-2">
+          Intelligence analysis unavailable — chart data is still shown above.
+        </div>
+      </div>
+    )
+  }
   if (!hasN && bs.length === 0) return null
   return (
     <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
@@ -606,6 +703,7 @@ export default function BrandDashboardPage() {
   const [brandId, setBrandId] = useState<string | null>(null)
   const [brandName, setBrandName] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'matched' | 'overview' | 'saved' | 'inquiries'>('matched')
+  const [briefExpanded, setBriefExpanded] = useState(true)
 
   // Matches
   const [matches, setMatches] = useState<MatchedProperty[]>([])
@@ -919,6 +1017,9 @@ export default function BrandDashboardPage() {
 
   const stats = data?.stats ?? { totalViews: 0, totalSaved: 0, totalInquiries: 0, pendingInquiries: 0 }
   const brand = data?.brand ?? null
+  const preferredList = useMemo(() => normalizePreferredLocationsList(brand), [brand])
+  const dashboardBadges = useMemo(() => resolveDashboardBadges(brand, matches.length), [brand, matches.length])
+  const showBrief = brandHasBrief(brand, preferredList)
   const recentViews = data?.recentViews ?? []
   const savedProperties = data?.savedProperties ?? []
   const inquiries = data?.inquiries ?? []
@@ -953,38 +1054,139 @@ export default function BrandDashboardPage() {
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-              {(brandName || 'B')[0].toUpperCase()}
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-700 flex items-center justify-center text-white font-bold text-sm tracking-tight flex-shrink-0">
+              {companyInitials(brand?.companyName || brandName || brand?.name || 'Brand')}
             </div>
-            <div>
-              <p className="font-bold text-gray-900 text-base leading-tight">
+            <div className="min-w-0">
+              <p className="font-bold text-gray-900 text-base leading-tight truncate">
                 {brand?.companyName || brandName || brand?.name || 'Brand'}
               </p>
-              <p className="text-xs text-gray-500">
-                {brand?.industry ? `${brand.industry} · ` : ''}{brand?.phone || brand?.email || ''}
+              <p className="text-xs text-gray-500 truncate">
+                {brand?.industry ? `${brand.industry}` : brand?.category || ''}
+                {(brand?.industry || brand?.category) && (brand?.phone || brand?.email) ? ' · ' : ''}
+                {brand?.phone || brand?.email || ''}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Requirements Strip */}
-        {brand && (brand.budgetMin || brand.preferredLocations) && (
+        {/* Brand brief — mirrors onboarding / marketplace card */}
+        {brand && showBrief && (
           <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-            <p className="text-[10px] font-semibold text-[#FF5200] uppercase tracking-wide mb-1.5">Your Requirements</p>
-            <div className="flex flex-wrap gap-1.5">
-              {brand.budgetMin && brand.budgetMax && (
-                <span className="px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-[11px] text-gray-700 font-medium">
-                  ₹{brand.budgetMin.toLocaleString('en-IN')}–₹{brand.budgetMax.toLocaleString('en-IN')}/mo
-                </span>
+            <div className="rounded-2xl border border-[#FF5200]/30 bg-gradient-to-br from-orange-50/95 via-white to-amber-50/40 p-3.5 shadow-sm">
+              {dashboardBadges.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {dashboardBadges.map((label) => {
+                    const isMatch = label === 'Multiple Properties Matched'
+                    return (
+                      <span
+                        key={label}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          isMatch
+                            ? 'bg-violet-50 text-violet-800 border-violet-200'
+                            : 'bg-sky-50 text-sky-800 border-sky-200'
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    )
+                  })}
+                </div>
               )}
-              {brand.minSize && brand.maxSize && (
-                <span className="px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-[11px] text-gray-700 font-medium">
-                  {brand.minSize.toLocaleString()}–{brand.maxSize.toLocaleString()} sqft
-                </span>
+              <p className="text-[10px] font-semibold text-[#FF5200] uppercase tracking-wide mb-2">Your Requirements</p>
+              <ul className="space-y-2 text-[11px] text-gray-800">
+                {brand.minSize != null && brand.maxSize != null && (
+                  <li className="flex gap-2">
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">⤢</span>
+                    <span>
+                      <span className="font-semibold text-gray-600">Size · </span>
+                      {brand.minSize.toLocaleString('en-IN')}–{brand.maxSize.toLocaleString('en-IN')} sqft
+                    </span>
+                  </li>
+                )}
+                {preferredList.length > 0 && (
+                  <li className="flex gap-2">
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">📍</span>
+                    <span>
+                      <span className="font-semibold text-gray-600">Location · </span>
+                      {briefExpanded ? preferredList.join(', ') : shortenText(preferredList.join(', '), 42)}
+                    </span>
+                  </li>
+                )}
+                {brand.budgetMin != null && brand.budgetMax != null && (
+                  <li className="flex gap-2">
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">₹</span>
+                    <span>
+                      <span className="font-semibold text-gray-600">Budget · </span>
+                      ₹{brand.budgetMin.toLocaleString('en-IN')}–₹{brand.budgetMax.toLocaleString('en-IN')}/mo
+                    </span>
+                  </li>
+                )}
+                {briefExpanded && brand.brandProfile?.timeline && (
+                  <li className="flex gap-2">
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">⏱</span>
+                    <span>
+                      <span className="font-semibold text-gray-600">Timeline · </span>
+                      {brand.brandProfile.timeline}
+                    </span>
+                  </li>
+                )}
+                {briefExpanded && (brand.brandProfile?.storeType || brand.category) && (
+                  <li className="flex gap-2">
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">
+                      <BuildingIcon className="w-3.5 h-3.5 text-[#FF5200]" />
+                    </span>
+                    <span>
+                      <span className="font-semibold text-gray-600">Store type · </span>
+                      {brand.brandProfile?.storeType || brand.category}
+                    </span>
+                  </li>
+                )}
+                {briefExpanded && brand.brandProfile?.targetAudience && (
+                  <li className="flex gap-2">
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">👥</span>
+                    <span>
+                      <span className="font-semibold text-gray-600">Audience · </span>
+                      {brand.brandProfile.targetAudience}
+                    </span>
+                  </li>
+                )}
+                {briefExpanded &&
+                  brand.brandProfile?.targetAudienceTags &&
+                  brand.brandProfile.targetAudienceTags.length > 0 && (
+                    <li className="flex gap-2">
+                      <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">🏷</span>
+                      <span>
+                        <span className="font-semibold text-gray-600">Segments · </span>
+                        {brand.brandProfile.targetAudienceTags.join(', ')}
+                      </span>
+                    </li>
+                  )}
+                {briefExpanded && brand.brandProfile?.additionalRequirements && (
+                  <li className="flex gap-2">
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">✓</span>
+                    <span>
+                      <span className="font-semibold text-gray-600">Must-haves · </span>
+                      {brand.brandProfile.additionalRequirements}
+                    </span>
+                  </li>
+                )}
+              </ul>
+              {(brand.brandProfile?.timeline ||
+                brand.brandProfile?.storeType ||
+                brand.category ||
+                brand.brandProfile?.targetAudience ||
+                brand.brandProfile?.additionalRequirements ||
+                (brand.brandProfile?.targetAudienceTags && brand.brandProfile.targetAudienceTags.length > 0)) && (
+                <button
+                  type="button"
+                  onClick={() => setBriefExpanded((e) => !e)}
+                  className="mt-2.5 w-full flex items-center justify-center gap-1 text-[10px] font-semibold text-[#FF5200]/90 hover:text-[#FF5200]"
+                >
+                  {briefExpanded ? 'Show less' : 'Show more'}
+                  <span className={`inline-block transition-transform ${briefExpanded ? 'rotate-180' : ''}`}>⌃</span>
+                </button>
               )}
-              {Array.isArray(brand.preferredLocations) && brand.preferredLocations.map((loc: string) => (
-                <span key={loc} className="px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-[11px] text-gray-700 font-medium">{loc}</span>
-              ))}
             </div>
           </div>
         )}
@@ -1286,12 +1488,16 @@ export default function BrandDashboardPage() {
               {INTEL_TABS.map(({ key, label }) => (
                 <button
                   key={key}
+                  type="button"
                   onClick={() => setRightPanelTab(key)}
-                  className={`whitespace-nowrap px-4 py-2.5 text-xs border-b-2 font-medium transition-colors flex-shrink-0 ${
+                  className={`whitespace-nowrap px-4 py-2.5 text-xs border-b-2 font-medium transition-colors flex-shrink-0 inline-flex items-center ${
                     rightPanelTab === key ? 'border-[#FF5200] text-[#FF5200]' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   {label}
+                  {intelData?.locationSynthesisLoading && key !== 'map' && (
+                    <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-[#FF5200] animate-pulse flex-shrink-0" />
+                  )}
                 </button>
               ))}
             </nav>
@@ -1581,14 +1787,20 @@ export default function BrandDashboardPage() {
 
                     {/* Lokazen location synthesis — one engine pass, surfaced on every intelligence tab */}
                     <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-orange-50/45 to-transparent">
+                      {intelData.locationSynthesisLoading && (
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-100 rounded-xl mb-3">
+                          <div className="w-3 h-3 rounded-full border-2 border-[#FF5200] border-t-transparent animate-spin flex-shrink-0" />
+                          <div>
+                            <p className="text-[11px] font-semibold text-[#FF5200]">Lokazen Intelligence Running</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">Analysing catchment · mapping competitors · reading market signals</p>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                           Location synthesis
                           <span className="ml-1.5 normal-case font-normal text-[#FF5200]">· Lokazen intelligence</span>
                         </p>
-                        {intelData.locationSynthesisLoading && (
-                          <span className="text-[10px] text-[#FF5200] animate-pulse">Working…</span>
-                        )}
                         {intelData.locationSynthesis && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
@@ -1608,14 +1820,12 @@ export default function BrandDashboardPage() {
                       {intelData.locationSynthesisError && (
                         <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">{intelData.locationSynthesisError}</p>
                       )}
-                      {intelData.locationSynthesisLoading && !intelData.locationSynthesis && !intelData.locationSynthesisError && (
-                        <div className="space-y-2 animate-pulse">
-                          <div className="h-3 bg-orange-100/90 rounded w-full" />
-                          <div className="h-3 bg-orange-100/90 rounded w-11/12" />
-                          <div className="h-3 bg-orange-100/90 rounded w-4/5" />
-                        </div>
-                      )}
-                      {intelData.locationSynthesis && (
+                      {intelData.locationSynthesisLoading ? (
+                        <>
+                          <SynthesisSectionSkeleton label="Building location intelligence..." lines={3} />
+                          <SynthesisSectionSkeleton label="Scoring brand fit..." lines={2} />
+                        </>
+                      ) : intelData.locationSynthesis ? (
                         <div className="space-y-3 text-xs text-gray-700">
                           <p className="leading-relaxed text-gray-800">{intelData.locationSynthesis.executiveSummary}</p>
                           {intelData.locationSynthesis.liveEconomics && (
@@ -1682,7 +1892,16 @@ export default function BrandDashboardPage() {
                             {intelData.locationSynthesis.disclaimer}
                           </p>
                         </div>
-                      )}
+                      ) : intelData.locationSynthesisError && !intelData.locationSynthesis ? (
+                        <>
+                          <div className="text-[11px] text-gray-400 italic py-2">
+                            Intelligence analysis unavailable — chart data is still shown above.
+                          </div>
+                          <div className="text-[11px] text-gray-400 italic py-2">
+                            Intelligence analysis unavailable — chart data is still shown above.
+                          </div>
+                        </>
+                      ) : null}
                     </div>
 
                     {/* BFI Breakdown */}
@@ -1855,6 +2074,9 @@ export default function BrandDashboardPage() {
                       narrative={intelData.locationSynthesis?.catchmentForBrand}
                       bullets={intelData.locationSynthesis?.catchmentBullets}
                       loading={intelData.locationSynthesisLoading}
+                      analysisLabel="Reading catchment & lifestyle fit..."
+                      analysisLines={2}
+                      synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     {/* Catchment Quality Scorecard — LIR Section 03 style */}
                     <div className="px-5 py-4 border-b border-gray-100">
@@ -1958,7 +2180,8 @@ export default function BrandDashboardPage() {
                         intelData.locationSynthesis?.workplacesForBrand ||
                         (intelData.locationSynthesis?.residentsBullets?.length ?? 0) > 0 ||
                         (intelData.locationSynthesis?.apartmentsBullets?.length ?? 0) > 0 ||
-                        (intelData.locationSynthesis?.workplacesBullets?.length ?? 0) > 0) && (
+                        (intelData.locationSynthesis?.workplacesBullets?.length ?? 0) > 0 ||
+                        (intelData.locationSynthesisError && !intelData.locationSynthesis)) && (
                         <div className="mt-6 pt-4 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-bold text-gray-900">Residents, apartments &amp; workplaces</h4>
@@ -1975,18 +2198,27 @@ export default function BrandDashboardPage() {
                               narrative={intelData.locationSynthesis?.residentsForBrand}
                               bullets={intelData.locationSynthesis?.residentsBullets}
                               loading={intelData.locationSynthesisLoading}
+                              analysisLabel="Profiling residential catchment..."
+                              analysisLines={2}
+                              synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                             />
                             <TabSynthesisCallout
                               title="Apartments & housing stock"
                               narrative={intelData.locationSynthesis?.apartmentsForBrand}
                               bullets={intelData.locationSynthesis?.apartmentsBullets}
                               loading={intelData.locationSynthesisLoading}
+                              analysisLabel="Mapping nearby societies..."
+                              analysisLines={2}
+                              synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                             />
                             <TabSynthesisCallout
                               title="Workplaces — offices & commute pockets"
                               narrative={intelData.locationSynthesis?.workplacesForBrand}
                               bullets={intelData.locationSynthesis?.workplacesBullets}
                               loading={intelData.locationSynthesisLoading}
+                              analysisLabel="Identifying office catchment..."
+                              analysisLines={2}
+                              synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                             />
                           </div>
                           {intelData.catchmentLandmarks.length > 0 && (
@@ -2036,6 +2268,9 @@ export default function BrandDashboardPage() {
                       narrative={intelData.locationSynthesis?.marketForBrand}
                       bullets={intelData.locationSynthesis?.marketBullets}
                       loading={intelData.locationSynthesisLoading}
+                      analysisLabel="Reading market conditions..."
+                      analysisLines={2}
+                      synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
@@ -2125,10 +2360,10 @@ export default function BrandDashboardPage() {
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">5 min Walking</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <MetricCell label="TOTAL FOOTFALL" value={intelData.totalFootfall.toLocaleString()} trend="up" benchmark="7.68" tooltip="Estimated average daily footfall in the 5-min walking catchment. Derived from Google Places density + Lokazen area multipliers." />
+                        <MetricCell label="TOTAL FOOTFALL" value={intelData.totalFootfall.toLocaleString()} trend="up" benchmark="7.68" tooltip="Estimated average daily footfall in the 5-min walking catchment. Derived from POI density and Lokazen area multipliers." />
                         <MetricCell label="GROWTH TRENDS" value={intelData.growthTrend.toFixed(1)} trend="up" benchmark="36.89" tooltip="Whitespace score — higher means more room to grow. Measures unmet demand vs current supply." />
                         <MetricCell label="SPENDING CAPACITY" value={intelData.spendingCapacity.toFixed(1)} trend="up" benchmark="27.89" tooltip="Demand Gap Score — how underserved this area is for your category. Higher = better opportunity." />
-                        <MetricCell label="NUMBER OF STORES" value={String(intelData.numberOfStores)} trend="down" benchmark="245" tooltip="Total competitor and complementary brand count within 800m radius from Google Places data." />
+                        <MetricCell label="NUMBER OF STORES" value={String(intelData.numberOfStores)} trend="down" benchmark="245" tooltip="Total competitor and complementary brand count within 800m of the listing pin from Lokazen’s mapped trade area." />
                         <MetricCell label="RETAIL INDEX" value={intelData.retailIndex.toFixed(3)} trend="up" benchmark="0.34" tooltip="Inverse saturation index — higher means less congested retail market. 1.0 = zero competition." />
                       </div>
                     </div>
@@ -2231,6 +2466,9 @@ export default function BrandDashboardPage() {
                       narrative={intelData.locationSynthesis?.competitionForBrand}
                       bullets={intelData.locationSynthesis?.competitionBullets}
                       loading={intelData.locationSynthesisLoading}
+                      analysisLabel="Finding category competitors..."
+                      analysisLines={3}
+                      synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     {/* Competitor map — show pins of all competitors around selected property */}
                     {selectedMatch?.coords && isLoaded && (
@@ -2355,6 +2593,9 @@ export default function BrandDashboardPage() {
                       narrative={intelData.locationSynthesis?.riskForBrand}
                       bullets={intelData.locationSynthesis?.riskBullets}
                       loading={intelData.locationSynthesisLoading}
+                      analysisLabel="Assessing category risks..."
+                      analysisLines={2}
+                      synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     <div className="p-5 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-3">
@@ -2505,6 +2746,9 @@ export default function BrandDashboardPage() {
                       narrative={intelData.locationSynthesis?.similarMarketsForBrand}
                       bullets={intelData.locationSynthesis?.similarMarketsBullets}
                       loading={intelData.locationSynthesisLoading}
+                      analysisLabel="Matching comparable markets..."
+                      analysisLines={2}
+                      synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     {intelData.similarMarkets.length === 0 ? (
                       <p className="text-sm text-gray-400 italic">No similar market data available.</p>
