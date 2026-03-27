@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
-import { enrichBrandLocationIntel, buildLocationIntelSnapshot } from '@/lib/intelligence/brand-intel-enrich'
+import {
+  enrichBrandLocationIntel,
+  buildLocationIntelSnapshot,
+  type DbEnrichmentForIntelSnapshot,
+} from '@/lib/intelligence/brand-intel-enrich'
 import type { BrandContextForIntel, PropertyContextForIntel, MatchContextForIntel } from '@/lib/intelligence/brand-intel-enrichment.types'
 
 /** Pro / Enterprise: up to 60s. Keeps synthesis under typical gateway limits when paired with a fast model. */
@@ -44,6 +48,7 @@ export async function POST(request: NextRequest) {
     const brandPayload = body.brand as BrandContextForIntel | undefined
     const propertyPayload = body.property as PropertyContextForIntel | undefined
     const matchPayload = body.match as MatchContextForIntel | undefined
+    const dbEnrichment = body.dbEnrichment as DbEnrichmentForIntelSnapshot | undefined
 
     if (!rawIntel || typeof rawIntel !== 'object') {
       return NextResponse.json({ success: false, error: 'rawIntel object is required' }, { status: 400 })
@@ -65,7 +70,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const intelSnapshot = buildLocationIntelSnapshot(rawIntel, matchPayload ?? null)
+    const intelSnapshot = buildLocationIntelSnapshot(rawIntel, matchPayload ?? null, dbEnrichment)
     const enrichment = await enrichBrandLocationIntel({
       brand: brandPayload,
       property: propertyPayload,

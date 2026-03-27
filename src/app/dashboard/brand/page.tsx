@@ -693,22 +693,35 @@ export default function BrandDashboardPage() {
     setRightMode('intelligence')
     const brand = data?.brand ?? null
     try {
-      // Always call the live API — it geocodes from address/city when coords are missing
-      const liveRes = await fetch('/api/location-intelligence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
-          address: property.address,
-          city: property.city,
-          state: 'Karnataka',
-          title: property.title,
-          propertyType: property.propertyType,
-          businessType: buildLocationBusinessType(brand),
-          monthlyRent: deriveMonthlyRentFromListing(property.price, property.priceType, property.size),
-          sizeSqft: property.size,
+      const [liveRes, dbIntelRes] = await Promise.all([
+        fetch('/api/location-intelligence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+            address: property.address,
+            city: property.city,
+            state: 'Karnataka',
+            title: property.title,
+            propertyType: property.propertyType,
+            businessType: buildLocationBusinessType(brand),
+            monthlyRent: deriveMonthlyRentFromListing(property.price, property.priceType, property.size),
+            sizeSqft: property.size,
+          }),
         }),
-      })
+        fetch(`/api/intelligence/${encodeURIComponent(property.id)}`),
+      ])
+
+      let dbIntelData: Record<string, unknown> | null = null
+      if (dbIntelRes.ok) {
+        try {
+          const j = (await dbIntelRes.json()) as Record<string, unknown>
+          if (j && typeof j.error !== 'string') dbIntelData = j
+        } catch {
+          dbIntelData = null
+        }
+      }
+
       if (liveRes.ok) {
         const liveData = await liveRes.json()
         if (liveData.success) {
@@ -757,9 +770,24 @@ export default function BrandDashboardPage() {
 
           void (async () => {
             try {
+              const dbEnrichment = dbIntelData
+                ? {
+                    localityIntel:
+                      (dbIntelData.localityIntel as Record<string, unknown> | null | undefined) ?? null,
+                    nearbySocieties: Array.isArray(dbIntelData.nearbySocieties)
+                      ? (dbIntelData.nearbySocieties as Array<Record<string, unknown>>)
+                      : [],
+                    nearbyTechParks: Array.isArray(dbIntelData.nearbyTechParks)
+                      ? (dbIntelData.nearbyTechParks as Array<Record<string, unknown>>)
+                      : [],
+                    ward: (dbIntelData.ward as Record<string, unknown> | null | undefined) ?? null,
+                  }
+                : undefined
+
               const enrichPayload = {
                 brandId: brand?.id,
                 rawIntel: d,
+                dbEnrichment,
                 brand: {
                   name: brand?.companyName?.trim() || 'Brand',
                   companyName: brand?.companyName,

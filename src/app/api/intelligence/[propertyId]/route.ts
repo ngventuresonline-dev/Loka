@@ -86,11 +86,90 @@ export async function GET(
         })
       : null
 
+  const localityKey =
+    intelligence.property?.city?.split(',')[0]?.trim() ||
+    intelligence.property?.address?.split(',').slice(-1)[0]?.trim() ||
+    ''
+
+  const normalizeSqlRow = (row: Record<string, unknown>): Record<string, unknown> => {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(row)) {
+      out[k] = typeof v === 'bigint' ? Number(v) : v
+    }
+    return out
+  }
+
+  let localityIntel: Record<string, unknown> | null = null
+  let nearbySocieties: Array<Record<string, unknown>> = []
+  let nearbyTechParks: Array<Record<string, unknown>> = []
+
+  if (localityKey) {
+    const likePattern = `%${localityKey.toLowerCase()}%`
+    try {
+      const liRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+        SELECT 
+          li.locality, li.zone,
+          li.total_apartment_societies, li.total_apartment_units,
+          li.avg_resale_price_sqft, li.avg_rent_2bhk, li.avg_rent_3bhk,
+          li.total_office_employees, li.total_companies,
+          li.total_restaurants, li.total_cafes, li.total_qsr,
+          li.f_and_b_density, li.avg_daily_footfall,
+          li.commercial_rent_gf_min, li.commercial_rent_gf_max,
+          li.daytime_pop, li.nighttime_pop,
+          li.spending_power_index, li.dining_out_weekly,
+          li.cafe_saturation, li.qsr_saturation, li.restaurant_saturation,
+          li.delivery_demand,
+          li.key_employers, li.key_colleges, li.key_hotels,
+          li.lokazen_f_and_b_score, li.lokazen_cafe_score, li.lokazen_qsr_score,
+          li.lokazen_retail_score, li.lokazen_salon_score
+        FROM bangalore_locality_intel li
+        WHERE LOWER(TRIM(li.locality)) = LOWER(${localityKey})
+           OR LOWER(li.locality) LIKE ${likePattern}
+        LIMIT 1
+      `
+      if (liRows?.length) localityIntel = normalizeSqlRow(liRows[0] as Record<string, unknown>)
+    } catch (e) {
+      console.warn('[Intelligence GET] bangalore_locality_intel:', e instanceof Error ? e.message : e)
+    }
+
+    try {
+      const socRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+        SELECT name, developer, total_units, bhk_types, avg_price_sqft, 
+               avg_rent_2bhk, occupancy_pct, sec_profile, resident_profile
+        FROM bangalore_societies
+        WHERE LOWER(locality) LIKE ${likePattern}
+        ORDER BY total_units DESC NULLS LAST
+        LIMIT 6
+      `
+      nearbySocieties = (socRows || []).map((r) => normalizeSqlRow(r as Record<string, unknown>))
+    } catch (e) {
+      console.warn('[Intelligence GET] bangalore_societies:', e instanceof Error ? e.message : e)
+    }
+
+    try {
+      const tpRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+        SELECT name, total_employees, total_companies, grade, anchor_tenants,
+               avg_rent_sqft, metro_distance_m, metro_name
+        FROM bangalore_tech_parks  
+        WHERE LOWER(locality) LIKE ${likePattern}
+           OR LOWER(locality) LIKE '%outer ring road%'
+        ORDER BY total_employees DESC NULLS LAST
+        LIMIT 4
+      `
+      nearbyTechParks = (tpRows || []).map((r) => normalizeSqlRow(r as Record<string, unknown>))
+    } catch (e) {
+      console.warn('[Intelligence GET] bangalore_tech_parks:', e instanceof Error ? e.message : e)
+    }
+  }
+
   return NextResponse.json({
     property: intelligence.property,
     intelligence,
     competitors,
     ward,
+    localityIntel,
+    nearbySocieties,
+    nearbyTechParks,
   })
 }
 
