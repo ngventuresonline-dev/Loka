@@ -3,6 +3,12 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run vercel-build",
   "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/refresh-intel-cache",
+      "schedule": "0 2 * * *"
+    }
+  ],
   "functions": {
     "src/app/api/dashboard/brand/intel-enrich/route.ts": {
       "maxDuration": 300

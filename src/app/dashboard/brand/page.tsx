@@ -14,8 +14,8 @@ import {
   brandContextWantsQsrCompetitors,
   competitorMatchesQsrFocus,
 } from '@/lib/location-intelligence/brand-competitor-segment'
-import { deriveMonthlyRentFromListing } from '@/lib/location-intelligence/location-rent-context'
 import type { LocationSynthesis } from '@/lib/intelligence/brand-intel-enrichment.types'
+import { toIndustryKey } from '@/lib/intelligence/industry-key'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -902,222 +902,351 @@ export default function BrandDashboardPage() {
     } finally { setMatchesLoading(false) }
   }
 
+  const triggerBackgroundSynthesis = useCallback((
+    propertyId: string,
+    property: MatchedProperty['property'],
+    brand: BrandInfo | null,
+    rawIntel: Record<string, unknown>,
+    matchMeta: MatchedProperty | null | undefined,
+    _resolvedCoords: { lat: number; lng: number }
+  ) => {
+    void (async () => {
+      try {
+        const preferred = normalizePreferredLocationsList(brand)
+
+        const dbRes = await fetch(`/api/intelligence/${propertyId}?category=${encodeURIComponent(brand?.industry || '')}`)
+        const dbData = dbRes.ok ? await dbRes.json() : null
+
+        const enrichPayload = {
+          brandId: brand?.id,
+          rawIntel,
+          dbEnrichment: dbData
+            ? {
+                localityIntel: dbData.localityIntel ?? null,
+                nearbySocieties: dbData.nearbySocieties ?? [],
+                nearbyTechParks: dbData.nearbyTechParks ?? [],
+                ward: dbData.ward ?? null,
+              }
+            : undefined,
+          brand: {
+            name: brand?.companyName?.trim() || 'Brand',
+            companyName: brand?.companyName,
+            industry: brand?.industry,
+            category: brand?.category,
+            budgetMin: brand?.budgetMin,
+            budgetMax: brand?.budgetMax,
+            preferredLocations: preferred.length ? preferred : null,
+          },
+          property: {
+            title: property.title,
+            address: property.address,
+            city: property.city,
+            propertyType: property.propertyType,
+            size: property.size,
+            price: property.price,
+            priceType: property.priceType,
+          },
+          match: matchMeta
+            ? {
+                bfiScore: matchMeta.bfiScore,
+                locationFit: matchMeta.breakdown.locationFit,
+                budgetFit: matchMeta.breakdown.budgetFit,
+                sizeFit: matchMeta.breakdown.sizeFit,
+              }
+            : undefined,
+        }
+
+        const enrichRes = await fetch('/api/dashboard/brand/intel-enrich', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(enrichPayload),
+        })
+
+        const enrichJson = (await enrichRes.json().catch(() => ({}))) as {
+          success?: boolean
+          data?: LocationSynthesis
+        }
+
+        if (enrichRes.ok && enrichJson.success && enrichJson.data) {
+          setIntelData((prev) => (prev
+            ? {
+                ...prev,
+                locationSynthesis: enrichJson.data as LocationSynthesis,
+                locationSynthesisLoading: false,
+                locationSynthesisError: null,
+              }
+            : prev))
+        } else {
+          setIntelData((prev) => (prev
+            ? {
+                ...prev,
+                locationSynthesisLoading: false,
+                locationSynthesisError: null,
+              }
+            : prev))
+        }
+      } catch {
+        setIntelData((prev) => (prev
+          ? {
+              ...prev,
+              locationSynthesisLoading: false,
+              locationSynthesisError: null,
+            }
+          : prev))
+      }
+    })()
+  }, [])
+
   const fetchPropertyIntelligence = useCallback(async (
     propertyId: string,
     property: MatchedProperty['property'],
     coords: { lat: number; lng: number } | null,
-    matchMeta: MatchedProperty | null
+    matchMeta?: MatchedProperty | null
   ) => {
     setIntelLoading(true)
     setIntelData(null)
     setRightMode('intelligence')
-    const brand = data?.brand ?? null
-    try {
-      const [liveRes, dbIntelRes] = await Promise.all([
-        fetch('/api/location-intelligence', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
-            address: property.address,
-            city: property.city,
-            state: 'Karnataka',
-            title: property.title,
-            propertyType: property.propertyType,
-            businessType: buildLocationBusinessType(brand),
-            monthlyRent: deriveMonthlyRentFromListing(property.price, property.priceType, property.size),
-            sizeSqft: property.size,
-          }),
-        }),
-        fetch(`/api/intelligence/${encodeURIComponent(property.id)}`),
-      ])
 
-      let dbIntelData: Record<string, unknown> | null = null
-      if (dbIntelRes.ok) {
-        try {
-          const j = (await dbIntelRes.json()) as Record<string, unknown>
-          if (j && typeof j.error !== 'string') dbIntelData = j
-        } catch {
-          dbIntelData = null
+    const brand = data?.brand ?? null
+    const industryKey = toIndustryKey(brand?.industry)
+
+    try {
+      const cachedRes = await fetch(
+        `/api/intelligence/cached/${propertyId}?industry=${encodeURIComponent(brand?.industry || industryKey)}`,
+        { cache: 'no-store' }
+      )
+
+      if (cachedRes.ok) {
+        const cachedData = (await cachedRes.json()) as {
+          cached?: boolean
+          synthesisAvailable?: boolean
+          synthesis?: LocationSynthesis
+          intel?: Record<string, any>
+        }
+
+        if (cachedData.cached && cachedData.intel) {
+          const intel = cachedData.intel
+          const resolvedCoords =
+            (intel.coords && Number.isFinite(Number(intel.coords.lat)) && Number.isFinite(Number(intel.coords.lng)))
+              ? { lat: Number(intel.coords.lat), lng: Number(intel.coords.lng) }
+              : coords ?? { lat: 12.9716, lng: 77.5946 }
+
+          const competitors: IntelligenceData['competitors'] = (intel.competitors || []).map((c: any) => ({
+            name: String(c.name || ''),
+            category: String(c.placeCategory || c.category || 'other'),
+            distance: Number(c.distanceMeters || c.distance) || 0,
+            rating: c.rating != null ? Number(c.rating) : undefined,
+            branded: Boolean(c.brandType === 'popular' || c.branded),
+            lat: c.lat != null && Number.isFinite(Number(c.lat)) ? Number(c.lat) : undefined,
+            lng: c.lng != null && Number.isFinite(Number(c.lng)) ? Number(c.lng) : undefined,
+            reviewCount:
+              c.userRatingsTotal != null && Number.isFinite(Number(c.userRatingsTotal))
+                ? Number(c.userRatingsTotal)
+                : c.reviewCount != null && Number.isFinite(Number(c.reviewCount))
+                  ? Number(c.reviewCount)
+                  : undefined,
+          }))
+
+          const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(
+            competitors,
+            brand?.industry
+          )
+
+          const retailMix: IntelligenceData['retailMix'] = (intel.retailMix || []).map((r: any) => ({
+            category: String(r.category || ''),
+            branded: Number(r.branded) || 0,
+            nonBranded: Number(r.nonBranded) || 0,
+          }))
+
+          const catchment: IntelligenceData['catchment'] = (intel.catchment || []).map((c: any) => ({
+            pincode: String(c.pincode || ''),
+            name: String(c.name || ''),
+            sharePct: Number(c.sharePct) || 0,
+            distanceM: Number(c.distanceM || c.distanceMeters) || 0,
+            areaType: c.areaType ? String(c.areaType) : undefined,
+          }))
+
+          const catchmentLandmarks: IntelligenceData['catchmentLandmarks'] = (intel.catchmentLandmarks || [])
+            .map((l: any) => ({
+              name: String(l.name || ''),
+              kind: String(l.kind || ''),
+              distance: Number(l.distanceMeters || l.distance) || 0,
+              lat: Number(l.lat) || resolvedCoords.lat,
+              lng: Number(l.lng) || resolvedCoords.lng,
+            }))
+
+          const crowdPullers: IntelligenceData['crowdPullers'] = (intel.crowdPullers || []).map((p: any) => ({
+            name: String(p.name || ''),
+            category: String(p.category || ''),
+            distance: Number(p.distanceMeters || p.distance) || 0,
+          }))
+
+          const cannibalisationRisk: IntelligenceData['cannibalisationRisk'] = (intel.cannibalisationRisk || []).map((r: any) => ({
+            name: String(r.brand || r.name || ''),
+            distance: Number(r.nearestSameBrandDistanceM || r.distance) || 0,
+            cannibalisation: Number(r.cannibalisationPct || r.cannibalisation) || 0,
+          }))
+
+          const similarMarkets: IntelligenceData['similarMarkets'] = (intel.similarMarkets || []).map((m: any) => {
+            const areaKey = String(m.area || m.key || '')
+            const area = BANGALORE_AREAS.find((a) => a.key === areaKey)
+            return {
+              key: areaKey,
+              lat: area?.lat || resolvedCoords.lat,
+              lng: area?.lng || resolvedCoords.lng,
+              score: Number(m.score) || 50,
+            }
+          })
+
+          const highlights = buildHighlights({
+            footfall: { dailyAverage: intel.totalFootfall },
+            scores: { demandGapScore: intel.spendingCapacity, whitespaceScore: intel.growthTrend },
+            market: { competitorCount: intel.numberOfStores },
+            cannibalisationRisk: intel.cannibalisationRisk,
+            accessibility: { nearestMetro: intel.metroName ? { distanceMeters: intel.metroDistance } : null },
+            populationLifestyle: { affluenceIndicator: intel.affluenceIndicator },
+          })
+
+          setIntelData({
+            coords: resolvedCoords,
+            overallScore: Number(intel.overallScore || 50),
+            highlights,
+            totalFootfall: Number(intel.totalFootfall || 0),
+            growthTrend: Number(intel.growthTrend || 0),
+            spendingCapacity: Number(intel.spendingCapacity || 0),
+            numberOfStores: Number(intel.numberOfStores || sameCat.length || 0),
+            retailIndex: Number(intel.retailIndex || 0.5),
+            hourlyPattern: [],
+            totalHouseholds: Number(intel.totalHouseholds || 0),
+            affluenceIndicator: String(intel.affluenceIndicator || 'Medium'),
+            catchment,
+            catchmentLandmarks,
+            competitors: sameCat,
+            complementaryBrands: compBrands,
+            crowdPullers,
+            retailMix,
+            cannibalisationRisk,
+            storeClosureRisk: deriveStoreClosureRisk(retailMix),
+            similarMarkets,
+            metroDistance: intel.metroDistance != null ? Number(intel.metroDistance) : null,
+            metroName: intel.metroName != null ? String(intel.metroName) : null,
+            busStops: Number(intel.busStops || 0),
+            rentPerSqftCommercial: intel.rentContext?.marketMid != null ? Number(intel.rentContext.marketMid) : null,
+            marketRentLow: intel.rentContext?.marketLow != null ? Number(intel.rentContext.marketLow) : null,
+            marketRentHigh: intel.rentContext?.marketHigh != null ? Number(intel.rentContext.marketHigh) : null,
+            rentDataSource:
+              intel.rentContext?.source === 'listing' || intel.rentContext?.source === 'area_benchmark'
+                ? intel.rentContext.source
+                : null,
+            nearestCommercialAreaKey: intel.nearestAreaKey != null ? String(intel.nearestAreaKey) : null,
+            incomeLevel: null,
+            locationSynthesis: cachedData.synthesisAvailable ? (cachedData.synthesis as LocationSynthesis) : null,
+            locationSynthesisLoading: !cachedData.synthesisAvailable,
+            locationSynthesisError: null,
+          })
+
+          setIntelLoading(false)
+
+          if (!cachedData.synthesisAvailable) {
+            const rawIntelForSynthesis: Record<string, unknown> = {
+              competitors: intel.competitors || [],
+              footfall: {
+                dailyAverage: Number(intel.totalFootfall || 0),
+                peakHours: String(intel.peakHours || '').split(',').map((s) => s.trim()).filter(Boolean),
+                weekendBoost: Number(intel.weekendBoost || 0),
+              },
+              market: {
+                saturationLevel: String(intel.marketSaturation || 'medium'),
+                competitorCount: Number(intel.numberOfStores || 0),
+                summary: '',
+              },
+              scores: {
+                saturationIndex: Number(intel.retailIndex || 0.5),
+                whitespaceScore: Number(intel.growthTrend || 0),
+                demandGapScore: Number(intel.spendingCapacity || 0),
+              },
+              marketPotentialScore: Number(intel.overallScore || 50),
+              catchment: intel.catchment || [],
+              catchmentLandmarks: intel.catchmentLandmarks || [],
+              retailMix: intel.retailMix || [],
+              cannibalisationRisk: intel.cannibalisationRisk || [],
+              crowdPullers: intel.crowdPullers || [],
+              similarMarkets: intel.similarMarkets || [],
+              populationLifestyle: {
+                affluenceIndicator: intel.affluenceIndicator,
+                totalHouseholds: intel.totalHouseholds,
+                rentPerSqft: intel.rentContext?.marketMid ?? null,
+                marketRentLow: intel.rentContext?.marketLow ?? null,
+                marketRentHigh: intel.rentContext?.marketHigh ?? null,
+                rentDataSource: intel.rentContext?.source ?? null,
+              },
+              accessibility: {
+                nearestMetro: intel.metroName
+                  ? { name: String(intel.metroName), distanceMeters: Number(intel.metroDistance || 0) }
+                  : null,
+                nearestBusStop: intel.busStops
+                  ? { name: 'Nearby Bus Stops', distanceMeters: 300 }
+                  : null,
+              },
+              nearestCommercialAreaKey: intel.nearestAreaKey ?? null,
+            }
+            triggerBackgroundSynthesis(propertyId, property, brand, rawIntelForSynthesis, matchMeta, resolvedCoords)
+          }
+          return
         }
       }
+
+      const liveRes = await fetch('/api/location-intelligence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+          address: property.address,
+          city: property.city,
+          title: property.title,
+          state: 'Karnataka',
+          propertyType: property.propertyType,
+          businessType: buildLocationBusinessType(brand),
+        }),
+      })
 
       if (liveRes.ok) {
         const liveData = await liveRes.json()
         if (liveData.success) {
-          const d = liveData.data
-          const resolvedCoords: { lat: number; lng: number } | null =
-            coords ??
-            (d?.coordinates &&
-            typeof d.coordinates.lat === 'number' &&
-            typeof d.coordinates.lng === 'number'
-              ? { lat: d.coordinates.lat, lng: d.coordinates.lng }
-              : d?.lat != null && d?.lng != null
-                ? { lat: Number(d.lat), lng: Number(d.lng) }
-                : null)
-          const intel = transformLiveIntelligence(d, resolvedCoords)
-          const brandIntelContext = buildLocationBusinessType(brand)
-          const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(intel.competitors, brandIntelContext)
-          const retailMixOrdered = sortRetailMixForBrand(intel.retailMix, brandIntelContext)
-          const segmentStoreCount = brandIntelContext.trim() ? sameCat.length : intel.numberOfStores
+          const resolvedCoords = coords ??
+            (liveData.data?.coordinates
+              ? {
+                  lat: Number(liveData.data.coordinates.lat),
+                  lng: Number(liveData.data.coordinates.lng),
+                }
+              : { lat: 12.9716, lng: 77.5946 })
+          const intel = transformLiveIntelligence(liveData.data, resolvedCoords)
+          const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(
+            intel.competitors,
+            brand?.industry
+          )
+          const retailMixOrdered = sortRetailMixForBrand(intel.retailMix, brand?.industry)
           setIntelData({
             ...intel,
             competitors: sameCat,
             complementaryBrands: compBrands,
             retailMix: retailMixOrdered,
             storeClosureRisk: deriveStoreClosureRisk(retailMixOrdered),
-            numberOfStores: segmentStoreCount,
             locationSynthesis: null,
             locationSynthesisLoading: true,
             locationSynthesisError: null,
           })
-
-          const preferred =
-            brand?.preferredLocations != null
-              ? Array.isArray(brand.preferredLocations)
-                ? brand.preferredLocations
-                : typeof brand.preferredLocations === 'string'
-                  ? (() => {
-                      try {
-                        const p = JSON.parse(brand.preferredLocations as string)
-                        return Array.isArray(p) ? p.map(String) : []
-                      } catch {
-                        return []
-                      }
-                    })()
-                  : []
-              : []
-
-          void (async () => {
-            try {
-              const dbEnrichment = dbIntelData
-                ? {
-                    localityIntel:
-                      (dbIntelData.localityIntel as Record<string, unknown> | null | undefined) ?? null,
-                    nearbySocieties: Array.isArray(dbIntelData.nearbySocieties)
-                      ? (dbIntelData.nearbySocieties as Array<Record<string, unknown>>)
-                      : [],
-                    nearbyTechParks: Array.isArray(dbIntelData.nearbyTechParks)
-                      ? (dbIntelData.nearbyTechParks as Array<Record<string, unknown>>)
-                      : [],
-                    ward: (dbIntelData.ward as Record<string, unknown> | null | undefined) ?? null,
-                  }
-                : undefined
-
-              const enrichPayload = {
-                brandId: brand?.id,
-                rawIntel: d,
-                dbEnrichment,
-                brand: {
-                  name: brand?.companyName?.trim() || 'Brand',
-                  companyName: brand?.companyName,
-                  industry: brand?.industry,
-                  category: brand?.category,
-                  budgetMin: brand?.budgetMin,
-                  budgetMax: brand?.budgetMax,
-                  preferredLocations: preferred.length ? preferred : null,
-                },
-                property: {
-                  title: property.title,
-                  address: property.address,
-                  city: property.city,
-                  propertyType: property.propertyType,
-                  size: property.size,
-                  price: property.price,
-                  priceType: property.priceType,
-                },
-                match: matchMeta
-                  ? {
-                      bfiScore: matchMeta.bfiScore,
-                      locationFit: matchMeta.breakdown.locationFit,
-                      budgetFit: matchMeta.breakdown.budgetFit,
-                      sizeFit: matchMeta.breakdown.sizeFit,
-                    }
-                  : undefined,
-              }
-              let enrichRes!: Response
-              let enrichJson = {} as { success?: boolean; error?: string; data?: LocationSynthesis }
-              for (let attempt = 0; attempt < 2; attempt++) {
-                if (attempt > 0) {
-                  await new Promise((r) => setTimeout(r, 1800))
-                }
-                enrichRes = await fetch('/api/dashboard/brand/intel-enrich', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(enrichPayload),
-                })
-                enrichJson = (await enrichRes.json().catch(() => ({}))) as typeof enrichJson
-                if (enrichRes.ok && enrichJson.success && enrichJson.data) break
-                const retryable = enrichRes.status === 504 || enrichRes.status === 502
-                if (!retryable || attempt === 1) break
-              }
-              if (enrichRes.ok && enrichJson.success && enrichJson.data) {
-                setIntelData((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        locationSynthesis: enrichJson.data as LocationSynthesis,
-                        locationSynthesisLoading: false,
-                        locationSynthesisError: null,
-                      }
-                    : prev
-                )
-              } else {
-                const apiErr = typeof enrichJson.error === 'string' ? enrichJson.error.trim() : ''
-                const fallbackMsg = !enrichRes.ok
-                  ? `Location synthesis unavailable (request failed with HTTP ${enrichRes.status}).`
-                  : 'Location synthesis unavailable — the service returned no data. Try again in a moment.'
-                setIntelData((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        locationSynthesis: null,
-                        locationSynthesisLoading: false,
-                        locationSynthesisError: apiErr || fallbackMsg,
-                      }
-                    : prev
-                )
-              }
-            } catch {
-              setIntelData((prev) =>
-                prev
-                  ? { ...prev, locationSynthesis: null, locationSynthesisLoading: false, locationSynthesisError: 'Location synthesis failed' }
-                  : prev
-              )
-            }
-          })()
+          setIntelLoading(false)
+          triggerBackgroundSynthesis(propertyId, property, brand, liveData.data, matchMeta, resolvedCoords)
           return
         }
       }
-      // Fallback to DB intelligence if live API fails
-      const dbRes = await fetch(`/api/intelligence/${propertyId}?category=${encodeURIComponent(brand?.industry || '')}`)
-      if (dbRes.ok) {
-        const dbData = await dbRes.json()
-        if (dbData.intelligence) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const intel = dbData.intelligence as any
-          const fallbackCoords = coords ?? { lat: 12.9716, lng: 77.5946 }
-          setIntelData({
-            coords: fallbackCoords, overallScore: Number(intel.marketPotentialScore) || 50, highlights: [],
-            totalFootfall: Number(intel.dailyFootfall) || 0, growthTrend: 0, spendingCapacity: 0,
-            numberOfStores: 0, retailIndex: 0.5, hourlyPattern: [], totalHouseholds: 0,
-            affluenceIndicator: 'Medium', catchment: [], catchmentLandmarks: [], competitors: [], complementaryBrands: [],
-            crowdPullers: [], retailMix: [], cannibalisationRisk: [], storeClosureRisk: [], similarMarkets: [],
-            metroDistance: null, metroName: null, busStops: 0,
-            rentPerSqftCommercial: null,
-            marketRentLow: null,
-            marketRentHigh: null,
-            rentDataSource: null,
-            nearestCommercialAreaKey: null,
-            incomeLevel: null,
-            locationSynthesis: null, locationSynthesisLoading: false, locationSynthesisError: null,
-          })
-          return
-        }
-      }
-    } catch (err) { console.error('[Brand Dashboard] intel error:', err) }
-    finally { setIntelLoading(false) }
-  }, [data])
+    } catch (err) {
+      console.error('[fetchPropertyIntelligence]', err)
+    }
+
+    setIntelLoading(false)
+  }, [data, triggerBackgroundSynthesis])
 
   const selectProperty = (m: MatchedProperty) => {
     setSelectedMatch(m)
