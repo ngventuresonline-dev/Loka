@@ -333,6 +333,185 @@ function TabSynthesisCallout({
   )
 }
 
+function DecisionHeroCard({
+  overallScore,
+  bfiScore,
+  city,
+  industry,
+  highlights,
+  onScheduleVisit,
+  onToggleSave,
+  onToggleInterested,
+  isSaved,
+  isInterested,
+}: {
+  overallScore: number
+  bfiScore: number
+  city: string
+  industry: string
+  highlights: string[]
+  onScheduleVisit: () => void
+  onToggleSave: () => void
+  onToggleInterested: () => void
+  isSaved: boolean
+  isInterested: boolean
+}) {
+  const verdict =
+    overallScore >= 80 && bfiScore >= 75
+      ? { label: 'Open', tone: 'bg-emerald-100 text-emerald-800 border-emerald-200', summary: 'High-confidence location with strong business fit.' }
+      : overallScore >= 65 && bfiScore >= 60
+        ? { label: 'Pilot', tone: 'bg-amber-100 text-amber-800 border-amber-200', summary: 'Promising location with a few conditions to validate.' }
+        : { label: 'Hold', tone: 'bg-rose-100 text-rose-800 border-rose-200', summary: 'Proceed only if rent and operating model can be optimized.' }
+
+  return (
+    <div className="p-4 sm:p-5 border-b border-gray-100 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40">
+      <div className="rounded-2xl border border-orange-100 bg-white/90 p-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Decision Console</span>
+              <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${verdict.tone}`}>{verdict.label}</span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900">Should we open in {city}?</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">{verdict.summary}</p>
+          </div>
+          <div className="flex items-end gap-4 sm:gap-5 flex-shrink-0">
+            <div className="text-right">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Lokazen score</p>
+              <p className="text-2xl sm:text-3xl font-black text-gray-900 leading-none">{overallScore}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">BFI</p>
+              <p className="text-2xl sm:text-3xl font-black text-[#FF5200] leading-none">{bfiScore}</p>
+            </div>
+          </div>
+        </div>
+        {highlights.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Top drivers</p>
+            <div className="flex flex-wrap gap-1.5">
+              {highlights.slice(0, 4).map((h) => <HighlightChip key={h} label={h} />)}
+            </div>
+          </div>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onScheduleVisit}
+            className="px-4 py-2 text-xs font-semibold text-white bg-[#FF5200] rounded-xl hover:bg-orange-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+          >
+            Schedule Visit
+          </button>
+          <button
+            type="button"
+            onClick={onToggleSave}
+            className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-colors ${
+              isSaved ? 'bg-blue-50 text-blue-700 border-blue-300' : 'text-gray-600 border-gray-200 hover:border-gray-400'
+            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200`}
+          >
+            {isSaved ? 'Saved' : 'Save Snapshot'}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleInterested}
+            className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-colors ${
+              isInterested ? 'bg-green-50 text-green-700 border-green-300' : 'text-gray-600 border-gray-200 hover:border-gray-400'
+            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-200`}
+          >
+            {isInterested ? 'Interested' : 'Mark Interested'}
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400 mt-2.5">
+          Based on {industry || 'category'} fit, catchment signal quality, competition pressure, and commercial viability.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function InsightMetricCard({
+  label,
+  value,
+  note,
+  tone = 'neutral',
+}: {
+  label: string
+  value: string
+  note?: string
+  tone?: 'positive' | 'warning' | 'risk' | 'neutral'
+}) {
+  const toneClass =
+    tone === 'positive'
+      ? 'bg-emerald-50 border-emerald-100'
+      : tone === 'warning'
+        ? 'bg-amber-50 border-amber-100'
+        : tone === 'risk'
+          ? 'bg-rose-50 border-rose-100'
+          : 'bg-gray-50 border-gray-100'
+  return (
+    <div className={`rounded-xl border p-3 ${toneClass}`}>
+      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1 leading-none">{value}</p>
+      {note ? <p className="text-[10px] text-gray-500 mt-1 line-clamp-1">{note}</p> : null}
+    </div>
+  )
+}
+
+function QuickActionRail({
+  onScheduleVisit,
+  onToggleSave,
+  onToggleInterested,
+  onOpenMap,
+  isSaved,
+  isInterested,
+}: {
+  onScheduleVisit: () => void
+  onToggleSave: () => void
+  onToggleInterested: () => void
+  onOpenMap: () => void
+  isSaved: boolean
+  isInterested: boolean
+}) {
+  return (
+    <div className="sticky top-0 z-20 px-3 sm:px-4 py-2.5 bg-white/95 backdrop-blur border-b border-gray-100">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+        <button
+          type="button"
+          onClick={onScheduleVisit}
+          className="px-3 py-1.5 text-xs font-semibold text-white bg-[#FF5200] rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+        >
+          Schedule Visit
+        </button>
+        <button
+          type="button"
+          onClick={onToggleSave}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap ${
+            isSaved ? 'bg-blue-50 text-blue-700 border-blue-300' : 'text-gray-600 border-gray-200 hover:border-gray-400'
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200`}
+        >
+          {isSaved ? 'Saved' : 'Save Snapshot'}
+        </button>
+        <button
+          type="button"
+          onClick={onToggleInterested}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap ${
+            isInterested ? 'bg-green-50 text-green-700 border-green-300' : 'text-gray-600 border-gray-200 hover:border-gray-400'
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-200`}
+        >
+          {isInterested ? 'Interested' : 'Mark Interested'}
+        </button>
+        <button
+          type="button"
+          onClick={onOpenMap}
+          className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-[#FF5200]/60 hover:text-[#FF5200] transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+        >
+          View on Map
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function statusBadge(status: string) {
   const map: Record<string, string> = {
     pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -655,8 +834,14 @@ function MetricCell({ label, value, trend, benchmark, tooltip }: { label: string
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
         {tooltip && (
           <div className="relative group">
-            <button className="text-[9px] w-3.5 h-3.5 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold flex-shrink-0">i</button>
-            <div className="absolute left-0 top-4 w-52 bg-gray-900 text-white text-[10px] rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+            <button
+              type="button"
+              aria-label={`More info about ${label}`}
+              className="text-[9px] w-3.5 h-3.5 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-orange-200"
+            >
+              i
+            </button>
+            <div className="absolute left-0 top-4 w-52 bg-gray-900 text-white text-[10px] rounded-lg p-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
               {tooltip}
             </div>
           </div>
@@ -1290,10 +1475,10 @@ export default function BrandDashboardPage() {
   ]
 
   return (
-    <div className="flex h-screen bg-[#F7F7F5] overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-screen bg-[#F7F7F5] overflow-hidden">
 
       {/* ══ LEFT PANEL ══ */}
-      <div className="w-[380px] flex-shrink-0 flex flex-col h-full bg-white border-r border-gray-100 overflow-hidden">
+      <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col h-[46vh] lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-gray-100 overflow-hidden">
 
         {/* Brand Header */}
         <div className="p-4 border-b border-gray-100 flex-shrink-0">
@@ -1707,14 +1892,14 @@ export default function BrandDashboardPage() {
       </div>
 
       {/* ══ RIGHT PANEL ══ */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-h-0 h-[54vh] lg:h-full overflow-hidden relative">
 
         {/* Intelligence header — only when property selected */}
         {rightMode === 'intelligence' && selectedMatch && (
           <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
             <button
               onClick={() => { setRightMode('map'); setSelectedMatch(null); setIntelData(null) }}
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 transition-colors"
+              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
             >
               ←
             </button>
@@ -1726,7 +1911,7 @@ export default function BrandDashboardPage() {
               <span className="text-sm font-bold text-white bg-[#FF5200] rounded-full px-3 py-1">{selectedMatch.bfiScore} BFI</span>
               <Link
                 href={`/properties/${encodePropertyId(selectedMatch.property.id)}`}
-                className="text-xs font-medium text-[#FF5200] border border-[#FF5200] rounded-lg px-3 py-1 hover:bg-orange-50 transition-colors"
+                className="text-xs font-medium text-[#FF5200] border border-[#FF5200] rounded-lg px-3 py-1 hover:bg-orange-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
               >
                 View →
               </Link>
@@ -1743,7 +1928,8 @@ export default function BrandDashboardPage() {
                   key={key}
                   type="button"
                   onClick={() => setRightPanelTab(key)}
-                  className={`whitespace-nowrap px-4 py-2.5 text-xs border-b-2 font-medium transition-colors flex-shrink-0 inline-flex items-center ${
+                  aria-pressed={rightPanelTab === key}
+                  className={`whitespace-nowrap px-4 py-2.5 text-xs border-b-2 font-medium transition-colors flex-shrink-0 inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${
                     rightPanelTab === key ? 'border-[#FF5200] text-[#FF5200]' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -1904,7 +2090,8 @@ export default function BrandDashboardPage() {
           <div className="absolute top-3 right-3 z-20 bg-white/95 backdrop-blur rounded-xl shadow-md p-1.5 flex flex-col gap-1">
             {(['pins', 'heatmap', 'satellite'] as const).map((mode) => (
               <button key={mode} onClick={() => { setMapMode(mode); if (mapRef) mapRef.setMapTypeId(mode === 'satellite' ? 'satellite' : 'roadmap') }}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize ${mapMode === mode ? 'bg-[#FF5200] text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                aria-pressed={mapMode === mode}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${mapMode === mode ? 'bg-[#FF5200] text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                 {mode === 'pins' ? 'Pins' : mode === 'heatmap' ? 'Heatmap' : 'Satellite'}
               </button>
             ))}
@@ -1927,6 +2114,16 @@ export default function BrandDashboardPage() {
         {/* ── Intelligence content panel ── */}
         {rightMode === 'intelligence' && rightPanelTab !== 'map' && (
           <div className="flex-1 overflow-y-auto bg-white relative z-20">
+            {selectedMatch && (
+              <QuickActionRail
+                onScheduleVisit={() => setVisitModal(v => ({ ...v, open: true }))}
+                onToggleSave={() => setVisitModal(v => ({ ...v, saved: !v.saved }))}
+                onToggleInterested={() => setVisitModal(v => ({ ...v, interested: !v.interested }))}
+                onOpenMap={() => setRightPanelTab('map')}
+                isSaved={visitModal.saved}
+                isInterested={visitModal.interested}
+              />
+            )}
 
             {/* Intelligence loading */}
             {intelLoading && (
@@ -1953,36 +2150,50 @@ export default function BrandDashboardPage() {
                 {/* ── TAB: OVERVIEW ── */}
                 {rightPanelTab === 'overview' && (
                   <div>
-                    {/* Lokazen Composite Score — LIR Section 08 style */}
-                    <div className="p-5 border-b border-gray-100">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-5xl font-black text-gray-900">{intelData.overallScore}</span>
-                            <span className="text-xl text-gray-400 font-light">/ 100</span>
-                            <span className={`ml-2 text-xs font-bold px-2.5 py-1 rounded-full ${
-                              intelData.overallScore >= 80 ? 'bg-green-100 text-green-700' :
-                              intelData.overallScore >= 60 ? 'bg-amber-100 text-amber-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
-                              {intelData.overallScore >= 85 ? 'EXCEPTIONAL' :
-                               intelData.overallScore >= 75 ? 'STRONG' :
-                               intelData.overallScore >= 60 ? 'VIABLE' : 'CONDITIONAL'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500">Lokazen Composite Score</p>
-                        </div>
-                        <div className="flex flex-col items-center flex-shrink-0">
-                          <div className="flex gap-0.5 mb-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <StarIcon key={i} filled={i < Math.round(intelData.overallScore / 20)} className="w-5 h-5" />
-                            ))}
-                          </div>
-                          <span className="text-xs text-gray-400">{Math.round(intelData.overallScore / 20)} of 5</span>
-                        </div>
-                      </div>
+                    <DecisionHeroCard
+                      overallScore={intelData.overallScore}
+                      bfiScore={selectedMatch?.bfiScore || 0}
+                      city={selectedMatch?.property.city || 'this market'}
+                      industry={data?.brand?.industry || 'F&B'}
+                      highlights={intelData.highlights}
+                      onScheduleVisit={() => setVisitModal(v => ({ ...v, open: true }))}
+                      onToggleSave={() => setVisitModal(v => ({ ...v, saved: !v.saved }))}
+                      onToggleInterested={() => setVisitModal(v => ({ ...v, interested: !v.interested }))}
+                      isSaved={visitModal.saved}
+                      isInterested={visitModal.interested}
+                    />
 
-                      {/* 8-parameter scorecard */}
+                    <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-white">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        <InsightMetricCard
+                          label="Market potential"
+                          value={`${Math.round(intelData.growthTrend)}/100`}
+                          note="Whitespace and expansion signal"
+                          tone={intelData.growthTrend >= 60 ? 'positive' : intelData.growthTrend >= 40 ? 'warning' : 'risk'}
+                        />
+                        <InsightMetricCard
+                          label="Demand gap"
+                          value={`${Math.round(intelData.spendingCapacity)}/100`}
+                          note="Higher means unmet category demand"
+                          tone={intelData.spendingCapacity >= 55 ? 'positive' : intelData.spendingCapacity >= 35 ? 'warning' : 'risk'}
+                        />
+                        <InsightMetricCard
+                          label="Competition pressure"
+                          value={`${intelData.numberOfStores}`}
+                          note="Mapped peer stores nearby"
+                          tone={intelData.numberOfStores <= 4 ? 'positive' : intelData.numberOfStores <= 8 ? 'warning' : 'risk'}
+                        />
+                        <InsightMetricCard
+                          label="Catchment affluence"
+                          value={intelData.affluenceIndicator}
+                          note={intelData.totalHouseholds > 0 ? `${intelData.totalHouseholds.toLocaleString('en-IN')} households` : 'Household data loading'}
+                          tone={intelData.affluenceIndicator === 'High' ? 'positive' : intelData.affluenceIndicator === 'Medium' ? 'warning' : 'neutral'}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Signal scorecard</p>
                       {(() => {
                         const footfallScore = Math.min(10, Math.round((intelData.totalFootfall / 3000) * 10))
                         const catchmentScore = intelData.affluenceIndicator === 'High' ? 10 : intelData.affluenceIndicator === 'Medium' ? 7 : 5
@@ -1997,23 +2208,23 @@ export default function BrandDashboardPage() {
                           { label: 'Catchment Quality', score: catchmentScore, note: intelData.affluenceIndicator + ' affluence' },
                           { label: 'F&B Supply Gap', score: competitionVoidScore, note: `${intelData.numberOfStores} competitors nearby` },
                           { label: 'Property Configuration', score: configScore, note: `${selectedMatch?.property.size.toLocaleString()} sqft ${selectedMatch?.property.propertyType}` },
-                          { label: 'Captive Walk-In Access', score: Math.min(10, Math.round(accessScore * 1.2)), note: intelData.metroName ? `Metro ${((intelData.metroDistance || 0) / 1000).toFixed(1)}km` : 'Access estimated' },
+                          { label: 'Walk-In Access', score: Math.min(10, Math.round(accessScore * 1.2)), note: intelData.metroName ? `Metro ${((intelData.metroDistance || 0) / 1000).toFixed(1)}km` : 'Access estimated' },
                           { label: 'Connectivity', score: connScore, note: intelData.busStops > 0 ? 'Transit nearby' : 'Road access' },
                           { label: 'Occasion Spread', score: occasionScore, note: 'Day-part coverage' },
                           { label: 'Commercial Viability', score: viabilityScore, note: formatPrice(selectedMatch?.property.price || 0, selectedMatch?.property.priceType || 'monthly') },
                         ]
                         return (
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {parameters.map(({ label, score, note }) => (
-                              <div key={label} className="min-w-0">
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <span className="text-[10px] font-medium text-gray-700 truncate">{label}</span>
-                                  <span className={`text-[10px] font-bold ml-1 flex-shrink-0 ${score >= 8 ? 'text-green-600' : score >= 6 ? 'text-amber-600' : 'text-red-500'}`}>{score}/10</span>
+                              <div key={label} className="rounded-xl border border-gray-200 bg-white p-3">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-semibold text-gray-700">{label}</span>
+                                  <span className={`text-xs font-bold ml-1 flex-shrink-0 ${score >= 8 ? 'text-green-600' : score >= 6 ? 'text-amber-600' : 'text-red-500'}`}>{score}/10</span>
                                 </div>
                                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                   <div className={`h-full rounded-full transition-all duration-700 ${score >= 8 ? 'bg-green-400' : score >= 6 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${score * 10}%` }} />
                                 </div>
-                                <p className="text-[9px] text-gray-400 mt-0.5 truncate">{note}</p>
+                                <p className="text-[11px] text-gray-500 mt-1">{note}</p>
                               </div>
                             ))}
                           </div>
@@ -2191,8 +2402,14 @@ export default function BrandDashboardPage() {
                         <h3 className="font-bold text-gray-900 text-sm">Revenue Potential</h3>
                         <span className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">Lokazen estimate · not a guarantee</span>
                         <div className="relative group ml-auto">
-                          <button className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">i</button>
-                          <div className="absolute right-0 top-5 w-56 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                          <button
+                            type="button"
+                            aria-label="More info about revenue model"
+                            className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          >
+                            i
+                          </button>
+                          <div className="absolute right-0 top-5 w-56 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
                             Based on: category benchmarks, area footfall multiplier, avg ticket size, capture rate. Not a financial guarantee.
                           </div>
                         </div>
@@ -2250,44 +2467,29 @@ export default function BrandDashboardPage() {
                       })()}
                     </div>
 
-                    {/* Lokazen Verdict */}
-                    <div className="px-5 py-4 bg-gray-50">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-1 h-5 bg-[#FF5200] rounded-full flex-shrink-0" />
-                        <h3 className="font-bold text-gray-900 text-sm">Lokazen Verdict</h3>
-                      </div>
-                      {(() => {
-                        const score = intelData.overallScore
-                        const bfi = selectedMatch?.bfiScore || 0
-                        const location = selectedMatch?.property.city || 'this location'
-                        const brand = data?.brand ?? null
-                        const industry = brand?.industry || 'F&B'
-                        const verdict = score >= 80 && bfi >= 75
-                          ? `${location} is a high-confidence ${industry} placement. Strong catchment, good brand-location fit, and validated demand. Recommend engaging now.`
-                          : score >= 65 && bfi >= 60
-                          ? `${location} shows good potential for ${industry}. Fundamentals are solid. Verify rent terms and delivery activation plan before committing.`
-                          : `${location} has conditional viability for ${industry}. Review budget fit and competition density carefully. Premium brand or high-ticket format required.`
-                        return <p className="text-xs text-gray-700 leading-relaxed">{verdict}</p>
-                      })()}
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={() => setVisitModal(v => ({ ...v, open: true }))}
-                          className="flex-1 text-center text-xs font-semibold text-white bg-[#FF5200] rounded-xl py-2 hover:bg-orange-600 transition-colors"
-                        >
-                          Schedule Visit
-                        </button>
-                        <button
-                          onClick={() => setVisitModal(v => ({ ...v, saved: !v.saved }))}
-                          className={`px-4 text-xs font-semibold rounded-xl py-2 border transition-colors ${visitModal.saved ? 'bg-blue-50 text-blue-700 border-blue-300' : 'text-gray-600 border-gray-200 hover:border-gray-400'}`}
-                        >
-                          {visitModal.saved ? 'Saved' : 'Save'}
-                        </button>
-                        <button
-                          onClick={() => setVisitModal(v => ({ ...v, interested: !v.interested }))}
-                          className={`px-4 text-xs font-semibold rounded-xl py-2 border transition-colors ${visitModal.interested ? 'bg-green-50 text-green-700 border-green-300' : 'text-gray-600 border-gray-200 hover:border-gray-400'}`}
-                        >
-                          {visitModal.interested ? 'Interested' : 'Interested?'}
-                        </button>
+                    <div className="px-4 sm:px-5 py-4 bg-gray-50">
+                      <div className="rounded-xl border border-gray-200 bg-white p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-1 h-5 bg-[#FF5200] rounded-full flex-shrink-0" />
+                          <h3 className="font-bold text-gray-900 text-sm">Strategic recommendation</h3>
+                        </div>
+                        {(() => {
+                          const score = intelData.overallScore
+                          const bfi = selectedMatch?.bfiScore || 0
+                          const location = selectedMatch?.property.city || 'this location'
+                          const brand = data?.brand ?? null
+                          const industry = brand?.industry || 'F&B'
+                          const verdict = score >= 80 && bfi >= 75
+                            ? `${location} is a high-confidence ${industry} placement. Prioritize this property for immediate commercial discussion.`
+                            : score >= 65 && bfi >= 60
+                              ? `${location} is viable for ${industry}. Move ahead with a site visit and validate rent-negotiation flexibility before locking.`
+                              : `${location} is conditional for ${industry}. Keep as a backup while benchmarking lower-rent alternatives nearby.`
+                          return <p className="text-sm text-gray-700 leading-relaxed">{verdict}</p>
+                        })()}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="px-2.5 py-1 rounded-full border border-orange-200 bg-orange-50 text-orange-800 text-[11px] font-medium">Next step: site validation</span>
+                          <span className="px-2.5 py-1 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-800 text-[11px] font-medium">Recommended: compare 2 nearby options</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2295,9 +2497,9 @@ export default function BrandDashboardPage() {
 
                 {/* ── TAB: CATCHMENT ── */}
                 {rightPanelTab === 'catchment' && (
-                  <div>
+                  <div className="px-3 sm:px-4 py-3 bg-[#F8F9FB] space-y-3">
                     {primarySegmentLabel(buildLocationBusinessType(brand)) && (
-                      <div className="px-4 py-2.5 border-b border-orange-100 bg-gradient-to-r from-orange-50/80 to-transparent">
+                      <div className="px-4 py-2.5 rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50/80 to-transparent shadow-sm">
                         <p className="text-[11px] text-gray-800 leading-snug">
                           <span className="font-semibold text-[#FF5200]">Primary trade focus — </span>
                           {primarySegmentLabel(buildLocationBusinessType(brand))}.
@@ -2308,7 +2510,7 @@ export default function BrandDashboardPage() {
                         </p>
                       </div>
                     )}
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Population & Lifestyle</h3>
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
@@ -2328,12 +2530,18 @@ export default function BrandDashboardPage() {
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     {/* Catchment Quality Scorecard — LIR Section 03 style */}
-                    <div className="px-5 py-4 border-b border-gray-100">
+                    <div className="px-4 sm:px-5 py-4 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
                         <h3 className="font-bold text-gray-900 text-sm">Catchment Quality</h3>
                         <div className="relative group">
-                          <button className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">i</button>
-                          <div className="absolute left-0 top-5 w-60 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                          <button
+                            type="button"
+                            aria-label="More info about catchment quality"
+                            className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          >
+                            i
+                          </button>
+                          <div className="absolute left-0 top-5 w-60 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
                             Lokazen catchment quality measures 5 axes: density, affluence, frequency, captive access, and occasion coverage.
                           </div>
                         </div>
@@ -2393,7 +2601,7 @@ export default function BrandDashboardPage() {
                       })()}
                     </div>
 
-                    <div className="p-5">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Where Shoppers Come From</h3>
                         <span className="text-[10px] bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">3km Radius</span>
@@ -2511,7 +2719,7 @@ export default function BrandDashboardPage() {
 
                 {/* ── TAB: MARKET ── */}
                 {rightPanelTab === 'market' && (
-                  <div>
+                  <div className="px-3 sm:px-4 py-3 bg-[#F8F9FB] space-y-3">
                     <TabSynthesisCallout
                       title="For your brand — market"
                       narrative={intelData.locationSynthesis?.marketForBrand}
@@ -2521,7 +2729,7 @@ export default function BrandDashboardPage() {
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Catchment economics</h3>
                         <span className={`text-xs rounded-full px-2 py-0.5 ${
@@ -2603,7 +2811,7 @@ export default function BrandDashboardPage() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Retail Indicators</h3>
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">5 min Walking</span>
@@ -2617,7 +2825,7 @@ export default function BrandDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-gray-900">Footfall Trends</h3>
@@ -2627,8 +2835,8 @@ export default function BrandDashboardPage() {
                       </div>
                       <div className="flex gap-1.5 mb-3">
                         {(['weekday', 'weekend'] as const).map((v) => (
-                          <button key={v} onClick={() => setFootfallView(v)}
-                            className={`text-xs px-3 py-1 rounded-full font-medium capitalize transition-colors ${footfallView === v ? 'bg-[#FF5200] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                          <button key={v} type="button" aria-pressed={footfallView === v} onClick={() => setFootfallView(v)}
+                            className={`text-xs px-3 py-1 rounded-full font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${footfallView === v ? 'bg-[#FF5200] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                             {v === 'weekday' ? 'Weekday' : 'Weekend'}
                           </button>
                         ))}
@@ -2647,7 +2855,7 @@ export default function BrandDashboardPage() {
                     </div>
 
                     {intelData.retailMix.length > 0 && (
-                      <div className="p-5 border-b border-gray-100">
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                         <h3 className="font-bold text-gray-900 mb-1">Trade-area retail mix</h3>
                         <p className="text-[10px] text-gray-500 mb-3">
                           {primarySegmentLabel(buildLocationBusinessType(brand))
@@ -2685,7 +2893,7 @@ export default function BrandDashboardPage() {
                     )}
 
                     {intelData.crowdPullers.length > 0 && (
-                      <div className="p-5">
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                           <h3 className="font-bold text-gray-900">Crowd Pullers</h3>
                           <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">5 min Walking</span>
@@ -2709,7 +2917,7 @@ export default function BrandDashboardPage() {
 
                 {/* ── TAB: COMPETITORS ── */}
                 {rightPanelTab === 'competitors' && (
-                  <div>
+                  <div className="px-3 sm:px-4 py-3 bg-[#F8F9FB] space-y-3">
                     <TabSynthesisCallout
                       title="For your brand — competition"
                       narrative={intelData.locationSynthesis?.competitionForBrand}
@@ -2721,7 +2929,7 @@ export default function BrandDashboardPage() {
                     />
                     {/* Competitor map — show pins of all competitors around selected property */}
                     {selectedMatch?.coords && isLoaded && (
-                      <div className="h-[220px] relative border-b border-gray-100">
+                      <div className="h-[220px] relative rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
                         <GoogleMap
                           mapContainerClassName="w-full h-full"
                           center={selectedMatch.coords}
@@ -2765,7 +2973,7 @@ export default function BrandDashboardPage() {
                         </div>
                       </div>
                     )}
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h3 className="font-bold text-gray-900">Your segment — competitors</h3>
@@ -2780,62 +2988,91 @@ export default function BrandDashboardPage() {
                           No direct segment peers mapped here — check complementary retail below or widen the trade area.
                         </p>
                       ) : (
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="text-gray-400 border-b">
-                              <th className="text-left py-1">Brand</th>
-                              <th className="text-left">Cat</th>
-                              <th className="text-right">Dist</th>
-                            </tr>
-                          </thead>
-                          <tbody>
+                        <>
+                          <div className="space-y-2 md:hidden">
                             {[...intelData.competitors]
                               .sort((a, b) => a.distance - b.distance)
-                              .slice(0, 10)
+                              .slice(0, 8)
                               .map((c, i) => (
-                                <tr key={`${c.name}-${c.distance}-${i}`} className="border-b border-gray-50 hover:bg-gray-50/50">
-                                  <td className="py-2">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="text-gray-800 font-semibold text-[11px]">{c.name}</span>
-                                      {c.branded && (
-                                        <span className="text-[9px] bg-orange-100 text-orange-600 rounded px-1 font-medium">Chain</span>
-                                      )}
-                                      {(c.reviewCount ?? 0) >= 1000 && (
-                                        <span className="text-[9px] bg-green-100 text-green-700 rounded px-1 font-medium">
-                                          High footfall
-                                        </span>
+                                <div key={`${c.name}-${c.distance}-${i}`} className="rounded-xl border border-gray-100 p-3 bg-white transition-all hover:-translate-y-0.5 hover:shadow-sm">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-sm text-gray-800 font-semibold truncate">{c.name}</span>
+                                        {c.branded && <span className="text-[10px] bg-orange-100 text-orange-700 rounded px-1.5 py-0.5 font-medium">Chain</span>}
+                                        {(c.reviewCount ?? 0) >= 1000 && <span className="text-[10px] bg-green-100 text-green-700 rounded px-1.5 py-0.5 font-medium">High footfall</span>}
+                                      </div>
+                                      <p className="text-[11px] text-gray-500 capitalize mt-0.5">{c.category}</p>
+                                      {c.rating != null && (
+                                        <p className="text-[11px] text-gray-500 mt-0.5">
+                                          {'★'.repeat(Math.min(5, Math.round(c.rating)))} {c.rating.toFixed(1)}
+                                        </p>
                                       )}
                                     </div>
-                                    {c.rating != null && (
-                                      <div className="flex items-center gap-1 mt-0.5">
-                                        <span className="text-yellow-500 text-[10px]">
-                                          {'★'.repeat(Math.min(5, Math.round(c.rating)))}
-                                        </span>
-                                        <span className="text-[10px] text-gray-500">{c.rating.toFixed(1)}</span>
-                                        {c.reviewCount != null && c.reviewCount > 0 && (
-                                          <span className="text-[10px] text-gray-400">
-                                            ·{' '}
-                                            {c.reviewCount >= 1000
-                                              ? `${(c.reviewCount / 1000).toFixed(1)}K reviews`
-                                              : `${c.reviewCount} reviews`}
+                                    <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                      {c.distance < 500 ? `${Math.round(c.distance)}m` : `${(c.distance / 1000).toFixed(2)}km`}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                          <table className="w-full text-xs hidden md:table">
+                            <thead>
+                              <tr className="text-gray-400 border-b">
+                                <th className="text-left py-1">Brand</th>
+                                <th className="text-left">Cat</th>
+                                <th className="text-right">Dist</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[...intelData.competitors]
+                                .sort((a, b) => a.distance - b.distance)
+                                .slice(0, 10)
+                                .map((c, i) => (
+                                  <tr key={`${c.name}-${c.distance}-${i}`} className="border-b border-gray-50 hover:bg-gray-50/50">
+                                    <td className="py-2">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-gray-800 font-semibold text-[11px]">{c.name}</span>
+                                        {c.branded && (
+                                          <span className="text-[9px] bg-orange-100 text-orange-600 rounded px-1 font-medium">Chain</span>
+                                        )}
+                                        {(c.reviewCount ?? 0) >= 1000 && (
+                                          <span className="text-[9px] bg-green-100 text-green-700 rounded px-1 font-medium">
+                                            High footfall
                                           </span>
                                         )}
                                       </div>
-                                    )}
-                                  </td>
-                                  <td className="text-gray-500 capitalize text-[11px]">{c.category}</td>
-                                  <td className="text-right text-gray-600 text-[11px] whitespace-nowrap">
-                                    {c.distance < 500 ? `${Math.round(c.distance)}m` : `${(c.distance / 1000).toFixed(2)}km`}
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
+                                      {c.rating != null && (
+                                        <div className="flex items-center gap-1 mt-0.5">
+                                          <span className="text-yellow-500 text-[10px]">
+                                            {'★'.repeat(Math.min(5, Math.round(c.rating)))}
+                                          </span>
+                                          <span className="text-[10px] text-gray-500">{c.rating.toFixed(1)}</span>
+                                          {c.reviewCount != null && c.reviewCount > 0 && (
+                                            <span className="text-[10px] text-gray-400">
+                                              ·{' '}
+                                              {c.reviewCount >= 1000
+                                                ? `${(c.reviewCount / 1000).toFixed(1)}K reviews`
+                                                : `${c.reviewCount} reviews`}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="text-gray-500 capitalize text-[11px]">{c.category}</td>
+                                    <td className="text-right text-gray-600 text-[11px] whitespace-nowrap">
+                                      {c.distance < 500 ? `${Math.round(c.distance)}m` : `${(c.distance / 1000).toFixed(2)}km`}
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </>
                       )}
                     </div>
 
                     {intelData.complementaryBrands.length > 0 && (
-                      <div className="p-5">
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <div>
@@ -2865,7 +3102,7 @@ export default function BrandDashboardPage() {
 
                 {/* ── TAB: RISK ── */}
                 {rightPanelTab === 'risk' && (
-                  <div>
+                  <div className="px-3 sm:px-4 py-3 bg-[#F8F9FB] space-y-3">
                     <TabSynthesisCallout
                       title="For your brand — risk"
                       narrative={intelData.locationSynthesis?.riskForBrand}
@@ -2875,7 +3112,7 @@ export default function BrandDashboardPage() {
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Cannibalisation Effects</h3>
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
@@ -2917,7 +3154,7 @@ export default function BrandDashboardPage() {
                       )}
                     </div>
 
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Store Closure Risk</h3>
                         <span className="text-xs bg-green-100 text-green-600 rounded-full px-2 py-0.5">5 min Walking</span>
@@ -2940,7 +3177,7 @@ export default function BrandDashboardPage() {
                     </div>
 
                     {/* SWOT Analysis — LIR Section 07 style */}
-                    <div className="p-5">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <h3 className="font-bold text-gray-900 text-sm mb-3">SWOT Analysis</h3>
                       {(() => {
                         const hasGoodFootfall = intelData.totalFootfall > 2000
@@ -3011,8 +3248,9 @@ export default function BrandDashboardPage() {
 
                 {/* ── TAB: SIMILAR MARKETS ── */}
                 {rightPanelTab === 'similar' && (
-                  <div className="p-5">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="px-3 sm:px-4 py-3 bg-[#F8F9FB] space-y-3">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
                       <h3 className="font-bold text-gray-900">Similar Markets</h3>
                       <div className="flex gap-1">
                         <button className="text-xs px-2.5 py-1 bg-orange-50 text-[#FF5200] rounded-full border border-orange-200">Nearby</button>
@@ -3031,7 +3269,7 @@ export default function BrandDashboardPage() {
                     {intelData.similarMarkets.length === 0 ? (
                       <p className="text-sm text-gray-400 italic">No similar market data available.</p>
                     ) : (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {intelData.similarMarkets.slice(0, 6).map((m) => {
                           // Derive category counts from retail mix data (seeded by area key for consistency)
                           const seed = m.key.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)
@@ -3041,7 +3279,7 @@ export default function BrandDashboardPage() {
                           const retail = 12 + (abs % 25)
                           const salons = 3 + (abs % 8)
                           return (
-                            <div key={m.key} className="border border-gray-100 rounded-xl p-3 hover:border-orange-200 transition-all">
+                            <div key={m.key} className="border border-gray-100 rounded-xl p-3 hover:border-orange-200 hover:shadow-sm transition-all">
                               <p className="font-semibold text-sm text-gray-900 capitalize mb-1">{m.key.replace(/-/g, ' ')}</p>
                               <div className="flex gap-0.5 mb-1.5">
                                 {Array.from({ length: 5 }).map((_, i) => <StarIcon key={i} filled={i < Math.round(m.score / 20)} className="w-3 h-3" />)}
@@ -3061,7 +3299,8 @@ export default function BrandDashboardPage() {
                                 ))}
                               </div>
                               <button
-                                className="w-full text-[10px] text-center py-1.5 border border-gray-200 rounded-lg text-gray-500 hover:text-[#FF5200] hover:border-orange-200 transition-colors"
+                                type="button"
+                                className="w-full text-[10px] text-center py-1.5 border border-gray-200 rounded-lg text-gray-500 hover:text-[#FF5200] hover:border-orange-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
                                 onClick={() => { if (mapRef) { mapRef.panTo({ lat: m.lat, lng: m.lng }); mapRef.setZoom(15); setRightPanelTab('map') } }}
                               >
                                 View on Map
@@ -3071,6 +3310,7 @@ export default function BrandDashboardPage() {
                         })}
                       </div>
                     )}
+                    </div>
                   </div>
                 )}
               </>
