@@ -145,8 +145,24 @@ type IntelligenceData = {
   catchment: Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType?: string }>
   /** Apartments, tech parks, corporate nodes — feeds heatmap density */
   catchmentLandmarks: Array<{ name: string; kind: string; distance: number; lat: number; lng: number }>
-  competitors: Array<{ name: string; category: string; distance: number; rating?: number; branded: boolean; lat?: number; lng?: number }>
-  complementaryBrands: Array<{ name: string; category: string; distance: number; lat?: number; lng?: number }>
+  competitors: Array<{
+    name: string
+    category: string
+    distance: number
+    rating?: number
+    branded: boolean
+    lat?: number
+    lng?: number
+    reviewCount?: number
+  }>
+  complementaryBrands: Array<{
+    name: string
+    category: string
+    distance: number
+    lat?: number
+    lng?: number
+    reviewCount?: number
+  }>
   crowdPullers: Array<{ name: string; category: string; distance: number }>
   retailMix: Array<{ category: string; branded: number; nonBranded: number }>
   cannibalisationRisk: Array<{ name: string; distance: number; cannibalisation: number }>
@@ -491,6 +507,10 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
       branded: c.brandType === 'popular',
       lat: c.lat != null && Number.isFinite(Number(c.lat)) ? Number(c.lat) : undefined,
       lng: c.lng != null && Number.isFinite(Number(c.lng)) ? Number(c.lng) : undefined,
+      reviewCount:
+        c.userRatingsTotal != null && Number.isFinite(Number(c.userRatingsTotal))
+          ? Number(c.userRatingsTotal)
+          : undefined,
     })
   )
   const cannibalisationRisk: IntelligenceData['cannibalisationRisk'] = (data.cannibalisationRisk || []).map(
@@ -670,47 +690,126 @@ function HighlightChip({ label }: { label: string }) {
 }
 
 function CatchmentFlow({ catchment }: { catchment: Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType?: string }> }) {
-  const cx = 160, cy = 130, r = 105
-  const items = catchment.slice(0, 6)
-  const n = items.length
-  if (n === 0) return <p className="text-sm text-gray-400 text-center py-6">No catchment data available within 4km.</p>
-  const typeColor = (t?: string) => t === 'commercial' ? '#FF5200' : t === 'tech' ? '#6366f1' : t === 'residential' ? '#22c55e' : '#6b7280'
+  const cx = 175
+  const cy = 145
+  const innerR = 70
+  const outerR = 118
+
+  const items = catchment.slice(0, 10)
+  if (items.length === 0) {
+    return <p className="text-sm text-gray-400 text-center py-6">No catchment data available within 3km.</p>
+  }
+
+  const maxDist = Math.max(...items.map((i) => i.distanceM), 1)
+  const threshold = maxDist * 0.4
+  const innerItems = items.filter((i) => i.distanceM <= threshold)
+  const outerItems = items.filter((i) => i.distanceM > threshold)
+
+  const typeColor = (t?: string) =>
+    t === 'commercial' ? '#FF5200' : t === 'tech' ? '#6366f1' : t === 'residential' ? '#22c55e' : '#6b7280'
+
+  const positionOnRing = (
+    ringItems: typeof items,
+    radius: number,
+    ring: 'inner' | 'outer'
+  ) =>
+    ringItems.map((item, i) => {
+      const angle = (i / Math.max(ringItems.length, 1)) * 2 * Math.PI - Math.PI / 2
+      return {
+        ...item,
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle),
+        ring,
+      }
+    })
+
+  const innerNodes = positionOnRing(innerItems, innerR, 'inner')
+  const outerNodes = positionOnRing(outerItems, outerR, 'outer')
+  const allNodes = [...innerNodes, ...outerNodes]
+
   return (
-    <svg viewBox="0 0 320 260" className="w-full max-h-[280px]">
-      {/* Radius rings */}
-      <circle cx={cx} cy={cy} r={40} fill="none" stroke="#FF5200" strokeWidth={0.5} strokeDasharray="3,4" strokeOpacity={0.2} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#FF5200" strokeWidth={0.5} strokeDasharray="3,4" strokeOpacity={0.15} />
-      {/* Spokes */}
-      {items.map((_, i) => {
-        const angle = (i / n) * 2 * Math.PI - Math.PI / 2
-        const x = cx + r * Math.cos(angle)
-        const y = cy + r * Math.sin(angle)
-        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#FF5200" strokeWidth={1.2} strokeDasharray="4,3" strokeOpacity={0.35} />
-      })}
-      {/* Center pin */}
+    <svg viewBox="0 0 350 290" className="w-full max-h-[300px]">
+      <circle
+        cx={cx}
+        cy={cy}
+        r={outerR}
+        fill="none"
+        stroke="#FF5200"
+        strokeWidth={0.5}
+        strokeDasharray="3,4"
+        strokeOpacity={0.15}
+      />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={innerR}
+        fill="none"
+        stroke="#FF5200"
+        strokeWidth={0.5}
+        strokeDasharray="3,4"
+        strokeOpacity={0.2}
+      />
+      <text x={cx + innerR + 4} y={cy - 3} fill="#9CA3AF" fontSize={6.5}>
+        ~1km
+      </text>
+      <text x={cx + outerR + 4} y={cy - 3} fill="#9CA3AF" fontSize={6.5}>
+        ~3km
+      </text>
+      {allNodes.map((node, i) => (
+        <line
+          key={`spoke-${node.pincode}-${node.name}-${i}`}
+          x1={cx}
+          y1={cy}
+          x2={node.x}
+          y2={node.y}
+          stroke="#FF5200"
+          strokeWidth={1}
+          strokeDasharray="4,3"
+          strokeOpacity={0.3}
+        />
+      ))}
       <circle cx={cx} cy={cy} r={28} fill="#FF5200" />
       <circle cx={cx} cy={cy} r={22} fill="#E4002B" />
-      <text x={cx} y={cy - 5} textAnchor="middle" fill="white" fontSize={7} fontWeight="bold">YOUR</text>
-      <text x={cx} y={cy + 6} textAnchor="middle" fill="white" fontSize={7} fontWeight="bold">LOCATION</text>
-      {/* Catchment nodes */}
-      {items.map((item, i) => {
-        const angle = (i / n) * 2 * Math.PI - Math.PI / 2
-        const x = cx + r * Math.cos(angle)
-        const y = cy + r * Math.sin(angle)
-        const col = typeColor(item.areaType)
-        const shortName = item.name.split(' / ')[0]
-        const label = shortName.length > 14 ? shortName.slice(0, 13) + '…' : shortName
+      <text x={cx} y={cy - 5} textAnchor="middle" fill="white" fontSize={7} fontWeight="bold">
+        YOUR
+      </text>
+      <text x={cx} y={cy + 6} textAnchor="middle" fill="white" fontSize={7} fontWeight="bold">
+        LOCATION
+      </text>
+      {allNodes.map((node, i) => {
+        const col = typeColor(node.areaType)
+        const nameParts = node.name.split(/\s+/)
+        const line1 = nameParts.slice(0, 2).join(' ')
+        const line2 = nameParts.slice(2).join(' ')
+        const nodeR = node.ring === 'inner' ? 22 : 26
         return (
-          <g key={i}>
-            <circle cx={x} cy={y} r={24} fill="white" stroke={col} strokeWidth={2} filter="drop-shadow(0 1px 3px rgba(0,0,0,0.12))" />
-            <text x={x} y={y - 7} textAnchor="middle" fill={col} fontSize={9} fontWeight="bold">{item.sharePct}%</text>
-            <text x={x} y={y + 4} textAnchor="middle" fill="#374151" fontSize={6.5} fontWeight="600">{label.split(' ')[0]}</text>
-            <text x={x} y={y + 13} textAnchor="middle" fill="#9CA3AF" fontSize={5.5}>{label.split(' ').slice(1).join(' ')}</text>
+          <g key={`${node.pincode}-${node.name}-${i}`}>
+            <circle
+              cx={node.x}
+              cy={node.y}
+              r={nodeR}
+              fill="white"
+              stroke={col}
+              strokeWidth={2}
+              filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"
+            />
+            <text x={node.x} y={node.y - (line2 ? 9 : 4)} textAnchor="middle" fill={col} fontSize={9} fontWeight="bold">
+              {node.sharePct}%
+            </text>
+            <text x={node.x} y={node.y + (line2 ? 1 : 5)} textAnchor="middle" fill="#374151" fontSize={6} fontWeight="600">
+              {line1}
+            </text>
+            {line2 ? (
+              <text x={node.x} y={node.y + 10} textAnchor="middle" fill="#9CA3AF" fontSize={5.5}>
+                {line2}
+              </text>
+            ) : null}
           </g>
         )
       })}
-      {/* Legend */}
-      <text x={cx} y={245} textAnchor="middle" fill="#9CA3AF" fontSize={7}>Within 4km radius · Orange = commercial · Green = residential · Indigo = tech park</text>
+      <text x={cx} y={282} textAnchor="middle" fill="#9CA3AF" fontSize={7}>
+        Inner ring ≈ 1km · Outer ring ≈ 3km · Orange = commercial · Green = residential · Indigo = tech
+      </text>
     </svg>
   )
 }
@@ -1580,33 +1679,29 @@ export default function BrandDashboardPage() {
               {/* Competitor pins when in intelligence mode */}
               {isLoaded && rightMode === 'intelligence' && intelData && [...intelData.competitors, ...intelData.complementaryBrands].map((c, i) => {
                 if (!selectedMatch?.coords) return null
-                const total = Math.max(1, intelData.competitors.length + intelData.complementaryBrands.length)
-                const isDirect =
-                  'lat' in c &&
-                  'lng' in c &&
-                  typeof (c as { lat?: number }).lat === 'number' &&
-                  typeof (c as { lng?: number }).lng === 'number' &&
-                  Number.isFinite((c as { lat: number }).lat) &&
-                  Number.isFinite((c as { lng: number }).lng)
-                const lat = isDirect
-                  ? (c as { lat: number }).lat
-                  : selectedMatch.coords.lat + (c.distance / 111320) * Math.cos((i / total) * 2 * Math.PI)
-                const lng = isDirect
-                  ? (c as { lng: number }).lng
-                  : selectedMatch.coords.lng + (c.distance / 111320) * Math.sin((i / total) * 2 * Math.PI)
-                const isCompetitor = intelData.competitors.some((x) => x.name === c.name && x.distance === c.distance)
+                const row = c as { name: string; distance: number; lat?: number; lng?: number }
+                if (
+                  row.lat == null ||
+                  row.lng == null ||
+                  !Number.isFinite(row.lat) ||
+                  !Number.isFinite(row.lng)
+                ) {
+                  return null
+                }
+                const isCompetitor = intelData.competitors.some((x) => x.name === row.name && x.distance === row.distance)
                 return (
                   <Marker
-                    key={`comp-${i}-${c.name}`}
-                    position={{ lat, lng }}
+                    key={`comp-${i}-${row.name}`}
+                    position={{ lat: row.lat, lng: row.lng }}
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
-                      scale: 8,
+                      scale: 9,
                       fillColor: isCompetitor ? '#ef4444' : '#6366f1',
                       fillOpacity: 0.85,
                       strokeColor: '#fff',
                       strokeWeight: 1.5,
                     }}
+                    title={row.name}
                   />
                 )
               })}
@@ -2172,15 +2267,15 @@ export default function BrandDashboardPage() {
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Where Shoppers Come From</h3>
-                        <span className="text-[10px] bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">4km Radius</span>
+                        <span className="text-[10px] bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">3km Radius</span>
                       </div>
                       <CatchmentFlow catchment={intelData.catchment} />
                       {intelData.catchment.length > 0 && (
                         <div className="mt-4 space-y-1.5">
-                          {intelData.catchment.slice(0, 6).map((c) => {
+                          {intelData.catchment.slice(0, 10).map((c) => {
                             const typeColor = c.areaType === 'commercial' ? 'bg-orange-50 text-orange-600' : c.areaType === 'tech' ? 'bg-indigo-50 text-indigo-600' : c.areaType === 'residential' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
                             return (
-                              <div key={c.pincode} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-50">
+                              <div key={`${c.pincode}-${c.name}`} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-50">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <span className="font-medium text-gray-800 truncate">{c.name.split(' / ')[0]}</span>
                                   {c.areaType && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 capitalize ${typeColor}`}>{c.areaType}</span>}
@@ -2508,32 +2603,28 @@ export default function BrandDashboardPage() {
                           {[...intelData.competitors, ...intelData.complementaryBrands].map((c, i) => {
                             if (!selectedMatch.coords) return null
                             const row = c as { name: string; distance: number; lat?: number; lng?: number }
-                            const total = Math.max(1, intelData.competitors.length + intelData.complementaryBrands.length)
-                            const hasGeo =
-                              row.lat != null &&
-                              row.lng != null &&
-                              Number.isFinite(row.lat) &&
-                              Number.isFinite(row.lng)
-                            if (!hasGeo && !row.distance) return null
-                            const lat = hasGeo
-                              ? row.lat!
-                              : selectedMatch.coords.lat + (row.distance / 111320) * Math.cos((i / total) * 2 * Math.PI)
-                            const lng = hasGeo
-                              ? row.lng!
-                              : selectedMatch.coords.lng + (row.distance / 111320) * Math.sin((i / total) * 2 * Math.PI)
+                            if (
+                              row.lat == null ||
+                              row.lng == null ||
+                              !Number.isFinite(row.lat) ||
+                              !Number.isFinite(row.lng)
+                            ) {
+                              return null
+                            }
                             const isCompetitorRow = intelData.competitors.some((x) => x.name === row.name && x.distance === row.distance)
                             return (
                               <Marker
                                 key={`comp-map-${i}-${row.name}`}
-                                position={{ lat, lng }}
+                                position={{ lat: row.lat, lng: row.lng }}
                                 icon={{
                                   path: google.maps.SymbolPath.CIRCLE,
-                                  scale: 8,
+                                  scale: 9,
                                   fillColor: isCompetitorRow ? '#ef4444' : '#6366f1',
                                   fillOpacity: 0.85,
                                   strokeColor: '#fff',
                                   strokeWeight: 1.5,
                                 }}
+                                title={row.name}
                               />
                             )
                           })}
@@ -2561,21 +2652,54 @@ export default function BrandDashboardPage() {
                         </p>
                       ) : (
                         <table className="w-full text-xs">
-                          <thead><tr className="text-gray-400 border-b"><th className="text-left py-1">BRAND</th><th className="text-left">CAT</th><th className="text-right">DIST</th></tr></thead>
+                          <thead>
+                            <tr className="text-gray-400 border-b">
+                              <th className="text-left py-1">Brand</th>
+                              <th className="text-left">Cat</th>
+                              <th className="text-right">Dist</th>
+                            </tr>
+                          </thead>
                           <tbody>
-                            {intelData.competitors.slice(0, 8).map((c, i) => (
-                              <tr key={i} className="border-b border-gray-50">
-                                <td className="py-1.5">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-gray-800 font-medium">{c.name}</span>
-                                    {c.branded && <span className="text-[9px] bg-orange-100 text-orange-600 rounded px-1">Popular</span>}
-                                  </div>
-                                  {c.rating && <span className="text-[10px] text-yellow-500">{'★'.repeat(Math.round(c.rating))} {c.rating.toFixed(1)}</span>}
-                                </td>
-                                <td className="text-gray-500 capitalize">{c.category}</td>
-                                <td className="text-right text-gray-600">{(c.distance / 1000).toFixed(2)} km</td>
-                              </tr>
-                            ))}
+                            {[...intelData.competitors]
+                              .sort((a, b) => a.distance - b.distance)
+                              .slice(0, 10)
+                              .map((c, i) => (
+                                <tr key={`${c.name}-${c.distance}-${i}`} className="border-b border-gray-50 hover:bg-gray-50/50">
+                                  <td className="py-2">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-gray-800 font-semibold text-[11px]">{c.name}</span>
+                                      {c.branded && (
+                                        <span className="text-[9px] bg-orange-100 text-orange-600 rounded px-1 font-medium">Chain</span>
+                                      )}
+                                      {(c.reviewCount ?? 0) >= 1000 && (
+                                        <span className="text-[9px] bg-green-100 text-green-700 rounded px-1 font-medium">
+                                          High footfall
+                                        </span>
+                                      )}
+                                    </div>
+                                    {c.rating != null && (
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        <span className="text-yellow-500 text-[10px]">
+                                          {'★'.repeat(Math.min(5, Math.round(c.rating)))}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500">{c.rating.toFixed(1)}</span>
+                                        {c.reviewCount != null && c.reviewCount > 0 && (
+                                          <span className="text-[10px] text-gray-400">
+                                            ·{' '}
+                                            {c.reviewCount >= 1000
+                                              ? `${(c.reviewCount / 1000).toFixed(1)}K reviews`
+                                              : `${c.reviewCount} reviews`}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="text-gray-500 capitalize text-[11px]">{c.category}</td>
+                                  <td className="text-right text-gray-600 text-[11px] whitespace-nowrap">
+                                    {c.distance < 500 ? `${Math.round(c.distance)}m` : `${(c.distance / 1000).toFixed(2)}km`}
+                                  </td>
+                                </tr>
+                              ))}
                           </tbody>
                         </table>
                       )}

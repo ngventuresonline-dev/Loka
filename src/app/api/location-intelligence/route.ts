@@ -361,11 +361,11 @@ function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string):
   if (opticalContext) {
     return [
       {
-        type: '',
+        type: 'establishment',
         keyword:
-          'optician optical eyewear Lenskart Titan Eye Specsmakers spectacles eyeglasses sunglasses glasses shop India',
+          'Lenskart Vision Express Specsmakers Titan Eye Plus GKB Optical Lawrence Mayo John Jacobs Coolwinks optician eyewear spectacles',
       },
-      { type: 'point_of_interest', keyword: 'optometrist eyeglass store vision care' },
+      { type: 'point_of_interest', keyword: 'optician optical eyewear spectacles glasses sunglasses' },
     ]
   }
   // Jewelry
@@ -693,9 +693,12 @@ export async function POST(request: NextRequest) {
     const sizeSqft = typeof rawSize === 'number' && Number.isFinite(rawSize) ? rawSize : undefined
 
     if (typeof lat !== 'number' || typeof lng !== 'number') {
-      const locationQuery = [address, city, state].filter(Boolean).join(', ')
-      if (locationQuery.trim()) {
-        const coords = await geocodeAddress(address || '', city || '', state || '', title)
+      const fullAddress = [address, city, state].filter(Boolean).join(', ')
+      if (fullAddress.trim()) {
+        let coords = await geocodeAddress(fullAddress, '', '', title)
+        if (!coords) {
+          coords = await geocodeAddress(address || '', city || '', state || '', title)
+        }
         if (coords) {
           lat = coords.lat
           lng = coords.lng
@@ -844,7 +847,10 @@ export async function POST(request: NextRequest) {
     if (googleApiKey && typeof lat === 'number' && typeof lng === 'number') {
       try {
         const googleAdds: Competitor[] = []
-        const searchRadius = 2000
+        const opticalRetailContext = /\b(eye|eyewear|optical|optician|spectacles?|glasses|sunglass|lenskart|specsmakers|vision\s*express)\b/.test(
+          `${businessType || ''} ${propertyType || ''}`.toLowerCase()
+        )
+        const searchRadius = opticalRetailContext ? 4000 : 2000
         for (const { type: placeType, keyword: placeKeyword } of placeTypes) {
           const gType = placeType && VALID_NEARBY_TYPES.has(placeType) ? placeType : undefined
           const results = await fetchGoogleNearbyPlaces(lat, lng, googleApiKey, { keyword: placeKeyword, type: gType }, searchRadius)

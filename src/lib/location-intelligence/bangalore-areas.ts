@@ -74,6 +74,70 @@ export const BANGALORE_PINCODES: Array<{ pincode: string; name: string; lat: num
   { pincode: '560100', name: 'Electronic City', lat: 12.846, lng: 77.660, areaType: 'tech' },
   { pincode: '560102', name: 'HSR Layout', lat: 12.912, lng: 77.645, areaType: 'mixed' },
   { pincode: '560103', name: 'Bellandur', lat: 12.926, lng: 77.676, areaType: 'tech' },
+
+  // Koramangala & adjacent micro-areas
+  { pincode: '560095', name: 'Koramangala 1st Block', lat: 12.9403, lng: 77.6189, areaType: 'commercial' },
+  { pincode: '560095', name: 'Koramangala 3rd Block', lat: 12.9352, lng: 77.6245, areaType: 'commercial' },
+  { pincode: '560095', name: 'Koramangala 5th Block', lat: 12.9302, lng: 77.6278, areaType: 'commercial' },
+  { pincode: '560095', name: 'Koramangala 6th Block', lat: 12.9278, lng: 77.6325, areaType: 'commercial' },
+  { pincode: '560095', name: 'Koramangala 7th Block', lat: 12.9242, lng: 77.6368, areaType: 'commercial' },
+  { pincode: '560068', name: 'SG Palya', lat: 12.9272, lng: 77.6214, areaType: 'residential' },
+  { pincode: '560068', name: 'Taverekere', lat: 12.9215, lng: 77.6258, areaType: 'residential' },
+  { pincode: '560068', name: 'Adugodi', lat: 12.9452, lng: 77.6278, areaType: 'mixed' },
+  { pincode: '560034', name: 'Ejipura', lat: 12.9518, lng: 77.6272, areaType: 'residential' },
+  { pincode: '560034', name: 'Viveknagar', lat: 12.9488, lng: 77.6258, areaType: 'residential' },
+  // Indiranagar micro-areas
+  { pincode: '560038', name: 'Indiranagar 1st Stage', lat: 12.9718, lng: 77.6378, areaType: 'commercial' },
+  { pincode: '560038', name: 'Indiranagar 2nd Stage', lat: 12.9752, lng: 77.6408, areaType: 'commercial' },
+  { pincode: '560038', name: 'Indiranagar 100ft Road', lat: 12.9784, lng: 77.6408, areaType: 'commercial' },
+  { pincode: '560038', name: 'Domlur Layout', lat: 12.9628, lng: 77.6378, areaType: 'mixed' },
+  { pincode: '560038', name: 'HAL 2nd Stage', lat: 12.9608, lng: 77.6448, areaType: 'mixed' },
+  // HSR Layout micro-areas
+  { pincode: '560102', name: 'HSR Sector 1', lat: 12.9188, lng: 77.6408, areaType: 'residential' },
+  { pincode: '560102', name: 'HSR Sector 2', lat: 12.9148, lng: 77.6448, areaType: 'residential' },
+  { pincode: '560102', name: 'HSR Sector 5', lat: 12.9108, lng: 77.6488, areaType: 'residential' },
+  { pincode: '560102', name: 'HSR Sector 7', lat: 12.9078, lng: 77.6528, areaType: 'residential' },
+  { pincode: '560102', name: 'Agara', lat: 12.9058, lng: 77.6428, areaType: 'residential' },
+  // BTM Layout micro-areas
+  { pincode: '560076', name: 'BTM 1st Stage', lat: 12.9178, lng: 77.6108, areaType: 'mixed' },
+  { pincode: '560076', name: 'BTM 2nd Stage', lat: 12.9108, lng: 77.6108, areaType: 'mixed' },
+  { pincode: '560076', name: 'Madivala', lat: 12.9228, lng: 77.6168, areaType: 'mixed' },
+  { pincode: '560076', name: 'Hongasandra', lat: 12.8978, lng: 77.6168, areaType: 'residential' },
+  // Whitefield micro-areas
+  { pincode: '560066', name: 'Whitefield Main Road', lat: 12.9698, lng: 77.7508, areaType: 'commercial' },
+  { pincode: '560066', name: 'Varthur Road', lat: 12.9368, lng: 77.7028, areaType: 'mixed' },
+  { pincode: '560066', name: 'ITPL Road', lat: 12.9848, lng: 77.7268, areaType: 'tech' },
+  { pincode: '560066', name: 'Hoodi', lat: 12.9748, lng: 77.6988, areaType: 'tech' },
+  { pincode: '560066', name: 'Kadugodi', lat: 12.9948, lng: 77.7448, areaType: 'residential' },
+  // Sarjapur Road micro-areas
+  { pincode: '560035', name: 'Sarjapur Main Road', lat: 12.8968, lng: 77.6908, areaType: 'mixed' },
+  { pincode: '560035', name: 'Ambalipura', lat: 12.9148, lng: 77.6958, areaType: 'residential' },
+  { pincode: '560035', name: 'Dommasandra', lat: 12.8918, lng: 77.7108, areaType: 'residential' },
+  { pincode: '560035', name: 'Carmelaram', lat: 12.9058, lng: 77.6908, areaType: 'residential' },
+  // Jayanagar micro-areas
+  { pincode: '560041', name: 'Jayanagar 4th Block', lat: 12.9298, lng: 77.5838, areaType: 'commercial' },
+  { pincode: '560041', name: 'Jayanagar 9th Block', lat: 12.9198, lng: 77.5798, areaType: 'residential' },
+  { pincode: '560041', name: 'JP Nagar 3rd Phase', lat: 12.9108, lng: 77.5808, areaType: 'residential' },
+  { pincode: '560041', name: 'Basavanagudi', lat: 12.9418, lng: 77.5778, areaType: 'residential' },
+  // Marathahalli micro-areas
+  { pincode: '560037', name: 'Marathahalli Junction', lat: 12.9568, lng: 77.7028, areaType: 'commercial' },
+  { pincode: '560037', name: 'Outer Ring Road Marathahalli', lat: 12.9448, lng: 77.6968, areaType: 'tech' },
+  { pincode: '560037', name: 'Brookfield', lat: 12.9508, lng: 77.6968, areaType: 'tech' },
+  { pincode: '560037', name: 'Kundalahalli', lat: 12.9618, lng: 77.7068, areaType: 'residential' },
+  // Hebbal / North (macro Hebbal remains above; add finer north nodes)
+  { pincode: '560024', name: 'Nagawara', lat: 13.0258, lng: 77.6208, areaType: 'residential' },
+  { pincode: '560024', name: 'Thanisandra', lat: 13.0558, lng: 77.6158, areaType: 'residential' },
+  // MG Road / CBD micro-areas
+  { pincode: '560001', name: 'Church Street', lat: 12.9727, lng: 77.6068, areaType: 'commercial' },
+  { pincode: '560001', name: 'Brigade Road', lat: 12.9724, lng: 77.6068, areaType: 'commercial' },
+  { pincode: '560001', name: 'Lavelle Road', lat: 12.974, lng: 77.5988, areaType: 'commercial' },
+  { pincode: '560025', name: 'Richmond Town', lat: 12.9618, lng: 77.6008, areaType: 'commercial' },
+  { pincode: '560025', name: 'Shanti Nagar', lat: 12.9598, lng: 77.5978, areaType: 'mixed' },
+  // Electronic City micro-areas
+  { pincode: '560100', name: 'Electronic City Phase 1', lat: 12.8448, lng: 77.6648, areaType: 'tech' },
+  { pincode: '560100', name: 'Electronic City Phase 2', lat: 12.8318, lng: 77.6728, areaType: 'tech' },
+  { pincode: '560100', name: 'Neeladri Road', lat: 12.8538, lng: 77.6598, areaType: 'tech' },
+  { pincode: '560100', name: 'Bommasandra', lat: 12.8018, lng: 77.6818, areaType: 'tech' },
 ]
 
 /**

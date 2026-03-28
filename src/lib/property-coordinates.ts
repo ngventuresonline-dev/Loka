@@ -35,6 +35,9 @@ export function buildGeocodeQueryCandidates(
   const addr = (address || '').trim()
   const tail = `${cityNorm}, ${stateNorm}, India`
   const out: string[] = []
+  if (addr.length > 5 && cityNorm) {
+    out.push(`${addr}, ${cityNorm}, ${stateNorm}, India`)
+  }
   const firstLocWord = loc?.toLowerCase().split(/\s+/).filter(Boolean)[0] ?? ''
   const addrHasLoc = Boolean(loc && addr && firstLocWord && addr.toLowerCase().includes(firstLocWord))
 
@@ -123,7 +126,11 @@ export function getMapLinkFromAmenities(amenities: unknown): string | null {
   return null
 }
 
-/** Get coordinates for a raw property: from map_link in amenities, or null */
+/**
+ * Get coordinates for a raw property: from map_link in amenities, or null.
+ * Listing `amenities.map_link` (Google Maps URL with @lat,lng) gives the most accurate
+ * brand-dashboard map center; without it, geocoding may fall back to neighbourhood/city level.
+ */
 export function getPropertyCoordinatesFromRow(row: {
   amenities?: unknown
   address?: string | null
