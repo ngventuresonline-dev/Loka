@@ -10,10 +10,30 @@ import {
 
 export const maxDuration = 300
 
+const LOCATION_INTEL_TIMEOUT_MS = 20000
+const ENRICH_TIMEOUT_MS = 20000
+const INDUSTRY_PAUSE_MS = 2000
+
 function safeDate(v: unknown): Date | null {
   if (!v) return null
   const d = v instanceof Date ? v : new Date(String(v))
   return Number.isFinite(d.getTime()) ? d : null
+}
+
+async function fetchJsonWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<{ ok: boolean; json: any | null; timeout: boolean }> {
+  try {
+    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) })
+    if (!res.ok) return { ok: false, json: null, timeout: false }
+    const json = await res.json().catch(() => null)
+    return { ok: true, json, timeout: false }
+  } catch (err) {
+    const timeout = err instanceof Error && err.name === 'TimeoutError'
+    return { ok: false, json: null, timeout }
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -53,8 +73,9 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  const results = { total: 0, locationCached: 0, synthesisCached: 0, skipped: 0, errors: 0 }
+  const results = { total: 0, locationCached: 0, synthesisCached: 0, skipped: 0, errors: 0, timeouts: 0 }
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin || 'https://www.lokazen.in'
+  const industryPauseMs = targetPropertyId ? 0 : INDUSTRY_PAUSE_MS
 
   for (const property of properties) {
     results.total++
@@ -106,7 +127,9 @@ export async function POST(request: NextRequest) {
         }
 
         if (lat != null && lng != null) {
-          const intelRes = await fetch(`${baseUrl}/api/location-intelligence`, {
+          const intelRes = await fetchJsonWithTimeout(
+            `${baseUrl}/api/location-intelligence`,
+            {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -119,10 +142,12 @@ export async function POST(request: NextRequest) {
               propertyType: property.propertyType,
               businessType: 'restaurant cafe retail',
             }),
-          })
+            },
+            LOCATION_INTEL_TIMEOUT_MS
+          )
 
           if (intelRes.ok) {
-            const intelData = (await intelRes.json()) as { data?: Record<string, any> } | Record<string, any>
+            const intelData = (intelRes.json || {}) as { data?: Record<string, any> } | Record<string, any>
             const d: any = (intelData as { data?: Record<string, any> }).data || intelData
 
             await prisma.$executeRaw`
@@ -213,6 +238,8 @@ export async function POST(request: NextRequest) {
                 cache_expires_at = NOW() + INTERVAL '24 hours'
             `
             results.locationCached++
+          } else if (intelRes.timeout) {
+            results.timeouts++
           }
         }
       } else {
@@ -236,7 +263,9 @@ export async function POST(request: NextRequest) {
         if (locationCache.length === 0) continue
         const lc = locationCache[0]
 
-        const enrichRes = await fetch(`${baseUrl}/api/dashboard/brand/intel-enrich`, {
+        const enrichRes = await fetchJsonWithTimeout(
+          `${baseUrl}/api/dashboard/brand/intel-enrich`,
+          {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -296,10 +325,12 @@ export async function POST(request: NextRequest) {
               priceType: property.priceType,
             },
           }),
-        })
+          },
+          ENRICH_TIMEOUT_MS
+        )
 
         if (enrichRes.ok) {
-          const enrichData = (await enrichRes.json()) as { success?: boolean; data?: unknown }
+          const enrichData = (enrichRes.json || {}) as { success?: boolean; data?: unknown }
           if (enrichData.success && enrichData.data) {
             await prisma.$executeRaw`
               INSERT INTO property_synthesis_cache (
@@ -316,9 +347,13 @@ export async function POST(request: NextRequest) {
             `
             results.synthesisCached++
           }
+        } else if (enrichRes.timeout) {
+          results.timeouts++
         }
 
-        await new Promise((r) => setTimeout(r, 2000))
+        if (industryPauseMs > 0) {
+          await new Promise((r) => setTimeout(r, industryPauseMs))
+        }
       }
     } catch (err) {
       console.error(`[WarmIntelCache] Error for property ${property.id}:`, err)
