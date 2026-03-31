@@ -1,7 +1,31 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BarChart3, DollarSign, Store, Users, Train, ShieldAlert } from 'lucide-react'
+import Link from 'next/link'
+import { DollarSign, Store, Users, Train, ShieldAlert, Lock, Footprints } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+
+const INTEL_FOR_BRANDS_HREF = '/for-brands'
+
+function LockedIntelOverlay() {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-white/80 px-4 py-8 text-center backdrop-blur-[2px]">
+      <div className="rounded-full bg-slate-100 p-3 mb-2">
+        <Lock className="w-6 h-6 text-slate-600" strokeWidth={2} />
+      </div>
+      <p className="text-sm font-semibold text-slate-900 max-w-sm">Unlock full location intelligence</p>
+      <p className="text-xs text-slate-600 mt-1 max-w-sm">
+        Footfall and revenue stay open on every property. Onboard your brand on Loka to access competition, demographics, transit, and risk analysis.
+      </p>
+      <Link
+        href={INTEL_FOR_BRANDS_HREF}
+        className="mt-4 inline-flex items-center justify-center rounded-xl bg-[#FF5200] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#E44A00] transition-colors shadow-md"
+      >
+        Onboard your brand
+      </Link>
+    </div>
+  )
+}
 interface IntelligenceData {
   overallScore: number
   footfallScore: number
@@ -40,7 +64,20 @@ interface CompetitorRow {
   priceLevel: number | null
 }
 
-export default function LocationIntelligenceDashboard({ propertyId }: { propertyId: string }) {
+type IntelTabId = 'footfall' | 'revenue' | 'competition' | 'demographics' | 'transport' | 'risks'
+
+export default function LocationIntelligenceDashboard({
+  propertyId,
+  targetCategory,
+  propertyType: _propertyType,
+}: {
+  propertyId: string
+  targetCategory?: string
+  propertyType?: string
+}) {
+  const { user } = useAuth()
+  const fullIntelAccess = user?.userType === 'admin'
+
   const [data, setData] = useState<IntelligenceData | null>(null)
   const [competitors, setCompetitors] = useState<CompetitorRow[]>([])
   const [ward, setWard] = useState<{
@@ -103,7 +140,11 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
     }, 1800)
 
     try {
-      const enrichRes = await fetch(`/api/intelligence/${propertyId}`, { method: 'POST' })
+      const enrichRes = await fetch(`/api/intelligence/${propertyId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(targetCategory ? { businessType: targetCategory } : {}),
+      })
       clearInterval(stepInterval)
       setEnrichStep(6) // Final step
 
@@ -193,23 +234,42 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
     )
   }
 
-  const tabs = [
-    { id: 'overview', label: 'Overview', Icon: BarChart3 },
-    { id: 'revenue', label: 'Revenue', Icon: DollarSign },
-    { id: 'competition', label: 'Compete', Icon: Store },
-    { id: 'demographics', label: 'Demo', Icon: Users },
-    { id: 'transport', label: 'Transit', Icon: Train },
-    { id: 'risks', label: 'Risks', Icon: ShieldAlert },
+  const tabs: Array<{ id: IntelTabId; label: string; Icon: typeof Footprints; locked: boolean }> = [
+    { id: 'footfall', label: 'Footfall', Icon: Footprints, locked: false },
+    { id: 'revenue', label: 'Revenue', Icon: DollarSign, locked: false },
+    { id: 'competition', label: 'Compete', Icon: Store, locked: !fullIntelAccess },
+    { id: 'demographics', label: 'Demo', Icon: Users, locked: !fullIntelAccess },
+    { id: 'transport', label: 'Transit', Icon: Train, locked: !fullIntelAccess },
+    { id: 'risks', label: 'Risks', Icon: ShieldAlert, locked: !fullIntelAccess },
   ]
+
+  const isLockedPanel = (id: IntelTabId) =>
+    !fullIntelAccess && ['competition', 'demographics', 'transport', 'risks'].includes(id)
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {!fullIntelAccess && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <p className="text-xs sm:text-sm text-amber-950">
+            <span className="font-semibold">Free preview:</span> Footfall and revenue are open on every property.
+            Onboard your brand to unlock the rest of location intelligence.
+          </p>
+          <Link
+            href={INTEL_FOR_BRANDS_HREF}
+            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#FF5200] px-3 py-2 text-xs font-semibold text-white hover:bg-[#E44A00] transition-colors"
+          >
+            Onboard brand →
+          </Link>
+        </div>
+      )}
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50 to-red-50 p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">Location Score</h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-              Footfall, revenue, competition, access, and demographics
+              {fullIntelAccess
+                ? 'Footfall, revenue, competition, access, and demographics'
+                : 'Full breakdown unlocks after brand onboarding — footfall & revenue scores visible below.'}
             </p>
           </div>
           <div className="text-center flex-shrink-0">
@@ -220,10 +280,10 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6">
           <ScoreCard title="Footfall" score={data.footfallScore} />
           <ScoreCard title="Revenue" score={data.revenueScore} />
-          <ScoreCard title="Competition" score={data.competitionScore} />
-          <ScoreCard title="Access" score={data.accessScore} />
-          <ScoreCard title="Demographics" score={data.demographicScore} />
-          <ScoreCard title="Risk" score={data.riskScore} inverse />
+          <ScoreCardLocked title="Competition" score={data.competitionScore} locked={!fullIntelAccess} />
+          <ScoreCardLocked title="Access" score={data.accessScore} locked={!fullIntelAccess} />
+          <ScoreCardLocked title="Demographics" score={data.demographicScore} locked={!fullIntelAccess} />
+          <ScoreCardLocked title="Risk" score={data.riskScore} inverse locked={!fullIntelAccess} />
         </div>
       </div>
 
@@ -233,21 +293,28 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${
+            className={`relative flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${
               activeTab === t.id
                 ? 'bg-[#FF5200] text-white'
                 : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            }`}
+            } ${t.locked ? 'opacity-90' : ''}`}
           >
-            <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
-            <span className="text-[9px] sm:text-xs font-medium leading-none">
-              {t.label}
+            <span className="relative inline-flex">
+              <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
+              {t.locked && (
+                <Lock
+                  className={`absolute -right-1.5 -bottom-0.5 w-2.5 h-2.5 stroke-[3] ${
+                    activeTab === t.id ? 'text-white/85' : 'text-slate-400'
+                  }`}
+                />
+              )}
             </span>
+            <span className="text-[9px] sm:text-xs font-medium leading-none">{t.label}</span>
           </button>
         ))}
       </div>
 
-      {activeTab === 'overview' && <OverviewTab data={data} ward={ward} />}
+      {activeTab === 'footfall' && <OverviewTab data={data} ward={ward} previewOnly={!fullIntelAccess} />}
       {activeTab === 'revenue' && (
         <RevenueTab
           dailyFootfall={data.dailyFootfall}
@@ -258,11 +325,68 @@ export default function LocationIntelligenceDashboard({ propertyId }: { property
         />
       )}
       {activeTab === 'competition' && (
-        <CompetitionTab competitors={competitors} competitorCount={data.competitorCount} />
+        <div className="relative min-h-[180px] rounded-xl">
+          <div className={isLockedPanel('competition') ? 'pointer-events-none select-none blur-[6px] opacity-55' : ''}>
+            <CompetitionTab competitors={competitors} competitorCount={data.competitorCount} />
+          </div>
+          {isLockedPanel('competition') && <LockedIntelOverlay />}
+        </div>
       )}
-      {activeTab === 'demographics' && <DemographicsTab data={data} ward={ward} />}
-      {activeTab === 'transport' && <TransportTab data={data} />}
-      {activeTab === 'risks' && <RisksTab data={data} />}
+      {activeTab === 'demographics' && (
+        <div className="relative min-h-[180px] rounded-xl">
+          <div className={isLockedPanel('demographics') ? 'pointer-events-none select-none blur-[6px] opacity-55' : ''}>
+            <DemographicsTab data={data} ward={ward} />
+          </div>
+          {isLockedPanel('demographics') && <LockedIntelOverlay />}
+        </div>
+      )}
+      {activeTab === 'transport' && (
+        <div className="relative min-h-[180px] rounded-xl">
+          <div className={isLockedPanel('transport') ? 'pointer-events-none select-none blur-[6px] opacity-55' : ''}>
+            <TransportTab data={data} />
+          </div>
+          {isLockedPanel('transport') && <LockedIntelOverlay />}
+        </div>
+      )}
+      {activeTab === 'risks' && (
+        <div className="relative min-h-[180px] rounded-xl">
+          <div className={isLockedPanel('risks') ? 'pointer-events-none select-none blur-[6px] opacity-55' : ''}>
+            <RisksTab data={data} />
+          </div>
+          {isLockedPanel('risks') && <LockedIntelOverlay />}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ScoreCardLocked({
+  title,
+  score,
+  inverse,
+  locked,
+}: {
+  title: string
+  score: number
+  inverse?: boolean
+  locked: boolean
+}) {
+  if (!locked) return <ScoreCard title={title} score={score} inverse={inverse} />
+  const v = inverse ? 100 - score : score
+  const color = v >= 75 ? 'text-green-600' : v >= 50 ? 'text-amber-600' : 'text-red-600'
+  return (
+    <div className="relative bg-white p-2.5 sm:p-4 rounded-xl border border-slate-100 overflow-hidden min-h-[72px] sm:min-h-[88px]">
+      <div className="pointer-events-none select-none blur-[5px] opacity-45">
+        <div className="text-[10px] sm:text-xs text-slate-600 truncate">{title}</div>
+        <div className={`text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1 ${color}`}>{Math.round(score)}</div>
+        <div className="w-full bg-slate-100 rounded-full h-1 sm:h-1.5 mt-1.5 sm:mt-2">
+          <div className="bg-[#FF5200] h-1 sm:h-1.5 rounded-full" style={{ width: `${Math.min(100, score)}%` }} />
+        </div>
+      </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-white/65">
+        <Lock className="w-4 h-4 text-slate-400" strokeWidth={2} />
+        <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 text-center px-1">Onboard</span>
+      </div>
     </div>
   )
 }
@@ -281,41 +405,69 @@ function ScoreCard({ title, score, inverse }: { title: string; score: number; in
   )
 }
 
-function OverviewTab({ data, ward }: { data: IntelligenceData; ward: any | null }) {
+function OverviewTab({
+  data,
+  ward,
+  previewOnly,
+}: {
+  data: IntelligenceData
+  ward: any | null
+  previewOnly?: boolean
+}) {
+  const footfallCard = (
+    <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
+      <div className="text-xs text-slate-600">Daily Footfall (est.)</div>
+      <div className="text-2xl font-bold text-slate-900">{data.dailyFootfall.toLocaleString('en-IN')}</div>
+      <div className="text-xs text-slate-500">
+        Peak hours: {data.peakHours} · +{data.weekendBoost}% weekends
+      </div>
+    </div>
+  )
+
+  const extraCards = (
+    <>
+      <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
+        <div className="text-xs text-slate-600">Revenue Potential</div>
+        <div className="text-2xl font-bold text-[#FF5200]">
+          ₹{(data.monthlyRevenueLow / 100000).toFixed(1)}L – ₹{(data.monthlyRevenueHigh / 100000).toFixed(1)}L
+        </div>
+        <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
+      </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
+        <div className="text-xs text-slate-600">Area Snapshot</div>
+        <div className="text-sm text-slate-900">
+          Population {data.population.toLocaleString('en-IN')} · Median income ₹
+          {data.medianIncome.toLocaleString('en-IN')}
+        </div>
+        {ward && (
+          <div className="text-xs text-slate-500">
+            Ward {ward.wardName} ({ward.locality}) · Working pop {ward.workingPopulation}%
+          </div>
+        )}
+      </div>
+    </>
+  )
+
+  if (previewOnly) {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-slate-600">
+          Open the <span className="font-semibold text-slate-800">Revenue</span> tab for interactive earnings scenarios.{' '}
+          <Link href={INTEL_FOR_BRANDS_HREF} className="font-semibold text-[#FF5200] hover:underline">
+            Onboard your brand
+          </Link>{' '}
+          for area snapshot and deeper panels.
+        </p>
+        <div className="grid grid-cols-1 gap-4">{footfallCard}</div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-          <div className="text-xs text-slate-600">Daily Footfall (est.)</div>
-          <div className="text-2xl font-bold text-slate-900">
-            {data.dailyFootfall.toLocaleString('en-IN')}
-          </div>
-          <div className="text-xs text-slate-500">
-            Peak hours: {data.peakHours} · +{data.weekendBoost}% weekends
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-          <div className="text-xs text-slate-600">Revenue Potential</div>
-          <div className="text-2xl font-bold text-[#FF5200]">
-            ₹{(data.monthlyRevenueLow / 100000).toFixed(1)}L – ₹
-            {(data.monthlyRevenueHigh / 100000).toFixed(1)}L
-          </div>
-          <div className="text-xs text-slate-500">
-            Break-even in ~{data.breakEvenMonths || '–'} months
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-          <div className="text-xs text-slate-600">Area Snapshot</div>
-          <div className="text-sm text-slate-900">
-            Population {data.population.toLocaleString('en-IN')} · Median income ₹
-            {data.medianIncome.toLocaleString('en-IN')}
-          </div>
-          {ward && (
-            <div className="text-xs text-slate-500">
-              Ward {ward.wardName} ({ward.locality}) · Working pop {ward.workingPopulation}%
-            </div>
-          )}
-        </div>
+        {footfallCard}
+        {extraCards}
       </div>
     </div>
   )
@@ -334,7 +486,6 @@ function RevenueTab({
   monthlyHigh: number
   breakEvenMonths: number
 }) {
-  const mid = Math.round((monthlyLow + monthlyHigh) / 2)
   const [captureRate, setCaptureRate] = useState(12)
   const [avgTicket, setAvgTicket] = useState(450)
 

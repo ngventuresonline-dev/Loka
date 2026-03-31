@@ -757,6 +757,20 @@ function MatchDetailsContent() {
           id="intelligence"
           className="mt-6 sm:mt-8 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"
         >
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Location intelligence</h2>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
+                Footfall and revenue preview on every match. Onboard your brand for full reports.
+              </p>
+            </div>
+            <Link
+              href="/for-brands"
+              className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-[#FF5200] hover:bg-gray-50 shrink-0"
+            >
+              Onboard brand for full intel
+            </Link>
+          </div>
           <LocationIntelligenceDashboard propertyId={propertyId} />
         </div>
       </div>
