@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { DollarSign, Store, Users, Train, ShieldAlert, Lock, Footprints } from 'lucide-react'
+import { BarChart3, DollarSign, Store, Users, Train, ShieldCheck, Lock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 const INTEL_FOR_BRANDS_HREF = '/for-brands'
@@ -15,7 +15,7 @@ function LockedIntelOverlay() {
       </div>
       <p className="text-sm font-semibold text-slate-900 max-w-sm">Unlock full location intelligence</p>
       <p className="text-xs text-slate-600 mt-1 max-w-sm">
-        Footfall and revenue stay open on every property. Onboard your brand on Loka to access competition, demographics, transit, and risk analysis.
+        Overview and Revenue stay open on every property. Onboard your brand on Loka to access Compete, Demographics, Transit, and Risks.
       </p>
       <Link
         href={INTEL_FOR_BRANDS_HREF}
@@ -64,7 +64,7 @@ interface CompetitorRow {
   priceLevel: number | null
 }
 
-type IntelTabId = 'footfall' | 'revenue' | 'competition' | 'demographics' | 'transport' | 'risks'
+type IntelTabId = 'overview' | 'revenue' | 'competition' | 'demographics' | 'transport' | 'risks'
 
 export default function LocationIntelligenceDashboard({
   propertyId,
@@ -82,7 +82,7 @@ export default function LocationIntelligenceDashboard({
   const [competitors, setCompetitors] = useState<CompetitorRow[]>([])
   const [ward, setWard] = useState<{
     wardName: string
-    locality: string
+    locality?: string
     medianIncome: number
     age25_34: number
     age35_44: number
@@ -92,7 +92,7 @@ export default function LocationIntelligenceDashboard({
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [enrichStep, setEnrichStep] = useState(0)
-  const [activeTab, setActiveTab] = useState<IntelTabId>('footfall')
+  const [activeTab, setActiveTab] = useState<IntelTabId>('overview')
 
   const enrichSteps = [
     'Locating property coordinates…',
@@ -107,12 +107,6 @@ export default function LocationIntelligenceDashboard({
   useEffect(() => {
     fetchIntelligence()
   }, [propertyId])
-
-  useEffect(() => {
-    if (!fullIntelAccess && activeTab !== 'footfall' && activeTab !== 'revenue') {
-      setActiveTab('footfall')
-    }
-  }, [fullIntelAccess, activeTab])
 
   async function fetchIntelligence(autoEnrich = true) {
     setLoading(true)
@@ -240,15 +234,14 @@ export default function LocationIntelligenceDashboard({
     )
   }
 
-  const allTabs: Array<{ id: IntelTabId; label: string; Icon: typeof Footprints }> = [
-    { id: 'footfall', label: 'Footfall', Icon: Footprints },
-    { id: 'revenue', label: 'Revenue', Icon: DollarSign },
-    { id: 'competition', label: 'Compete', Icon: Store },
-    { id: 'demographics', label: 'Demo', Icon: Users },
-    { id: 'transport', label: 'Transit', Icon: Train },
-    { id: 'risks', label: 'Risks', Icon: ShieldAlert },
+  const tabs: Array<{ id: IntelTabId; label: string; Icon: typeof BarChart3; locked: boolean }> = [
+    { id: 'overview', label: 'Overview', Icon: BarChart3, locked: false },
+    { id: 'revenue', label: 'Revenue', Icon: DollarSign, locked: false },
+    { id: 'competition', label: 'Compete', Icon: Store, locked: !fullIntelAccess },
+    { id: 'demographics', label: 'Demographics', Icon: Users, locked: !fullIntelAccess },
+    { id: 'transport', label: 'Transit', Icon: Train, locked: !fullIntelAccess },
+    { id: 'risks', label: 'Risks', Icon: ShieldCheck, locked: !fullIntelAccess },
   ]
-  const tabs = fullIntelAccess ? allTabs : allTabs.filter(t => t.id === 'footfall' || t.id === 'revenue')
 
   const isLockedPanel = (id: IntelTabId) =>
     !fullIntelAccess && ['competition', 'demographics', 'transport', 'risks'].includes(id)
@@ -258,8 +251,8 @@ export default function LocationIntelligenceDashboard({
       {!fullIntelAccess && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <p className="text-xs sm:text-sm text-amber-950">
-            <span className="font-semibold">Free preview:</span> Footfall and revenue are open on every property.
-            Onboard your brand to unlock the rest of location intelligence.
+            <span className="font-semibold">Free preview:</span> Overview and Revenue are open on every property.
+            Onboard your brand to unlock Compete, Demographics, Transit, and Risks.
           </p>
           <Link
             href={INTEL_FOR_BRANDS_HREF}
@@ -276,8 +269,13 @@ export default function LocationIntelligenceDashboard({
             <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
               {fullIntelAccess
                 ? 'Footfall, revenue, competition, access, and demographics'
-                : 'Full breakdown unlocks after brand onboarding — footfall & revenue scores visible below.'}
+                : 'Full breakdown unlocks after brand onboarding — footfall & revenue scores stay visible below.'}
             </p>
+            {ward && (
+              <p className="text-xs text-slate-500 mt-1">
+                {ward.locality || ward.wardName} · {ward.workingPopulation}% working population
+              </p>
+            )}
           </div>
           <div className="text-center flex-shrink-0">
             <div className="text-4xl sm:text-5xl font-bold text-[#FF5200] leading-none">{data.overallScore}</div>
@@ -294,34 +292,34 @@ export default function LocationIntelligenceDashboard({
         </div>
       </div>
 
-      <div className={`grid gap-1 sm:gap-2 ${fullIntelAccess ? 'grid-cols-6' : 'grid-cols-2 max-w-md'}`}>
+      <div className="flex flex-row overflow-x-auto scrollbar-hide border-b border-slate-200 gap-0 mb-1">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${
+            className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
               activeTab === t.id
-                ? 'bg-[#FF5200] text-white'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                ? 'border-[#FF5200] text-[#FF5200]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
-            <span className="text-[9px] sm:text-xs font-medium leading-none">{t.label}</span>
+            <span className="relative inline-flex items-center justify-center">
+              <t.Icon className="w-4 h-4" strokeWidth={1.8} />
+              {t.locked && (
+                <Lock
+                  className={`absolute -right-2 -bottom-1 w-2.5 h-2.5 stroke-[3] ${
+                    activeTab === t.id ? 'text-[#FF5200]/80' : 'text-slate-400'
+                  }`}
+                />
+              )}
+            </span>
+            {t.label}
           </button>
         ))}
       </div>
-      {!fullIntelAccess && (
-        <p className="text-xs text-slate-500 -mt-2">
-          Competition, demographics, transit, and risk tabs unlock after you{' '}
-          <Link href={INTEL_FOR_BRANDS_HREF} className="font-semibold text-[#FF5200] hover:underline">
-            onboard your brand
-          </Link>
-          .
-        </p>
-      )}
 
-      {activeTab === 'footfall' && <OverviewTab data={data} ward={ward} previewOnly={!fullIntelAccess} />}
+      {activeTab === 'overview' && <OverviewTab data={data} ward={ward} />}
       {activeTab === 'revenue' && (
         <RevenueTab
           dailyFootfall={data.dailyFootfall}
@@ -412,69 +410,36 @@ function ScoreCard({ title, score, inverse }: { title: string; score: number; in
   )
 }
 
-function OverviewTab({
-  data,
-  ward,
-  previewOnly,
-}: {
-  data: IntelligenceData
-  ward: any | null
-  previewOnly?: boolean
-}) {
-  const footfallCard = (
-    <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-      <div className="text-xs text-slate-600">Daily Footfall (est.)</div>
-      <div className="text-2xl font-bold text-slate-900">{data.dailyFootfall.toLocaleString('en-IN')}</div>
-      <div className="text-xs text-slate-500">
-        Peak hours: {data.peakHours} · +{data.weekendBoost}% weekends
-      </div>
-    </div>
-  )
-
-  const extraCards = (
-    <>
-      <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-        <div className="text-xs text-slate-600">Revenue Potential</div>
-        <div className="text-2xl font-bold text-[#FF5200]">
-          ₹{(data.monthlyRevenueLow / 100000).toFixed(1)}L – ₹{(data.monthlyRevenueHigh / 100000).toFixed(1)}L
-        </div>
-        <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
-      </div>
-      <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
-        <div className="text-xs text-slate-600">Area Snapshot</div>
-        <div className="text-sm text-slate-900">
-          Population {data.population.toLocaleString('en-IN')} · Median income ₹
-          {data.medianIncome.toLocaleString('en-IN')}
-        </div>
-        {ward && (
-          <div className="text-xs text-slate-500">
-            Ward {ward.wardName} ({ward.locality}) · Working pop {ward.workingPopulation}%
-          </div>
-        )}
-      </div>
-    </>
-  )
-
-  if (previewOnly) {
-    return (
-      <div className="space-y-4">
-        <p className="text-xs text-slate-600">
-          Open the <span className="font-semibold text-slate-800">Revenue</span> tab for interactive earnings scenarios.{' '}
-          <Link href={INTEL_FOR_BRANDS_HREF} className="font-semibold text-[#FF5200] hover:underline">
-            Onboard your brand
-          </Link>{' '}
-          for area snapshot and deeper panels.
-        </p>
-        <div className="grid grid-cols-1 gap-4">{footfallCard}</div>
-      </div>
-    )
-  }
-
+function OverviewTab({ data, ward }: { data: IntelligenceData; ward: any | null }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {footfallCard}
-        {extraCards}
+        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
+          <div className="text-xs text-slate-600">Daily Footfall (est.)</div>
+          <div className="text-2xl font-bold text-slate-900">{data.dailyFootfall.toLocaleString('en-IN')}</div>
+          <div className="text-xs text-slate-500">
+            Peak hours: {data.peakHours} · +{data.weekendBoost}% weekends
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
+          <div className="text-xs text-slate-600">Revenue Potential</div>
+          <div className="text-2xl font-bold text-[#FF5200]">
+            ₹{(data.monthlyRevenueLow / 100000).toFixed(1)}L – ₹{(data.monthlyRevenueHigh / 100000).toFixed(1)}L
+          </div>
+          <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
+          <div className="text-xs text-slate-600">Area Snapshot</div>
+          <div className="text-sm text-slate-900">
+            Population {data.population.toLocaleString('en-IN')} · Median income ₹
+            {data.medianIncome.toLocaleString('en-IN')}
+          </div>
+          {ward && (
+            <div className="text-xs text-slate-500">
+              Ward {ward.wardName} ({ward.locality ?? '—'}) · Working pop {ward.workingPopulation}%
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -597,22 +562,23 @@ function DemographicsTab({ data, ward }: { data: IntelligenceData; ward: any | n
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Age Distribution</h3>
+        <div className="text-sm font-semibold text-slate-800 mb-1">Age Distribution (25–44)</div>
         <div className="space-y-2">
           <div className="flex items-center gap-4">
             <span className="w-28 text-sm text-slate-600">25–44</span>
-            <div className="flex-1 bg-slate-100 rounded-full h-5">
+            <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
               <div
-                className="bg-[#FF5200] h-5 rounded-full flex items-center justify-end pr-2"
-                style={{ width: `${data.age25_44Percent}%` }}
+                className="bg-[#FF5200] h-6 rounded-full flex items-center justify-end pr-2"
+                style={{ width: `${Math.min(100, data.age25_44Percent)}%` }}
               >
-                <span className="text-xs font-medium text-white">
+                <span className="text-xs font-semibold text-white">
                   {Math.round(data.age25_44Percent)}%
                 </span>
               </div>
             </div>
           </div>
         </div>
+        <p className="text-xs text-slate-500 mt-2">Prime consumer age bracket · India urban benchmark ~42%</p>
       </div>
       <div>
         <h3 className="text-lg font-bold text-slate-900 mb-4">Income & Lifestyle</h3>

@@ -761,7 +761,7 @@ function MatchDetailsContent() {
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Location intelligence</h2>
               <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
-                Footfall and revenue preview on every match. Onboard your brand for full reports.
+                Overview and Revenue stay open on every match. Onboard your brand for Compete, Demographics, Transit, and Risks.
               </p>
             </div>
             <Link
