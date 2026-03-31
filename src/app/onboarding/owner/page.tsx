@@ -589,8 +589,8 @@ function OwnerOnboardingContent() {
     }))
   }
 
-  const handleMarkerDragEnd = (event: any) => {
-    if (!event?.latLng) return
+  const handleMarkerDragEnd = (event: google.maps.MapMouseEvent) => {
+    if (!event.latLng) return
     const lat = event.latLng.lat()
     const lng = event.latLng.lng()
     setMarkerPosition({ lat, lng })
