@@ -92,7 +92,7 @@ export default function LocationIntelligenceDashboard({
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [enrichStep, setEnrichStep] = useState(0)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState<IntelTabId>('footfall')
 
   const enrichSteps = [
     'Locating property coordinates…',
@@ -107,6 +107,12 @@ export default function LocationIntelligenceDashboard({
   useEffect(() => {
     fetchIntelligence()
   }, [propertyId])
+
+  useEffect(() => {
+    if (!fullIntelAccess && activeTab !== 'footfall' && activeTab !== 'revenue') {
+      setActiveTab('footfall')
+    }
+  }, [fullIntelAccess, activeTab])
 
   async function fetchIntelligence(autoEnrich = true) {
     setLoading(true)
@@ -234,14 +240,15 @@ export default function LocationIntelligenceDashboard({
     )
   }
 
-  const tabs: Array<{ id: IntelTabId; label: string; Icon: typeof Footprints; locked: boolean }> = [
-    { id: 'footfall', label: 'Footfall', Icon: Footprints, locked: false },
-    { id: 'revenue', label: 'Revenue', Icon: DollarSign, locked: false },
-    { id: 'competition', label: 'Compete', Icon: Store, locked: !fullIntelAccess },
-    { id: 'demographics', label: 'Demo', Icon: Users, locked: !fullIntelAccess },
-    { id: 'transport', label: 'Transit', Icon: Train, locked: !fullIntelAccess },
-    { id: 'risks', label: 'Risks', Icon: ShieldAlert, locked: !fullIntelAccess },
+  const allTabs: Array<{ id: IntelTabId; label: string; Icon: typeof Footprints }> = [
+    { id: 'footfall', label: 'Footfall', Icon: Footprints },
+    { id: 'revenue', label: 'Revenue', Icon: DollarSign },
+    { id: 'competition', label: 'Compete', Icon: Store },
+    { id: 'demographics', label: 'Demo', Icon: Users },
+    { id: 'transport', label: 'Transit', Icon: Train },
+    { id: 'risks', label: 'Risks', Icon: ShieldAlert },
   ]
+  const tabs = fullIntelAccess ? allTabs : allTabs.filter(t => t.id === 'footfall' || t.id === 'revenue')
 
   const isLockedPanel = (id: IntelTabId) =>
     !fullIntelAccess && ['competition', 'demographics', 'transport', 'risks'].includes(id)
@@ -287,32 +294,32 @@ export default function LocationIntelligenceDashboard({
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-1 sm:gap-2">
+      <div className={`grid gap-1 sm:gap-2 ${fullIntelAccess ? 'grid-cols-6' : 'grid-cols-2 max-w-md'}`}>
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`relative flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 rounded-lg transition-colors ${
               activeTab === t.id
                 ? 'bg-[#FF5200] text-white'
                 : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            } ${t.locked ? 'opacity-90' : ''}`}
+            }`}
           >
-            <span className="relative inline-flex">
-              <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
-              {t.locked && (
-                <Lock
-                  className={`absolute -right-1.5 -bottom-0.5 w-2.5 h-2.5 stroke-[3] ${
-                    activeTab === t.id ? 'text-white/85' : 'text-slate-400'
-                  }`}
-                />
-              )}
-            </span>
+            <t.Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
             <span className="text-[9px] sm:text-xs font-medium leading-none">{t.label}</span>
           </button>
         ))}
       </div>
+      {!fullIntelAccess && (
+        <p className="text-xs text-slate-500 -mt-2">
+          Competition, demographics, transit, and risk tabs unlock after you{' '}
+          <Link href={INTEL_FOR_BRANDS_HREF} className="font-semibold text-[#FF5200] hover:underline">
+            onboard your brand
+          </Link>
+          .
+        </p>
+      )}
 
       {activeTab === 'footfall' && <OverviewTab data={data} ward={ward} previewOnly={!fullIntelAccess} />}
       {activeTab === 'revenue' && (
