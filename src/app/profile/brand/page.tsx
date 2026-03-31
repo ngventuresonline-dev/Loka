@@ -10,6 +10,7 @@ import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 import { encodePropertyId } from '@/lib/property-slug'
 import WhatsAppButton from '@/components/WhatsAppButton'
+import { BrandInsights } from '@/components/dashboard/BrandInsights'
 
 interface BrandProfileData {
   name?: string
@@ -57,6 +58,7 @@ function BrandProfileContent() {
   const userIdFromQuery = searchParams.get('userId')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<BrandProfileData | null>(null)
+  const [resolvedBrandId, setResolvedBrandId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'views' | 'saved' | 'inquiries' | 'filters'>('views')
 
   useEffect(() => {
@@ -68,6 +70,8 @@ function BrandProfileContent() {
         router.push('/profile')
         return
       }
+
+      setResolvedBrandId(userId)
 
       try {
         // If userId from query, fetch from lookup endpoint, otherwise use existing endpoint
@@ -191,6 +195,12 @@ function BrandProfileContent() {
               <p className="text-sm text-gray-500 mt-1">Phone: {data.phone}</p>
             )}
           </div>
+
+          {resolvedBrandId && (
+            <div className="mb-4">
+              <BrandInsights brandId={resolvedBrandId} userEmail={data.email ?? null} />
+            </div>
+          )}
           
           {/* WhatsApp Connect */}
           {data.phone && (

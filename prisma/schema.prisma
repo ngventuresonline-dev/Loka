@@ -234,6 +234,20 @@ model Payment {
   @@map("payments")
 }
 
+model GoogleCalendarToken {
+  id          String   @id @db.VarChar(50)
+  email       String   @db.VarChar(255)
+  refreshToken String  @map("refresh_token") @db.Text
+  accessToken  String? @map("access_token") @db.Text
+  scope        String? @db.Text
+  tokenType    String? @map("token_type") @db.VarChar(50)
+  expiryDate   DateTime? @map("expiry_date") @db.Timestamp(6)
+  createdAt    DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+
+  @@map("google_calendar_tokens")
+}
+
 enum payment_status_enum {
   pending
   completed
@@ -329,6 +343,22 @@ model SavedProperty {
   @@index([userId], map: "idx_saved_properties_user_id")
 }
 
+/// Scheduled Claude insights for brand dashboard (read from DB only; refreshed by cron)
+model BrandInsight {
+  id          String   @id @default(uuid()) @db.Uuid
+  brandId     String   @map("brand_id") @db.VarChar(36)
+  insights    Json
+  generatedAt DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+
+  brand User @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId], map: "idx_brand_insights_brand_id")
+  @@index([expiresAt], map: "idx_brand_insights_expires_at")
+  @@index([brandId, generatedAt(sort: Desc)], map: "idx_brand_insights_brand_generated")
+  @@map("brand_insights")
+}
+
 model User {
   id                                  String              @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
   email                               String              @unique @db.VarChar(255)
@@ -350,6 +380,7 @@ model User {
   properties                          Property[]
   propertyViews                       property_views[]
   savedProperties                     SavedProperty[]
+  brandInsights                       BrandInsight[]
 
   @@map("users")
   @@index([email], map: "idx_users_email")
@@ -475,6 +506,10 @@ model PropertyIntelligence {
   lastUpdated       DateTime @default(now()) @db.Timestamp(6)
   dataQuality       Int      // 0-100
 
+  // CLAUDE LIR REPORT
+  claudeLirReport       Json?    @map("claude_lir_report")
+  claudeLirGeneratedAt  DateTime? @map("claude_lir_generated_at") @db.Timestamp(6)
+
   @@index([propertyId])
   @@index([wardCode])
   @@map("property_intelligence")
@@ -544,6 +579,16 @@ model WardDemographics {
   carOwnership       Float    @db.DoublePrecision
 
   diningOutPerWeek   Float    @db.DoublePrecision
+
+  // Real-estate & commercial data (populated by seed-wards.ts after db:push)
+  avgApptSqft        Int?     @map("avg_appt_sqft")
+  avgLandSqft        Int?     @map("avg_land_sqft")
+  combinedAvgSqft    Int?     @map("combined_avg_sqft")
+  spendingPowerIndex Int?     @map("spending_power_index")
+  commercialRentMin  Int?     @map("commercial_rent_min")
+  commercialRentMax  Int?     @map("commercial_rent_max")
+  dominantAgeGroup   String?  @map("dominant_age_group") @db.VarChar(100)
+  primaryResidentType String? @map("primary_resident_type") @db.VarChar(150)
 
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
