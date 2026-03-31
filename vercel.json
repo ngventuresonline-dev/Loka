@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/refresh-intel-cache",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/ai/insights/refresh",
+      "schedule": "0 6 */3 * *"
     }
   ],
   "functions": {

@@ -343,6 +343,22 @@ model SavedProperty {
   @@index([userId], map: "idx_saved_properties_user_id")
 }
 
+/// Scheduled Claude insights for brand dashboard (read from DB only; refreshed by cron)
+model BrandInsight {
+  id          String   @id @default(uuid()) @db.Uuid
+  brandId     String   @map("brand_id") @db.VarChar(36)
+  insights    Json
+  generatedAt DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+
+  brand User @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId], map: "idx_brand_insights_brand_id")
+  @@index([expiresAt], map: "idx_brand_insights_expires_at")
+  @@index([brandId, generatedAt(sort: Desc)], map: "idx_brand_insights_brand_generated")
+  @@map("brand_insights")
+}
+
 model User {
   id                                  String              @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
   email                               String              @unique @db.VarChar(255)
@@ -364,6 +380,7 @@ model User {
   properties                          Property[]
   propertyViews                       property_views[]
   savedProperties                     SavedProperty[]
+  brandInsights                       BrandInsight[]
 
   @@map("users")
   @@index([email], map: "idx_users_email")
