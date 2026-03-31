@@ -28,7 +28,7 @@ function parseInsightsJson(text: string): BrandInsightsStored | null {
               reasoning: String(p.reasoning ?? ''),
             }
           })
-          .filter((x): x is NonNullable<typeof x> => x !== null && (x.title || x.property_id))
+          .filter((x): x is NonNullable<typeof x> => x !== null && !!(x.title || x.property_id))
           .slice(0, 5)
       : []
     const za = o.zone_alerts
