@@ -96,15 +96,12 @@ export default function ContactUsPage() {
                 </span>
                 support@lokazen.in
               </a>
-              <a
-                href="tel:+919686613899"
-                className="flex items-center gap-3 text-gray-700 hover:text-[#FF5200] transition-colors"
-              >
+              <p className="flex items-start gap-3 text-gray-700">
                 <span className="w-10 h-10 rounded-xl bg-[#E4002B]/10 text-[#E4002B] flex items-center justify-center">
-                  +91
+                  CS
                 </span>
-                +91 96866 13899
-              </a>
+                Phone support available on request via email.
+              </p>
               <p className="flex items-start gap-3 text-gray-700">
                 <span className="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center">
                   IN

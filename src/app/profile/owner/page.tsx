@@ -8,7 +8,6 @@ import { getUserIdForSession } from '@/lib/session-utils'
 import { Property } from '@/types'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 import { encodePropertyId } from '@/lib/property-slug'
-import WhatsAppButton from '@/components/WhatsAppButton'
 
 // Lazy load LokazenNodesPlaceholder to avoid webpack issues
 const LokazenNodesPlaceholder = lazy(() => import('@/components/LokazenNodesPlaceholder'))
@@ -265,19 +264,20 @@ function OwnerProfileContent() {
               )}
             </div>
 
-            {/* WhatsApp Connect (kept functionality, improved presentation) */}
-            {data.phone && (
-              <div className="mt-4 bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1.5">Need Help?</h3>
-                <p className="text-xs text-gray-600 mb-3">
-                  Connect with our team via WhatsApp for quick assistance with your properties.
-                </p>
-                <WhatsAppButton
-                  phone="+919686613899"
-                  message={`Hi Lokazen Team,\n\nI'm ${data.name || 'a property owner'}, phone: ${data.phone}.\n\nI need help with my property listings.`}
-                />
-              </div>
-            )}
+            <div className="mt-4 bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1.5">Need Help?</h3>
+              <p className="text-xs text-gray-600 mb-3">
+                Connect with our team for quick assistance with your properties.
+              </p>
+              <a
+                href={`mailto:support@lokazen.in?subject=${encodeURIComponent('Support request from owner dashboard')}&body=${encodeURIComponent(
+                  `Hi Lokazen Team,\n\nI'm ${data.name || 'a property owner'}${data.phone ? `, phone: ${data.phone}` : ''}.\n\nI need help with my property listings.`
+                )}`}
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#FF5200] to-[#E4002B] px-4 py-2.5 text-sm font-semibold text-white hover:from-[#E4002B] hover:to-[#FF5200] transition-colors"
+              >
+                Contact support
+              </a>
+            </div>
           </div>
 
           {/* Right: selected property details */}
