@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { BarChart3, DollarSign, Store, Users, Train, ShieldCheck, Lock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
-const INTEL_FOR_BRANDS_HREF = '/for-brands'
+const INTEL_FOR_BRANDS_HREF = '/for-brands#plans'
 
 function LockedIntelOverlay() {
   return (
@@ -21,7 +21,7 @@ function LockedIntelOverlay() {
         href={INTEL_FOR_BRANDS_HREF}
         className="mt-4 inline-flex items-center justify-center rounded-xl bg-[#FF5200] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#E44A00] transition-colors shadow-md"
       >
-        Onboard your brand
+        On board for full intel
       </Link>
     </div>
   )
@@ -70,13 +70,17 @@ export default function LocationIntelligenceDashboard({
   propertyId,
   targetCategory,
   propertyType: _propertyType,
+  gateExtendedIntel = false,
 }: {
   propertyId: string
   targetCategory?: string
   propertyType?: string
+  /** Property match (brands): always treat extended tabs as gated, blur tab labels, deep-link to For Brands. */
+  gateExtendedIntel?: boolean
 }) {
   const { user } = useAuth()
   const fullIntelAccess = user?.userType === 'admin'
+  const limitedIntel = !fullIntelAccess || gateExtendedIntel
 
   const [data, setData] = useState<IntelligenceData | null>(null)
   const [competitors, setCompetitors] = useState<CompetitorRow[]>([])
@@ -237,18 +241,18 @@ export default function LocationIntelligenceDashboard({
   const tabs: Array<{ id: IntelTabId; label: string; Icon: typeof BarChart3; locked: boolean }> = [
     { id: 'overview', label: 'Overview', Icon: BarChart3, locked: false },
     { id: 'revenue', label: 'Revenue', Icon: DollarSign, locked: false },
-    { id: 'competition', label: 'Compete', Icon: Store, locked: !fullIntelAccess },
-    { id: 'demographics', label: 'Demographics', Icon: Users, locked: !fullIntelAccess },
-    { id: 'transport', label: 'Transit', Icon: Train, locked: !fullIntelAccess },
-    { id: 'risks', label: 'Risks', Icon: ShieldCheck, locked: !fullIntelAccess },
+    { id: 'competition', label: 'Compete', Icon: Store, locked: limitedIntel },
+    { id: 'demographics', label: 'Demographics', Icon: Users, locked: limitedIntel },
+    { id: 'transport', label: 'Transit', Icon: Train, locked: limitedIntel },
+    { id: 'risks', label: 'Risks', Icon: ShieldCheck, locked: limitedIntel },
   ]
 
   const isLockedPanel = (id: IntelTabId) =>
-    !fullIntelAccess && ['competition', 'demographics', 'transport', 'risks'].includes(id)
+    limitedIntel && ['competition', 'demographics', 'transport', 'risks'].includes(id)
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {!fullIntelAccess && (
+      {limitedIntel && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <p className="text-xs sm:text-sm text-amber-950">
             <span className="font-semibold">Free preview:</span> Overview and Revenue are open on every property.
@@ -258,7 +262,7 @@ export default function LocationIntelligenceDashboard({
             href={INTEL_FOR_BRANDS_HREF}
             className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#FF5200] px-3 py-2 text-xs font-semibold text-white hover:bg-[#E44A00] transition-colors"
           >
-            Onboard brand →
+            On board for full intel
           </Link>
         </div>
       )}
@@ -267,7 +271,7 @@ export default function LocationIntelligenceDashboard({
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">Location Score</h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-              {fullIntelAccess
+              {!limitedIntel
                 ? 'Footfall, revenue, competition, access, and demographics'
                 : 'Full breakdown unlocks after brand onboarding — footfall & revenue scores stay visible below.'}
             </p>
@@ -292,31 +296,56 @@ export default function LocationIntelligenceDashboard({
         </div>
       </div>
 
-      <div className="flex flex-row overflow-x-auto scrollbar-hide border-b border-slate-200 gap-0 mb-1">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setActiveTab(t.id)}
-            className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
-              activeTab === t.id
-                ? 'border-[#FF5200] text-[#FF5200]'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <span className="relative inline-flex items-center justify-center">
-              <t.Icon className="w-4 h-4" strokeWidth={1.8} />
-              {t.locked && (
-                <Lock
-                  className={`absolute -right-2 -bottom-1 w-2.5 h-2.5 stroke-[3] ${
-                    activeTab === t.id ? 'text-[#FF5200]/80' : 'text-slate-400'
-                  }`}
-                />
-              )}
-            </span>
-            {t.label}
-          </button>
-        ))}
+      <div className="space-y-3">
+        <div className="flex flex-row overflow-x-auto scrollbar-hide border-b border-slate-200 gap-0">
+          {tabs.map((t) => {
+            const tabLocksToForBrands = gateExtendedIntel && t.locked
+            return (
+              <button
+                key={t.id}
+                type="button"
+                title={tabLocksToForBrands ? 'On board for full intel — opens For Brands' : undefined}
+                onClick={() => {
+                  if (tabLocksToForBrands) {
+                    window.location.href = INTEL_FOR_BRANDS_HREF
+                    return
+                  }
+                  setActiveTab(t.id)
+                }}
+                className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
+                  t.locked && gateExtendedIntel
+                    ? 'border-transparent text-slate-400 blur-[2px] opacity-50 hover:opacity-70 cursor-pointer'
+                    : activeTab === t.id
+                      ? 'border-[#FF5200] text-[#FF5200]'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <span className="relative inline-flex items-center justify-center">
+                  <t.Icon className="w-4 h-4" strokeWidth={1.8} />
+                  {t.locked && !gateExtendedIntel && (
+                    <Lock
+                      className={`absolute -right-2 -bottom-1 w-2.5 h-2.5 stroke-[3] ${
+                        activeTab === t.id ? 'text-[#FF5200]/80' : 'text-slate-400'
+                      }`}
+                    />
+                  )}
+                </span>
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+        {limitedIntel && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-2 text-center text-xs sm:text-sm pb-1">
+            <span className="text-slate-500">Compete, Demographics, Transit &amp; Risks are included with full intel.</span>
+            <Link
+              href={INTEL_FOR_BRANDS_HREF}
+              className="font-semibold text-[#FF5200] hover:text-[#E44A00] underline underline-offset-2 decoration-[#FF5200]/40 hover:decoration-[#FF5200]"
+            >
+              On board for full intel
+            </Link>
+          </div>
+        )}
       </div>
 
       {activeTab === 'overview' && <OverviewTab data={data} ward={ward} />}
