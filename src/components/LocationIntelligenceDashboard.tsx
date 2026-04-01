@@ -75,7 +75,7 @@ export default function LocationIntelligenceDashboard({
   propertyId: string
   targetCategory?: string
   propertyType?: string
-  /** Property match (brands): always treat extended tabs as gated, blur tab labels, deep-link to For Brands. */
+  /** Property match (brands): gate extended tabs; tab labels stay readable, panel content blurred. */
   gateExtendedIntel?: boolean
 }) {
   const { user } = useAuth()
@@ -289,51 +289,40 @@ export default function LocationIntelligenceDashboard({
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6">
           <ScoreCard title="Footfall" score={data.footfallScore} />
           <ScoreCard title="Revenue" score={data.revenueScore} />
-          <ScoreCardLocked title="Competition" score={data.competitionScore} locked={!fullIntelAccess} />
-          <ScoreCardLocked title="Access" score={data.accessScore} locked={!fullIntelAccess} />
-          <ScoreCardLocked title="Demographics" score={data.demographicScore} locked={!fullIntelAccess} />
-          <ScoreCardLocked title="Risk" score={data.riskScore} inverse locked={!fullIntelAccess} />
+          <ScoreCardLocked title="Competition" score={data.competitionScore} locked={limitedIntel} />
+          <ScoreCardLocked title="Access" score={data.accessScore} locked={limitedIntel} />
+          <ScoreCardLocked title="Demographics" score={data.demographicScore} locked={limitedIntel} />
+          <ScoreCardLocked title="Risk" score={data.riskScore} inverse locked={limitedIntel} />
         </div>
       </div>
 
       <div className="space-y-3">
         <div className="flex flex-row overflow-x-auto scrollbar-hide border-b border-slate-200 gap-0">
-          {tabs.map((t) => {
-            const tabLocksToForBrands = gateExtendedIntel && t.locked
-            return (
-              <button
-                key={t.id}
-                type="button"
-                title={tabLocksToForBrands ? 'On board for full intel — opens For Brands' : undefined}
-                onClick={() => {
-                  if (tabLocksToForBrands) {
-                    window.location.href = INTEL_FOR_BRANDS_HREF
-                    return
-                  }
-                  setActiveTab(t.id)
-                }}
-                className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
-                  t.locked && gateExtendedIntel
-                    ? 'border-transparent text-slate-400 blur-[2px] opacity-50 hover:opacity-70 cursor-pointer'
-                    : activeTab === t.id
-                      ? 'border-[#FF5200] text-[#FF5200]'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <span className="relative inline-flex items-center justify-center">
-                  <t.Icon className="w-4 h-4" strokeWidth={1.8} />
-                  {t.locked && !gateExtendedIntel && (
-                    <Lock
-                      className={`absolute -right-2 -bottom-1 w-2.5 h-2.5 stroke-[3] ${
-                        activeTab === t.id ? 'text-[#FF5200]/80' : 'text-slate-400'
-                      }`}
-                    />
-                  )}
-                </span>
-                {t.label}
-              </button>
-            )
-          })}
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              title={t.locked ? 'Preview — full detail with Loka intel' : undefined}
+              onClick={() => setActiveTab(t.id)}
+              className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
+                activeTab === t.id
+                  ? 'border-[#FF5200] text-[#FF5200]'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <span className="relative inline-flex items-center justify-center">
+                <t.Icon className="w-4 h-4" strokeWidth={1.8} />
+                {t.locked && (
+                  <Lock
+                    className={`absolute -right-2 -bottom-1 w-2.5 h-2.5 stroke-[3] ${
+                      activeTab === t.id ? 'text-[#FF5200]/80' : 'text-slate-400'
+                    }`}
+                  />
+                )}
+              </span>
+              {t.label}
+            </button>
+          ))}
         </div>
         {limitedIntel && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-2 text-center text-xs sm:text-sm pb-1">
@@ -348,7 +337,9 @@ export default function LocationIntelligenceDashboard({
         )}
       </div>
 
-      {activeTab === 'overview' && <OverviewTab data={data} ward={ward} />}
+      {activeTab === 'overview' && (
+        <OverviewTab data={data} ward={ward} hideBreakEven={gateExtendedIntel} />
+      )}
       {activeTab === 'revenue' && (
         <RevenueTab
           dailyFootfall={data.dailyFootfall}
@@ -356,6 +347,7 @@ export default function LocationIntelligenceDashboard({
           monthlyLow={data.monthlyRevenueLow}
           monthlyHigh={data.monthlyRevenueHigh}
           breakEvenMonths={data.breakEvenMonths}
+          hideBreakEven={gateExtendedIntel}
         />
       )}
       {activeTab === 'competition' && (
@@ -439,7 +431,15 @@ function ScoreCard({ title, score, inverse }: { title: string; score: number; in
   )
 }
 
-function OverviewTab({ data, ward }: { data: IntelligenceData; ward: any | null }) {
+function OverviewTab({
+  data,
+  ward,
+  hideBreakEven = false,
+}: {
+  data: IntelligenceData
+  ward: any | null
+  hideBreakEven?: boolean
+}) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -455,7 +455,9 @@ function OverviewTab({ data, ward }: { data: IntelligenceData; ward: any | null 
           <div className="text-2xl font-bold text-[#FF5200]">
             ₹{(data.monthlyRevenueLow / 100000).toFixed(1)}L – ₹{(data.monthlyRevenueHigh / 100000).toFixed(1)}L
           </div>
-          <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
+          {!hideBreakEven && (
+            <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
+          )}
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
           <div className="text-xs text-slate-600">Area Snapshot</div>
@@ -480,12 +482,14 @@ function RevenueTab({
   monthlyLow,
   monthlyHigh,
   breakEvenMonths,
+  hideBreakEven = false,
 }: {
   dailyFootfall: number
   weekendBoost: number
   monthlyLow: number
   monthlyHigh: number
   breakEvenMonths: number
+  hideBreakEven?: boolean
 }) {
   const [captureRate, setCaptureRate] = useState(12)
   const [avgTicket, setAvgTicket] = useState(450)
@@ -553,7 +557,8 @@ function RevenueTab({
         </div>
         <div className="text-xs text-slate-500 mt-2">
           Benchmark band: ₹{(monthlyLow / 100000).toFixed(1)}L – ₹
-          {(monthlyHigh / 100000).toFixed(1)}L · Break-even in ~{breakEvenMonths || '–'} months
+          {(monthlyHigh / 100000).toFixed(1)}L
+          {!hideBreakEven && <> · Break-even in ~{breakEvenMonths || '–'} months</>}
         </div>
       </div>
     </div>

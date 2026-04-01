@@ -2,7 +2,7 @@ import { getPrisma } from '@/lib/get-prisma'
 import { geocodeAddress, getPropertyCoordinatesFromRow } from '@/lib/property-coordinates'
 import { fetchAndStoreCompetitorsForProperty } from './fetch-competitors'
 import { fetchTransportForLocation } from './fetch-transport'
-import { calculateRevenueFromBenchmarks } from './calculate-revenue'
+import { buildRevenueLocationProfile, calculateRevenueFromBenchmarks } from './calculate-revenue'
 import { calculateScores } from './calculate-scores'
 import { findNearestWard } from './ward-lookup'
 import { findNearestCensusWard } from './census-lookup'
@@ -24,6 +24,18 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
       price: true,
       priceType: true,
       size: true,
+      roadTypeConfirmed: true,
+      isCornerUnit: true,
+      frontageWidthFt: true,
+      nearbyOfficesCount: true,
+      nearbyCoworkingCount: true,
+      nearbyResidentialUnits: true,
+      nearbyCollegesCount: true,
+      nearbyGymsClinics: true,
+      floorLevel: true,
+      hasSignalNearby: true,
+      dailyFootfallEstimate: true,
+      peakHours: true,
     },
   })
 
@@ -77,8 +89,31 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
 
   const competitorCount = competitorResult.competitorCount
 
-  // Revenue model
-  const weekendBoostPercent = 35
+  let localityIntel: Record<string, unknown> | null = null
+  if (ward?.locality) {
+    const localityKey = ward.locality.trim()
+    const likePattern = `%${localityKey.toLowerCase()}%`
+    try {
+      const liRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+        SELECT
+          li.total_office_employees,
+          li.total_apartment_units,
+          li.spending_power_index,
+          li.dining_out_weekly,
+          li.cafe_saturation,
+          li.qsr_saturation,
+          li.restaurant_saturation
+        FROM bangalore_locality_intel li
+        WHERE LOWER(TRIM(li.locality)) = LOWER(${localityKey})
+           OR LOWER(li.locality) LIKE ${likePattern}
+        LIMIT 1
+      `
+      if (liRows?.length) localityIntel = liRows[0] ?? null
+    } catch (e) {
+      console.warn('[enrichment] bangalore_locality_intel:', e instanceof Error ? e.message : e)
+    }
+  }
+
   const priceNum = property.price != null ? Number(property.price) : null
   const sizeNum = property.size != null ? Number(property.size) : null
   const monthlyRent =
@@ -86,22 +121,51 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
       ? property.priceType === 'yearly'
         ? priceNum / 12
         : property.priceType === 'sqft' && sizeNum
-        ? priceNum * sizeNum
-        : priceNum
+          ? priceNum * sizeNum
+          : priceNum
       : null
+
+  const locationProfile = buildRevenueLocationProfile({
+    amenities: property.amenities,
+    landmarks: [],
+    directCompetitorCount: competitorCount,
+    rawCompetitors: competitorResult.rawCompetitors,
+    metroDistanceM: transport.metroDistance,
+    busStops: transport.busStops,
+    localityIntel,
+    ward: ward
+      ? {
+          diningOutPerWeek: ward.diningOutPerWeek,
+          spendingPowerIndex: ward.spendingPowerIndex ?? null,
+        }
+      : null,
+    competitorCountForSaturationFallback: competitorCount,
+    spendingPowerIndexFallback: null,
+    siteVisit: {
+      roadTypeConfirmed: property.roadTypeConfirmed,
+      isCornerUnit: property.isCornerUnit,
+      frontageWidthFt: property.frontageWidthFt,
+      nearbyOfficesCount: property.nearbyOfficesCount,
+      nearbyCoworkingCount: property.nearbyCoworkingCount,
+      nearbyResidentialUnits: property.nearbyResidentialUnits,
+      nearbyCollegesCount: property.nearbyCollegesCount,
+      nearbyGymsClinics: property.nearbyGymsClinics,
+      floorLevel: property.floorLevel,
+      hasSignalNearby: property.hasSignalNearby,
+      dailyFootfallEstimate: property.dailyFootfallEstimate,
+    },
+  })
 
   const revenue = calculateRevenueFromBenchmarks({
     latitude: lat,
     longitude: lng,
-    competitorCount,
-    metroDistance: transport.metroDistance,
-    busStops: transport.busStops,
-    weekendBoostPercent,
-    propertyType: property.propertyType,
+    propertyType: property.propertyType ?? undefined,
+    businessType,
     monthlyRent,
+    locationProfile,
   })
 
-  const monthlyRevenueMid = Math.round((revenue.monthlyRevenueLow + revenue.monthlyRevenueHigh) / 2)
+  const monthlyRevenueMid = revenue.monthlyRevenueMid
 
   // Infrastructure boost (2024–2026) – if area has new metros/malls
   const infraBoostPercent =
@@ -135,6 +199,9 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
 
   const competitorsSummary = competitorResult.competitorsJson
 
+  const peakHoursLabel =
+    (property.peakHours && String(property.peakHours).trim()) || '12–2pm, 7–10pm'
+
   await prisma.propertyIntelligence.upsert({
     where: { propertyId },
     create: {
@@ -147,7 +214,7 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
       demographicScore: scores.demographicScore,
       riskScore: scores.riskScore,
       dailyFootfall: revenue.dailyFootfall,
-      peakHours: '12–2pm, 7–10pm',
+      peakHours: peakHoursLabel.slice(0, 100),
       weekendBoost: revenue.weekendBoostPercent,
       monthlyRevenueLow: revenue.monthlyRevenueLow,
       monthlyRevenueHigh: revenue.monthlyRevenueHigh,
@@ -177,7 +244,7 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
       demographicScore: scores.demographicScore,
       riskScore: scores.riskScore,
       dailyFootfall: revenue.dailyFootfall,
-      peakHours: '12–2pm, 7–10pm',
+      peakHours: peakHoursLabel.slice(0, 100),
       weekendBoost: revenue.weekendBoostPercent,
       monthlyRevenueLow: revenue.monthlyRevenueLow,
       monthlyRevenueHigh: revenue.monthlyRevenueHigh,

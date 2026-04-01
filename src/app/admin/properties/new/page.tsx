@@ -48,6 +48,19 @@ export default function NewPropertyPage() {
     ownerId: '',
     availability: true,
     isFeatured: false,
+    // Site visit / location profile (revenue model)
+    roadTypeConfirmed: '',
+    isCornerUnit: false,
+    frontageWidthFt: '',
+    nearbyOfficesCount: '',
+    nearbyCoworkingCount: '',
+    nearbyResidentialUnits: '',
+    nearbyCollegesCount: '',
+    nearbyGymsClinics: '',
+    floorLevel: 'ground',
+    hasSignalNearby: false,
+    dailyFootfallEstimate: '',
+    peakHours: '',
   })
 
   const propertyTypes = [
@@ -502,6 +515,149 @@ export default function NewPropertyPage() {
               </div>
             </div>
           </div>
+
+          <details className="border border-gray-700 rounded-lg p-4 group">
+            <summary className="text-lg font-semibold text-white cursor-pointer list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
+              <span className="text-gray-400 group-open:rotate-90 transition-transform inline-block">▸</span>
+              📍 Location Profile (Site Visit)
+            </summary>
+            <p className="text-xs text-amber-200/80 mt-2 mb-4">
+              This data improves revenue model accuracy. Fill after site visit.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Road Type</label>
+                <select
+                  value={formData.roadTypeConfirmed}
+                  onChange={(e) => setFormData({ ...formData, roadTypeConfirmed: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                >
+                  <option value="">Not specified (infer from listing)</option>
+                  <option value="main_road">Main Road</option>
+                  <option value="cross_road">Cross Road (off main)</option>
+                  <option value="lane">Internal Lane</option>
+                  <option value="highway">Highway-facing</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Floor Level</label>
+                <select
+                  value={formData.floorLevel}
+                  onChange={(e) => setFormData({ ...formData, floorLevel: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                >
+                  <option value="ground">Ground</option>
+                  <option value="basement">Basement</option>
+                  <option value="first_floor">1st Floor</option>
+                  <option value="upper">2nd Floor+</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isCornerUnit}
+                    onChange={(e) => setFormData({ ...formData, isCornerUnit: e.target.checked })}
+                    className="rounded border-gray-600"
+                  />
+                  Corner unit
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasSignalNearby}
+                    onChange={(e) => setFormData({ ...formData, hasSignalNearby: e.target.checked })}
+                    className="rounded border-gray-600"
+                  />
+                  Traffic signal within ~100m (good for QSR impulse)
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Frontage width (feet)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.frontageWidthFt}
+                  onChange={(e) => setFormData({ ...formData, frontageWidthFt: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                  placeholder="e.g. 25"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Offices / buildings within 500m (approx)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyOfficesCount}
+                  onChange={(e) => setFormData({ ...formData, nearbyOfficesCount: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Co-working spaces within 500m</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyCoworkingCount}
+                  onChange={(e) => setFormData({ ...formData, nearbyCoworkingCount: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Apartment units within 1km (approx)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyResidentialUnits}
+                  onChange={(e) => setFormData({ ...formData, nearbyResidentialUnits: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Colleges / schools within 500m</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyCollegesCount}
+                  onChange={(e) => setFormData({ ...formData, nearbyCollegesCount: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Gyms / clinics within ~300m (approx)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyGymsClinics}
+                  onChange={(e) => setFormData({ ...formData, nearbyGymsClinics: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Your daily footfall estimate (site visit)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.dailyFootfallEstimate}
+                  onChange={(e) => setFormData({ ...formData, dailyFootfallEstimate: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                  placeholder="e.g. 1200"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Peak hours</label>
+                <input
+                  type="text"
+                  value={formData.peakHours}
+                  onChange={(e) => setFormData({ ...formData, peakHours: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                  placeholder="e.g. 12–2pm, 7–10pm"
+                />
+              </div>
+            </div>
+          </details>
 
           {/* Pricing */}
           <div>

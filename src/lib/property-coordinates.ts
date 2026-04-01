@@ -74,6 +74,14 @@ function bangaloreLocalityCentroid(title: string, address: string): { lat: numbe
   return null
 }
 
+/** Sync fallback for map pins when geocoding is skipped (e.g. brand matches list). */
+export function getListingHeuristicCoords(
+  title: string,
+  address: string
+): { lat: number; lng: number } | null {
+  return bangaloreLocalityCentroid(title, address)
+}
+
 async function geocodeSingleQuery(query: string): Promise<{ lat: number; lng: number } | null> {
   const { mapplsGeocode } = await import('./mappls-api')
   const { isMapplsConfigured } = await import('./mappls-config')

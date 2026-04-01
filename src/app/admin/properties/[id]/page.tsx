@@ -48,6 +48,18 @@ export default function EditPropertyPage() {
     availability: true,
     isFeatured: false,
     displayOrder: 0,
+    roadTypeConfirmed: '',
+    isCornerUnit: false,
+    frontageWidthFt: '',
+    nearbyOfficesCount: '',
+    nearbyCoworkingCount: '',
+    nearbyResidentialUnits: '',
+    nearbyCollegesCount: '',
+    nearbyGymsClinics: '',
+    floorLevel: 'ground',
+    hasSignalNearby: false,
+    dailyFootfallEstimate: '',
+    peakHours: '',
   })
 
   const propertyTypes = [
@@ -394,6 +406,18 @@ export default function EditPropertyPage() {
         availability: prop.availability !== undefined ? prop.availability : true,
         isFeatured: prop.isFeatured || false,
         displayOrder: prop.displayOrder || 0,
+        roadTypeConfirmed: prop.roadTypeConfirmed || '',
+        isCornerUnit: prop.isCornerUnit ?? false,
+        frontageWidthFt: prop.frontageWidthFt != null ? String(prop.frontageWidthFt) : '',
+        nearbyOfficesCount: prop.nearbyOfficesCount != null ? String(prop.nearbyOfficesCount) : '',
+        nearbyCoworkingCount: prop.nearbyCoworkingCount != null ? String(prop.nearbyCoworkingCount) : '',
+        nearbyResidentialUnits: prop.nearbyResidentialUnits != null ? String(prop.nearbyResidentialUnits) : '',
+        nearbyCollegesCount: prop.nearbyCollegesCount != null ? String(prop.nearbyCollegesCount) : '',
+        nearbyGymsClinics: prop.nearbyGymsClinics != null ? String(prop.nearbyGymsClinics) : '',
+        floorLevel: prop.floorLevel || 'ground',
+        hasSignalNearby: prop.hasSignalNearby ?? false,
+        dailyFootfallEstimate: prop.dailyFootfallEstimate != null ? String(prop.dailyFootfallEstimate) : '',
+        peakHours: prop.peakHours || '',
       })
       setImages(Array.isArray(prop.images) ? prop.images : [])
     } catch (error: any) {
@@ -498,6 +522,53 @@ export default function EditPropertyPage() {
             displayOrder: parseInt(String(formData.displayOrder)) || null,
             ownerId: formData.ownerId,
             images,
+            roadTypeConfirmed: formData.roadTypeConfirmed || null,
+            isCornerUnit: formData.isCornerUnit,
+            frontageWidthFt:
+              formData.frontageWidthFt === ''
+                ? null
+                : Number.isFinite(parseInt(formData.frontageWidthFt, 10))
+                  ? parseInt(formData.frontageWidthFt, 10)
+                  : null,
+            nearbyOfficesCount:
+              formData.nearbyOfficesCount === ''
+                ? null
+                : Number.isFinite(parseInt(formData.nearbyOfficesCount, 10))
+                  ? parseInt(formData.nearbyOfficesCount, 10)
+                  : null,
+            nearbyCoworkingCount:
+              formData.nearbyCoworkingCount === ''
+                ? null
+                : Number.isFinite(parseInt(formData.nearbyCoworkingCount, 10))
+                  ? parseInt(formData.nearbyCoworkingCount, 10)
+                  : null,
+            nearbyResidentialUnits:
+              formData.nearbyResidentialUnits === ''
+                ? null
+                : Number.isFinite(parseInt(formData.nearbyResidentialUnits, 10))
+                  ? parseInt(formData.nearbyResidentialUnits, 10)
+                  : null,
+            nearbyCollegesCount:
+              formData.nearbyCollegesCount === ''
+                ? null
+                : Number.isFinite(parseInt(formData.nearbyCollegesCount, 10))
+                  ? parseInt(formData.nearbyCollegesCount, 10)
+                  : null,
+            nearbyGymsClinics:
+              formData.nearbyGymsClinics === ''
+                ? null
+                : Number.isFinite(parseInt(formData.nearbyGymsClinics, 10))
+                  ? parseInt(formData.nearbyGymsClinics, 10)
+                  : null,
+            floorLevel: formData.floorLevel,
+            hasSignalNearby: formData.hasSignalNearby,
+            dailyFootfallEstimate:
+              formData.dailyFootfallEstimate === ''
+                ? null
+                : Number.isFinite(parseInt(formData.dailyFootfallEstimate, 10))
+                  ? parseInt(formData.dailyFootfallEstimate, 10)
+                  : null,
+            peakHours: formData.peakHours || null,
           }),
         }
       )
@@ -760,6 +831,149 @@ export default function EditPropertyPage() {
               </div>
             </div>
           </div>
+
+          <details className="border border-gray-700 rounded-lg p-4 group">
+            <summary className="text-lg font-semibold text-white cursor-pointer list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
+              <span className="text-gray-400 group-open:rotate-90 transition-transform inline-block">▸</span>
+              📍 Location Profile (Site Visit)
+            </summary>
+            <p className="text-xs text-amber-200/80 mt-2 mb-4">
+              This data improves revenue model accuracy. Fill after site visit.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Road Type</label>
+                <select
+                  value={formData.roadTypeConfirmed}
+                  onChange={(e) => setFormData({ ...formData, roadTypeConfirmed: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                >
+                  <option value="">Not specified (infer from listing)</option>
+                  <option value="main_road">Main Road</option>
+                  <option value="cross_road">Cross Road (off main)</option>
+                  <option value="lane">Internal Lane</option>
+                  <option value="highway">Highway-facing</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Floor Level</label>
+                <select
+                  value={formData.floorLevel}
+                  onChange={(e) => setFormData({ ...formData, floorLevel: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                >
+                  <option value="ground">Ground</option>
+                  <option value="basement">Basement</option>
+                  <option value="first_floor">1st Floor</option>
+                  <option value="upper">2nd Floor+</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isCornerUnit}
+                    onChange={(e) => setFormData({ ...formData, isCornerUnit: e.target.checked })}
+                    className="rounded border-gray-600"
+                  />
+                  Corner unit
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasSignalNearby}
+                    onChange={(e) => setFormData({ ...formData, hasSignalNearby: e.target.checked })}
+                    className="rounded border-gray-600"
+                  />
+                  Traffic signal within ~100m (good for QSR impulse)
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Frontage width (feet)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.frontageWidthFt}
+                  onChange={(e) => setFormData({ ...formData, frontageWidthFt: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                  placeholder="e.g. 25"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Offices / buildings within 500m (approx)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyOfficesCount}
+                  onChange={(e) => setFormData({ ...formData, nearbyOfficesCount: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Co-working spaces within 500m</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyCoworkingCount}
+                  onChange={(e) => setFormData({ ...formData, nearbyCoworkingCount: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Apartment units within 1km (approx)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyResidentialUnits}
+                  onChange={(e) => setFormData({ ...formData, nearbyResidentialUnits: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Colleges / schools within 500m</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyCollegesCount}
+                  onChange={(e) => setFormData({ ...formData, nearbyCollegesCount: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Gyms / clinics within ~300m (approx)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nearbyGymsClinics}
+                  onChange={(e) => setFormData({ ...formData, nearbyGymsClinics: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Your daily footfall estimate (site visit)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.dailyFootfallEstimate}
+                  onChange={(e) => setFormData({ ...formData, dailyFootfallEstimate: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                  placeholder="e.g. 1200"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Peak hours</label>
+                <input
+                  type="text"
+                  value={formData.peakHours}
+                  onChange={(e) => setFormData({ ...formData, peakHours: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
+                  placeholder="e.g. 12–2pm, 7–10pm"
+                />
+              </div>
+            </div>
+          </details>
 
           {/* Pricing */}
           <div>

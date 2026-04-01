@@ -8,6 +8,63 @@ import { formatPropertyForPlatform } from '@/lib/property-formatter'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
 
+function parseBodyInt(v: unknown): number | null {
+  if (v === undefined || v === null || v === '') return null
+  const n = typeof v === 'number' ? v : parseInt(String(v).trim(), 10)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Site-visit / location profile columns from admin create body. */
+function locationProfileFieldsFromBody(body: Record<string, unknown>) {
+  const roadTypeConfirmed =
+    body.roadTypeConfirmed != null && String(body.roadTypeConfirmed).trim()
+      ? String(body.roadTypeConfirmed).trim()
+      : null
+  const frontageWidthFt = parseBodyInt(body.frontageWidthFt)
+  const nearbyOfficesCount = parseBodyInt(body.nearbyOfficesCount)
+  const nearbyCoworkingCount = parseBodyInt(body.nearbyCoworkingCount)
+  const nearbyResidentialUnits = parseBodyInt(body.nearbyResidentialUnits)
+  const nearbyCollegesCount = parseBodyInt(body.nearbyCollegesCount)
+  const nearbyGymsClinics = parseBodyInt(body.nearbyGymsClinics)
+  const floorLevelRaw =
+    body.floorLevel != null && String(body.floorLevel).trim()
+      ? String(body.floorLevel).trim()
+      : 'ground'
+  const peakHours =
+    body.peakHours != null && String(body.peakHours).trim() ? String(body.peakHours).trim() : null
+  const dailyFootfallEstimate = parseBodyInt(body.dailyFootfallEstimate)
+
+  const touched =
+    roadTypeConfirmed != null ||
+    body.isCornerUnit === true ||
+    frontageWidthFt != null ||
+    nearbyOfficesCount != null ||
+    nearbyCoworkingCount != null ||
+    nearbyResidentialUnits != null ||
+    nearbyCollegesCount != null ||
+    nearbyGymsClinics != null ||
+    (floorLevelRaw && floorLevelRaw !== 'ground') ||
+    body.hasSignalNearby === true ||
+    dailyFootfallEstimate != null ||
+    peakHours != null
+
+  return {
+    roadTypeConfirmed,
+    isCornerUnit: Boolean(body.isCornerUnit),
+    frontageWidthFt,
+    nearbyOfficesCount,
+    nearbyCoworkingCount,
+    nearbyResidentialUnits,
+    nearbyCollegesCount,
+    nearbyGymsClinics,
+    floorLevel: floorLevelRaw,
+    hasSignalNearby: Boolean(body.hasSignalNearby),
+    dailyFootfallEstimate,
+    peakHours,
+    locationProfileUpdatedAt: touched ? new Date() : null,
+  }
+}
+
 export async function GET(request: NextRequest) {
   // Enhanced admin security check
   const securityCheck = await requireAdminAuth(request, {
@@ -609,6 +666,8 @@ export async function POST(request: NextRequest) {
       statusColumnExists = false
     }
 
+    const locProfile = locationProfileFieldsFromBody(body as Record<string, unknown>)
+
     const propertyData: any = {
       id: propertyId,
       title,
@@ -635,6 +694,19 @@ export async function POST(request: NextRequest) {
         displayOrder !== undefined && displayOrder !== null && String(displayOrder).trim() !== ''
           ? parseInt(String(displayOrder), 10)
           : null,
+      roadTypeConfirmed: locProfile.roadTypeConfirmed,
+      isCornerUnit: locProfile.isCornerUnit,
+      frontageWidthFt: locProfile.frontageWidthFt,
+      nearbyOfficesCount: locProfile.nearbyOfficesCount,
+      nearbyCoworkingCount: locProfile.nearbyCoworkingCount,
+      nearbyResidentialUnits: locProfile.nearbyResidentialUnits,
+      nearbyCollegesCount: locProfile.nearbyCollegesCount,
+      nearbyGymsClinics: locProfile.nearbyGymsClinics,
+      floorLevel: locProfile.floorLevel,
+      hasSignalNearby: locProfile.hasSignalNearby,
+      dailyFootfallEstimate: locProfile.dailyFootfallEstimate,
+      peakHours: locProfile.peakHours,
+      locationProfileUpdatedAt: locProfile.locationProfileUpdatedAt,
     }
 
     // Only set status if column exists
@@ -755,7 +827,8 @@ export async function PATCH(request: NextRequest) {
 
     // Prepare update data
     const data: any = {}
-    
+    let siteVisitPatch = false
+
     // Basic fields
     if (updateData.title !== undefined) data.title = updateData.title
     if (updateData.description !== undefined) data.description = updateData.description
@@ -876,6 +949,67 @@ export async function PATCH(request: NextRequest) {
       data.ownerId = updateData.ownerId
     }
 
+    // Site visit / location profile (revenue model)
+    if (updateData.roadTypeConfirmed !== undefined) {
+      data.roadTypeConfirmed = updateData.roadTypeConfirmed
+        ? String(updateData.roadTypeConfirmed).trim()
+        : null
+      siteVisitPatch = true
+    }
+    if (updateData.isCornerUnit !== undefined) {
+      data.isCornerUnit = Boolean(updateData.isCornerUnit)
+      siteVisitPatch = true
+    }
+    if (updateData.frontageWidthFt !== undefined) {
+      data.frontageWidthFt = parseBodyInt(updateData.frontageWidthFt)
+      siteVisitPatch = true
+    }
+    if (updateData.nearbyOfficesCount !== undefined) {
+      data.nearbyOfficesCount = parseBodyInt(updateData.nearbyOfficesCount)
+      siteVisitPatch = true
+    }
+    if (updateData.nearbyCoworkingCount !== undefined) {
+      data.nearbyCoworkingCount = parseBodyInt(updateData.nearbyCoworkingCount)
+      siteVisitPatch = true
+    }
+    if (updateData.nearbyResidentialUnits !== undefined) {
+      data.nearbyResidentialUnits = parseBodyInt(updateData.nearbyResidentialUnits)
+      siteVisitPatch = true
+    }
+    if (updateData.nearbyCollegesCount !== undefined) {
+      data.nearbyCollegesCount = parseBodyInt(updateData.nearbyCollegesCount)
+      siteVisitPatch = true
+    }
+    if (updateData.nearbyGymsClinics !== undefined) {
+      data.nearbyGymsClinics = parseBodyInt(updateData.nearbyGymsClinics)
+      siteVisitPatch = true
+    }
+    if (updateData.floorLevel !== undefined) {
+      data.floorLevel =
+        updateData.floorLevel != null && String(updateData.floorLevel).trim()
+          ? String(updateData.floorLevel).trim()
+          : 'ground'
+      siteVisitPatch = true
+    }
+    if (updateData.hasSignalNearby !== undefined) {
+      data.hasSignalNearby = Boolean(updateData.hasSignalNearby)
+      siteVisitPatch = true
+    }
+    if (updateData.dailyFootfallEstimate !== undefined) {
+      data.dailyFootfallEstimate = parseBodyInt(updateData.dailyFootfallEstimate)
+      siteVisitPatch = true
+    }
+    if (updateData.peakHours !== undefined) {
+      data.peakHours =
+        updateData.peakHours != null && String(updateData.peakHours).trim()
+          ? String(updateData.peakHours).trim()
+          : null
+      siteVisitPatch = true
+    }
+    if (siteVisitPatch) {
+      data.locationProfileUpdatedAt = new Date()
+    }
+
     // Perform the update directly — no interactive transaction wrapper needed.
     // Previously these were wrapped in prisma.$transaction(async (tx) => { ... }) which has
     // a hard 5-second Prisma-level timeout that cannot be overridden by SET statement_timeout.
@@ -910,7 +1044,8 @@ export async function PATCH(request: NextRequest) {
       updateData.price !== undefined ||
       updateData.propertyType !== undefined ||
       updateData.mapLink !== undefined ||
-      updateData.amenities !== undefined
+      updateData.amenities !== undefined ||
+      siteVisitPatch
 
     if (shouldRecalcIntel) {
       setTimeout(() => {

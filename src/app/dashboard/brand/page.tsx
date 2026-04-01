@@ -16,6 +16,8 @@ import {
 } from '@/lib/location-intelligence/brand-competitor-segment'
 import type { LocationSynthesis } from '@/lib/intelligence/brand-intel-enrichment.types'
 import { toIndustryKey } from '@/lib/intelligence/industry-key'
+import { buildRevenueLocationProfile, calculateRevenueFromBenchmarks } from '@/lib/intelligence/calculate-revenue'
+import { getIndiaCategoryProfile } from '@/lib/location-intelligence/india-benchmarks'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2416,25 +2418,77 @@ export default function BrandDashboardPage() {
                       </div>
                       {(() => {
                         const brand = data?.brand ?? null
-                        const industry = brand?.industry?.toLowerCase() || ''
-                        const isCafe = industry.includes('cafe') || industry.includes('coffee')
-                        const isQsr = industry.includes('qsr') || industry.includes('fast food') || industry.includes('burger')
-                        const isRestaurant = industry.includes('restaurant') || industry.includes('dining')
-                        const isBakery = industry.includes('bakery') || industry.includes('dessert')
-                        const avgTicket = isCafe ? 220 : isQsr ? 290 : isRestaurant ? 420 : isBakery ? 250 : 350
-                        const captureRate = isCafe ? 0.04 : isQsr ? 0.05 : isRestaurant ? 0.03 : 0.035
-                        const dailyFootfall = Math.max(500, intelData.totalFootfall || 2000)
-                        const dailyCovers = Math.round(dailyFootfall * captureRate)
-                        const conservative = Math.round(dailyCovers * 0.6 * avgTicket * 26 / 100000)
-                        const base = Math.round(dailyCovers * avgTicket * 26 / 100000)
-                        const optimistic = Math.round(dailyCovers * 1.4 * avgTicket * 26 / 100000)
+                        const businessType = buildLocationBusinessType(brand)
+                        const prop = selectedMatch?.property
+                        const priceNum = prop?.price != null ? Number(prop.price) : null
+                        const sizeNum = prop?.size != null ? Number(prop.size) : null
+                        const monthlyRent =
+                          priceNum != null && prop
+                            ? prop.priceType === 'yearly'
+                              ? priceNum / 12
+                              : prop.priceType === 'sqft' && sizeNum
+                                ? priceNum * sizeNum
+                                : prop.priceType === 'monthly'
+                                  ? priceNum
+                                  : null
+                            : null
+
+                        const spiFallback =
+                          intelData.affluenceIndicator === 'High'
+                            ? 82
+                            : intelData.affluenceIndicator === 'Low'
+                              ? 38
+                              : 55
+
+                        const locationProfile = buildRevenueLocationProfile({
+                          amenities: prop?.amenities,
+                          landmarks: intelData.catchmentLandmarks,
+                          directCompetitorCount: intelData.numberOfStores,
+                          rawCompetitors: intelData.competitors.map((c) => ({
+                            rating: c.rating,
+                            reviewCount: c.reviewCount,
+                          })),
+                          metroDistanceM: intelData.metroDistance,
+                          busStops: intelData.busStops,
+                          localityIntel: null,
+                          ward: null,
+                          competitorCountForSaturationFallback: intelData.numberOfStores,
+                          spendingPowerIndexFallback: spiFallback,
+                        })
+
+                        const revenue = calculateRevenueFromBenchmarks({
+                          latitude: intelData.coords.lat,
+                          longitude: intelData.coords.lng,
+                          propertyType: prop?.propertyType,
+                          businessType,
+                          monthlyRent,
+                          locationProfile,
+                        })
+
+                        const categoryProfile = getIndiaCategoryProfile(
+                          prop?.propertyType ?? '',
+                          businessType,
+                        )
+                        const officeSharePct = Math.round(
+                          (categoryProfile.officeLunchShare ?? 0.12) * 1000,
+                        ) / 10
+                        const residentialSharePct = Math.round(
+                          (categoryProfile.residentialShare ?? 0.04) * 1000,
+                        ) / 10
+
+                        const conservativeL = Math.max(0, Math.round(revenue.monthlyRevenueLow / 100000))
+                        const baseL = Math.max(0, Math.round(revenue.monthlyRevenueMid / 100000))
+                        const optimisticL = Math.max(0, Math.round(revenue.monthlyRevenueHigh / 100000))
+                        const { breakdown } = revenue
+                        const healthyPct = revenue.healthyRentToRevenuePct
+
                         return (
                           <div>
                             <div className="grid grid-cols-3 gap-2 mb-3">
                               {[
-                                { label: 'Conservative', value: `₹${conservative}L`, color: 'bg-gray-50 border-gray-200' },
-                                { label: 'Base Case', value: `₹${base}L`, color: 'bg-orange-50 border-orange-200' },
-                                { label: 'Optimistic', value: `₹${optimistic}L`, color: 'bg-green-50 border-green-200' },
+                                { label: 'Conservative', value: `₹${conservativeL}L`, color: 'bg-gray-50 border-gray-200' },
+                                { label: 'Base Case', value: `₹${baseL}L`, color: 'bg-orange-50 border-orange-200' },
+                                { label: 'Optimistic', value: `₹${optimisticL}L`, color: 'bg-green-50 border-green-200' },
                               ].map(({ label, value, color }) => (
                                 <div key={label} className={`${color} border rounded-xl p-2.5 text-center`}>
                                   <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-1">{label}</p>
@@ -2443,24 +2497,61 @@ export default function BrandDashboardPage() {
                                 </div>
                               ))}
                             </div>
-                            {selectedMatch && (() => {
-                              const monthlyRent = selectedMatch.property.priceType === 'monthly' ? Number(selectedMatch.property.price) : 0
-                              if (monthlyRent === 0) return null
-                              const rentPct = Math.round((monthlyRent / (base * 100000)) * 100)
+                            <details className="mt-3 border-t border-gray-100 pt-3 group">
+                              <summary className="text-[9px] font-semibold text-gray-500 uppercase tracking-wide cursor-pointer list-none flex items-center gap-1 mb-2 [&::-webkit-details-marker]:hidden">
+                                <span className="text-gray-400 group-open:rotate-90 transition-transform inline-block">▸</span>
+                                How we calculated this
+                              </summary>
+                              <div className="space-y-1">
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Office worker demand ({breakdown.officeWorkerDemand}/day)</span>
+                                    <span className="text-gray-700">×{officeSharePct}% capture</span>
+                                  </div>
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Residential demand ({breakdown.residentialDemand}/day)</span>
+                                    <span className="text-gray-700">×{residentialSharePct}% capture</span>
+                                  </div>
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Road walk-in ({breakdown.roadWalkIn}/day)</span>
+                                    <span className="text-gray-700 capitalize">{breakdown.roadTypeModifier.replace(/_/g, ' ')}</span>
+                                  </div>
+                                  {breakdown.accessBonuses.length > 0 && (
+                                    <div className="flex justify-between text-[10px] gap-2">
+                                      <span className="text-gray-500 shrink-0">Access bonuses</span>
+                                      <span className="text-green-600 text-right">{breakdown.accessBonuses.join(' · ')}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Competition</span>
+                                    <span
+                                      className={`capitalize ${breakdown.saturationLevel === 'saturated' ? 'text-red-500' : breakdown.saturationLevel === 'low' ? 'text-green-600' : 'text-amber-600'}`}
+                                    >
+                                      {breakdown.saturationLevel} market
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-[10px] font-medium border-t border-gray-100 pt-1 mt-1">
+                                    <span className="text-gray-700">
+                                      Est. {breakdown.customersPerDay} customers/day · ₹{breakdown.avgTicket} avg ticket
+                                    </span>
+                                  </div>
+                              </div>
+                            </details>
+                            {selectedMatch && monthlyRent != null && monthlyRent > 0 && revenue.monthlyRevenueMid > 0 && (() => {
+                              const rentPct = Math.round((monthlyRent / revenue.monthlyRevenueMid) * 100)
                               return (
-                                <div className={`rounded-xl p-2.5 text-xs ${rentPct <= 15 ? 'bg-green-50 border border-green-100' : rentPct <= 25 ? 'bg-amber-50 border border-amber-100' : 'bg-red-50 border border-red-100'}`}>
+                                <div className={`rounded-xl p-2.5 text-xs mt-3 ${rentPct <= healthyPct ? 'bg-green-50 border border-green-100' : rentPct <= healthyPct + 10 ? 'bg-amber-50 border border-amber-100' : 'bg-red-50 border border-red-100'}`}>
                                   <div className="flex items-center justify-between">
                                     <span className="text-gray-600">Rent-to-Revenue Ratio</span>
-                                    <span className={`font-bold ${rentPct <= 15 ? 'text-green-700' : rentPct <= 25 ? 'text-amber-700' : 'text-red-600'}`}>{rentPct}%</span>
+                                    <span className={`font-bold ${rentPct <= healthyPct ? 'text-green-700' : rentPct <= healthyPct + 10 ? 'text-amber-700' : 'text-red-600'}`}>{rentPct}%</span>
                                   </div>
-                                  <p className={`text-[10px] mt-0.5 ${rentPct <= 15 ? 'text-green-600' : rentPct <= 25 ? 'text-amber-600' : 'text-red-500'}`}>
-                                    {rentPct <= 15 ? 'Healthy ratio — strong unit economics' : rentPct <= 25 ? 'Viable but requires consistent volume' : 'High rent load — premium brand or high volume essential'}
+                                  <p className={`text-[10px] mt-0.5 ${rentPct <= healthyPct ? 'text-green-600' : rentPct <= healthyPct + 10 ? 'text-amber-600' : 'text-red-500'}`}>
+                                    {rentPct <= healthyPct ? 'Healthy ratio — strong unit economics' : rentPct <= healthyPct + 10 ? 'Viable but requires consistent volume' : 'High rent load — premium brand or high volume essential'}
                                   </p>
                                 </div>
                               )
                             })()}
                             <p className="text-[9px] text-gray-400 mt-2">
-                              Estimates based on {dailyCovers} avg daily covers · ₹{avgTicket} avg ticket · {brand?.industry || 'F&B'} benchmarks
+                              Lokazen model: catchment + access + competition · {brand?.industry || 'F&B'} category profile · not a financial guarantee
                             </p>
                           </div>
                         )

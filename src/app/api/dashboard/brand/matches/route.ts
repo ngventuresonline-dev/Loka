@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
-import { getPropertyCoordinatesFromRow, geocodeAddress } from '@/lib/property-coordinates'
+import { getPropertyCoordinatesFromRow, getListingHeuristicCoords } from '@/lib/property-coordinates'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 import {
   deriveMonthlyRentFromListing,
@@ -234,6 +234,10 @@ export async function GET(request: NextRequest) {
           )
           if (area) coords = { lat: area.lat, lng: area.lng }
         }
+        if (!coords) {
+          const h = getListingHeuristicCoords(p.title || '', p.address || '')
+          if (h) coords = h
+        }
 
         return { p, bfiScore, budgetFit, sizeFit, locationFit, coords }
       })
@@ -246,27 +250,10 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.bfiScore - a.bfiScore)
       .slice(0, 15)
 
-    // Geocode any remaining properties without coordinates (run in parallel, cap at 5s)
-    const geocodeResults = await Promise.allSettled(
-      preScoredList.map(async (m) => {
-        if (m.coords) return m
-        try {
-          const geocoded = await geocodeAddress(
-            m.p.address || '',
-            m.p.city || '',
-            m.p.state || 'Karnataka',
-            m.p.title
-          )
-          return { ...m, coords: geocoded }
-        } catch {
-          return m
-        }
-      })
-    )
+    // Do not geocode here: parallel address lookups added 5–60s+ to first paint. Map pins use
+    // map_link / area / heuristic above; precise coords load with per-property intelligence.
 
-    const scored: ScoredMatch[] = geocodeResults.map((r, i) =>
-      r.status === 'fulfilled' ? r.value : preScoredList[i]
-    )
+    const scored: ScoredMatch[] = preScoredList
 
     return NextResponse.json({
       matches: scored.map((m) => ({

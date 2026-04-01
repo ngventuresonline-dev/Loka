@@ -289,6 +289,19 @@ model Property {
   waterFacility        Boolean?           @map("water_facility") @default(false)
   amenities            Json?
   images               Json?
+  roadTypeConfirmed    String?            @map("road_type_confirmed") @db.Text
+  isCornerUnit         Boolean?           @map("is_corner_unit") @default(false)
+  frontageWidthFt      Int?               @map("frontage_width_ft")
+  nearbyOfficesCount   Int?               @map("nearby_offices_count")
+  nearbyCoworkingCount Int?               @map("nearby_coworking_count")
+  nearbyResidentialUnits Int?             @map("nearby_residential_units")
+  nearbyCollegesCount  Int?               @map("nearby_colleges_count")
+  nearbyGymsClinics    Int?               @map("nearby_gyms_clinics")
+  floorLevel           String?            @map("floor_level") @default("ground") @db.Text
+  hasSignalNearby      Boolean?           @map("has_signal_nearby") @default(false)
+  dailyFootfallEstimate Int?              @map("daily_footfall_estimate")
+  peakHours            String?            @map("peak_hours") @db.Text
+  locationProfileUpdatedAt DateTime?       @map("location_profile_updated_at") @db.Timestamptz(6)
   ownerId              String             @map("owner_id") @db.VarChar(36)
   status                property_status_enum @default(pending)
   availability         Boolean?           @map("is_available") @default(true)

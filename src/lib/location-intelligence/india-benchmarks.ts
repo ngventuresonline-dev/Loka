@@ -15,6 +15,10 @@ export interface CategoryProfile {
   grossMarginPct?: number
   /** Market growth rate (CAGR) for outlook */
   growthCagrPct?: number
+  /** Share of office workers in catchment likely to convert on a given day (revenue engine). */
+  officeLunchShare?: number
+  /** Share of residential dining-out pool captured per day (revenue engine). */
+  residentialShare?: number
 }
 
 /** India population & urban context (2026) */
@@ -137,6 +141,8 @@ export function getIndiaCategoryProfile(
       perCompetitor: 150,
       grossMarginPct: 0.28,
       growthCagrPct: 12.6,
+      officeLunchShare: 0.18,
+      residentialShare: 0.05,
     }
   }
 
@@ -149,6 +155,8 @@ export function getIndiaCategoryProfile(
       perCompetitor: 180,
       grossMarginPct: 0.55, // beverage-heavy
       growthCagrPct: 13.28,
+      officeLunchShare: 0.15,
+      residentialShare: 0.04,
     }
   }
 
@@ -161,6 +169,8 @@ export function getIndiaCategoryProfile(
       perCompetitor: 120,
       grossMarginPct: 0.25,
       growthCagrPct: 9,
+      officeLunchShare: 0.12,
+      residentialShare: 0.035,
     }
   }
 
@@ -173,6 +183,8 @@ export function getIndiaCategoryProfile(
       perCompetitor: 100,
       grossMarginPct: 0.6,
       growthCagrPct: 9,
+      officeLunchShare: 0.08,
+      residentialShare: 0.04,
     }
   }
 
@@ -185,6 +197,8 @@ export function getIndiaCategoryProfile(
       perCompetitor: 140,
       grossMarginPct: 0.45,
       growthCagrPct: 10,
+      officeLunchShare: 0.12,
+      residentialShare: 0.04,
     }
   }
 
@@ -197,6 +211,34 @@ export function getIndiaCategoryProfile(
       perCompetitor: 160,
       grossMarginPct: 0.22,
       growthCagrPct: 12.6,
+      officeLunchShare: 0.15,
+      residentialShare: 0.045,
+    }
+  }
+
+  if (/\b(retail|fashion|clothing|store|shop|optical|eyewear|jewel|electronics)\b/.test(raw)) {
+    return {
+      captureRate: 0.9,
+      avgTicket: 280,
+      baseFootfall: 1800,
+      perCompetitor: 100,
+      grossMarginPct: 0.35,
+      growthCagrPct: 8,
+      officeLunchShare: 0.05,
+      residentialShare: 0.025,
+    }
+  }
+
+  if (/\b(salon|spa|beauty|hair|wellness|skin)\b/.test(raw)) {
+    return {
+      captureRate: 0.85,
+      avgTicket: 320,
+      baseFootfall: 1600,
+      perCompetitor: 90,
+      grossMarginPct: 0.5,
+      growthCagrPct: 9,
+      officeLunchShare: 0.05,
+      residentialShare: 0.025,
     }
   }
 
@@ -207,6 +249,8 @@ export function getIndiaCategoryProfile(
     baseFootfall: 2000,
     perCompetitor: 120,
     grossMarginPct: 0.3,
+    officeLunchShare: 0.12,
+    residentialShare: 0.035,
   }
 }
 

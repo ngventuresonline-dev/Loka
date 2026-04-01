@@ -23,15 +23,37 @@ export async function GET(
       WHERE property_id = ${propertyId}
       LIMIT 1
     `,
-    prisma.$queryRaw<Array<{ synthesis: unknown; cached_at: Date }>>`
-      SELECT synthesis, cached_at FROM property_synthesis_cache
-      WHERE property_id = ${propertyId} AND industry_key = ${industryKey}
+    prisma.$queryRaw<
+      Array<{ synthesis: unknown; cached_at: Date; industry_key: string; synthesis_fallback: boolean }>
+    >`
+      SELECT synthesis, cached_at, industry_key,
+        (industry_key <> ${industryKey}) AS synthesis_fallback
+      FROM property_synthesis_cache
+      WHERE property_id = ${propertyId}
+        AND (cache_expires_at IS NULL OR cache_expires_at > NOW())
+      ORDER BY
+        CASE industry_key
+          WHEN ${industryKey} THEN 0
+          WHEN 'restaurant' THEN 1
+          WHEN 'cafe' THEN 2
+          WHEN 'qsr' THEN 3
+          WHEN 'retail' THEN 4
+          WHEN 'salon' THEN 5
+          WHEN 'bakery' THEN 6
+          WHEN 'brewery' THEN 7
+          WHEN 'wellness' THEN 8
+          ELSE 99
+        END,
+        cached_at DESC
       LIMIT 1
     `,
   ])
 
   const location = locationRows[0] || null
-  const synthesis = synthesisRows[0]?.synthesis || null
+  const synRow = synthesisRows[0]
+  const synthesis = synRow?.synthesis || null
+  const synthesisResolvedKey = synRow?.industry_key ?? null
+  const synthesisIsFallback = Boolean(synRow?.synthesis_fallback)
 
   if (!location) {
     const origin = request.nextUrl.origin || process.env.NEXT_PUBLIC_APP_URL || 'https://www.lokazen.in'
@@ -59,6 +81,8 @@ export async function GET(
       cachedAt: location.cached_at ?? null,
       cacheExpiresAt: location.cache_expires_at ?? null,
       industryKey,
+      synthesisResolvedKey,
+      synthesisIsFallback,
       synthesisAvailable: !!synthesis,
       intel: {
         overallScore: location.overall_score,
