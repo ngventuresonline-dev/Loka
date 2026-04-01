@@ -23,6 +23,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:import-featured": "tsx scripts/import-featured-properties.ts",
     "db:seed-gvs": "tsx scripts/seed-gvs-properties.ts",
+    "db:seed-lokazen-pending": "tsx scripts/seed-gvs-properties.ts --lokazen-only",
     "db:seed-growth": "tsx scripts/seed-growth-patterns.ts",
     "db:seed-census": "tsx scripts/seed-census-data.ts",
     "db:seed-wards": "tsx scripts/seed-wards.ts",

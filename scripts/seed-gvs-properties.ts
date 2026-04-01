@@ -1,6 +1,7 @@
 /**
- * Seed GVS Ventures commercial properties for admin approval.
- * Run: npm run db:seed-gvs
+ * Seed commercial properties for admin approval (GVS backlog + Lokazen listings).
+ * Run: npm run db:seed-gvs                    — full backlog + Lokazen batch
+ * Run: npm run db:seed-lokazen-pending        — only the Lokazen batch (Apr 2026)
  */
 import { PrismaClient } from '@prisma/client'
 import { config } from 'dotenv'
@@ -34,6 +35,17 @@ interface GVSProperty {
   maintenance?: number
   revenueShare?: number
   availability?: string
+  /** Default GVS; Lokazen listings use Lokazen owner + branding */
+  listingsBrand?: 'gvs' | 'lokazen'
+  locationHighlight?: string
+  agreementNote?: string
+  lockInNote?: string
+  depositNote?: string
+  sizeNote?: string
+  conditionNote?: string
+  propertyType?: 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other'
+  zipCode?: string
+  powerNote?: string
 }
 
 const gvsProperties: GVSProperty[] = [
@@ -378,6 +390,94 @@ const gvsProperties: GVSProperty[] = [
   },
 ]
 
+/** Lokazen listings (Apr 2026) — owner Lokazen; status pending until admin approves */
+const lokazenCommercialApr2026: GVSProperty[] = [
+  {
+    title: 'Ultra-Prime Commercial Space | St. Marks Road',
+    address: 'St. Marks Road',
+    city: 'Bangalore',
+    size: 135,
+    sizeNote: '120–150 Sq. Ft. (representative mid-size used for search)',
+    price: 120000,
+    priceType: 'monthly',
+    securityDepositMonths: 10,
+    powerBackup: false,
+    mapLink: 'https://maps.app.goo.gl/wecFoVVgyuopbzvt6?g_st=ic',
+    idealFor: 'Premium Kiosk | Dessert | Beverage | Boutique Retail',
+    listingsBrand: 'lokazen',
+    locationHighlight: 'High Footfall | Premium High Street',
+    lockInNote: 'To be discussed',
+    agreementNote: 'To be discussed',
+    depositNote: '10 months rent',
+    availability: 'To be confirmed',
+    powerNote: 'To be confirmed',
+    propertyType: 'retail',
+    zipCode: '560001',
+  },
+  {
+    title: 'Ultra-Prime Commercial Space | Koramangala – Sony Signal',
+    address: 'Koramangala, Sony Signal',
+    city: 'Bangalore',
+    size: 700,
+    price: 250,
+    priceType: 'sqft',
+    securityDepositMonths: null,
+    power: undefined,
+    powerBackup: true,
+    mapLink: 'https://maps.app.goo.gl/vHotVJP3GMipkDgs5?g_st=ic',
+    idealFor: 'Café | QSR | Dessert | Premium Retail',
+    listingsBrand: 'lokazen',
+    locationHighlight: 'High Footfall | Prime Junction Location',
+    depositNote: 'To be discussed',
+    lockInNote: 'To be discussed',
+    agreementNote: 'To be discussed',
+    availability: 'Immediate',
+    propertyType: 'retail',
+    zipCode: '560034',
+  },
+  {
+    title: 'Prime Commercial Property | JP Nagar – 24th Main',
+    address: 'JP Nagar, 24th Main',
+    city: 'Bangalore',
+    size: 575,
+    sizeNote: '550–600 Sq. Ft.',
+    price: 80000,
+    priceType: 'monthly',
+    securityDepositFixed: 700000,
+    securityDepositMonths: null,
+    powerBackup: false,
+    mapLink: 'https://maps.app.goo.gl/yii9eutG4T9Asngw7?g_st=ic',
+    idealFor: 'Café | QSR | Retail | Salon',
+    listingsBrand: 'lokazen',
+    lockInNote: 'To be discussed',
+    agreementNote: 'To be discussed',
+    availability: 'To be confirmed',
+    powerNote: 'To be confirmed',
+    propertyType: 'retail',
+    zipCode: '560078',
+  },
+  {
+    title: 'Ultra-Prime Commercial Space | Bangalore (Compact Format)',
+    address: 'Bangalore – premium high-footfall micro retail (exact pin shared on enquiry)',
+    city: 'Bangalore',
+    size: 64,
+    conditionNote: 'As-is condition',
+    price: 75000,
+    priceType: 'monthly',
+    securityDepositMonths: 6,
+    power: '5–8 kVA',
+    powerBackup: false,
+    idealFor: 'Kiosk | Grab & Go | Beverage | Dessert',
+    listingsBrand: 'lokazen',
+    locationHighlight: 'High Footfall | Compact Format',
+    lockInNote: 'To be discussed',
+    agreementNote: 'To be discussed',
+    availability: 'Immediate',
+    propertyType: 'retail',
+    zipCode: '560001',
+  },
+]
+
 async function generatePropertyId(index: number): Promise<string> {
   const allProps = await prisma.property.findMany({
     where: { id: { startsWith: 'prop-' } },
@@ -395,7 +495,16 @@ async function generatePropertyId(index: number): Promise<string> {
 }
 
 async function main() {
-  console.log('🌱 Seeding GVS Ventures properties (pending approval)...')
+  const lokazenOnly = process.argv.includes('--lokazen-only')
+  const toSeed = lokazenOnly
+    ? lokazenCommercialApr2026
+    : [...gvsProperties, ...lokazenCommercialApr2026]
+
+  console.log(
+    lokazenOnly
+      ? '🌱 Seeding Lokazen commercial batch only (pending approval)...'
+      : '🌱 Seeding commercial properties: GVS backlog + Lokazen batch (pending approval)...'
+  )
 
   const gvsOwner = await prisma.user.upsert({
     where: { email: 'admin@ngventures.com' },
@@ -408,11 +517,26 @@ async function main() {
     },
   })
 
+  const lokazenOwner = await prisma.user.upsert({
+    where: { email: 'listings@lokazen.com' },
+    update: { name: 'Lokazen', userType: 'admin' },
+    create: {
+      email: 'listings@lokazen.com',
+      name: 'Lokazen',
+      password: '$2b$10$placeholder_hash_change_in_production',
+      userType: 'admin',
+    },
+  })
+
   let imported = 0
   let skipped = 0
 
-  for (let i = 0; i < gvsProperties.length; i++) {
-    const prop = gvsProperties[i]
+  for (let i = 0; i < toSeed.length; i++) {
+    const prop = toSeed[i]
+    const brand = prop.listingsBrand ?? 'gvs'
+    const owner = brand === 'lokazen' ? lokazenOwner : gvsOwner
+    const featureOrg = brand === 'lokazen' ? 'Lokazen' : 'GVS Ventures'
+
     try {
       const existing = await prisma.property.findFirst({
         where: {
@@ -441,7 +565,7 @@ async function main() {
             : null
 
       const amenitiesData: Record<string, unknown> = {
-        features: ['Commercial', 'GVS Ventures'],
+        features: ['Commercial', featureOrg],
       }
       if (prop.mapLink) amenitiesData.map_link = prop.mapLink
       if (prop.frontage) amenitiesData.frontage_ft = prop.frontage
@@ -455,13 +579,26 @@ async function main() {
       if (prop.maintenance) amenitiesData.maintenance = prop.maintenance
       if (prop.revenueShare) amenitiesData.revenue_share = prop.revenueShare
       if (prop.availability) amenitiesData.availability = prop.availability
+      if (prop.locationHighlight) amenitiesData.location_highlight = prop.locationHighlight
+      if (prop.lockInNote) amenitiesData.lock_in_note = prop.lockInNote
+      if (prop.agreementNote) amenitiesData.agreement_tenure_note = prop.agreementNote
+      if (prop.depositNote) amenitiesData.deposit_note = prop.depositNote
+      if (prop.sizeNote) amenitiesData.size_note = prop.sizeNote
+      if (prop.conditionNote) amenitiesData.condition_note = prop.conditionNote
 
       const descriptionParts: string[] = []
+      if (prop.locationHighlight) descriptionParts.push(`${prop.locationHighlight}.`)
+      if (prop.sizeNote) descriptionParts.push(`Size: ${prop.sizeNote}.`)
+      if (prop.conditionNote) descriptionParts.push(`${prop.conditionNote}.`)
       if (prop.floor) descriptionParts.push(`${prop.floor}.`)
       if (prop.power) descriptionParts.push(`Power: ${prop.power}.`)
-      if (prop.powerBackup) descriptionParts.push('Power Backup: Yes.')
+      if (prop.powerBackup) descriptionParts.push('Power / backup: Available.')
+      if (prop.powerNote) descriptionParts.push(`Power / backup: ${prop.powerNote}.`)
       if (prop.cam) descriptionParts.push(`CAM: ₹${prop.cam.toLocaleString('en-IN')}.`)
       if (prop.leaseTill) descriptionParts.push(`Lease till: ${prop.leaseTill}.`)
+      if (prop.depositNote) descriptionParts.push(`Deposit: ${prop.depositNote}.`)
+      if (prop.lockInNote) descriptionParts.push(`Lock-in: ${prop.lockInNote}.`)
+      if (prop.agreementNote) descriptionParts.push(`Agreement tenure: ${prop.agreementNote}.`)
       if (prop.idealFor) descriptionParts.push(`Ideal for: ${prop.idealFor}.`)
       if (prop.vegOnly) descriptionParts.push('VEG ONLY.')
       if (prop.rentEscalation) descriptionParts.push(`Escalation: ${prop.rentEscalation}% p.a.`)
@@ -483,10 +620,10 @@ async function main() {
           address: prop.address,
           city: prop.city,
           state: 'Karnataka',
-          zipCode: '560001',
+          zipCode: prop.zipCode ?? '560001',
           size: prop.size,
-          propertyType: 'restaurant',
-          price: prop.priceType === 'sqft' ? prop.price : prop.price,
+          propertyType: prop.propertyType ?? 'restaurant',
+          price: prop.price,
           priceType: prop.priceType === 'sqft' ? 'sqft' : 'monthly',
           securityDeposit,
           rentEscalation: prop.rentEscalation ?? null,
@@ -495,7 +632,7 @@ async function main() {
           waterFacility: prop.waterFacility ?? false,
           amenities: amenitiesData,
           images: [],
-          ownerId: gvsOwner.id,
+          ownerId: owner.id,
           status: 'pending',
           availability: false,
           isFeatured: false,
@@ -513,7 +650,7 @@ async function main() {
   console.log(`\n🎉 Seed complete!`)
   console.log(`   ✅ Imported: ${imported} properties`)
   console.log(`   ⏭️  Skipped: ${skipped} properties`)
-  console.log(`   📋 All properties have status: pending – review in Admin → Properties → Pending`)
+  console.log(`   📋 New rows use status: pending — review in Admin → Pending Approvals`)
 }
 
 main()
