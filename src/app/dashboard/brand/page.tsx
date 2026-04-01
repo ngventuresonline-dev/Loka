@@ -8,7 +8,7 @@ import { GoogleMap, Marker, HeatmapLayer, useLoadScript, InfoWindow } from '@rea
 import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
 import { encodePropertyId } from '@/lib/property-slug'
 import Logo from '@/components/Logo'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 import {
   brandContextWantsQsrCompetitors,
@@ -353,7 +353,7 @@ function TabSynthesisCallout({
 function DecisionHeroCard({
   overallScore,
   bfiScore,
-  city,
+  city: _city,
   industry,
   highlights,
   onScheduleVisit,
@@ -374,11 +374,13 @@ function DecisionHeroCard({
   isInterested: boolean
 }) {
   const verdict =
-    overallScore >= 80 && bfiScore >= 75
-      ? { label: 'Open', tone: 'bg-emerald-100 text-emerald-800 border-emerald-200', summary: 'High-confidence location with strong business fit.' }
-      : overallScore >= 65 && bfiScore >= 60
-        ? { label: 'Pilot', tone: 'bg-amber-100 text-amber-800 border-amber-200', summary: 'Promising location with a few conditions to validate.' }
-        : { label: 'Hold', tone: 'bg-rose-100 text-rose-800 border-rose-200', summary: 'Proceed only if rent and operating model can be optimized.' }
+    bfiScore >= 80 && overallScore >= 70
+      ? { label: 'Open', tone: 'bg-emerald-100 text-emerald-800 border-emerald-200', summary: 'High-confidence match. Strong brand fit and location quality.' }
+      : bfiScore >= 65 && overallScore >= 55
+        ? { label: 'Pilot', tone: 'bg-amber-100 text-amber-800 border-amber-200', summary: 'Good potential. Validate rent flexibility and site visit before proceeding.' }
+        : bfiScore >= 50 && overallScore >= 40
+          ? { label: 'Review', tone: 'bg-blue-100 text-blue-800 border-blue-200', summary: 'Location has merit. Review specific constraints before committing.' }
+          : { label: 'Hold', tone: 'bg-rose-100 text-rose-800 border-rose-200', summary: 'Significant gaps in fit or viability. Explore alternatives first.' }
 
   return (
     <div className="p-4 sm:p-5 border-b border-gray-100 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40">
@@ -389,7 +391,7 @@ function DecisionHeroCard({
               <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Decision Console</span>
               <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${verdict.tone}`}>{verdict.label}</span>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900">Should we open in {city}?</h3>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900">Should we open at this location?</h3>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">{verdict.summary}</p>
           </div>
           <div className="flex items-end gap-4 sm:gap-5 flex-shrink-0">
@@ -1107,6 +1109,7 @@ export default function BrandDashboardPage() {
       setCommercialPocket(null)
       return
     }
+
     const { lat, lng } = intelData.coords
     const p = selectedMatch.property
     const q = new URLSearchParams({
@@ -1127,6 +1130,8 @@ export default function BrandDashboardPage() {
     return () => {
       cancelled = true
     }
+    // Primitives match intelData.coords + selectedMatch.property fields; whole objects would over-fetch
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lat/lng/id/address/title are the fetch inputs
   }, [
     intelData?.coords?.lat,
     intelData?.coords?.lng,
@@ -2199,40 +2204,93 @@ export default function BrandDashboardPage() {
                     />
 
                     <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-white">
-                      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                        <InsightMetricCard
-                          label="Market potential"
-                          value={`${Math.round(intelData.growthTrend)}/100`}
-                          note="Whitespace and expansion signal"
-                          tone={intelData.growthTrend >= 60 ? 'positive' : intelData.growthTrend >= 40 ? 'warning' : 'risk'}
-                        />
-                        <InsightMetricCard
-                          label="Demand gap"
-                          value={`${Math.round(intelData.spendingCapacity)}/100`}
-                          note="Higher means unmet category demand"
-                          tone={intelData.spendingCapacity >= 55 ? 'positive' : intelData.spendingCapacity >= 35 ? 'warning' : 'risk'}
-                        />
-                        <InsightMetricCard
-                          label="Competition pressure"
-                          value={`${intelData.numberOfStores}`}
-                          note="Mapped peer stores nearby"
-                          tone={intelData.numberOfStores <= 4 ? 'positive' : intelData.numberOfStores <= 8 ? 'warning' : 'risk'}
-                        />
-                        <InsightMetricCard
-                          label="Catchment affluence"
-                          value={intelData.affluenceIndicator}
-                          note={intelData.totalHouseholds > 0 ? `${intelData.totalHouseholds.toLocaleString('en-IN')} households` : 'Household data loading'}
-                          tone={intelData.affluenceIndicator === 'High' ? 'positive' : intelData.affluenceIndicator === 'Medium' ? 'warning' : 'neutral'}
-                        />
-                      </div>
+                      {(() => {
+                        const brandFilteredCompetitorCount = intelData.competitors.length
+                        const saturationToMarketPotential = (sat: string | null | undefined) => {
+                          if (sat === 'low') return 82
+                          if (sat === 'medium') return 62
+                          if (sat === 'high') return 42
+                          if (sat === 'saturated') return 22
+                          if (brandFilteredCompetitorCount === 0) return 78
+                          if (brandFilteredCompetitorCount <= 3) return 62
+                          if (brandFilteredCompetitorCount <= 6) return 45
+                          return 30
+                        }
+                        const marketPotentialScore = Math.max(
+                          Math.round(intelData.growthTrend),
+                          saturationToMarketPotential(null),
+                        )
+                        const demandGapScore =
+                          brandFilteredCompetitorCount === 0
+                            ? 85
+                            : brandFilteredCompetitorCount <= 2
+                              ? 65
+                              : brandFilteredCompetitorCount <= 5
+                                ? 40
+                                : brandFilteredCompetitorCount <= 8
+                                  ? 22
+                                  : 10
+                        const effectiveDemandGap = Math.max(demandGapScore, Math.round(intelData.spendingCapacity))
+                        const brand = data?.brand
+                        return (
+                          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                            <InsightMetricCard
+                              label="Market potential"
+                              value={`${marketPotentialScore}/100`}
+                              note="Whitespace and expansion signal"
+                              tone={marketPotentialScore >= 60 ? 'positive' : marketPotentialScore >= 40 ? 'warning' : 'risk'}
+                            />
+                            <InsightMetricCard
+                              label="Demand gap"
+                              value={`${effectiveDemandGap}/100`}
+                              note="Unmet demand for your category"
+                              tone={effectiveDemandGap >= 55 ? 'positive' : effectiveDemandGap >= 35 ? 'warning' : 'risk'}
+                            />
+                            <InsightMetricCard
+                              label="Competition pressure"
+                              value={`${brandFilteredCompetitorCount}`}
+                              note={
+                                brandFilteredCompetitorCount === 0
+                                  ? 'No direct competitors mapped'
+                                  : `Direct ${brand?.industry || 'category'} competitors`
+                              }
+                              tone={
+                                brandFilteredCompetitorCount <= 2
+                                  ? 'positive'
+                                  : brandFilteredCompetitorCount <= 5
+                                    ? 'warning'
+                                    : 'risk'
+                              }
+                            />
+                            <InsightMetricCard
+                              label="Catchment affluence"
+                              value={intelData.affluenceIndicator}
+                              note={
+                                intelData.totalHouseholds > 0
+                                  ? `${intelData.totalHouseholds.toLocaleString('en-IN')} households`
+                                  : 'Household data loading'
+                              }
+                              tone={
+                                intelData.affluenceIndicator === 'High'
+                                  ? 'positive'
+                                  : intelData.affluenceIndicator === 'Medium'
+                                    ? 'warning'
+                                    : 'neutral'
+                              }
+                            />
+                          </div>
+                        )
+                      })()}
                     </div>
 
                     <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-gray-50/50">
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Signal scorecard</p>
                       {(() => {
+                        const brandFilteredCount = intelData.competitors.length
                         const footfallScore = Math.min(10, Math.round((intelData.totalFootfall / 3000) * 10))
                         const catchmentScore = intelData.affluenceIndicator === 'High' ? 10 : intelData.affluenceIndicator === 'Medium' ? 7 : 5
-                        const competitionVoidScore = intelData.numberOfStores === 0 ? 10 : Math.max(3, 10 - Math.round(intelData.numberOfStores / 3))
+                        const competitionVoidScore =
+                          brandFilteredCount === 0 ? 10 : Math.max(2, 10 - Math.round(brandFilteredCount / 2))
                         const configScore = Math.round((selectedMatch?.breakdown.sizeFit || 50) / 10)
                         const accessScore = intelData.metroDistance ? Math.max(3, 10 - Math.round(intelData.metroDistance / 1000)) : 6
                         const connScore = intelData.busStops > 0 ? 8 : 6
@@ -2241,7 +2299,14 @@ export default function BrandDashboardPage() {
                         const parameters = [
                           { label: 'Footfall Density', score: footfallScore, note: `~${intelData.totalFootfall.toLocaleString()} daily est.` },
                           { label: 'Catchment Quality', score: catchmentScore, note: intelData.affluenceIndicator + ' affluence' },
-                          { label: 'F&B Supply Gap', score: competitionVoidScore, note: `${intelData.numberOfStores} competitors nearby` },
+                          {
+                            label: 'F&B Supply Gap',
+                            score: competitionVoidScore,
+                            note:
+                              brandFilteredCount === 0
+                                ? 'No direct competitors'
+                                : `${brandFilteredCount} ${data?.brand?.industry || 'category'} competitors`,
+                          },
                           { label: 'Property Configuration', score: configScore, note: `${selectedMatch?.property.size.toLocaleString()} sqft ${selectedMatch?.property.propertyType}` },
                           { label: 'Walk-In Access', score: Math.min(10, Math.round(accessScore * 1.2)), note: intelData.metroName ? `Metro ${((intelData.metroDistance || 0) / 1000).toFixed(1)}km` : 'Access estimated' },
                           { label: 'Connectivity', score: connScore, note: intelData.busStops > 0 ? 'Transit nearby' : 'Road access' },
@@ -2266,6 +2331,74 @@ export default function BrandDashboardPage() {
                         )
                       })()}
                     </div>
+
+                    {/* Demand Composition — visual pie */}
+                    {(() => {
+                      const offDemand =
+                        intelData.catchmentLandmarks.filter(
+                          (l) => l.kind === 'corporate' || l.kind === 'tech_park',
+                        ).length * 200
+                      const resDemand =
+                        intelData.totalHouseholds > 0
+                          ? intelData.totalHouseholds
+                          : intelData.catchmentLandmarks.filter((l) => l.kind === 'residential').length * 150
+                      const totalDemand = offDemand + resDemand
+                      if (totalDemand === 0) return null
+
+                      const offPct = Math.round((offDemand / totalDemand) * 100)
+                      const resPct = 100 - offPct
+
+                      const pieData = [
+                        { name: 'Office/Daytime', value: offPct, fill: '#FF5200' },
+                        { name: 'Residential', value: resPct, fill: '#6366f1' },
+                      ]
+
+                      return (
+                        <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
+                          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                            Demand Composition
+                          </p>
+                          <div className="flex items-center gap-4">
+                            <PieChart width={80} height={80}>
+                              <Pie
+                                data={pieData}
+                                cx={35}
+                                cy={35}
+                                innerRadius={22}
+                                outerRadius={36}
+                                dataKey="value"
+                                strokeWidth={0}
+                              >
+                                {pieData.map((entry, i) => (
+                                  <Cell key={i} fill={entry.fill} />
+                                ))}
+                              </Pie>
+                            </PieChart>
+                            <div className="flex-1 space-y-2">
+                              {pieData.map((d) => (
+                                <div key={d.name} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <div
+                                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                      style={{ background: d.fill }}
+                                    />
+                                    <span className="text-[11px] text-gray-600">{d.name}</span>
+                                  </div>
+                                  <span className="text-[11px] font-bold text-gray-800">{d.value}%</span>
+                                </div>
+                              ))}
+                              <p className="text-[9px] text-gray-400 pt-1">
+                                {offPct > 60
+                                  ? 'Office-dominant — weekday peak, strong delivery, lower weekend'
+                                  : offPct > 40
+                                    ? 'Mixed catchment — good daily spread across all day-parts'
+                                    : 'Residential-dominant — strong evenings, weekends, and family dining'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
 
                     {/* Highlights */}
                     {intelData.highlights.length > 0 && (
@@ -3378,30 +3511,85 @@ export default function BrandDashboardPage() {
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
                       </div>
                       {intelData.cannibalisationRisk.length === 0 ? (
-                        <div
-                          className={`rounded-xl p-4 text-center ${
-                            intelData.numberOfStores >= 4 ? 'bg-amber-50 border border-amber-100' : 'bg-green-50'
-                          }`}
-                        >
-                          <p
-                            className={`text-sm font-medium ${
-                              intelData.numberOfStores >= 4 ? 'text-amber-900' : 'text-green-700'
-                            }`}
-                          >
-                            {intelData.numberOfStores >= 4
-                              ? 'No duplicate-chain signal — category may still be crowded'
-                              : '✓ No cannibalisation risk detected'}
-                          </p>
-                          <p
-                            className={`text-xs mt-1 ${
-                              intelData.numberOfStores >= 4 ? 'text-amber-800' : 'text-green-600'
-                            }`}
-                          >
-                            {intelData.numberOfStores >= 4
-                              ? `${intelData.numberOfStores} POIs in the trade area. Charts fill when same-brand clusters or crowding are estimated.`
-                              : 'No same-brand outlets found nearby.'}
-                          </p>
-                        </div>
+                        (() => {
+                          const brandFilteredCompetitorCount = intelData.competitors.length
+                          const brand = data?.brand
+                          return (
+                            <div className="space-y-3">
+                              <div
+                                className={`rounded-xl p-4 ${
+                                  brandFilteredCompetitorCount === 0
+                                    ? 'bg-green-50 border border-green-100'
+                                    : brandFilteredCompetitorCount <= 3
+                                      ? 'bg-amber-50 border border-amber-100'
+                                      : 'bg-red-50 border border-red-100'
+                                }`}
+                              >
+                                <p
+                                  className={`text-sm font-semibold ${
+                                    brandFilteredCompetitorCount === 0
+                                      ? 'text-green-800'
+                                      : brandFilteredCompetitorCount <= 3
+                                        ? 'text-amber-800'
+                                        : 'text-red-800'
+                                  }`}
+                                >
+                                  {brandFilteredCompetitorCount === 0
+                                    ? `✓ No direct ${brand?.industry || 'category'} competitors mapped in this area`
+                                    : `${brandFilteredCompetitorCount} direct ${brand?.industry || 'category'} competitor${brandFilteredCompetitorCount > 1 ? 's' : ''} in the trade zone`}
+                                </p>
+                                <p
+                                  className={`text-xs mt-1 ${
+                                    brandFilteredCompetitorCount === 0
+                                      ? 'text-green-600'
+                                      : brandFilteredCompetitorCount <= 3
+                                        ? 'text-amber-600'
+                                        : 'text-red-600'
+                                  }`}
+                                >
+                                  {brandFilteredCompetitorCount === 0
+                                    ? 'First-mover advantage available. Demand exists but supply is uncontested.'
+                                    : brandFilteredCompetitorCount <= 3
+                                      ? 'Moderate competition. Differentiation on product quality or format will win share.'
+                                      : 'High competition. Only a strong brand with clear differentiation should consider this location.'}
+                                </p>
+                              </div>
+
+                              {intelData.competitors.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                    {brand?.industry || 'Category'} brands in trade area
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {intelData.competitors.slice(0, 6).map((c, i) => (
+                                      <div
+                                        key={`${c.name}-${c.distance}-${i}`}
+                                        className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                                      >
+                                        <div>
+                                          <p className="text-xs font-medium text-gray-800">{c.name}</p>
+                                          <p className="text-[10px] text-gray-500 capitalize">
+                                            {c.category} · {(c.distance / 1000).toFixed(2)}km away
+                                          </p>
+                                        </div>
+                                        {c.rating != null && (
+                                          <div className="text-right">
+                                            <p className="text-xs font-bold text-gray-700">⭐ {c.rating.toFixed(1)}</p>
+                                            {c.reviewCount != null && c.reviewCount > 0 && (
+                                              <p className="text-[9px] text-gray-400">
+                                                {c.reviewCount.toLocaleString()} reviews
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()
                       ) : (
                         <ResponsiveContainer width="100%" height={Math.max(120, intelData.cannibalisationRisk.length * 32)}>
                           <BarChart layout="vertical" data={intelData.cannibalisationRisk.slice(0, 7)} margin={{ top: 4, right: 12, left: 8, bottom: 20 }}>
@@ -3416,24 +3604,87 @@ export default function BrandDashboardPage() {
 
                     <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-gray-900">Store Closure Risk</h3>
-                        <span className="text-xs bg-green-100 text-green-600 rounded-full px-2 py-0.5">5 min Walking</span>
+                        <h3 className="font-bold text-gray-900">Category Health in Area</h3>
+                        <span className="text-xs bg-blue-100 text-blue-600 rounded-full px-2 py-0.5">Trade zone</span>
                       </div>
-                      {intelData.storeClosureRisk.length === 0 ? (
-                        <p className="text-sm text-gray-400 italic">No store closure data available.</p>
-                      ) : (
-                        <table className="w-full text-xs">
-                          <thead><tr className="text-gray-400 border-b"><th className="text-left py-1">CATEGORY</th><th className="text-right">TOTAL POIs</th></tr></thead>
-                          <tbody>
-                            {intelData.storeClosureRisk.map((r) => (
-                              <tr key={r.category} className="border-b border-gray-50">
-                                <td className="py-1.5 text-gray-800 capitalize">{r.category}</td>
-                                <td className="text-right text-gray-700 font-medium">{r.totalPois}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
+                      {(() => {
+                        const brandedCompetitors = intelData.competitors.filter((c) => c.branded).length
+                        const withRating = intelData.competitors.filter(
+                          (c) => c.rating != null && Number.isFinite(c.rating) && c.rating > 0,
+                        )
+                        const avgRating =
+                          withRating.length > 0
+                            ? withRating.reduce((s, c) => s + (c.rating ?? 0), 0) / withRating.length
+                            : null
+                        const totalReviews = intelData.competitors.reduce((s, c) => s + (c.reviewCount ?? 0), 0)
+
+                        return (
+                          <div className="space-y-2.5">
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-gray-50 rounded-xl p-3 text-center">
+                                <p className="text-lg font-black text-gray-900">{intelData.competitors.length}</p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide mt-0.5">
+                                  Direct competitors
+                                </p>
+                              </div>
+                              <div className="bg-gray-50 rounded-xl p-3 text-center">
+                                <p className="text-lg font-black text-gray-900">{brandedCompetitors}</p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide mt-0.5">
+                                  Branded chains
+                                </p>
+                              </div>
+                              <div className="bg-gray-50 rounded-xl p-3 text-center">
+                                <p
+                                  className={`text-lg font-black ${avgRating && avgRating >= 4.0 ? 'text-green-600' : 'text-amber-600'}`}
+                                >
+                                  {avgRating != null ? avgRating.toFixed(1) : '—'}
+                                </p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide mt-0.5">Avg rating</p>
+                              </div>
+                            </div>
+
+                            {totalReviews > 0 && (
+                              <div
+                                className={`rounded-xl p-3 text-xs ${totalReviews > 2000 ? 'bg-green-50 border border-green-100' : 'bg-gray-50'}`}
+                              >
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Total category reviews in area</span>
+                                  <span className="font-bold text-gray-800">{totalReviews.toLocaleString()}</span>
+                                </div>
+                                <p
+                                  className={`text-[10px] mt-0.5 ${totalReviews > 2000 ? 'text-green-600' : 'text-gray-500'}`}
+                                >
+                                  {totalReviews > 5000
+                                    ? 'Very high review volume — category demand is proven and active'
+                                    : totalReviews > 2000
+                                      ? 'Solid review volume — healthy category demand in this area'
+                                      : totalReviews > 500
+                                        ? 'Moderate demand signal — category is developing'
+                                        : 'Low review volume — category may be early or underserved'}
+                                </p>
+                              </div>
+                            )}
+
+                            {intelData.complementaryBrands.slice(0, 3).length > 0 && (
+                              <div>
+                                <p className="text-[10px] text-gray-500 font-medium mb-1.5">
+                                  Complementary brands nearby (crowd pullers)
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {intelData.complementaryBrands.slice(0, 5).map((b, i) => (
+                                    <span
+                                      key={`${b.name}-${i}`}
+                                      className="text-[10px] bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 border border-blue-100"
+                                    >
+                                      {b.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </div>
 
                     {/* SWOT Analysis — LIR Section 07 style */}
