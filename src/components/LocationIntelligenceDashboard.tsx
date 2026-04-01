@@ -221,23 +221,6 @@ export default function LocationIntelligenceDashboard({
     )
   }
 
-  if (!data) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
-        <h3 className="text-lg font-semibold text-slate-900">Location Intelligence</h3>
-        <p className="mt-2 text-sm text-slate-600">No enriched data yet. Run enrichment to analyze this location.</p>
-        <button
-          type="button"
-          onClick={triggerEnrichment}
-          disabled={enriching}
-          className="mt-4 px-5 py-2.5 rounded-xl bg-[#FF5200] text-white font-medium text-sm hover:bg-[#E44A00] disabled:opacity-60"
-        >
-          {enriching ? 'Enriching…' : 'Run Enrichment'}
-        </button>
-      </div>
-    )
-  }
-
   const tabs: Array<{ id: IntelTabId; label: string; Icon: typeof BarChart3; locked: boolean }> = [
     { id: 'overview', label: 'Overview', Icon: BarChart3, locked: false },
     { id: 'revenue', label: 'Revenue', Icon: DollarSign, locked: false },
@@ -249,6 +232,88 @@ export default function LocationIntelligenceDashboard({
 
   const isLockedPanel = (id: IntelTabId) =>
     limitedIntel && ['competition', 'demographics', 'transport', 'risks'].includes(id)
+
+  /** Same tab chrome as loaded state so match pages never look “missing” Overview/Revenue. */
+  if (!data) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        {limitedIntel && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-xs sm:text-sm text-amber-950">
+              <span className="font-semibold">Free preview:</span> Overview and Revenue are open on every property.
+              Onboard your brand to unlock Compete, Demographics, Transit, and Risks.
+            </p>
+            <Link
+              href={INTEL_FOR_BRANDS_HREF}
+              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#FF5200] px-3 py-2 text-xs font-semibold text-white hover:bg-[#E44A00] transition-colors"
+            >
+              On board for full intel
+            </Link>
+          </div>
+        )}
+        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50 to-red-50 p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900">Location intelligence</h2>
+          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            We’re pulling footfall, revenue signals, and cohort benchmarks for this pin. Start analysis below — scores
+            and charts fill in here (usually under a minute).
+          </p>
+        </div>
+        <div className="space-y-3">
+          <div className="flex flex-row overflow-x-auto scrollbar-hide border-b border-slate-200 gap-0">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                title={t.locked ? 'Preview — full detail with Loka intel' : undefined}
+                onClick={() => setActiveTab(t.id)}
+                className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
+                  activeTab === t.id
+                    ? 'border-[#FF5200] text-[#FF5200]'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <span className="relative inline-flex items-center justify-center">
+                  <t.Icon className="w-4 h-4" strokeWidth={1.8} />
+                  {t.locked && (
+                    <Lock
+                      className={`absolute -right-2 -bottom-1 w-2.5 h-2.5 stroke-[3] ${
+                        activeTab === t.id ? 'text-[#FF5200]/80' : 'text-slate-400'
+                      }`}
+                    />
+                  )}
+                </span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {activeTab === 'overview' || activeTab === 'revenue' ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+            <h3 className="text-lg font-semibold text-slate-900">
+              {activeTab === 'overview' ? 'Overview' : 'Revenue'} — ready to generate
+            </h3>
+            <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
+              No enriched data for this listing yet. Run a one-time analysis to populate scores, footfall, and revenue
+              bands.
+            </p>
+            <button
+              type="button"
+              onClick={triggerEnrichment}
+              disabled={enriching}
+              className="mt-4 px-5 py-2.5 rounded-xl bg-[#FF5200] text-white font-medium text-sm hover:bg-[#E44A00] disabled:opacity-60"
+            >
+              {enriching ? 'Enriching…' : 'Run location analysis'}
+            </button>
+          </div>
+        ) : (
+          <div className="relative min-h-[200px] rounded-xl border border-slate-100 bg-slate-50/50">
+            <div className="pointer-events-none select-none blur-[4px] opacity-50 min-h-[160px]" aria-hidden />
+            <LockedIntelOverlay />
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

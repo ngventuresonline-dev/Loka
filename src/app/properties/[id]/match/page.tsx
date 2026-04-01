@@ -16,6 +16,12 @@ import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 import { decodePropertySlug } from '@/lib/property-slug'
 import { calculateBFI } from '@/lib/matching-engine'
 import { buildMatchReasonStrings } from '@/lib/property-match-reasons'
+import {
+  formatPropertyAddressLine,
+  isPlaceholderMatchProperty,
+  propertyFromMatchPayload,
+  propertyFromPublicApiJson,
+} from '@/lib/match-page-property'
 import { trackInquiry, trackScheduleViewing } from '@/lib/tracking'
 import LocationIntelligenceDashboard from '@/components/LocationIntelligenceDashboard'
 
@@ -175,7 +181,11 @@ function MatchDetailsContent() {
         const cachedPropertyId = cachedData.data?.property?.id
         // Only use cache if it's for this property and less than 5 minutes old (avoids showing wrong property)
         const cacheAge = Date.now() - (cachedData.timestamp || 0)
-        if (cacheAge < 5 * 60 * 1000 && cachedPropertyId === propertyId) {
+        if (
+          cacheAge < 5 * 60 * 1000 &&
+          cachedPropertyId === propertyId &&
+          !isPlaceholderMatchProperty(cachedData.data?.property)
+        ) {
           setMatchDetails(cachedData.data)
           setLoading(false)
           return
@@ -253,7 +263,7 @@ function MatchDetailsContent() {
 
       // PARALLELIZE API calls for faster loading with timeout
       // Optimize: pass propertyId to match API so it only fetches that property
-      const timeout = 8000 // 8 second timeout
+      const timeout = 22000
       const fetchWithTimeout = (url: string, options?: RequestInit) => {
         return Promise.race([
           fetch(url, options),
@@ -266,7 +276,7 @@ function MatchDetailsContent() {
       // Use slug from URL for fetch - ensures we request the exact property in the URL
       const slug = (params?.id as string) || propertyId
       const [propertyResponse, matchResponse] = await Promise.allSettled([
-        fetchWithTimeout(`/api/properties/${slug}`),
+        fetchWithTimeout(`/api/properties/${encodeURIComponent(slug)}?quick=1`),
         fetchWithTimeout('/api/properties/match', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -288,8 +298,15 @@ function MatchDetailsContent() {
 
       // Handle property response - /api/properties/[id] returns { success, property }
       if (propertyResponse.status === 'fulfilled' && propertyResponse.value.ok) {
-        const propertyData = await propertyResponse.value.json()
-        property = propertyData?.property ?? propertyData
+        try {
+          const propertyData = await propertyResponse.value.json()
+          const raw = propertyData?.property ?? propertyData
+          const normalized = propertyFromPublicApiJson(raw as Record<string, unknown>)
+          if (normalized) property = normalized
+          else property = raw
+        } catch {
+          property = null
+        }
       }
 
       // Handle match response
@@ -297,7 +314,12 @@ function MatchDetailsContent() {
         matchPayload = await matchResponse.value.json()
       }
 
-      // If property not loaded, create fallback
+      const rowMatch =
+        matchPayload && Array.isArray(matchPayload.matches)
+          ? matchPayload.matches.find((m: { property?: { id?: string } }) => m.property?.id === propertyId)
+          : null
+
+      // If property not loaded, create fallback (superseded by match row when available)
       if (!property) {
         property = {
           id: propertyId,
@@ -320,12 +342,14 @@ function MatchDetailsContent() {
         }
       }
 
-      // Store for use in catch/fallbacks - this is the source of truth from /api/properties/[id]
       fallbackProperty = property as Property
 
-      // ALWAYS use the property from the direct fetch — never use match.property for display.
-      // BFI + "why this matches" bullets must be driven by this same object so rent/size never disagree.
-      const displayProperty = fallbackProperty!
+      // Prefer real listing from property API; if fetch failed/slow, use the same row the BFI was computed on
+      let displayProperty: Property = fallbackProperty as Property
+      const fromMatch = rowMatch?.property ? propertyFromMatchPayload(rowMatch.property as Record<string, unknown>) : null
+      if (isPlaceholderMatchProperty(displayProperty) && fromMatch) {
+        displayProperty = fromMatch
+      }
 
       const brandRequirements = {
         locations: filters.locations,
@@ -345,7 +369,7 @@ function MatchDetailsContent() {
       }
 
       if (matchPayload && Array.isArray(matchPayload.matches)) {
-        const match = matchPayload.matches.find((m: any) => m.property?.id === displayProperty.id)
+        const match = matchPayload.matches.find((m: { property?: { id?: string } }) => m.property?.id === propertyId)
         if (match) {
           bfiScore = match.bfiScore ?? bfiScore
           breakdown = match.breakdown ?? breakdown
@@ -461,12 +485,11 @@ function MatchDetailsContent() {
       
       // Track inquiry event
       if (propertyId) {
-        trackInquiry(propertyId, property?.title || 'Property', 'expert_request')
+        trackInquiry(propertyId, matchDetails?.property?.title || 'Property', 'expert_request')
       }
-      
-      // If schedule date/time is set, also track Schedule event
+
       if (expertDateTime) {
-        trackScheduleViewing(propertyId || '', property?.title || 'Property')
+        trackScheduleViewing(propertyId || '', matchDetails?.property?.title || 'Property')
       }
       
       // Immediately show success message - API call succeeded
@@ -539,10 +562,10 @@ function MatchDetailsContent() {
       }
 
       if (propertyId) {
-        trackInquiry(propertyId, property?.title || 'Property', 'site_visit')
+        trackInquiry(propertyId, matchDetails?.property?.title || 'Property', 'site_visit')
       }
       if (visitDateTime) {
-        trackScheduleViewing(propertyId || '', property?.title || 'Property')
+        trackScheduleViewing(propertyId || '', matchDetails?.property?.title || 'Property')
       }
       alert('Visit scheduled. Our team will contact you to confirm.')
       setShowVisitModal(false)
@@ -696,7 +719,9 @@ function MatchDetailsContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span className="font-medium text-sm sm:text-base break-words leading-relaxed min-w-0 flex-1">{property.address}, {property.city}, {property.state}</span>
+                <span className="font-medium text-sm sm:text-base break-words leading-relaxed min-w-0 flex-1">
+                  {formatPropertyAddressLine(property) || 'Bangalore'}
+                </span>
               </div>
 
               {/* Key Stats */}

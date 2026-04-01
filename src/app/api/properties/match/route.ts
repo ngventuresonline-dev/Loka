@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { findMatches } from '@/lib/matching-engine'
+import { calculateBFI, findMatches } from '@/lib/matching-engine'
 import { buildMatchReasonStrings } from '@/lib/property-match-reasons'
 import { Property } from '@/types/workflow'
 import { getPrisma } from '@/lib/get-prisma'
@@ -278,8 +278,11 @@ export async function POST(request: NextRequest) {
       businessType: businessType || ''
     }
 
-    // Calculate BFI scores and rank using findMatches
-    const matchResults = findMatches(typedProperties, brandRequirements)
+    // Single-property match page must always get a row (findMatches drops score < 30)
+    const matchResults =
+      hasSinglePropertyRequest && typedProperties.length === 1
+        ? [{ property: typedProperties[0], bfiScore: calculateBFI(typedProperties[0], brandRequirements) }]
+        : findMatches(typedProperties, brandRequirements)
 
     // Log matching info for debugging
     console.log(`[API Match] Total properties checked: ${typedProperties.length}`)
@@ -291,8 +294,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Show all matches >= 30% so user sees options in their preferred area even if over budget (score reflects fit)
-    const minScore = 30
+    // Show all matches >= 30% (single-property: already one row, any score)
+    const minScore = hasSinglePropertyRequest ? 0 : 30
     let filteredMatches = matchResults.filter(result => result.bfiScore.score >= minScore)
     console.log(`[API Match] Showing matches >= ${minScore}% (${filteredMatches.length} found)`)
 

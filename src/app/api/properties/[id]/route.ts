@@ -28,6 +28,8 @@ export async function GET(
   try {
     const { id } = await params
     const propertyId = decodePropertySlug(id)
+    /** Skip slow geocode path — use from match/detail pages that already parallelize fetches. */
+    const skipGeocode = request.nextUrl.searchParams.get('quick') === '1'
 
     const prisma = await getPrisma()
     if (!prisma) {
@@ -241,8 +243,12 @@ export async function GET(
       }
     }
 
-    // If still no coords, geocode address/city/state so we don't fall back to city center (e.g. UB City)
-    if (safeProperty && ((safeProperty as any).latitude == null || (safeProperty as any).longitude == null)) {
+    // If still no coords, geocode (can add 5–30s; optional quick=1 skips for fast match page paint)
+    if (
+      !skipGeocode &&
+      safeProperty &&
+      ((safeProperty as any).latitude == null || (safeProperty as any).longitude == null)
+    ) {
       const address = (safeProperty.address ?? '').trim()
       const city = (safeProperty.city ?? '').trim()
       const state = (safeProperty.state ?? '').trim()
