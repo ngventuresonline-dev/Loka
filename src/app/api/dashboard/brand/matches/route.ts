@@ -191,21 +191,32 @@ export async function GET(request: NextRequest) {
       parsedLocations = []
     }
 
-    const properties = await prisma.property
-      .findMany({
-        where: {
-          AND: [
-            { status: { not: 'rejected' } },
-            { OR: [{ status: 'approved' }, { availability: { not: false } }] },
-          ],
-        },
-        take: 150,
-        orderBy: { createdAt: 'desc' },
-      })
-      .catch((e) => {
-        console.error('[Brand Matches API] property.findMany failed:', e)
-        return []
-      })
+    const rawProperties = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT id, title, address, city, state, price::text as price, price_type, size,
+             property_type, amenities, images, status, created_at
+      FROM properties
+      WHERE status = 'approved' AND is_available = true
+      ORDER BY created_at DESC
+      LIMIT 150
+    `.catch((e: unknown) => {
+      console.error('[Brand Matches API] property raw query failed:', e)
+      return []
+    })
+
+    const properties = (rawProperties as Array<Record<string, unknown>>).map((p) => ({
+      id: String(p['id'] || ''),
+      title: String(p['title'] || ''),
+      address: String(p['address'] || ''),
+      city: String(p['city'] || ''),
+      state: String(p['state'] || ''),
+      price: p['price'],
+      priceType: p['price_type'],
+      size: Number(p['size']) || 0,
+      propertyType: p['property_type'],
+      amenities: p['amenities'],
+      images: p['images'],
+      status: p['status'],
+    }))
 
     const excludedTitles = parseExcludedMatchPropertyTitles(profile.weight_config_json)
     const visibleProperties =

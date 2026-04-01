@@ -19,6 +19,7 @@ interface Property {
   availability: boolean
   isFeatured: boolean
   createdAt: string
+  hasExactMapLink?: boolean
   owner: {
     name: string
     email: string
@@ -639,7 +640,18 @@ export default function PropertiesPage() {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{property.title}</div>
+                      <div className="text-sm font-medium text-gray-900 flex items-center gap-1.5 flex-wrap">
+                        {property.title}
+                        {property.hasExactMapLink ? (
+                          <span title="Has exact location pin" className="text-green-500 text-xs leading-none" aria-hidden>
+                            📍
+                          </span>
+                        ) : (
+                          <span title="No exact pin — add map link" className="text-amber-400 text-xs leading-none" aria-hidden>
+                            ⚠️
+                          </span>
+                        )}
+                      </div>
                       <div className="text-sm text-gray-500">{property.address}, {property.city}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

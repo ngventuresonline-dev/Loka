@@ -7,6 +7,7 @@ import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import { formatPropertyForPlatform } from '@/lib/property-formatter'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
+import { getMapLinkFromAmenities } from '@/lib/property-coordinates'
 
 function parseBodyInt(v: unknown): number | null {
   if (v === undefined || v === null || v === '') return null
@@ -256,6 +257,7 @@ export async function GET(request: NextRequest) {
         availability: true,
         isFeatured: true,
         createdAt: true,
+        amenities: true,
         owner: {
           select: {
             id: true,
@@ -433,6 +435,7 @@ export async function GET(request: NextRequest) {
         availability,
         createdAt: createdAtISO,
         isFeatured: p.isFeatured ?? false,
+        hasExactMapLink: Boolean(getMapLinkFromAmenities((p as { amenities?: unknown }).amenities)),
       }
     })
     
@@ -561,6 +564,17 @@ export async function POST(request: NextRequest) {
       latitude: latitude,
       longitude: longitude,
     })
+
+    const mapLinkRequired = getMapLinkFromAmenities(formatted.amenities)
+    if (!mapLinkRequired || !String(mapLinkRequired).trim()) {
+      return NextResponse.json(
+        {
+          error:
+            'Google Maps link is required for an exact location pin. Open Google Maps → navigate to the property → Share → copy link.',
+        },
+        { status: 400 }
+      )
+    }
 
     // Use formatted data (formatter ensures proper structure)
     const title = formatted.title
@@ -837,31 +851,33 @@ export async function PATCH(request: NextRequest) {
     if (updateData.state !== undefined) data.state = updateData.state
     if (updateData.zipCode !== undefined) data.zipCode = updateData.zipCode
     
-    // mapLink column removed - store in amenities.map_link per schema workaround
-    if (updateData.mapLink !== undefined) {
-      const mapLinkVal = updateData.mapLink || null
+    // Amenities + map_link: always merge so PATCH never overwrites map_link with a bare features array.
+    if (updateData.amenities !== undefined || updateData.mapLink !== undefined) {
+      const current = await prisma.property.findUnique({
+        where: { id: propertyId },
+        select: { amenities: true },
+      })
+      const existing = current?.amenities
+
+      let features: string[] = []
       if (updateData.amenities !== undefined) {
         const am = updateData.amenities
-        const merged: Record<string, unknown> = typeof am === 'object' && am !== null && !Array.isArray(am)
-          ? { ...(am as Record<string, unknown>), map_link: mapLinkVal }
-          : Array.isArray(am)
-            ? { features: am, map_link: mapLinkVal }
-            : { map_link: mapLinkVal }
-        data.amenities = merged
-      } else {
-        // Only mapLink sent - fetch current amenities to preserve
-        const current = await prisma.property.findUnique({
-          where: { id: propertyId },
-          select: { amenities: true }
-        })
-        const existing = current?.amenities
-        const merged: Record<string, unknown> = typeof existing === 'object' && existing !== null && !Array.isArray(existing)
-          ? { ...(existing as Record<string, unknown>), map_link: mapLinkVal }
-          : Array.isArray(existing)
-            ? { features: existing, map_link: mapLinkVal }
-            : { map_link: mapLinkVal }
-        data.amenities = merged
+        features = Array.isArray(am) ? am.map(String) : []
+      } else if (Array.isArray(existing)) {
+        features = existing as unknown as string[]
+      } else if (existing && typeof existing === 'object' && Array.isArray((existing as Record<string, unknown>).features)) {
+        features = (existing as { features: string[] }).features.map(String)
       }
+
+      let mapLinkVal: string | null = null
+      if (updateData.mapLink !== undefined) {
+        const raw = updateData.mapLink
+        mapLinkVal = raw != null && String(raw).trim() ? String(raw).trim() : null
+      } else {
+        mapLinkVal = getMapLinkFromAmenities(existing)
+      }
+
+      data.amenities = { features, map_link: mapLinkVal }
     }
     
     // Pricing - ensure proper number conversion
@@ -924,8 +940,7 @@ export async function PATCH(request: NextRequest) {
     if (updateData.powerBackup !== undefined) data.powerBackup = updateData.powerBackup
     if (updateData.waterFacility !== undefined) data.waterFacility = updateData.waterFacility
     
-    // Features
-    if (updateData.amenities !== undefined) data.amenities = updateData.amenities
+    // Features (amenities array + map_link handled above when either field is present)
     if (updateData.images !== undefined) data.images = updateData.images
     
     // Status (for approval workflow: pending | approved | rejected)

@@ -13,6 +13,7 @@ export default function NewPropertyPage() {
   const router = useRouter()
   const { user, isLoggedIn } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [mapLinkError, setMapLinkError] = useState(false)
   const [owners, setOwners] = useState<any[]>([])
   const [images, setImages] = useState<string[]>([])
   const [formData, setFormData] = useState({
@@ -320,6 +321,14 @@ export default function NewPropertyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.mapLink.trim()) {
+      setMapLinkError(true)
+      alert(
+        'Google Maps link is required. Open Google Maps → navigate to the exact property → Share → copy link.'
+      )
+      return
+    }
+    setMapLinkError(false)
     setLoading(true)
 
     try {
@@ -397,6 +406,50 @@ export default function NewPropertyPage() {
           <div>
             <h2 className="text-xl font-semibold text-white mb-4">Basic Information</h2>
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 rounded-lg border border-gray-700 bg-gray-800/40 p-4 space-y-2">
+                <label className="block text-sm font-medium text-gray-200 mb-1">
+                  <span aria-hidden>📍</span> Google Maps Link{' '}
+                  <span className="text-red-400">*</span>{' '}
+                  <span className="text-xs font-normal text-amber-200/90">(REQUIRED for exact pin)</span>
+                </label>
+                <p className="text-xs text-gray-400 mb-2">
+                  Paste the full Google Maps link for this property. Open Google Maps → navigate to exact property →
+                  Share → copy link.
+                </p>
+                <input
+                  type="url"
+                  value={formData.mapLink}
+                  onChange={(e) => {
+                    setMapLinkError(false)
+                    setFormData({ ...formData, mapLink: e.target.value })
+                  }}
+                  placeholder="https://www.google.com/maps/... or https://maps.app.goo.gl/..."
+                  className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:outline-none focus:border-[#FF5200] ${
+                    mapLinkError && !formData.mapLink.trim() ? 'border-red-500 ring-1 ring-red-500/40' : 'border-gray-600'
+                  }`}
+                />
+                {(() => {
+                  const ml = formData.mapLink.trim()
+                  if (!ml) return null
+                  const extracted = extractLatLngFromMapLink(ml)
+                  const shortLink = /maps\.app\.goo\.gl|goo\.gl/i.test(ml)
+                  if (extracted) {
+                    return (
+                      <p className="text-xs text-green-400 mt-2">
+                        ✓ Coordinates extracted: {extracted.lat.toFixed(6)}, {extracted.lng.toFixed(6)}
+                      </p>
+                    )
+                  }
+                  if (shortLink) {
+                    return (
+                      <p className="text-xs text-amber-300 mt-2">
+                        ⚠ Short link — coordinates will be resolved on first load.
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
+              </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
                 <input
@@ -501,17 +554,6 @@ export default function NewPropertyPage() {
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                   placeholder="e.g., 77.5946"
                 />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Google Maps Link (Optional)</label>
-                <input
-                  type="url"
-                  value={formData.mapLink}
-                  onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
-                  placeholder="https://maps.google.com/..."
-                />
-                <p className="text-xs text-gray-400 mt-1">Paste the Google Maps URL for this property location</p>
               </div>
             </div>
           </div>

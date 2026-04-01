@@ -19,6 +19,7 @@ export default function EditPropertyPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [mapLinkError, setMapLinkError] = useState(false)
   const [owners, setOwners] = useState<any[]>([])
   const [images, setImages] = useState<string[]>([])
   const [formData, setFormData] = useState({
@@ -474,6 +475,14 @@ export default function EditPropertyPage() {
       setSaveError('You must be logged in to update properties')
       return
     }
+    if (!formData.mapLink.trim()) {
+      setMapLinkError(true)
+      setSaveError(
+        'Google Maps link is required. Open Google Maps → navigate to the exact property → Share → copy link.'
+      )
+      return
+    }
+    setMapLinkError(false)
 
     setSaving(true)
     setSaveError(null)
@@ -648,7 +657,67 @@ export default function EditPropertyPage() {
           {/* Basic Information */}
           <div>
             <h2 className="text-xl font-semibold text-white mb-4">Basic Information</h2>
+            {formData.mapLink.trim() ? (
+              <div className="mb-4 rounded-lg border border-[#FF5200]/40 bg-gray-800/60 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-[#FF5200] mb-1">Current Google Maps link</p>
+                  <p className="text-xs text-gray-400 break-all">{formData.mapLink.trim()}</p>
+                </div>
+                <a
+                  href={formData.mapLink.trim()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center shrink-0 px-4 py-2 rounded-lg bg-[#FF5200] text-white text-sm font-medium hover:bg-[#e04800] transition-colors"
+                >
+                  Open in Maps
+                </a>
+              </div>
+            ) : null}
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 rounded-lg border border-gray-700 bg-gray-800/40 p-4 space-y-2">
+                <label className="block text-sm font-medium text-gray-200 mb-1">
+                  <span aria-hidden>📍</span> Google Maps Link{' '}
+                  <span className="text-red-400">*</span>{' '}
+                  <span className="text-xs font-normal text-amber-200/90">(REQUIRED for exact pin)</span>
+                </label>
+                <p className="text-xs text-gray-400 mb-2">
+                  Paste the full Google Maps link for this property. Open Google Maps → navigate to exact property →
+                  Share → copy link.
+                </p>
+                <input
+                  type="url"
+                  value={formData.mapLink}
+                  onChange={(e) => {
+                    setMapLinkError(false)
+                    setFormData({ ...formData, mapLink: e.target.value })
+                  }}
+                  placeholder="https://www.google.com/maps/... or https://maps.app.goo.gl/..."
+                  className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:outline-none focus:border-[#FF5200] ${
+                    mapLinkError && !formData.mapLink.trim() ? 'border-red-500 ring-1 ring-red-500/40' : 'border-gray-600'
+                  }`}
+                />
+                {(() => {
+                  const ml = formData.mapLink.trim()
+                  if (!ml) return null
+                  const extracted = extractLatLngFromMapLink(ml)
+                  const shortLink = /maps\.app\.goo\.gl|goo\.gl/i.test(ml)
+                  if (extracted) {
+                    return (
+                      <p className="text-xs text-green-400 mt-2">
+                        ✓ Coordinates extracted: {extracted.lat.toFixed(6)}, {extracted.lng.toFixed(6)}
+                      </p>
+                    )
+                  }
+                  if (shortLink) {
+                    return (
+                      <p className="text-xs text-amber-300 mt-2">
+                        ⚠ Short link — coordinates will be resolved on first load.
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
+              </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
                 <div className="flex gap-2 items-center">
@@ -816,16 +885,6 @@ export default function EditPropertyPage() {
                   type="text"
                   value={formData.longitude}
                   onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
-                />
-              </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Google Maps Link</label>
-                <input
-                  type="url"
-                  value={formData.mapLink}
-                  onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
-                  placeholder="https://maps.app.goo.gl/..."
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF5200]"
                 />
               </div>
