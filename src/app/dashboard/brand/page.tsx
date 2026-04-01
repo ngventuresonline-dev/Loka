@@ -1100,8 +1100,19 @@ export default function BrandDashboardPage() {
   const fetchMatches = async (id: string) => {
     try {
       const res = await fetch(`/api/dashboard/brand/matches?brandId=${encodeURIComponent(id)}`)
-      if (res.ok) { const json = await res.json(); setMatches(json.matches || []) }
-    } finally { setMatchesLoading(false) }
+      if (res.ok) {
+        const json = await res.json()
+        setMatches(Array.isArray(json.matches) ? json.matches : [])
+      } else {
+        console.error('[Brand Dashboard] matches API failed:', res.status, await res.text().catch(() => ''))
+        setMatches([])
+      }
+    } catch (e) {
+      console.error('[Brand Dashboard] matches fetch error:', e)
+      setMatches([])
+    } finally {
+      setMatchesLoading(false)
+    }
   }
 
   const fetchPropertyIntelligence = useCallback(async (

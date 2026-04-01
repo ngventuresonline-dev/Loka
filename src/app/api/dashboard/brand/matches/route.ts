@@ -7,10 +7,23 @@ import {
   getAreaCommercialRentBand,
 } from '@/lib/location-intelligence/location-rent-context'
 
+function brandProfileText(profile: { industry?: string | null; category?: string | null }): string {
+  return `${profile.industry || ''} ${profile.category || ''}`.toLowerCase()
+}
+
 function brandSeeksOffice(profile: { industry?: string | null; category?: string | null }): boolean {
-  const t = `${profile.industry || ''} ${profile.category || ''}`.toLowerCase()
-  return /\b(office|coworking|co-?working|workspace|b2b office|business centre|business center|serviced office)\b/.
-    test(t)
+  return /\b(office|coworking|co-?working|workspace|b2b office|business centre|business center|serviced office)\b/.test(
+    brandProfileText(profile)
+  )
+}
+
+/** When set, we hide pure office listings from the match list; empty profile → keep offices so the dashboard never goes blank. */
+function brandExplicitlySeeksNonOfficeRetail(profile: { industry?: string | null; category?: string | null }): boolean {
+  const t = brandProfileText(profile).trim()
+  if (!t) return false
+  return /\b(restaurant|cafe|coffee|qsr|retail|fashion|salon|spa|gym|bakery|bar|pub|f&b|fnb|food|grocery|pharma|cloud\s*kitchen|dark\s*kitchen)\b/.test(
+    t
+  )
 }
 
 /** Per-brand exclusions (e.g. duplicate Sarjapur listings); stored on brand_profiles.weight_config_json */
@@ -154,7 +167,10 @@ export async function GET(request: NextRequest) {
           },
         },
       })
-      .catch(() => null)
+      .catch((e) => {
+        console.error('[Brand Matches API] user lookup failed:', e)
+        return null
+      })
 
     if (!user) {
       return NextResponse.json({ matches: [], total: 0 })
@@ -177,11 +193,19 @@ export async function GET(request: NextRequest) {
 
     const properties = await prisma.property
       .findMany({
-        where: { OR: [{ status: 'approved' }, { availability: true }] },
-        take: 100,
+        where: {
+          AND: [
+            { status: { not: 'rejected' } },
+            { OR: [{ status: 'approved' }, { availability: { not: false } }] },
+          ],
+        },
+        take: 150,
         orderBy: { createdAt: 'desc' },
       })
-      .catch(() => [])
+      .catch((e) => {
+        console.error('[Brand Matches API] property.findMany failed:', e)
+        return []
+      })
 
     const excludedTitles = parseExcludedMatchPropertyTitles(profile.weight_config_json)
     const visibleProperties =
@@ -272,7 +296,9 @@ export async function GET(request: NextRequest) {
 
     const officeAllowed = (m: (typeof scoredRaw)[0]) => {
       const pt = String(m.p.propertyType || '').toLowerCase()
-      if (pt.includes('office') && !brandSeeksOffice(profile)) return false
+      if (pt !== 'office') return true
+      if (brandSeeksOffice(profile)) return true
+      if (brandExplicitlySeeksNonOfficeRetail(profile)) return false
       return true
     }
 
