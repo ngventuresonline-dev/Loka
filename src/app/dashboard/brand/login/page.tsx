@@ -26,9 +26,17 @@ export default function BrandLoginPage() {
         body: JSON.stringify({ phone: normalized }),
       })
 
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
 
       if (!res.ok || !data.success) {
+        if (res.status === 429) {
+          setError(
+            typeof data.message === 'string'
+              ? data.message
+              : 'Too many sign-in attempts from this network. Please wait a minute and try again.'
+          )
+          return
+        }
         setError(data.error || 'No brand account found. Please contact the Lokazen team.')
         return
       }
