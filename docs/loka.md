@@ -367,7 +367,6 @@ Loka/
 ├── public/                           # Static Assets
 │   ├── logos/                       # Brand logos (24 files)
 │   ├── social-media-creatives/     # Social media assets (v1, v2, v3 versions)
-│   ├── download-logo.html           # Logo download utility
 │   ├── lokazen-favicon.png
 │   ├── lokazen-favicon.svg
 │   ├── lokazen-fb-cover.svg
@@ -1605,11 +1604,12 @@ npm run test:all
 - `BRAND_QUERY_TRAINING_DATASET.md` - Brand query training data
 - `OWNER_QUERY_TRAINING_DATASET.md` - Owner query training data
 - `CHANGELOG.md` - Project changelog
-- `OPTIMIZATION_SUMMARY.md` - Optimization summary
+- `GOOGLE_MAPS_SETUP.md` - Google Maps API setup
+- `GOOGLE_MAPS_TROUBLESHOOTING.md` - Google Maps troubleshooting
 - `FIX_MAP_LINK_COLUMN.md` - Map link column fix documentation
 
 ---
 
-**Last Updated**: 2026-01-23  
+**Last Updated**: 2026-04-02  
 **Version**: 0.1.1  
 **Maintained By**: Lokazen Development Team

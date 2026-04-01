@@ -272,8 +272,9 @@ Loka/
     ├── PHONEPE_INTEGRATION.md
     ├── LOCATION_INTELLIGENCE_1000.md
     ├── GOOGLE_MAPS_SETUP.md
+    ├── GOOGLE_MAPS_TROUBLESHOOTING.md
     ├── PABBLY_INTEGRATION_GUIDE.md
-    └── (40+ other docs)
+    └── (other integration & ops docs)
 ```
 
 ---
