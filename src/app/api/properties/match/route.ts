@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { findMatches } from '@/lib/matching-engine'
+import { buildMatchReasonStrings } from '@/lib/property-match-reasons'
 import { Property } from '@/types/workflow'
 import { getPrisma } from '@/lib/get-prisma'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
@@ -35,8 +36,12 @@ export async function POST(request: NextRequest) {
       propertyType
     } = body || {}
 
+    const requestedPropertyIdRaw = body?.propertyId
+    const hasSinglePropertyRequest =
+      typeof requestedPropertyIdRaw === 'string' && requestedPropertyIdRaw.trim().length > 0
+
     // Check in-memory cache for repeated identical searches (skip for single-property lookups)
-    if (!body.propertyId) {
+    if (!hasSinglePropertyRequest) {
       const cacheKey = getMatchCacheKey(body)
       const cached = matchCache.get(cacheKey)
       if (cached && cached.expires > Date.now()) {
@@ -106,7 +111,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if a specific propertyId is requested (for view match page optimization)
-    const requestedPropertyId = body.propertyId
+    const requestedPropertyId = hasSinglePropertyRequest
+      ? String(requestedPropertyIdRaw).trim()
+      : ''
     let properties: any[]
     
     // If specific property requested, fetch only that property for faster response
@@ -292,48 +299,20 @@ export async function POST(request: NextRequest) {
     // Sort by highest match (BFI score) first; preferred-location properties still appear by score (we don't hide them)
     const sortedByBudget = [...filteredMatches].sort((a, b) => b.bfiScore.score - a.bfiScore.score)
 
-    // Generate match reasons for each match
+    // Generate match reasons for each match (copy always derived from that row's property + breakdown)
     const matchesWithReasons = sortedByBudget.map(match => {
-      const reasons: string[] = []
       const breakdown = match.bfiScore.breakdown
-      
-      // Location reasons (prioritize so user sees why we show this even if over budget)
-      if (breakdown.locationScore === 100) {
-        reasons.push(`In your preferred area - ${match.property.city}`)
-      } else if (breakdown.locationScore >= 70) {
-        reasons.push(`Nearby your preferred areas - ${match.property.city}`)
-      }
-
-      // Budget reasons
-      const monthlyPrice = match.property.priceType === 'yearly' 
-        ? match.property.price / 12 
-        : match.property.price
-      if (breakdown.budgetScore >= 80) {
-        reasons.push(`Great value - ₹${Math.round(monthlyPrice).toLocaleString()}/month within your budget`)
-      } else if (breakdown.budgetScore >= 40) {
-        reasons.push(`₹${Math.round(monthlyPrice).toLocaleString()}/month – slightly above budget`)
-      } else if (breakdown.budgetScore >= 10) {
-        reasons.push(`₹${Math.round(monthlyPrice).toLocaleString()}/month – in your preferred area`)
-      }
-
-      // Size reasons
-      if (breakdown.sizeScore >= 80 && match.property.size) {
-        reasons.push(`Ideal size - ${match.property.size.toLocaleString()} sqft perfect for ${businessType || 'your business'}`)
-      }
-
-      // Property features
-      if (match.property.amenities?.some(a => a.toLowerCase().includes('parking'))) {
-        reasons.push(`Parking available`)
-      }
-      if (match.property.amenities?.some(a => a.toLowerCase().includes('ground'))) {
-        reasons.push(`Ground floor - high visibility`)
-      }
+      const matchReasons = buildMatchReasonStrings(
+        match.property,
+        breakdown,
+        typeof businessType === 'string' ? businessType : '',
+      )
 
       return {
         property: match.property,
         bfiScore: match.bfiScore.score,
-        matchReasons: reasons.slice(0, 5),
-        breakdown: breakdown
+        matchReasons,
+        breakdown,
       }
     })
 
@@ -352,7 +331,7 @@ export async function POST(request: NextRequest) {
     logQuerySize('/api/properties/match', responseSize, topMatches.length)
     
     // Write to in-memory cache (skip for single-property lookups)
-    if (!body.propertyId) {
+    if (!hasSinglePropertyRequest) {
       const cacheKey = getMatchCacheKey(body)
       matchCache.set(cacheKey, { data: responseData, expires: Date.now() + 5 * 60 * 1000 })
       // Cleanup expired entries when cache grows large

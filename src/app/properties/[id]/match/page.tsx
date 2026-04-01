@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
@@ -14,6 +14,8 @@ import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import LokazenNodesPlaceholder from '@/components/LokazenNodesPlaceholder'
 import { getPropertyTypeLabel } from '@/lib/property-type-mapper'
 import { decodePropertySlug } from '@/lib/property-slug'
+import { calculateBFI } from '@/lib/matching-engine'
+import { buildMatchReasonStrings } from '@/lib/property-match-reasons'
 import { trackInquiry, trackScheduleViewing } from '@/lib/tracking'
 import LocationIntelligenceDashboard from '@/components/LocationIntelligenceDashboard'
 
@@ -98,6 +100,7 @@ function MatchDetailsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const propertyId = decodePropertySlug(params.id as string)
+  const fetchGenerationRef = useRef(0)
   const [loading, setLoading] = useState(true)
   const [matchDetails, setMatchDetails] = useState<MatchDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'location'>('overview')
@@ -222,6 +225,8 @@ function MatchDetailsContent() {
     // Keep a reference property we can use even if something fails midway
     let fallbackProperty: Property | null = null
 
+    const fetchGen = ++fetchGenerationRef.current
+
     try {
       setLoading(true)
       
@@ -318,34 +323,59 @@ function MatchDetailsContent() {
       // Store for use in catch/fallbacks - this is the source of truth from /api/properties/[id]
       fallbackProperty = property as Property
 
-      // ALWAYS use the property from the direct fetch - never use match.property which could be wrong
-      // Only take bfiScore, matchReasons, breakdown from the match API
+      // ALWAYS use the property from the direct fetch — never use match.property for display.
+      // BFI + "why this matches" bullets must be driven by this same object so rent/size never disagree.
       const displayProperty = fallbackProperty!
+
+      const brandRequirements = {
+        locations: filters.locations,
+        sizeMin: filters.sizeMin,
+        sizeMax: filters.sizeMax,
+        budgetMin: filters.budgetMin,
+        budgetMax: filters.budgetMax,
+        businessType: filters.businessType || '',
+      }
+
       let bfiScore = 75
-      let matchReasons = ['Property available in your preferred location', 'Size matches your requirements']
       let breakdown: MatchBreakdown = {
         locationScore: 80,
         sizeScore: 75,
         budgetScore: 70,
-        typeScore: 80
+        typeScore: 80,
       }
 
-      if (matchPayload) {
-        const matches = Array.isArray(matchPayload.matches) ? matchPayload.matches : []
-        const match = matches.find((m: any) => m.property?.id === propertyId)
-        
+      if (matchPayload && Array.isArray(matchPayload.matches)) {
+        const match = matchPayload.matches.find((m: any) => m.property?.id === displayProperty.id)
         if (match) {
-          bfiScore = match.bfiScore ?? 75
-          matchReasons = match.matchReasons ?? matchReasons
+          bfiScore = match.bfiScore ?? bfiScore
           breakdown = match.breakdown ?? breakdown
+        } else {
+          const computed = calculateBFI(displayProperty, brandRequirements)
+          bfiScore = computed.score
+          breakdown = computed.breakdown
         }
+      } else {
+        const computed = calculateBFI(displayProperty, brandRequirements)
+        bfiScore = computed.score
+        breakdown = computed.breakdown
       }
+
+      const matchReasons = buildMatchReasonStrings(
+        displayProperty,
+        breakdown,
+        filters.businessType || '',
+      )
+
+      if (fetchGen !== fetchGenerationRef.current) return
 
       const matchData: MatchDetails = {
         property: displayProperty,
         bfiScore,
-        matchReasons,
-        breakdown
+        matchReasons:
+          matchReasons.length > 0
+            ? matchReasons
+            : ['Property available in your preferred location', 'Size matches your requirements'],
+        breakdown,
       }
       setMatchDetails(matchData)
       // Cache the match data (ignore quota errors)
@@ -365,6 +395,8 @@ function MatchDetailsContent() {
     } catch (error) {
       console.error('Error fetching match details:', error)
 
+      if (fetchGen !== fetchGenerationRef.current) return
+
       // As a last resort, still try to render with a generic fallback property
       if (fallbackProperty) {
         const matchData: MatchDetails = {
@@ -383,7 +415,9 @@ function MatchDetailsContent() {
         setMatchDetails(null)
       }
     } finally {
-      setLoading(false)
+      if (fetchGen === fetchGenerationRef.current) {
+        setLoading(false)
+      }
     }
   }
 
