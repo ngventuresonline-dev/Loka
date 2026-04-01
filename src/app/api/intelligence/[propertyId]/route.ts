@@ -66,24 +66,67 @@ export async function GET(
     competitors = competitors.filter(categoryMatch)
   }
 
+  // Raw SQL: bypasses Prisma select validation when client schema lags behind DB columns (@map snake_case as listed).
   const ward =
     intelligence.wardCode != null
-      ? await prisma.wardDemographics.findUnique({
-          where: { wardCode: intelligence.wardCode },
-          select: {
-            wardCode: true, wardName: true, locality: true, city: true,
-            latitude: true, longitude: true,
-            population2021: true, population2026: true,
-            populationDensity: true, populationGrowth: true,
-            age18_24: true, age25_34: true, age35_44: true, age45_54: true, age55Plus: true, medianAge: true,
-            income6to10L: true, income10to15L: true, incomeAbove15L: true, medianIncome: true,
-            workingPopulation: true, itProfessionals: true, businessOwners: true,
-            apartments: true, carOwnership: true, diningOutPerWeek: true,
-            avgApptSqft: true, avgLandSqft: true, combinedAvgSqft: true,
-            spendingPowerIndex: true, commercialRentMin: true, commercialRentMax: true,
-            dominantAgeGroup: true, primaryResidentType: true,
-          },
-        })
+      ? await prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT 
+        "wardCode", "wardName", locality, city, latitude, longitude,
+        "population2021", "population2026", "populationDensity", "populationGrowth",
+        age18_24, age25_34, age35_44, age45_54, "age55Plus", "medianAge",
+        "income6to10L", "income10to15L", "incomeAbove15L", "medianIncome",
+        "workingPopulation", "itProfessionals", "businessOwners",
+        apartments, "carOwnership", "diningOutPerWeek",
+        avg_appt_sqft, avg_land_sqft, combined_avg_sqft,
+        spending_power_index, commercial_rent_min, commercial_rent_max,
+        dominant_age_group, primary_resident_type
+      FROM ward_demographics
+      WHERE "wardCode" = ${intelligence.wardCode}
+      LIMIT 1
+    `
+          .then((rows: Array<Record<string, unknown>>) => {
+            if (!rows?.length) return null
+            const r = rows[0]
+            const num = (k: string) => (r[k] != null ? Number(r[k]) : NaN)
+            const numOrNull = (k: string) => (r[k] != null ? Number(r[k]) : null)
+            return {
+              wardCode: r['wardCode'],
+              wardName: r['wardName'],
+              locality: r['locality'],
+              city: r['city'],
+              latitude: num('latitude'),
+              longitude: num('longitude'),
+              population2021: num('population2021'),
+              population2026: num('population2026'),
+              populationDensity: num('populationDensity'),
+              populationGrowth: num('populationGrowth'),
+              age18_24: num('age18_24'),
+              age25_34: num('age25_34'),
+              age35_44: num('age35_44'),
+              age45_54: num('age45_54'),
+              age55Plus: num('age55Plus'),
+              medianAge: num('medianAge'),
+              income6to10L: num('income6to10L'),
+              income10to15L: num('income10to15L'),
+              incomeAbove15L: num('incomeAbove15L'),
+              medianIncome: num('medianIncome'),
+              workingPopulation: num('workingPopulation'),
+              itProfessionals: num('itProfessionals'),
+              businessOwners: num('businessOwners'),
+              apartments: num('apartments'),
+              carOwnership: num('carOwnership'),
+              diningOutPerWeek: num('diningOutPerWeek'),
+              avgApptSqft: numOrNull('avg_appt_sqft'),
+              avgLandSqft: numOrNull('avg_land_sqft'),
+              combinedAvgSqft: numOrNull('combined_avg_sqft'),
+              spendingPowerIndex: numOrNull('spending_power_index'),
+              commercialRentMin: numOrNull('commercial_rent_min'),
+              commercialRentMax: numOrNull('commercial_rent_max'),
+              dominantAgeGroup: r['dominant_age_group'] as string | null,
+              primaryResidentType: r['primary_resident_type'] as string | null,
+            }
+          })
+          .catch(() => null)
       : null
 
   const localityKey =

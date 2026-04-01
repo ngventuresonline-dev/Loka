@@ -1,3 +1,4 @@
+import type { PrismaClient } from '@prisma/client'
 import { getPrisma } from '@/lib/get-prisma'
 import { geocodeAddress, getPropertyCoordinatesFromRow } from '@/lib/property-coordinates'
 import { fetchAndStoreCompetitorsForProperty } from './fetch-competitors'
@@ -6,6 +7,65 @@ import { buildRevenueLocationProfile, calculateRevenueFromBenchmarks } from './c
 import { calculateScores } from './calculate-scores'
 import { findNearestWard } from './ward-lookup'
 import { findNearestCensusWard } from './census-lookup'
+
+/** Nearest row from bangalore_commercial_pockets for pocket-level revenue inputs. */
+export async function resolveCommercialPocket(
+  prisma: PrismaClient,
+  lat: number,
+  lng: number,
+  address: string,
+  title: string,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const addressLower = `${address} ${title}`.toLowerCase()
+
+    const textMatches = (await prisma.$queryRaw`
+      SELECT *,
+        (6371000 * acos(
+          LEAST(1, GREATEST(-1,
+            cos(radians(${lat})) * cos(radians(lat)) * cos(radians(lng) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(lat))
+          ))
+        )) AS distance_m
+      FROM bangalore_commercial_pockets
+      WHERE (
+        LOWER(${addressLower}) LIKE '%' || LOWER(name) || '%'
+        OR LOWER(${addressLower}) LIKE '%' || LOWER(locality) || '%'
+        OR EXISTS (
+          SELECT 1
+          FROM unnest(COALESCE(key_roads, ARRAY[]::text[])) AS roads(road)
+          WHERE LOWER(${addressLower}) LIKE '%' || LOWER(roads.road) || '%'
+        )
+      )
+      ORDER BY distance_m ASC
+      LIMIT 1
+    `) as Array<Record<string, unknown>>
+    if (textMatches?.length > 0) return textMatches[0] ?? null
+
+    const nearbyPockets = (await prisma.$queryRaw`
+      SELECT *,
+        (6371000 * acos(
+          LEAST(1, GREATEST(-1,
+            cos(radians(${lat})) * cos(radians(lat)) * cos(radians(lng) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(lat))
+          ))
+        )) AS distance_m
+      FROM bangalore_commercial_pockets
+      ORDER BY distance_m ASC
+      LIMIT 1
+    `) as Array<Record<string, unknown>>
+    if (nearbyPockets?.length > 0) {
+      const p = nearbyPockets[0]
+      const dist = Number(p['distance_m'])
+      if (Number.isFinite(dist) && dist <= 1500) return p
+    }
+
+    return null
+  } catch (e) {
+    console.warn('[resolveCommercialPocket] failed:', e)
+    return null
+  }
+}
 
 export async function enrichPropertyIntelligence(propertyId: string, businessType?: string) {
   const prisma = await getPrisma()
@@ -114,6 +174,14 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
     }
   }
 
+  const pocket = await resolveCommercialPocket(
+    prisma,
+    lat,
+    lng,
+    property.address,
+    property.title ?? '',
+  )
+
   const priceNum = property.price != null ? Number(property.price) : null
   const sizeNum = property.size != null ? Number(property.size) : null
   const monthlyRent =
@@ -132,6 +200,7 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
     rawCompetitors: competitorResult.rawCompetitors,
     metroDistanceM: transport.metroDistance,
     busStops: transport.busStops,
+    pocket,
     localityIntel,
     ward: ward
       ? {
@@ -162,6 +231,7 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
     propertyType: property.propertyType ?? undefined,
     businessType,
     monthlyRent,
+    propertySizeSqft: sizeNum,
     locationProfile,
   })
 

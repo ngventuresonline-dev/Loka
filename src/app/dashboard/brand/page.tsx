@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -17,7 +17,6 @@ import {
 import type { LocationSynthesis } from '@/lib/intelligence/brand-intel-enrichment.types'
 import { toIndustryKey } from '@/lib/intelligence/industry-key'
 import { buildRevenueLocationProfile, calculateRevenueFromBenchmarks } from '@/lib/intelligence/calculate-revenue'
-import { getIndiaCategoryProfile } from '@/lib/location-intelligence/india-benchmarks'
 import { getMapLinkFromAmenities } from '@/lib/property-coordinates'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -306,7 +305,7 @@ function TabSynthesisCallout({
 }) {
   if (loading) {
     return (
-      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/50 to-transparent">
+      <div className="px-4 sm:px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/50 to-transparent">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
         <SynthesisSectionSkeleton label={analysisLabel} lines={analysisLines} />
       </div>
@@ -316,7 +315,7 @@ function TabSynthesisCallout({
   const bs = (bullets || []).filter(Boolean)
   if (synthesisPending && !hasN && bs.length === 0) {
     return (
-      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
+      <div className="px-4 sm:px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
         <div className="text-[11px] text-gray-600 py-2 leading-relaxed rounded-lg border border-orange-100 bg-white/80 px-3">
           <span className="font-semibold text-gray-800">Intelligence ready in 24hrs.</span>{' '}
@@ -327,7 +326,7 @@ function TabSynthesisCallout({
   }
   if (synthesisUnavailable && !hasN && bs.length === 0) {
     return (
-      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
+      <div className="px-4 sm:px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
         <div className="text-[11px] text-gray-400 italic py-2">
           Intelligence analysis unavailable — chart data is still shown above.
@@ -337,7 +336,7 @@ function TabSynthesisCallout({
   }
   if (!hasN && bs.length === 0) return null
   return (
-    <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
+    <div className="px-4 sm:px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
       {hasN && <p className="text-xs text-gray-800 leading-relaxed mb-2">{narrative}</p>}
       {bs.length > 0 && (
@@ -1045,6 +1044,7 @@ export default function BrandDashboardPage() {
   const [selectedMatch, setSelectedMatch] = useState<MatchedProperty | null>(null)
   const [intelData, setIntelData] = useState<IntelligenceData | null>(null)
   const [intelLoading, setIntelLoading] = useState(false)
+  const [commercialPocket, setCommercialPocket] = useState<Record<string, unknown> | null>(null)
 
   // Schedule Visit modal state
   const [visitModal, setVisitModal] = useState<{ open: boolean; date: string; time: string; saved: boolean; interested: boolean }>({ open: false, date: '', time: '', saved: false, interested: false })
@@ -1052,6 +1052,8 @@ export default function BrandDashboardPage() {
   const [footfallView, setFootfallView] = useState<'weekday' | 'weekend'>('weekday')
   const [rightPanelTab, setRightPanelTab] = useState<IntelTab>('overview')
   const [copiedMapLink, setCopiedMapLink] = useState(false)
+  const [locationShareOpen, setLocationShareOpen] = useState(false)
+  const locationShareRef = useRef<HTMLDivElement>(null)
 
   // Google Maps loader
   const { isLoaded } = useLoadScript({ googleMapsApiKey: getGoogleMapsApiKey(), libraries: GOOGLE_MAPS_LIBRARIES })
@@ -1087,7 +1089,51 @@ export default function BrandDashboardPage() {
 
   useEffect(() => {
     setCopiedMapLink(false)
-  }, [selectedMatch?.property.id])
+    setLocationShareOpen(false)
+  }, [selectedMatch?.property.id, rightPanelTab])
+
+  useEffect(() => {
+    if (!locationShareOpen) return
+    const onDown = (e: MouseEvent) => {
+      const el = locationShareRef.current
+      if (el && !el.contains(e.target as Node)) setLocationShareOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [locationShareOpen])
+
+  useEffect(() => {
+    if (!intelData?.coords || !selectedMatch?.property) {
+      setCommercialPocket(null)
+      return
+    }
+    const { lat, lng } = intelData.coords
+    const p = selectedMatch.property
+    const q = new URLSearchParams({
+      lat: String(lat),
+      lng: String(lng),
+      address: p.address || '',
+      title: p.title || '',
+    })
+    let cancelled = false
+    void fetch(`/api/intelligence/commercial-pocket?${q.toString()}`)
+      .then((r) => r.json())
+      .then((j: { pocket?: Record<string, unknown> | null }) => {
+        if (!cancelled) setCommercialPocket(j.pocket ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setCommercialPocket(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    intelData?.coords?.lat,
+    intelData?.coords?.lng,
+    selectedMatch?.property.id,
+    selectedMatch?.property.address,
+    selectedMatch?.property.title,
+  ])
 
   const fetchDashboard = async (id: string) => {
     try {
@@ -1129,6 +1175,7 @@ export default function BrandDashboardPage() {
   ) => {
     setIntelLoading(true)
     setIntelData(null)
+    setCommercialPocket(null)
     setRightMode('intelligence')
 
     const brand = data?.brand ?? null
@@ -1368,10 +1415,10 @@ export default function BrandDashboardPage() {
   ]
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-[#F7F7F5] overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-[100dvh] min-h-0 bg-[#F7F7F5] overflow-hidden">
 
       {/* ══ LEFT PANEL ══ */}
-      <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col h-[46vh] lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-gray-100 overflow-hidden">
+      <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col min-h-0 h-[46vh] lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-gray-100 overflow-hidden">
 
         {/* Brand Header */}
         <div className="p-4 border-b border-gray-100 flex-shrink-0">
@@ -1563,7 +1610,7 @@ export default function BrandDashboardPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
 
           {/* ── Matches Tab ── */}
           {activeTab === 'matched' && (
@@ -1647,17 +1694,17 @@ export default function BrandDashboardPage() {
                         </div>
 
                         {/* Action row */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col min-[380px]:flex-row gap-2 min-w-0">
                           <button
                             onClick={(e) => { e.stopPropagation(); selectProperty(m) }}
-                            className="flex-1 text-center text-[11px] font-semibold text-white bg-[#FF5200] rounded-lg py-1.5 hover:bg-orange-600 transition-colors"
+                            className="flex-1 text-center text-[11px] font-semibold text-white bg-[#FF5200] rounded-lg py-1.5 hover:bg-orange-600 transition-colors min-h-[40px]"
                           >
                             View Intelligence
                           </button>
                           <Link
                             href={`/properties/${encodePropertyId(m.property.id)}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-[11px] text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gray-400 hover:text-gray-700 transition-colors whitespace-nowrap"
+                            className="text-center text-[11px] text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gray-400 hover:text-gray-700 transition-colors whitespace-nowrap min-h-[40px] flex items-center justify-center min-[380px]:inline-flex"
                           >
                             Listing
                           </Link>
@@ -1679,7 +1726,7 @@ export default function BrandDashboardPage() {
                   <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline">Browse Spaces →</Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 py-2">
+                <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 py-2">
                   {recentViews.map((v) => (
                     <Link key={v.id} href={`/properties/${encodePropertyId(v.propertyId)}`} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 transition-all">
                       <div className="relative h-28 bg-gray-100">
@@ -1714,7 +1761,7 @@ export default function BrandDashboardPage() {
                   <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline">Browse Spaces →</Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 py-2">
+                <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 py-2">
                   {savedProperties.map((sp) => (
                     <Link key={sp.id} href={`/properties/${encodePropertyId(sp.property.id)}`} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 transition-all">
                       <div className="relative h-28 bg-gray-100">
@@ -1775,7 +1822,7 @@ export default function BrandDashboardPage() {
           )}
 
           {/* Footer */}
-          <div className="px-4 py-4 border-t border-gray-100 mt-2 text-center">
+          <div className="px-3 sm:px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-gray-100 mt-2 text-center">
             <p className="text-xs text-gray-400">
               Need help?{' '}
               <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="text-[#FF5200] hover:underline">Chat on WhatsApp</a>
@@ -1789,22 +1836,22 @@ export default function BrandDashboardPage() {
 
         {/* Intelligence header — only when property selected */}
         {rightMode === 'intelligence' && selectedMatch && (
-          <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
             <button
               onClick={() => { setRightMode('map'); setSelectedMatch(null); setIntelData(null) }}
               className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
             >
               ←
             </button>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 basis-[min(100%,12rem)] sm:basis-auto">
               <p className="font-bold text-gray-900 text-sm truncate">{selectedMatch.property.title}</p>
-              <p className="text-xs text-gray-500 truncate">{selectedMatch.property.address}, {selectedMatch.property.city}</p>
+              <p className="text-xs text-gray-500 line-clamp-2 sm:truncate sm:line-clamp-none">{selectedMatch.property.address}, {selectedMatch.property.city}</p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-sm font-bold text-white bg-[#FF5200] rounded-full px-3 py-1">{selectedMatch.bfiScore} BFI</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-auto w-full sm:w-auto justify-end">
+              <span className="text-xs sm:text-sm font-bold text-white bg-[#FF5200] rounded-full px-2.5 sm:px-3 py-1">{selectedMatch.bfiScore} BFI</span>
               <Link
                 href={`/properties/${encodePropertyId(selectedMatch.property.id)}`}
-                className="text-xs font-medium text-[#FF5200] border border-[#FF5200] rounded-lg px-3 py-1 hover:bg-orange-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+                className="text-xs font-medium text-[#FF5200] border border-[#FF5200] rounded-lg px-2.5 sm:px-3 py-1 hover:bg-orange-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 whitespace-nowrap"
               >
                 View →
               </Link>
@@ -1837,14 +1884,14 @@ export default function BrandDashboardPage() {
         {/* Intelligence tab bar */}
         {rightMode === 'intelligence' && (
           <div className="flex-shrink-0 border-b border-gray-100 bg-white z-10">
-            <nav className="flex overflow-x-auto px-2">
+            <nav className="flex overflow-x-auto px-1 sm:px-2 scrollbar-hide pb-px">
               {INTEL_TABS.map(({ key, label }) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setRightPanelTab(key)}
                   aria-pressed={rightPanelTab === key}
-                  className={`whitespace-nowrap px-4 py-2.5 text-xs border-b-2 font-medium transition-colors flex-shrink-0 inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${
+                  className={`whitespace-nowrap px-2.5 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs border-b-2 font-medium transition-colors flex-shrink-0 inline-flex items-center min-h-[40px] sm:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${
                     rightPanelTab === key ? 'border-[#FF5200] text-[#FF5200]' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -1855,9 +1902,9 @@ export default function BrandDashboardPage() {
           </div>
         )}
 
-        {/* Map layer — always in DOM, z-index controlled */}
-        <div className={`absolute inset-0 transition-opacity duration-200 ${isMapVisible ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}
-          style={{ top: rightMode === 'intelligence' ? '97px' : '0' }}>
+        <div className="flex-1 min-h-0 relative">
+        {/* Map layer — always in DOM, z-index controlled; fills area below intel chrome */}
+        <div className={`absolute inset-0 transition-opacity duration-200 ${isMapVisible ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
           {isLoaded ? (
             <GoogleMap
               mapContainerClassName="w-full h-full"
@@ -1998,114 +2045,110 @@ export default function BrandDashboardPage() {
             </div>
           )}
 
-          {/* Map controls */}
-          <div className="absolute top-3 right-3 z-20 bg-white/95 backdrop-blur rounded-xl shadow-md p-1.5 flex flex-col gap-1">
-            {(['pins', 'heatmap', 'satellite'] as const).map((mode) => (
-              <button key={mode} onClick={() => { setMapMode(mode); if (mapRef) mapRef.setMapTypeId(mode === 'satellite' ? 'satellite' : 'roadmap') }}
-                aria-pressed={mapMode === mode}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${mapMode === mode ? 'bg-[#FF5200] text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-                {mode === 'pins' ? 'Pins' : mode === 'heatmap' ? 'Heatmap' : 'Satellite'}
-              </button>
-            ))}
+          {/* Map controls + compact share (intel map tab) */}
+          <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-1.5">
+            <div className="bg-white/95 backdrop-blur rounded-xl shadow-md p-1.5 flex flex-col gap-1">
+              {(['pins', 'heatmap', 'satellite'] as const).map((mode) => (
+                <button key={mode} onClick={() => { setMapMode(mode); if (mapRef) mapRef.setMapTypeId(mode === 'satellite' ? 'satellite' : 'roadmap') }}
+                  aria-pressed={mapMode === mode}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${mapMode === mode ? 'bg-[#FF5200] text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                  {mode === 'pins' ? 'Pins' : mode === 'heatmap' ? 'Heatmap' : 'Satellite'}
+                </button>
+              ))}
+            </div>
+            {rightMode === 'intelligence' && rightPanelTab === 'map' && selectedMatch && (() => {
+              const mapLink = getMapLinkFromAmenities(selectedMatch.property.amenities)
+              const ml = mapLink?.trim() || null
+              const coords = selectedMatch.coords
+              const googleMapsUrl =
+                ml || (coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : null)
+              const waText = googleMapsUrl
+                ? `Check out this property on Lokazen:\n${selectedMatch.property.title}\n${selectedMatch.property.address}, ${selectedMatch.property.city}\n${googleMapsUrl}`
+                : null
+              if (!googleMapsUrl) return null
+              return (
+                <div className="relative" ref={locationShareRef}>
+                  <button
+                    type="button"
+                    aria-expanded={locationShareOpen}
+                    aria-haspopup="menu"
+                    onClick={() => setLocationShareOpen((o) => !o)}
+                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-200/80 hover:border-[#FF5200]/40 hover:text-[#FF5200] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    Share
+                  </button>
+                  {locationShareOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-full mt-1 w-44 py-1 bg-white rounded-xl shadow-lg border border-gray-100 z-[30] overflow-hidden"
+                    >
+                      <a
+                        role="menuitem"
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setLocationShareOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-800 hover:bg-orange-50"
+                      >
+                        Open in Maps
+                      </a>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(googleMapsUrl).then(() => {
+                            setCopiedMapLink(true)
+                            setTimeout(() => setCopiedMapLink(false), 2000)
+                            setLocationShareOpen(false)
+                          })
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-800 hover:bg-gray-50 text-left"
+                      >
+                        {copiedMapLink ? '✓ Copied' : 'Copy link'}
+                      </button>
+                      {waText ? (
+                        <a
+                          role="menuitem"
+                          href={`https://wa.me/?text=${encodeURIComponent(waText)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setLocationShareOpen(false)}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-50"
+                        >
+                          WhatsApp
+                        </a>
+                      ) : null}
+                      <p className="px-3 py-1.5 text-[9px] text-gray-400 border-t border-gray-50 leading-snug">
+                        {ml ? 'Exact pin' : 'Area approx.'}
+                        {coords ? ` · ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
 
           {/* Legend */}
-          <div className="absolute bottom-4 left-3 z-20 bg-white/95 backdrop-blur rounded-xl shadow-md px-3 py-2 flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-[#FF5200] flex items-center justify-center"><span className="text-white text-[8px] font-bold">85</span></div>
-            <span className="text-xs text-gray-700 font-medium">{matches.length} Matched Properties</span>
+          <div className="absolute bottom-3 left-2 right-14 sm:right-16 z-20 max-w-[min(100%,18rem)] min-w-0 bg-white/95 backdrop-blur rounded-xl shadow-md px-2.5 sm:px-3 py-2 flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-[#FF5200] flex flex-shrink-0 items-center justify-center"><span className="text-white text-[8px] font-bold">85</span></div>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium truncate">{matches.length} Matched Properties</span>
           </div>
-
-          {rightMode === 'intelligence' && rightPanelTab === 'map' && selectedMatch && (() => {
-            const mapLink = getMapLinkFromAmenities(selectedMatch.property.amenities)
-            const ml = mapLink?.trim() || null
-            const coords = selectedMatch.coords
-            const googleMapsUrl =
-              ml || (coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : null)
-            const waText = googleMapsUrl
-              ? `Check out this property on Lokazen:\n${selectedMatch.property.title}\n${selectedMatch.property.address}, ${selectedMatch.property.city}\n${googleMapsUrl}`
-              : null
-            if (!googleMapsUrl) return null
-            return (
-              <div className="absolute top-14 left-3 right-16 z-[25] mx-0 my-0 max-h-[min(42vh,280px)] overflow-y-auto p-4 bg-white border border-gray-200 rounded-2xl shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-gray-900">Exact Location</p>
-                    <p className="text-[10px] text-gray-500">
-                      {coords
-                        ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
-                        : 'Coordinates from map link'}
-                    </p>
-                  </div>
-                  <span
-                    className={`ml-auto flex-shrink-0 text-[9px] px-2 py-0.5 rounded-full font-medium ${
-                      ml ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                    }`}
-                  >
-                    {ml ? '📍 Exact pin' : '📍 Area approx'}
-                  </span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <a
-                    href={googleMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 bg-[#FF5200] text-white text-xs font-semibold rounded-xl hover:bg-[#e04800] transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    Open Maps
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(googleMapsUrl).then(() => {
-                        setCopiedMapLink(true)
-                        setTimeout(() => setCopiedMapLink(false), 2000)
-                      })
-                    }}
-                    className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    {copiedMapLink ? '✓ Copied!' : 'Copy Link'}
-                  </button>
-                  {waText ? (
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(waText)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-10 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
-                      title="Share on WhatsApp"
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                      </svg>
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            )
-          })()}
 
           {/* "Select property" hint */}
           {rightMode === 'map' && (
-            <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-20 bg-white/95 backdrop-blur rounded-full shadow-md px-4 py-2 pointer-events-none">
-              <p className="text-xs text-gray-600 whitespace-nowrap">Select a property to see full Location Intelligence →</p>
+            <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-20 max-w-[min(92vw,22rem)] bg-white/95 backdrop-blur rounded-2xl shadow-md px-3 py-2 pointer-events-none">
+              <p className="text-[10px] sm:text-xs text-gray-600 text-center leading-snug whitespace-normal">Select a property to see full Location Intelligence →</p>
             </div>
           )}
         </div>
 
         {/* ── Intelligence content panel ── */}
         {rightMode === 'intelligence' && rightPanelTab !== 'map' && (
-          <div className="flex-1 overflow-y-auto bg-white relative z-20">
+          <div className="absolute inset-0 overflow-y-auto overflow-x-hidden bg-white z-20 min-h-0">
             {selectedMatch && (
               <QuickActionRail
                 onScheduleVisit={() => setVisitModal(v => ({ ...v, open: true }))}
@@ -2156,7 +2199,7 @@ export default function BrandDashboardPage() {
                     />
 
                     <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-white">
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-2.5">
                         <InsightMetricCard
                           label="Market potential"
                           value={`${Math.round(intelData.growthTrend)}/100`}
@@ -2226,10 +2269,10 @@ export default function BrandDashboardPage() {
 
                     {/* Highlights */}
                     {intelData.highlights.length > 0 && (
-                      <div className="px-5 py-3 border-b border-gray-100">
+                      <div className="px-4 sm:px-5 py-3 border-b border-gray-100">
                         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
                           Highlights
-                          <span className="ml-1 text-gray-300 font-normal normal-case">— derived from live market data</span>
+                          <span className="hidden sm:inline ml-1 text-gray-300 font-normal normal-case">— derived from live market data</span>
                         </p>
                         <div className="flex gap-2 flex-wrap">
                           {intelData.highlights.map((h) => <HighlightChip key={h} label={h} />)}
@@ -2238,7 +2281,7 @@ export default function BrandDashboardPage() {
                     )}
 
                     {/* Lokazen location synthesis — one engine pass, surfaced on every intelligence tab */}
-                    <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-orange-50/45 to-transparent">
+                    <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-orange-50/45 to-transparent">
                       {intelData.locationSynthesisPending && !intelData.locationSynthesis && (
                         <div className="px-4 py-2.5 bg-white border border-orange-100 rounded-xl mb-3">
                           <p className="text-[11px] font-semibold text-gray-800">Intelligence ready in 24hrs</p>
@@ -2355,7 +2398,7 @@ export default function BrandDashboardPage() {
                     </div>
 
                     {/* BFI Breakdown */}
-                    <div className="px-5 py-4 border-b border-gray-100">
+                    <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
                       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3">BFI Breakdown</p>
                       {selectedMatch && [
                         { label: 'Location Fit', value: selectedMatch.breakdown.locationFit },
@@ -2375,9 +2418,9 @@ export default function BrandDashboardPage() {
                     </div>
 
                     {/* Property Details */}
-                    <div className="px-5 py-4 border-b border-gray-100">
+                    <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
                       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Property Details</p>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <MetricCell label="AREA" value={`${selectedMatch?.property.size.toLocaleString()} sqft`} />
                         <MetricCell label="RENT" value={formatPrice(selectedMatch?.property.price || 0, selectedMatch?.property.priceType || 'monthly')} />
                         <MetricCell label="TYPE" value={selectedMatch?.property.propertyType || '—'} />
@@ -2387,11 +2430,11 @@ export default function BrandDashboardPage() {
                     </div>
 
                     {/* Revenue Potential — LIR Section 06 style */}
-                    <div className="px-5 py-4 border-b border-gray-100">
-                      <div className="flex items-center gap-2 mb-3">
+                    <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
                         <h3 className="font-bold text-gray-900 text-sm">Revenue Potential</h3>
-                        <span className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">Lokazen estimate · not a guarantee</span>
-                        <div className="relative group ml-auto">
+                        <span className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 max-w-full">Lokazen estimate · not a guarantee</span>
+                        <div className="relative group ml-auto flex-shrink-0">
                           <button
                             type="button"
                             aria-label="More info about revenue model"
@@ -2400,7 +2443,7 @@ export default function BrandDashboardPage() {
                             i
                           </button>
                           <div className="absolute right-0 top-5 w-56 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
-                            Based on: category benchmarks, area footfall multiplier, avg ticket size, capture rate. Not a financial guarantee.
+                            Based on: format-level turn model (covers × turns × ticket) + delivery stream + catchment demand (offices, residents, road traffic) + spending power + saturation. Not a financial guarantee.
                           </div>
                         </div>
                       </div>
@@ -2438,6 +2481,7 @@ export default function BrandDashboardPage() {
                           })),
                           metroDistanceM: intelData.metroDistance,
                           busStops: intelData.busStops,
+                          pocket: commercialPocket,
                           localityIntel: null,
                           ward: null,
                           competitorCountForSaturationFallback: intelData.numberOfStores,
@@ -2450,19 +2494,9 @@ export default function BrandDashboardPage() {
                           propertyType: prop?.propertyType,
                           businessType,
                           monthlyRent,
+                          sizeSqft: prop?.size != null ? Number(prop.size) : null,
                           locationProfile,
                         })
-
-                        const categoryProfile = getIndiaCategoryProfile(
-                          prop?.propertyType ?? '',
-                          businessType,
-                        )
-                        const officeSharePct = Math.round(
-                          (categoryProfile.officeLunchShare ?? 0.12) * 1000,
-                        ) / 10
-                        const residentialSharePct = Math.round(
-                          (categoryProfile.residentialShare ?? 0.04) * 1000,
-                        ) / 10
 
                         const conservativeL = Math.max(0, Math.round(revenue.monthlyRevenueLow / 100000))
                         const baseL = Math.max(0, Math.round(revenue.monthlyRevenueMid / 100000))
@@ -2490,38 +2524,116 @@ export default function BrandDashboardPage() {
                                 <span className="text-gray-400 group-open:rotate-90 transition-transform inline-block">▸</span>
                                 How we calculated this
                               </summary>
-                              <div className="space-y-1">
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between text-[10px] font-medium text-gray-700 pb-1 border-b border-gray-100">
+                                  <span>{breakdown.formatLabel}</span>
+                                  <span>
+                                    {breakdown.covers > 0
+                                      ? `${breakdown.covers} covers · ${breakdown.turnsPerDay}x turns/day`
+                                      : 'Delivery only'}
+                                  </span>
+                                </div>
+
+                                {breakdown.officeWorkerDemand > 0 && (
                                   <div className="flex justify-between text-[10px]">
-                                    <span className="text-gray-500">Office worker demand ({breakdown.officeWorkerDemand}/day)</span>
-                                    <span className="text-gray-700">×{officeSharePct}% capture</span>
+                                    <span className="text-gray-500">Office workers in catchment</span>
+                                    <span className="text-gray-700">{breakdown.officeWorkerDemand}/day</span>
                                   </div>
+                                )}
+                                {breakdown.residentialDemand > 0 && (
                                   <div className="flex justify-between text-[10px]">
-                                    <span className="text-gray-500">Residential demand ({breakdown.residentialDemand}/day)</span>
-                                    <span className="text-gray-700">×{residentialSharePct}% capture</span>
+                                    <span className="text-gray-500">Residential catchment</span>
+                                    <span className="text-gray-700">{breakdown.residentialDemand}/day</span>
                                   </div>
+                                )}
+                                <div className="flex justify-between text-[10px]">
+                                  <span className="text-gray-500">
+                                    Road walk-in{' '}
+                                    <span className="capitalize">({breakdown.roadTypeModifier.replace(/_/g, ' ')})</span>
+                                  </span>
+                                  <span className="text-gray-700">{breakdown.roadWalkIn}/day</span>
+                                </div>
+                                {breakdown.deliveryOrders > 0 && (
                                   <div className="flex justify-between text-[10px]">
-                                    <span className="text-gray-500">Road walk-in ({breakdown.roadWalkIn}/day)</span>
-                                    <span className="text-gray-700 capitalize">{breakdown.roadTypeModifier.replace(/_/g, ' ')}</span>
-                                  </div>
-                                  {breakdown.accessBonuses.length > 0 && (
-                                    <div className="flex justify-between text-[10px] gap-2">
-                                      <span className="text-gray-500 shrink-0">Access bonuses</span>
-                                      <span className="text-green-600 text-right">{breakdown.accessBonuses.join(' · ')}</span>
-                                    </div>
-                                  )}
-                                  <div className="flex justify-between text-[10px]">
-                                    <span className="text-gray-500">Competition</span>
-                                    <span
-                                      className={`capitalize ${breakdown.saturationLevel === 'saturated' ? 'text-red-500' : breakdown.saturationLevel === 'low' ? 'text-green-600' : 'text-amber-600'}`}
-                                    >
-                                      {breakdown.saturationLevel} market
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between text-[10px] font-medium border-t border-gray-100 pt-1 mt-1">
+                                    <span className="text-gray-500">Delivery orders</span>
                                     <span className="text-gray-700">
-                                      Est. {breakdown.customersPerDay} customers/day · ₹{breakdown.avgTicket} avg ticket
+                                      {Math.round(breakdown.deliveryOrders)}/day · ₹{breakdown.deliveryAvgTicket} avg
                                     </span>
                                   </div>
+                                )}
+
+                                <div className="flex justify-between text-[10px] pt-1 border-t border-gray-100">
+                                  <span className="text-gray-500">Dine-in</span>
+                                  <span className="text-gray-700">₹{(breakdown.monthlyDineIn / 100000).toFixed(1)}L/mo</span>
+                                </div>
+                                {breakdown.monthlyDelivery > 0 && (
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">
+                                      Delivery ({Math.round(breakdown.deliverySharePct * 100)}% mix)
+                                    </span>
+                                    <span className="text-gray-700">
+                                      ₹{(breakdown.monthlyDelivery / 100000).toFixed(1)}L/mo
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-between text-[10px] pt-1 border-t border-gray-100">
+                                  <span className="text-gray-500">Location: {breakdown.areaKey}</span>
+                                  <span className="text-gray-700">{breakdown.areaMultiplier}× area multiplier</span>
+                                </div>
+                                <div className="flex justify-between text-[10px]">
+                                  <span className="text-gray-500">Competition</span>
+                                  <span
+                                    className={`capitalize font-medium ${
+                                      breakdown.saturationLevel === 'saturated'
+                                        ? 'text-red-500'
+                                        : breakdown.saturationLevel === 'high'
+                                          ? 'text-amber-500'
+                                          : breakdown.saturationLevel === 'low'
+                                            ? 'text-green-600'
+                                            : 'text-gray-600'
+                                    }`}
+                                  >
+                                    {breakdown.saturationLevel} · {breakdown.competitorCount} direct competitors
+                                  </span>
+                                </div>
+                                {breakdown.marketValidatedDemand && (
+                                  <div className="text-[10px] text-green-600">
+                                    ✓ High competitor ratings — demand proven in area
+                                  </div>
+                                )}
+                                {breakdown.affluenceAdjustment !== 1.0 && (
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Spending power</span>
+                                    <span
+                                      className={
+                                        breakdown.affluenceAdjustment > 1 ? 'text-green-600' : 'text-amber-600'
+                                      }
+                                    >
+                                      {breakdown.affluenceAdjustment > 1 ? '+' : ''}
+                                      {Math.round((breakdown.affluenceAdjustment - 1) * 100)}% on avg ticket
+                                    </span>
+                                  </div>
+                                )}
+
+                                {breakdown.accessBonuses.length > 0 && (
+                                  <div className="flex justify-between text-[10px] gap-2">
+                                    <span className="text-gray-500 shrink-0">Access</span>
+                                    <span className="text-green-600 text-right">{breakdown.accessBonuses.join(' · ')}</span>
+                                  </div>
+                                )}
+                                {breakdown.floorPenalty && (
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Floor</span>
+                                    <span className="text-amber-600">{breakdown.floorPenalty}</span>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-between text-[10px] font-medium border-t border-gray-100 pt-1 mt-1">
+                                  <span className="text-gray-700">
+                                    Est. {breakdown.customersPerDay} customers/day · ₹{breakdown.avgTicket} avg ticket
+                                  </span>
+                                </div>
                               </div>
                             </details>
                             {selectedMatch && monthlyRent != null && monthlyRent > 0 && revenue.monthlyRevenueMid > 0 && (() => {
@@ -3156,15 +3268,15 @@ export default function BrandDashboardPage() {
 
                     {intelData.complementaryBrands.length > 0 && (
                       <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div>
-                              <h3 className="font-bold text-gray-900">Other categories nearby</h3>
-                              <p className="text-[10px] text-gray-500 font-normal">Broader trade-area retail — context, not direct substitutes</p>
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-gray-900 text-sm sm:text-base">Other categories nearby</h3>
+                              <p className="text-[10px] text-gray-500 font-normal leading-snug">Broader trade-area retail — context, not direct substitutes</p>
                             </div>
-                            <span className="text-xs bg-green-100 text-green-600 rounded-full px-1.5 py-0.5">Low Risk</span>
+                            <span className="text-xs bg-green-100 text-green-600 rounded-full px-1.5 py-0.5 flex-shrink-0">Low Risk</span>
                           </div>
-                          <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
+                          <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5 flex-shrink-0">15 min Driving</span>
                         </div>
                         <table className="w-full text-xs">
                           <thead><tr className="text-gray-400 border-b"><th className="text-left py-1">POI</th><th className="text-left">CATEGORY</th><th className="text-right">DIST (KM)</th></tr></thead>
@@ -3402,6 +3514,7 @@ export default function BrandDashboardPage() {
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Schedule Visit Modal */}
