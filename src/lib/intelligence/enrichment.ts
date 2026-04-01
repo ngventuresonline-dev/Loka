@@ -36,6 +36,11 @@ export async function resolveCommercialPocket(
           FROM unnest(COALESCE(key_roads, ARRAY[]::text[])) AS roads(road)
           WHERE LOWER(${addressLower}) LIKE '%' || LOWER(roads.road) || '%'
         )
+        OR EXISTS (
+          SELECT 1
+          FROM unnest(COALESCE(landmark_anchors, ARRAY[]::text[])) AS anchors(a)
+          WHERE LOWER(${addressLower}) LIKE '%' || LOWER(anchors.a) || '%'
+        )
       )
       ORDER BY distance_m ASC
       LIMIT 1
@@ -225,14 +230,31 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
     },
   })
 
+  const pocketData = pocket
+    ? {
+        name: String(pocket['name'] ?? ''),
+        tier: Number(pocket['tier']),
+        revenueMultiplier: Number(pocket['revenue_multiplier']),
+        rentGfTypical: Number(pocket['rent_gf_typical']),
+        avgDailyFootfall: Number(pocket['avg_daily_footfall']),
+        officeDemandPct: Number(pocket['office_demand_pct']),
+        residentialDemandPct: Number(pocket['residential_demand_pct']),
+        officeLunchCaptureRate: Number(pocket['office_lunch_capture_rate']),
+        fnbSaturation: pocket['fnb_saturation'] != null ? String(pocket['fnb_saturation']) : null,
+        roadType: pocket['road_type'] != null ? String(pocket['road_type']) : null,
+      }
+    : null
+
   const revenue = calculateRevenueFromBenchmarks({
     latitude: lat,
     longitude: lng,
     propertyType: property.propertyType ?? undefined,
     businessType,
     monthlyRent,
+    sizeSqft: sizeNum,
     propertySizeSqft: sizeNum,
     locationProfile,
+    pocketData,
   })
 
   const monthlyRevenueMid = revenue.monthlyRevenueMid

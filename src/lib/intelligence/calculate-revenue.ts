@@ -129,6 +129,20 @@ export type PropertyLocationProfile = {
   officeLunchCaptureFromPocket?: number | null
 }
 
+/** Resolved row from bangalore_commercial_pockets passed through to revenue engine */
+export type RevenuePocketData = {
+  name: string
+  tier: number
+  revenueMultiplier: number
+  rentGfTypical: number
+  avgDailyFootfall: number
+  officeDemandPct: number
+  residentialDemandPct: number
+  officeLunchCaptureRate: number
+  fnbSaturation: string | null
+  roadType: string | null
+}
+
 export type RevenueCalculationInput = {
   latitude: number
   longitude: number
@@ -139,6 +153,7 @@ export type RevenueCalculationInput = {
   /** Legacy alias (e.g. enrichment) — same as sizeSqft when sizeSqft omitted */
   propertySizeSqft?: number | null
   locationProfile: PropertyLocationProfile
+  pocketData?: RevenuePocketData | null
 }
 
 export type RevenueBreakdown = {
@@ -501,6 +516,202 @@ export function buildRevenueLocationProfile(params: {
   }
 }
 
+type RevenueFormatKey =
+  | 'darshini'
+  | 'bar_brewery'
+  | 'fine_dining'
+  | 'cloud_kitchen'
+  | 'bakery'
+  | 'qsr'
+  | 'premium_cafe'
+  | 'cafe'
+  | 'casual_dining'
+
+type RevenueFormatDef = {
+  key: RevenueFormatKey
+  label: string
+  sqftPerCover: number
+  turnsPerDay: number
+  avgTicket: number
+  deliverySharePct: number
+  deliveryAvgTicket: number
+  deliveryOrdersPerCover: number
+  weekendMultiplier: number
+  operatingCostPct: number
+  conservativePct: number
+  optimisticPct: number
+  healthyRentPct: number
+}
+
+function revenueFormatOfficeBias(key: RevenueFormatKey): number {
+  if (key === 'qsr' || key === 'cafe' || key === 'premium_cafe' || key === 'darshini') return 1.25
+  if (key === 'fine_dining' || key === 'bar_brewery') return 0.8
+  return 1.0
+}
+
+function roadWalkInFromRoadType(road: PropertyRoadType, base: number): number {
+  if (road === 'main_road' || road === 'highway') return base * 3.2
+  if (road === 'main_arterial') return base * 3.2
+  if (road === 'high_street') return base * 2.5
+  if (road === 'cross_road') return base * 1.4
+  if (road === 'lane') return base * 0.6
+  return base * 1.0
+}
+
+function pickRevenueFormat(bt: string): RevenueFormatDef {
+  if (/darshini|south indian|udupi|filter coffee|idli|dosa|brahmin|tiffin/.test(bt)) {
+    return {
+      key: 'darshini',
+      label: 'South Indian/Darshini',
+      sqftPerCover: 15,
+      turnsPerDay: 11,
+      avgTicket: 110,
+      deliverySharePct: 0.08,
+      deliveryAvgTicket: 150,
+      deliveryOrdersPerCover: 0.3,
+      weekendMultiplier: 1.15,
+      operatingCostPct: 0.52,
+      conservativePct: 0.5,
+      optimisticPct: 1.38,
+      healthyRentPct: 15,
+    }
+  }
+  if (/brewery|taproom|bar|pub|beer|craft beer|brew/.test(bt)) {
+    return {
+      key: 'bar_brewery',
+      label: 'Bar/Brewery',
+      sqftPerCover: 25,
+      turnsPerDay: 2.5,
+      avgTicket: 900,
+      deliverySharePct: 0.05,
+      deliveryAvgTicket: 1200,
+      deliveryOrdersPerCover: 0.05,
+      weekendMultiplier: 2.0,
+      operatingCostPct: 0.62,
+      conservativePct: 0.4,
+      optimisticPct: 1.35,
+      healthyRentPct: 12,
+    }
+  }
+  if (/fine dining|premium restaurant|signature|upscale|bistro/.test(bt)) {
+    return {
+      key: 'fine_dining',
+      label: 'Fine Dining',
+      sqftPerCover: 36,
+      turnsPerDay: 2.0,
+      avgTicket: 1800,
+      deliverySharePct: 0.04,
+      deliveryAvgTicket: 2200,
+      deliveryOrdersPerCover: 0.05,
+      weekendMultiplier: 1.6,
+      operatingCostPct: 0.65,
+      conservativePct: 0.42,
+      optimisticPct: 1.22,
+      healthyRentPct: 10,
+    }
+  }
+  if (/cloud kitchen|dark kitchen|ghost kitchen/.test(bt)) {
+    return {
+      key: 'cloud_kitchen',
+      label: 'Cloud Kitchen',
+      sqftPerCover: 0,
+      turnsPerDay: 0,
+      avgTicket: 0,
+      deliverySharePct: 1.0,
+      deliveryAvgTicket: 350,
+      deliveryOrdersPerCover: 0,
+      weekendMultiplier: 1.2,
+      operatingCostPct: 0.55,
+      conservativePct: 0.45,
+      optimisticPct: 1.35,
+      healthyRentPct: 15,
+    }
+  }
+  if (/bakery|dessert|ice cream|waffle|donut|patisserie|mithai|sweet/.test(bt)) {
+    return {
+      key: 'bakery',
+      label: 'Bakery/Dessert',
+      sqftPerCover: 29,
+      turnsPerDay: 5.5,
+      avgTicket: 220,
+      deliverySharePct: 0.25,
+      deliveryAvgTicket: 280,
+      deliveryOrdersPerCover: 0.4,
+      weekendMultiplier: 1.55,
+      operatingCostPct: 0.56,
+      conservativePct: 0.5,
+      optimisticPct: 1.3,
+      healthyRentPct: 15,
+    }
+  }
+  if (/qsr|quick service|burger|fried chicken|pizza|wrap|sandwich|fast food|momo|shawarma|biryani/.test(bt)) {
+    return {
+      key: 'qsr',
+      label: 'QSR/Fast Casual',
+      sqftPerCover: 21,
+      turnsPerDay: 6.5,
+      avgTicket: 380,
+      deliverySharePct: 0.45,
+      deliveryAvgTicket: 420,
+      deliveryOrdersPerCover: 0.9,
+      weekendMultiplier: 1.35,
+      operatingCostPct: 0.58,
+      conservativePct: 0.5,
+      optimisticPct: 1.3,
+      healthyRentPct: 15,
+    }
+  }
+  if (/premium cafe|artisan|specialty coffee|third wave|pour over/.test(bt)) {
+    return {
+      key: 'premium_cafe',
+      label: 'Premium Café',
+      sqftPerCover: 30,
+      turnsPerDay: 4.0,
+      avgTicket: 420,
+      deliverySharePct: 0.1,
+      deliveryAvgTicket: 480,
+      deliveryOrdersPerCover: 0.2,
+      weekendMultiplier: 1.45,
+      operatingCostPct: 0.6,
+      conservativePct: 0.45,
+      optimisticPct: 1.25,
+      healthyRentPct: 15,
+    }
+  }
+  if (/cafe|coffee|chai|beverage/.test(bt)) {
+    return {
+      key: 'cafe',
+      label: 'Café/Coffee',
+      sqftPerCover: 25,
+      turnsPerDay: 5.0,
+      avgTicket: 280,
+      deliverySharePct: 0.18,
+      deliveryAvgTicket: 320,
+      deliveryOrdersPerCover: 0.35,
+      weekendMultiplier: 1.4,
+      operatingCostPct: 0.6,
+      conservativePct: 0.5,
+      optimisticPct: 1.25,
+      healthyRentPct: 15,
+    }
+  }
+  return {
+    key: 'casual_dining',
+    label: 'Casual Dining',
+    sqftPerCover: 26,
+    turnsPerDay: 3.5,
+    avgTicket: 600,
+    deliverySharePct: 0.25,
+    deliveryAvgTicket: 700,
+    deliveryOrdersPerCover: 0.4,
+    weekendMultiplier: 1.5,
+    operatingCostPct: 0.6,
+    conservativePct: 0.48,
+    optimisticPct: 1.28,
+    healthyRentPct: 15,
+  }
+}
+
 export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): RevenueCalculationOutput {
   const {
     latitude,
@@ -511,6 +722,7 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
     sizeSqft: sizeSqftIn,
     propertySizeSqft,
     locationProfile: lp,
+    pocketData: pocketPd,
   } = input
 
   const profile = getIndiaCategoryProfile(propertyType ?? '', businessType)
@@ -518,190 +730,76 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
   const areaMultiplier = getAreaMultiplier(areaKey)
 
   const bt = `${businessType ?? ''} ${propertyType ?? ''}`.toLowerCase()
+  const format = pickRevenueFormat(bt)
 
-  const format = (() => {
-    if (/darshini|south indian|udupi|filter coffee|idli|dosa|brahmin|tiffin/.test(bt))
-      return {
-        label: 'South Indian / Darshini',
-        seatingDensityPerSqft: 0.067,
-        turnsPerDay: 11,
-        avgTicket: 110,
-        deliverySharePct: 0.08,
-        deliveryAvgTicket: 150,
-        deliveryOrdersPerCover: 0.3,
-        weekendMultiplier: 1.15,
-        operatingCostPct: 0.52,
-        conservativePct: 0.5,
-        optimisticPct: 1.38,
-        healthyRentPct: 15,
-      }
-    if (/brewery|taproom|bar|pub|beer|craft beer|brew/.test(bt))
-      return {
-        label: 'Bar / Brewery',
-        seatingDensityPerSqft: 0.04,
-        turnsPerDay: 2.5,
-        avgTicket: 900,
-        deliverySharePct: 0.05,
-        deliveryAvgTicket: 1200,
-        deliveryOrdersPerCover: 0.05,
-        weekendMultiplier: 2.0,
-        operatingCostPct: 0.62,
-        conservativePct: 0.4,
-        optimisticPct: 1.35,
-        healthyRentPct: 12,
-      }
-    if (/fine dining|premium restaurant|signature|upscale|bistro/.test(bt))
-      return {
-        label: 'Fine Dining',
-        seatingDensityPerSqft: 0.028,
-        turnsPerDay: 2.0,
-        avgTicket: 1800,
-        deliverySharePct: 0.04,
-        deliveryAvgTicket: 2200,
-        deliveryOrdersPerCover: 0.05,
-        weekendMultiplier: 1.6,
-        operatingCostPct: 0.65,
-        conservativePct: 0.42,
-        optimisticPct: 1.22,
-        healthyRentPct: 10,
-      }
-    if (/cloud kitchen|dark kitchen|ghost kitchen/.test(bt))
-      return {
-        label: 'Cloud Kitchen',
-        seatingDensityPerSqft: 0,
-        turnsPerDay: 0,
-        avgTicket: 0,
-        deliverySharePct: 1.0,
-        deliveryAvgTicket: 350,
-        deliveryOrdersPerCover: 0,
-        weekendMultiplier: 1.2,
-        operatingCostPct: 0.55,
-        conservativePct: 0.45,
-        optimisticPct: 1.35,
-        healthyRentPct: 15,
-      }
-    if (/bakery|dessert|ice cream|waffle|donut|patisserie|mithai|sweet/.test(bt))
-      return {
-        label: 'Bakery / Dessert',
-        seatingDensityPerSqft: 0.035,
-        turnsPerDay: 5.5,
-        avgTicket: 220,
-        deliverySharePct: 0.25,
-        deliveryAvgTicket: 280,
-        deliveryOrdersPerCover: 0.4,
-        weekendMultiplier: 1.55,
-        operatingCostPct: 0.56,
-        conservativePct: 0.5,
-        optimisticPct: 1.3,
-        healthyRentPct: 15,
-      }
-    if (/qsr|quick service|burger|fried chicken|pizza|wrap|sandwich|fast food|momo|shawarma|biryani/.test(bt))
-      return {
-        label: 'QSR / Fast Casual',
-        seatingDensityPerSqft: 0.048,
-        turnsPerDay: 6.5,
-        avgTicket: 380,
-        deliverySharePct: 0.45,
-        deliveryAvgTicket: 420,
-        deliveryOrdersPerCover: 0.9,
-        weekendMultiplier: 1.35,
-        operatingCostPct: 0.58,
-        conservativePct: 0.5,
-        optimisticPct: 1.3,
-        healthyRentPct: 15,
-      }
-    if (/premium cafe|artisan|specialty coffee|third wave|pour over/.test(bt))
-      return {
-        label: 'Premium Café',
-        seatingDensityPerSqft: 0.033,
-        turnsPerDay: 4.0,
-        avgTicket: 420,
-        deliverySharePct: 0.1,
-        deliveryAvgTicket: 480,
-        deliveryOrdersPerCover: 0.2,
-        weekendMultiplier: 1.45,
-        operatingCostPct: 0.6,
-        conservativePct: 0.45,
-        optimisticPct: 1.25,
-        healthyRentPct: 15,
-      }
-    if (/cafe|coffee|chai|beverage/.test(bt))
-      return {
-        label: 'Café / Coffee',
-        seatingDensityPerSqft: 0.04,
-        turnsPerDay: 5.0,
-        avgTicket: 280,
-        deliverySharePct: 0.18,
-        deliveryAvgTicket: 320,
-        deliveryOrdersPerCover: 0.35,
-        weekendMultiplier: 1.4,
-        operatingCostPct: 0.6,
-        conservativePct: 0.5,
-        optimisticPct: 1.25,
-        healthyRentPct: 15,
-      }
-    return {
-      label: 'Casual Dining / Restaurant',
-      seatingDensityPerSqft: 0.038,
-      turnsPerDay: 3.5,
-      avgTicket: 600,
-      deliverySharePct: 0.25,
-      deliveryAvgTicket: 700,
-      deliveryOrdersPerCover: 0.4,
-      weekendMultiplier: 1.5,
-      operatingCostPct: 0.6,
-      conservativePct: 0.48,
-      optimisticPct: 1.28,
-      healthyRentPct: 15,
-    }
-  })()
-
-  const effectiveSqft = Math.max(100, sizeSqftIn ?? propertySizeSqft ?? 500)
+  const sizeSqft = Math.max(100, sizeSqftIn ?? propertySizeSqft ?? 500)
   const covers =
-    format.seatingDensityPerSqft > 0
-      ? Math.max(8, Math.floor(effectiveSqft * format.seatingDensityPerSqft))
-      : 0
+    format.sqftPerCover > 0 ? Math.max(8, Math.floor(sizeSqft / format.sqftPerCover)) : 0
+
+  const pocketOfficePct =
+    pocketPd != null && Number.isFinite(pocketPd.officeDemandPct) ? pocketPd.officeDemandPct : null
+  const pocketResPct =
+    pocketPd != null && Number.isFinite(pocketPd.residentialDemandPct) ? pocketPd.residentialDemandPct : null
+  const pocketFootfall =
+    pocketPd != null && Number.isFinite(pocketPd.avgDailyFootfall) && pocketPd.avgDailyFootfall > 0
+      ? pocketPd.avgDailyFootfall
+      : null
 
   const officeWorkers =
-    lp.totalOfficeEmployees ?? (lp.officesWithin500m * 200 + lp.coworkingSpacesWithin500m * 80)
-  const officeLunchShare = profile.officeLunchShare ?? 0.12
-  const formatOfficeBias = /qsr|cafe|coffee|darshini|bakery/.test(format.label.toLowerCase())
-    ? 1.2
-    : 0.85
+    pocketOfficePct != null && pocketFootfall != null
+      ? pocketFootfall * (pocketOfficePct / 100)
+      : lp.totalOfficeEmployees ?? (lp.officesWithin500m * 200 + lp.coworkingSpacesWithin500m * 80)
+
+  let officeLunchShare = profile.officeLunchShare ?? 0.12
+  if (pocketPd != null && Number.isFinite(pocketPd.officeLunchCaptureRate)) {
+    const v = pocketPd.officeLunchCaptureRate
+    officeLunchShare = v > 1 && v <= 100 ? v / 100 : v
+  }
+
+  const formatOfficeBias = revenueFormatOfficeBias(format.key)
   const officeDemandPerDay = officeWorkers * officeLunchShare * formatOfficeBias
 
   const residentialUnits = lp.totalApartmentUnits ?? lp.residentialUnitsWithin1km * 1.5
   const diningFrequency = (lp.diningOutWeekly ?? 3.5) / 7
-  const householdSize = 2.8
-  const residentialShare = profile.residentialShare ?? 0.04
-  const residentialDemandPerDay = residentialUnits * householdSize * diningFrequency * residentialShare
+  const residentialDemandPerDay =
+    residentialUnits * 2.8 * diningFrequency * (profile.residentialShare ?? 0.04)
 
-  const roadWalkInBase = 500
-  const roadWalkIn = (() => {
-    if (lp.adminDailyFootfallEstimate && lp.adminDailyFootfallEstimate > 0) {
-      return lp.adminDailyFootfallEstimate
-    }
-    if (lp.roadType === 'main_road' || lp.roadType === 'highway' || lp.roadType === 'main_arterial') {
-      return roadWalkInBase * 3.2
-    }
-    if (lp.roadType === 'high_street') return roadWalkInBase * 2.5
-    if (lp.roadType === 'cross_road') return roadWalkInBase * 1.4
-    if (lp.roadType === 'lane') return roadWalkInBase * 0.6
-    return roadWalkInBase * 1.0
-  })()
+  const baseRoad = 500
+  let roadWalkIn: number
+  if (lp.adminDailyFootfallEstimate != null && lp.adminDailyFootfallEstimate > 0) {
+    roadWalkIn = lp.adminDailyFootfallEstimate
+  } else if (
+    pocketFootfall != null &&
+    pocketOfficePct != null &&
+    pocketResPct != null &&
+    Number.isFinite(pocketOfficePct) &&
+    Number.isFinite(pocketResPct)
+  ) {
+    const transitPct = 1 - pocketOfficePct / 100 - pocketResPct / 100
+    roadWalkIn = pocketFootfall * Math.max(0.05, transitPct)
+  } else {
+    const rtFromPocket =
+      pocketPd?.roadType != null ? mapPocketRoadType(pocketPd.roadType) : null
+    const rt = rtFromPocket ?? lp.roadType
+    roadWalkIn = roadWalkInFromRoadType(rt, baseRoad)
+  }
+  if (lp.hasSignalNearby) roadWalkIn *= 1.06
 
-  const officeIntensity = lp.totalOfficeEmployees ?? lp.officesWithin500m * 200
+  const officeIntensity =
+    lp.totalOfficeEmployees ?? (lp.officesWithin500m * 200 + lp.coworkingSpacesWithin500m * 80)
   const deliveryDemandMultiplier =
-    officeIntensity > 5000 ? 1.4 : officeIntensity > 2000 ? 1.25 : officeIntensity > 500 ? 1.1 : 1.0
+    officeIntensity > 10000 ? 1.45 : officeIntensity > 5000 ? 1.3 : officeIntensity > 2000 ? 1.15 : 1.0
+
   const deliveryOrders =
     covers > 0
       ? covers * format.deliveryOrdersPerCover * deliveryDemandMultiplier
-      : effectiveSqft * 0.15
+      : format.key === 'cloud_kitchen'
+        ? sizeSqft * 0.18
+        : sizeSqft * 0.15
 
   const totalAddressablePool = officeDemandPerDay + residentialDemandPerDay + roadWalkIn
 
   let captureRate = profile.captureRate / 100
-
   if (lp.isCornerUnit) captureRate *= 1.18
   if (lp.isStreetFacing) captureRate *= 1.1
   if (lp.hasParking) captureRate *= 1.12
@@ -713,25 +811,33 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
     if (lp.frontageMeters >= 20) captureRate *= 1.08
     else if (lp.frontageMeters <= 8) captureRate *= 0.92
   }
-
   if (lp.collegesWithin500m >= 1) captureRate *= 1.05
   if (lp.gymsClinicsWithin300m >= 2) captureRate *= 1.04
 
   const spi = lp.spendingPowerIndex
   const affluenceAdjustment =
-    spi != null ? Math.max(0.82, Math.min(1.25, 0.75 + spi / 400)) : 1.0
+    spi != null ? Math.max(0.82, Math.min(1.28, 0.75 + spi / 400)) : 1.0
   const effectiveAvgTicket = format.avgTicket * affluenceAdjustment
   const effectiveDeliveryTicket = format.deliveryAvgTicket * affluenceAdjustment
 
-  const satKey = (() => {
+  const pocketSat = pocketPd?.fnbSaturation != null ? parseSaturation(pocketPd.fnbSaturation) : null
+  const satFromProfile = (() => {
     const fl = format.label.toLowerCase()
     if (/cafe|coffee/.test(fl)) return lp.cafeSaturation
     if (/qsr|fast|darshini|south indian/.test(fl)) return lp.qsrSaturation
     return lp.restaurantSaturation
   })()
-
+  const satKey = pocketSat ?? satFromProfile
   const saturationDiscount =
-    satKey === 'saturated' ? 0.68 : satKey === 'high' ? 0.8 : satKey === 'medium' ? 0.9 : satKey === 'low' ? 1.1 : 0.88
+    satKey === 'saturated'
+      ? 0.68
+      : satKey === 'high'
+        ? 0.8
+        : satKey === 'medium'
+          ? 0.9
+          : satKey === 'low'
+            ? 1.1
+            : 0.88
 
   const avgRating = lp.avgCompetitorRating
   const marketValidation =
@@ -747,29 +853,26 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
   const marketValidatedDemand =
     (avgRating ?? 0) >= 4.0 && (lp.totalCompetitorReviews ?? 0) > 500
 
-  const capturedDemandPerDay =
-    totalAddressablePool * captureRate * saturationDiscount * marketValidation
+  const customersPerDayRaw = totalAddressablePool * captureRate * saturationDiscount * marketValidation
+  const effectiveDineInCustomers =
+    format.key === 'cloud_kitchen' || covers === 0
+      ? 0
+      : Math.min(customersPerDayRaw, covers * format.turnsPerDay)
 
-  const effectiveTurns =
-    covers > 0
-      ? Math.min(format.turnsPerDay, capturedDemandPerDay / covers)
-      : format.turnsPerDay
-
-  const dineInCustomersPerDay =
-    covers > 0 ? Math.min(capturedDemandPerDay, covers * format.turnsPerDay) : 0
-  const dineInRevenuePerDay = dineInCustomersPerDay * effectiveAvgTicket
-
+  const dineInRevenuePerDay = effectiveDineInCustomers * effectiveAvgTicket
   const officeHeavy = officeDemandPerDay > residentialDemandPerDay
   const weekendDineInRevenue =
     dineInRevenuePerDay * format.weekendMultiplier * (officeHeavy ? 0.65 : 1.0)
-
   const monthlyDineIn = dineInRevenuePerDay * 22 + weekendDineInRevenue * 8
-
   const monthlyDelivery = deliveryOrders * effectiveDeliveryTicket * 30
+  const monthlyBeforeMultiplier = monthlyDineIn + monthlyDelivery
 
-  const monthlyBeforeArea = monthlyDineIn + monthlyDelivery
-
-  const monthlyRevenue = monthlyBeforeArea * areaMultiplier
+  const pocketRevMult =
+    pocketPd != null && Number.isFinite(pocketPd.revenueMultiplier) && pocketPd.revenueMultiplier > 0
+      ? pocketPd.revenueMultiplier
+      : null
+  const locationMultiplier = pocketRevMult ?? areaMultiplier
+  const monthlyRevenue = monthlyBeforeMultiplier * locationMultiplier
 
   const conservative = Math.round(monthlyRevenue * format.conservativePct)
   const base = Math.round(monthlyRevenue * 0.8)
@@ -793,27 +896,33 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
             ? 'stretched'
             : 'unviable'
 
+  const pocketRentTypical =
+    pocketPd != null && Number.isFinite(pocketPd.rentGfTypical) ? pocketPd.rentGfTypical : null
+  const pocketName = pocketPd?.name?.trim() ? pocketPd.name : null
+  const pocketTier =
+    pocketPd != null && Number.isFinite(pocketPd.tier) ? Math.round(pocketPd.tier) : null
+
   const breakdown: RevenueBreakdown = {
     officeWorkerDemand: Math.round(officeDemandPerDay),
     residentialDemand: Math.round(residentialDemandPerDay),
     roadWalkIn: Math.round(roadWalkIn),
-    deliveryOrders: Math.round(deliveryOrders),
+    deliveryOrders,
     totalAddressablePool: Math.round(totalAddressablePool),
-    customersPerDay: Math.round(dineInCustomersPerDay),
+    customersPerDay: Math.round(effectiveDineInCustomers),
 
     formatLabel: format.label,
     covers,
-    turnsPerDay: covers > 0 ? Math.round(effectiveTurns * 10) / 10 : 0,
+    turnsPerDay: format.turnsPerDay,
     avgTicket: Math.round(effectiveAvgTicket),
     deliveryAvgTicket: Math.round(effectiveDeliveryTicket),
     deliverySharePct: format.deliverySharePct,
 
     roadTypeModifier: lp.roadType,
     areaKey: areaKey ?? 'Bangalore',
-    areaMultiplier,
-    pocketName: null,
-    pocketTier: null,
-    pocketRentTypical: null,
+    areaMultiplier: locationMultiplier,
+    pocketName,
+    pocketTier,
+    pocketRentTypical,
 
     monthlyDineIn: Math.round(monthlyDineIn),
     monthlyDelivery: Math.round(monthlyDelivery),

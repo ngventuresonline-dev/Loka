@@ -2443,7 +2443,7 @@ export default function BrandDashboardPage() {
                             i
                           </button>
                           <div className="absolute right-0 top-5 w-56 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
-                            Based on: format-level turn model (covers × turns × ticket) + delivery stream + catchment demand (offices, residents, road traffic) + spending power + saturation. Not a financial guarantee.
+                            Based on format turn model (covers × turns × ticket) + delivery stream + real catchment data (offices, residents, road) + pocket-level multiplier + spending power + competition. Not a guarantee.
                           </div>
                         </div>
                       </div>
@@ -2488,6 +2488,27 @@ export default function BrandDashboardPage() {
                           spendingPowerIndexFallback: spiFallback,
                         })
 
+                        const pocketData = commercialPocket
+                          ? {
+                              name: String(commercialPocket['name'] ?? ''),
+                              tier: Number(commercialPocket['tier']),
+                              revenueMultiplier: Number(commercialPocket['revenue_multiplier']),
+                              rentGfTypical: Number(commercialPocket['rent_gf_typical']),
+                              avgDailyFootfall: Number(commercialPocket['avg_daily_footfall']),
+                              officeDemandPct: Number(commercialPocket['office_demand_pct']),
+                              residentialDemandPct: Number(commercialPocket['residential_demand_pct']),
+                              officeLunchCaptureRate: Number(commercialPocket['office_lunch_capture_rate']),
+                              fnbSaturation:
+                                commercialPocket['fnb_saturation'] != null
+                                  ? String(commercialPocket['fnb_saturation'])
+                                  : null,
+                              roadType:
+                                commercialPocket['road_type'] != null
+                                  ? String(commercialPocket['road_type'])
+                                  : null,
+                            }
+                          : null
+
                         const revenue = calculateRevenueFromBenchmarks({
                           latitude: intelData.coords.lat,
                           longitude: intelData.coords.lng,
@@ -2496,6 +2517,7 @@ export default function BrandDashboardPage() {
                           monthlyRent,
                           sizeSqft: prop?.size != null ? Number(prop.size) : null,
                           locationProfile,
+                          pocketData,
                         })
 
                         const conservativeL = Math.max(0, Math.round(revenue.monthlyRevenueLow / 100000))
@@ -2524,37 +2546,50 @@ export default function BrandDashboardPage() {
                                 <span className="text-gray-400 group-open:rotate-90 transition-transform inline-block">▸</span>
                                 How we calculated this
                               </summary>
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between text-[10px] font-medium text-gray-700 pb-1 border-b border-gray-100">
+                              <div className="space-y-1.5 text-[10px]">
+                                <div className="flex justify-between font-semibold text-gray-800 pb-1.5 border-b border-gray-100">
                                   <span>{breakdown.formatLabel}</span>
-                                  <span>
+                                  <span className="text-gray-500">
                                     {breakdown.covers > 0
-                                      ? `${breakdown.covers} covers · ${breakdown.turnsPerDay}x turns/day`
+                                      ? `${breakdown.covers} covers · ${breakdown.turnsPerDay}x turns`
                                       : 'Delivery only'}
                                   </span>
                                 </div>
 
+                                {breakdown.pocketName && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Commercial pocket</span>
+                                    <span className="font-medium text-gray-700">
+                                      {breakdown.pocketName}
+                                      {breakdown.pocketTier === 1 && ' · Ultra-prime'}
+                                      {breakdown.pocketTier === 2 && ' · Prime'}
+                                    </span>
+                                  </div>
+                                )}
+
                                 {breakdown.officeWorkerDemand > 0 && (
-                                  <div className="flex justify-between text-[10px]">
-                                    <span className="text-gray-500">Office workers in catchment</span>
-                                    <span className="text-gray-700">{breakdown.officeWorkerDemand}/day</span>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Office workers</span>
+                                    <span className="text-gray-700">{breakdown.officeWorkerDemand} customers/day</span>
                                   </div>
                                 )}
                                 {breakdown.residentialDemand > 0 && (
-                                  <div className="flex justify-between text-[10px]">
+                                  <div className="flex justify-between">
                                     <span className="text-gray-500">Residential catchment</span>
-                                    <span className="text-gray-700">{breakdown.residentialDemand}/day</span>
+                                    <span className="text-gray-700">{breakdown.residentialDemand} customers/day</span>
                                   </div>
                                 )}
-                                <div className="flex justify-between text-[10px]">
+                                <div className="flex justify-between">
                                   <span className="text-gray-500">
-                                    Road walk-in{' '}
-                                    <span className="capitalize">({breakdown.roadTypeModifier.replace(/_/g, ' ')})</span>
+                                    Road walk-in
+                                    <span className="text-gray-400 ml-1">
+                                      ({breakdown.roadTypeModifier.replace(/_/g, ' ')})
+                                    </span>
                                   </span>
                                   <span className="text-gray-700">{breakdown.roadWalkIn}/day</span>
                                 </div>
                                 {breakdown.deliveryOrders > 0 && (
-                                  <div className="flex justify-between text-[10px]">
+                                  <div className="flex justify-between">
                                     <span className="text-gray-500">Delivery orders</span>
                                     <span className="text-gray-700">
                                       {Math.round(breakdown.deliveryOrders)}/day · ₹{breakdown.deliveryAvgTicket} avg
@@ -2562,26 +2597,25 @@ export default function BrandDashboardPage() {
                                   </div>
                                 )}
 
-                                <div className="flex justify-between text-[10px] pt-1 border-t border-gray-100">
-                                  <span className="text-gray-500">Dine-in</span>
+                                <div className="flex justify-between pt-1.5 border-t border-gray-100">
+                                  <span className="text-gray-500">Dine-in revenue</span>
                                   <span className="text-gray-700">₹{(breakdown.monthlyDineIn / 100000).toFixed(1)}L/mo</span>
                                 </div>
                                 {breakdown.monthlyDelivery > 0 && (
-                                  <div className="flex justify-between text-[10px]">
+                                  <div className="flex justify-between">
                                     <span className="text-gray-500">
                                       Delivery ({Math.round(breakdown.deliverySharePct * 100)}% mix)
                                     </span>
-                                    <span className="text-gray-700">
-                                      ₹{(breakdown.monthlyDelivery / 100000).toFixed(1)}L/mo
-                                    </span>
+                                    <span className="text-gray-700">₹{(breakdown.monthlyDelivery / 100000).toFixed(1)}L/mo</span>
                                   </div>
                                 )}
 
-                                <div className="flex justify-between text-[10px] pt-1 border-t border-gray-100">
-                                  <span className="text-gray-500">Location: {breakdown.areaKey}</span>
-                                  <span className="text-gray-700">{breakdown.areaMultiplier}× area multiplier</span>
+                                <div className="flex justify-between pt-1.5 border-t border-gray-100">
+                                  <span className="text-gray-500">Location multiplier</span>
+                                  <span className="text-gray-700">{breakdown.areaMultiplier}× vs city avg</span>
                                 </div>
-                                <div className="flex justify-between text-[10px]">
+
+                                <div className="flex justify-between">
                                   <span className="text-gray-500">Competition</span>
                                   <span
                                     className={`capitalize font-medium ${
@@ -2594,44 +2628,74 @@ export default function BrandDashboardPage() {
                                             : 'text-gray-600'
                                     }`}
                                   >
-                                    {breakdown.saturationLevel} · {breakdown.competitorCount} direct competitors
+                                    {breakdown.saturationLevel} · {breakdown.competitorCount} direct
                                   </span>
                                 </div>
                                 {breakdown.marketValidatedDemand && (
-                                  <div className="text-[10px] text-green-600">
-                                    ✓ High competitor ratings — demand proven in area
-                                  </div>
+                                  <div className="text-green-600">✓ High competitor ratings — demand proven in area</div>
                                 )}
+
                                 {breakdown.affluenceAdjustment !== 1.0 && (
-                                  <div className="flex justify-between text-[10px]">
-                                    <span className="text-gray-500">Spending power</span>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Spending power on ticket</span>
                                     <span
-                                      className={
-                                        breakdown.affluenceAdjustment > 1 ? 'text-green-600' : 'text-amber-600'
-                                      }
+                                      className={breakdown.affluenceAdjustment > 1 ? 'text-green-600' : 'text-amber-600'}
                                     >
                                       {breakdown.affluenceAdjustment > 1 ? '+' : ''}
-                                      {Math.round((breakdown.affluenceAdjustment - 1) * 100)}% on avg ticket
+                                      {Math.round((breakdown.affluenceAdjustment - 1) * 100)}%
                                     </span>
                                   </div>
                                 )}
 
                                 {breakdown.accessBonuses.length > 0 && (
-                                  <div className="flex justify-between text-[10px] gap-2">
+                                  <div className="flex justify-between gap-2">
                                     <span className="text-gray-500 shrink-0">Access</span>
                                     <span className="text-green-600 text-right">{breakdown.accessBonuses.join(' · ')}</span>
                                   </div>
                                 )}
                                 {breakdown.floorPenalty && (
-                                  <div className="flex justify-between text-[10px]">
+                                  <div className="flex justify-between">
                                     <span className="text-gray-500">Floor</span>
                                     <span className="text-amber-600">{breakdown.floorPenalty}</span>
                                   </div>
                                 )}
 
-                                <div className="flex justify-between text-[10px] font-medium border-t border-gray-100 pt-1 mt-1">
+                                {breakdown.pocketRentTypical != null &&
+                                  selectedMatch?.property.size &&
+                                  (() => {
+                                    const pocketMonthlyBenchmark =
+                                      breakdown.pocketRentTypical * (selectedMatch.property.size / 100)
+                                    const listingRent = monthlyRent ?? 0
+                                    const premium =
+                                      listingRent > 0 && pocketMonthlyBenchmark > 0
+                                        ? Math.round((listingRent / pocketMonthlyBenchmark - 1) * 100)
+                                        : null
+                                    if (premium == null) return null
+                                    return (
+                                      <div className="flex justify-between pt-1.5 border-t border-gray-100">
+                                        <span className="text-gray-500">Rent vs market</span>
+                                        <span
+                                          className={
+                                            Math.abs(premium) <= 10
+                                              ? 'text-green-600'
+                                              : premium > 10
+                                                ? 'text-amber-500'
+                                                : 'text-green-600'
+                                          }
+                                        >
+                                          {premium > 10
+                                            ? `+${premium}% above market`
+                                            : premium < -10
+                                              ? `${Math.abs(premium)}% below market`
+                                              : 'At market rate'}
+                                        </span>
+                                      </div>
+                                    )
+                                  })()}
+
+                                <div className="flex justify-between font-medium border-t border-gray-100 pt-1.5 mt-1">
                                   <span className="text-gray-700">
-                                    Est. {breakdown.customersPerDay} customers/day · ₹{breakdown.avgTicket} avg ticket
+                                    Est. {breakdown.customersPerDay} customers/day · ₹{breakdown.avgTicket} avg
                                   </span>
                                 </div>
                               </div>
