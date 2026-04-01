@@ -7,11 +7,11 @@ import {
   getMapLinkFromAmenities,
   extractLatLngFromMapLink,
 } from '@/lib/property-coordinates'
+import { runPropertySynthesisForIndustry } from '@/lib/intelligence/property-synthesis-worker'
 
 export const maxDuration = 300
 
 const LOCATION_INTEL_TIMEOUT_MS = 20000
-const ENRICH_TIMEOUT_MS = 20000
 const INDUSTRY_PAUSE_MS = 2000
 
 function safeDate(v: unknown): Date | null {
@@ -248,107 +248,16 @@ export async function POST(request: NextRequest) {
 
       const industriesToWarm = targetIndustry ? [targetIndustry] : INDUSTRY_KEYS
       for (const industryKey of industriesToWarm) {
-        const existingSynthesis = await prisma.$queryRaw<Array<{ id: string; cache_expires_at: Date }>>`
-          SELECT id, cache_expires_at FROM property_synthesis_cache
-          WHERE property_id = ${property.id} AND industry_key = ${industryKey}
-          LIMIT 1
-        `
-        const synthesisExpiry = safeDate(existingSynthesis[0]?.cache_expires_at)
-        const synthesisFresh = Boolean(existingSynthesis.length > 0 && !forceRefresh && synthesisExpiry && synthesisExpiry > new Date())
-        if (synthesisFresh) continue
-
-        const locationCache = await prisma.$queryRaw<Array<Record<string, any>>>`
-          SELECT * FROM property_location_cache WHERE property_id = ${property.id} LIMIT 1
-        `
-        if (locationCache.length === 0) continue
-        const lc = locationCache[0]
-
-        const enrichRes = await fetchJsonWithTimeout(
-          `${baseUrl}/api/dashboard/brand/intel-enrich`,
-          {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rawIntel: {
-              competitors: lc.competitors,
-              footfall: {
-                dailyAverage: lc.daily_footfall,
-                peakHours: String(lc.peak_hours || '').split(',').map((s) => s.trim()).filter(Boolean),
-                weekendBoost: lc.weekend_boost,
-              },
-              market: {
-                saturationLevel: lc.saturation_level,
-                competitorCount: lc.competitor_count,
-                summary: lc.market_summary,
-              },
-              scores: {
-                saturationIndex: lc.saturation_index,
-                whitespaceScore: lc.whitespace_score,
-                demandGapScore: lc.demand_gap_score,
-              },
-              marketPotentialScore: lc.overall_score,
-              catchment: lc.catchment,
-              catchmentLandmarks: lc.catchment_landmarks,
-              retailMix: lc.retail_mix,
-              cannibalisationRisk: lc.cannibalisation_risk,
-              crowdPullers: lc.crowd_pullers,
-              similarMarkets: lc.similar_markets,
-              populationLifestyle: {
-                affluenceIndicator: lc.affluence_indicator,
-                totalHouseholds: lc.total_households,
-                rentPerSqft: lc.rent_per_sqft,
-                marketRentLow: lc.market_rent_low,
-                marketRentHigh: lc.market_rent_high,
-                rentDataSource: lc.rent_data_source,
-              },
-              accessibility: {
-                nearestMetro: lc.metro_name ? { name: lc.metro_name, distanceMeters: lc.metro_distance_m } : null,
-                nearestBusStop: lc.bus_stops ? { name: 'Nearby Bus Stops', distanceMeters: 300 } : null,
-              },
-              nearestCommercialAreaKey: lc.nearest_area_key,
-            },
-            brand: {
-              name: `${industryKey.charAt(0).toUpperCase()}${industryKey.slice(1)} Brand`,
-              companyName: null,
-              industry: industryKey,
-              budgetMin: null,
-              budgetMax: null,
-              preferredLocations: null,
-            },
-            property: {
-              title: property.title,
-              address: property.address,
-              city: property.city,
-              propertyType: property.propertyType,
-              size: property.size,
-              price: Number(property.price),
-              priceType: property.priceType,
-            },
-          }),
-          },
-          ENRICH_TIMEOUT_MS
-        )
-
-        if (enrichRes.ok) {
-          const enrichData = (enrichRes.json || {}) as { success?: boolean; data?: unknown }
-          if (enrichData.success && enrichData.data) {
-            await prisma.$executeRaw`
-              INSERT INTO property_synthesis_cache (
-                property_id, industry_key, synthesis, cached_at, cache_expires_at, model_used
-              )
-              VALUES (
-                ${property.id}, ${industryKey}, ${JSON.stringify(enrichData.data)}::jsonb, NOW(), NOW() + INTERVAL '7 days', 'claude-sonnet-4-6'
-              )
-              ON CONFLICT (property_id, industry_key) DO UPDATE SET
-                synthesis = EXCLUDED.synthesis,
-                model_used = EXCLUDED.model_used,
-                cached_at = NOW(),
-                cache_expires_at = NOW() + INTERVAL '7 days'
-            `
-            results.synthesisCached++
-          }
-        } else if (enrichRes.timeout) {
-          results.timeouts++
+        const synResult = await runPropertySynthesisForIndustry(prisma, {
+          propertyId: property.id,
+          industryKey,
+          forceRefresh,
+          cacheTtlDays: 7,
+        })
+        if (synResult.status === 'ok') {
+          results.synthesisCached++
+        } else if (synResult.status === 'error') {
+          results.errors++
         }
 
         if (industryPauseMs > 0) {

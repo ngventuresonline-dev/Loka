@@ -88,6 +88,38 @@ function valueForMoneyFit(
   return Math.max(8, Math.min(100, s))
 }
 
+type BrandMatchProfile = {
+  preferred_locations: unknown
+  budget_min: unknown
+  budget_max: unknown
+  min_size: number | null
+  max_size: number | null
+  industry: string | null
+  category: string | null
+  weight_config_json: unknown
+}
+
+/** When onboarding row is missing, still show best-effort matches (permissive bounds). */
+const DEFAULT_BRAND_MATCH_PROFILE: BrandMatchProfile = {
+  preferred_locations: null,
+  budget_min: null,
+  budget_max: null,
+  min_size: null,
+  max_size: null,
+  industry: null,
+  category: null,
+  weight_config_json: null,
+}
+
+function numOr(
+  v: unknown,
+  fallback: number
+): number {
+  if (v == null || v === '') return fallback
+  const n = typeof v === 'object' && v !== null && 'toString' in v ? Number(String(v)) : Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
@@ -124,11 +156,11 @@ export async function GET(request: NextRequest) {
       })
       .catch(() => null)
 
-    if (!user || !user.brandProfiles) {
+    if (!user) {
       return NextResponse.json({ matches: [], total: 0 })
     }
 
-    const profile = user.brandProfiles
+    const profile: BrandMatchProfile = user.brandProfiles ?? DEFAULT_BRAND_MATCH_PROFILE
 
     let parsedLocations: string[] = []
     try {
@@ -157,10 +189,10 @@ export async function GET(request: NextRequest) {
         ? properties
         : properties.filter((p) => !propertyTitleExcludedForBrand(p.title ?? '', excludedTitles))
 
-    const budgetMin = Number(profile.budget_min) || 0
-    const budgetMax = Number(profile.budget_max) || 9_999_999
-    const sizeMin = profile.min_size || 0
-    const sizeMax = profile.max_size || 999_999
+    const budgetMin = profile.budget_min != null ? numOr(profile.budget_min, 0) : 0
+    const budgetMax = profile.budget_max != null ? numOr(profile.budget_max, 9_999_999) : 9_999_999
+    const sizeMin = profile.min_size ?? 0
+    const sizeMax = profile.max_size ?? 999_999
 
     type ScoredMatch = {
       p: (typeof properties)[0]
@@ -171,84 +203,87 @@ export async function GET(request: NextRequest) {
       coords: { lat: number; lng: number } | null
     }
 
-    const preScoredList = visibleProperties
-      .map((p) => {
-        const price = Number(p.price)
-        const size = p.size
-        const priceType = String(p.priceType || 'monthly')
-        const monthlyRent = deriveMonthlyRentFromListing(price, priceType, size)
+    const scoredRaw = visibleProperties.map((p) => {
+      const price = Number(p.price)
+      const size = p.size
+      const priceType = String(p.priceType || 'monthly')
+      const monthlyRent = deriveMonthlyRentFromListing(price, priceType, size)
 
-        const budgetFit =
-          monthlyRent != null
-            ? monthlyRent <= budgetMax && monthlyRent >= budgetMin
-              ? 100
-              : monthlyRent > budgetMax
-                ? Math.max(0, 100 - Math.round(((monthlyRent - budgetMax) / (budgetMax || 1)) * 100))
-                : 100
-            : price <= budgetMax && price >= budgetMin
-              ? 100
-              : price > budgetMax
-                ? Math.max(0, 100 - Math.round(((price - budgetMax) / (budgetMax || 1)) * 120))
-                : 100
-
-        const sizeFit =
-          size >= sizeMin && size <= sizeMax
+      const budgetFit =
+        monthlyRent != null
+          ? monthlyRent <= budgetMax && monthlyRent >= budgetMin
             ? 100
-            : size < sizeMin
+            : monthlyRent > budgetMax
+              ? Math.max(0, 100 - Math.round(((monthlyRent - budgetMax) / (budgetMax || 1)) * 100))
+              : 100
+          : price <= budgetMax && price >= budgetMin
+            ? 100
+            : price > budgetMax
+              ? Math.max(0, 100 - Math.round(((price - budgetMax) / (budgetMax || 1)) * 120))
+              : 100
+
+      const sizeFit =
+        size >= sizeMin && size <= sizeMax
+          ? 100
+          : size < sizeMin
             ? Math.max(0, 100 - Math.round(((sizeMin - size) / (sizeMin || 1)) * 120))
             : Math.max(0, 100 - Math.round(((size - sizeMax) / (sizeMax || 1)) * 120))
 
-        const addr = ((p.address || '') + ' ' + (p.city || '')).toLowerCase()
-        const locationFit =
-          parsedLocations.length > 0 &&
-          parsedLocations.some((loc) => addr.includes(loc.toLowerCase()))
-            ? 100
-            : 40
+      const addr = ((p.address || '') + ' ' + (p.city || '')).toLowerCase()
+      const locationFit =
+        parsedLocations.length > 0 && parsedLocations.some((loc) => addr.includes(loc.toLowerCase()))
+          ? 100
+          : 40
 
-        const areaKey = nearestBangaloreAreaKey(p.address || '', p.city || '')
-        const band = getAreaCommercialRentBand(areaKey, String(p.propertyType || ''))
-        const visibility = mainRoadVisibilityScore(p.title || '', p.address || '')
-        const vfm = valueForMoneyFit(monthlyRent, size, budgetMax, price, band.mid)
+      const areaKey = nearestBangaloreAreaKey(p.address || '', p.city || '')
+      const band = getAreaCommercialRentBand(areaKey, String(p.propertyType || ''))
+      const visibility = mainRoadVisibilityScore(p.title || '', p.address || '')
+      const vfm = valueForMoneyFit(monthlyRent, size, budgetMax, price, band.mid)
 
-        const bfiScore = Math.round(
-          budgetFit * 0.24 + sizeFit * 0.2 + locationFit * 0.2 + visibility * 0.18 + vfm * 0.14 + 4
-        )
+      const bfiScore = Math.round(
+        budgetFit * 0.24 + sizeFit * 0.2 + locationFit * 0.2 + visibility * 0.18 + vfm * 0.14 + 4
+      )
 
-        const rawCoords = getPropertyCoordinatesFromRow({
-          amenities: p.amenities,
-          address: p.address,
-          city: p.city,
-          state: p.state,
-          title: p.title,
-        })
-
-        let coords: { lat: number; lng: number } | null = rawCoords
-          ? { lat: rawCoords.lat, lng: rawCoords.lng }
-          : null
-
-        if (!coords) {
-          const cityLower = (p.city || '').toLowerCase()
-          const addrLower = (p.address || '').toLowerCase()
-          const area = BANGALORE_AREAS.find(
-            (a) => cityLower.includes(a.key) || addrLower.includes(a.key)
-          )
-          if (area) coords = { lat: area.lat, lng: area.lng }
-        }
-        if (!coords) {
-          const h = getListingHeuristicCoords(p.title || '', p.address || '')
-          if (h) coords = h
-        }
-
-        return { p, bfiScore, budgetFit, sizeFit, locationFit, coords }
+      const rawCoords = getPropertyCoordinatesFromRow({
+        amenities: p.amenities,
+        address: p.address,
+        city: p.city,
+        state: p.state,
+        title: p.title,
       })
-      .filter((m) => {
-        if (m.bfiScore < 45) return false
-        const pt = String(m.p.propertyType || '').toLowerCase()
-        if (pt.includes('office') && !brandSeeksOffice(profile)) return false
-        return true
-      })
-      .sort((a, b) => b.bfiScore - a.bfiScore)
-      .slice(0, 15)
+
+      let coords: { lat: number; lng: number } | null = rawCoords
+        ? { lat: rawCoords.lat, lng: rawCoords.lng }
+        : null
+
+      if (!coords) {
+        const cityLower = (p.city || '').toLowerCase()
+        const addrLower = (p.address || '').toLowerCase()
+        const area = BANGALORE_AREAS.find((a) => cityLower.includes(a.key) || addrLower.includes(a.key))
+        if (area) coords = { lat: area.lat, lng: area.lng }
+      }
+      if (!coords) {
+        const h = getListingHeuristicCoords(p.title || '', p.address || '')
+        if (h) coords = h
+      }
+
+      return { p, bfiScore, budgetFit, sizeFit, locationFit, coords }
+    })
+
+    const officeAllowed = (m: (typeof scoredRaw)[0]) => {
+      const pt = String(m.p.propertyType || '').toLowerCase()
+      if (pt.includes('office') && !brandSeeksOffice(profile)) return false
+      return true
+    }
+
+    const sortedByBfi = scoredRaw.filter(officeAllowed).sort((a, b) => b.bfiScore - a.bfiScore)
+
+    /** Strict floor hides everyone when inventory is all “stretch” vs small brand caps (e.g. 600–1000 sqft vs 2400 sqft). */
+    const pickWithMinBfi = (minBfi: number) => sortedByBfi.filter((m) => m.bfiScore >= minBfi).slice(0, 15)
+
+    let preScoredList = pickWithMinBfi(45)
+    if (preScoredList.length === 0 && sortedByBfi.length > 0) preScoredList = pickWithMinBfi(28)
+    if (preScoredList.length === 0 && sortedByBfi.length > 0) preScoredList = pickWithMinBfi(0)
 
     // Do not geocode here: parallel address lookups added 5–60s+ to first paint. Map pins use
     // map_link / area / heuristic above; precise coords load with per-property intelligence.

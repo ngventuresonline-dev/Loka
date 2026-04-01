@@ -182,7 +182,8 @@ type IntelligenceData = {
   incomeLevel: string | null
   /** Proprietary Lokazen location synthesis (one pass, all tabs) */
   locationSynthesis: LocationSynthesis | null
-  locationSynthesisLoading: boolean
+  /** Narrative not in cache yet — filled by scheduled /api/ai/synthesize */
+  locationSynthesisPending: boolean
   locationSynthesisError: string | null
 }
 
@@ -289,6 +290,7 @@ function TabSynthesisCallout({
   loading,
   analysisLabel = 'Analysing…',
   analysisLines = 2,
+  synthesisPending,
   synthesisUnavailable,
 }: {
   title: string
@@ -297,6 +299,8 @@ function TabSynthesisCallout({
   loading?: boolean
   analysisLabel?: string
   analysisLines?: number
+  /** Scheduled synthesis not written yet — no live AI on this view */
+  synthesisPending?: boolean
   synthesisUnavailable?: boolean
 }) {
   if (loading) {
@@ -309,6 +313,17 @@ function TabSynthesisCallout({
   }
   const hasN = Boolean(narrative?.trim())
   const bs = (bullets || []).filter(Boolean)
+  if (synthesisPending && !hasN && bs.length === 0) {
+    return (
+      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
+        <div className="text-[11px] text-gray-600 py-2 leading-relaxed rounded-lg border border-orange-100 bg-white/80 px-3">
+          <span className="font-semibold text-gray-800">Intelligence ready in 24hrs.</span>{' '}
+          Location narrative is prepared on a schedule, not when you open this page. Charts and metrics above stay live from cache.
+        </div>
+      </div>
+    )
+  }
   if (synthesisUnavailable && !hasN && bs.length === 0) {
     return (
       <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
@@ -780,7 +795,7 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
     nearestCommercialAreaKey: data.nearestCommercialAreaKey != null ? String(data.nearestCommercialAreaKey) : null,
     incomeLevel: data.demographics?.incomeLevel ? String(data.demographics.incomeLevel) : null,
     locationSynthesis: null,
-    locationSynthesisLoading: false,
+    locationSynthesisPending: true,
     locationSynthesisError: null,
   }
 }
@@ -1089,101 +1104,6 @@ export default function BrandDashboardPage() {
     } finally { setMatchesLoading(false) }
   }
 
-  const triggerBackgroundSynthesis = useCallback((
-    propertyId: string,
-    property: MatchedProperty['property'],
-    brand: BrandInfo | null,
-    rawIntel: Record<string, unknown>,
-    matchMeta: MatchedProperty | null | undefined,
-    _resolvedCoords: { lat: number; lng: number }
-  ) => {
-    void (async () => {
-      try {
-        const preferred = normalizePreferredLocationsList(brand)
-
-        const dbRes = await fetch(`/api/intelligence/${propertyId}?category=${encodeURIComponent(brand?.industry || '')}`)
-        const dbData = dbRes.ok ? await dbRes.json() : null
-
-        const enrichPayload = {
-          brandId: brand?.id,
-          rawIntel,
-          dbEnrichment: dbData
-            ? {
-                localityIntel: dbData.localityIntel ?? null,
-                nearbySocieties: dbData.nearbySocieties ?? [],
-                nearbyTechParks: dbData.nearbyTechParks ?? [],
-                ward: dbData.ward ?? null,
-              }
-            : undefined,
-          brand: {
-            name: brand?.companyName?.trim() || 'Brand',
-            companyName: brand?.companyName,
-            industry: brand?.industry,
-            category: brand?.category,
-            budgetMin: brand?.budgetMin,
-            budgetMax: brand?.budgetMax,
-            preferredLocations: preferred.length ? preferred : null,
-          },
-          property: {
-            title: property.title,
-            address: property.address,
-            city: property.city,
-            propertyType: property.propertyType,
-            size: property.size,
-            price: property.price,
-            priceType: property.priceType,
-          },
-          match: matchMeta
-            ? {
-                bfiScore: matchMeta.bfiScore,
-                locationFit: matchMeta.breakdown.locationFit,
-                budgetFit: matchMeta.breakdown.budgetFit,
-                sizeFit: matchMeta.breakdown.sizeFit,
-              }
-            : undefined,
-        }
-
-        const enrichRes = await fetch('/api/dashboard/brand/intel-enrich', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(enrichPayload),
-        })
-
-        const enrichJson = (await enrichRes.json().catch(() => ({}))) as {
-          success?: boolean
-          data?: LocationSynthesis
-        }
-
-        if (enrichRes.ok && enrichJson.success && enrichJson.data) {
-          setIntelData((prev) => (prev
-            ? {
-                ...prev,
-                locationSynthesis: enrichJson.data as LocationSynthesis,
-                locationSynthesisLoading: false,
-                locationSynthesisError: null,
-              }
-            : prev))
-        } else {
-          setIntelData((prev) => (prev
-            ? {
-                ...prev,
-                locationSynthesisLoading: false,
-                locationSynthesisError: null,
-              }
-            : prev))
-        }
-      } catch {
-        setIntelData((prev) => (prev
-          ? {
-              ...prev,
-              locationSynthesisLoading: false,
-              locationSynthesisError: null,
-            }
-          : prev))
-      }
-    })()
-  }, [])
-
   const fetchPropertyIntelligence = useCallback(async (
     propertyId: string,
     property: MatchedProperty['property'],
@@ -1328,57 +1248,12 @@ export default function BrandDashboardPage() {
             nearestCommercialAreaKey: intel.nearestAreaKey != null ? String(intel.nearestAreaKey) : null,
             incomeLevel: null,
             locationSynthesis: cachedData.synthesisAvailable ? (cachedData.synthesis as LocationSynthesis) : null,
-            locationSynthesisLoading: !cachedData.synthesisAvailable,
+            locationSynthesisPending: !cachedData.synthesisAvailable,
             locationSynthesisError: null,
           })
 
           setIntelLoading(false)
 
-          if (!cachedData.synthesisAvailable) {
-            const rawIntelForSynthesis: Record<string, unknown> = {
-              competitors: intel.competitors || [],
-              footfall: {
-                dailyAverage: Number(intel.totalFootfall || 0),
-                peakHours: String(intel.peakHours || '').split(',').map((s) => s.trim()).filter(Boolean),
-                weekendBoost: Number(intel.weekendBoost || 0),
-              },
-              market: {
-                saturationLevel: String(intel.marketSaturation || 'medium'),
-                competitorCount: Number(intel.numberOfStores || 0),
-                summary: '',
-              },
-              scores: {
-                saturationIndex: Number(intel.retailIndex || 0.5),
-                whitespaceScore: Number(intel.growthTrend || 0),
-                demandGapScore: Number(intel.spendingCapacity || 0),
-              },
-              marketPotentialScore: Number(intel.overallScore || 50),
-              catchment: intel.catchment || [],
-              catchmentLandmarks: intel.catchmentLandmarks || [],
-              retailMix: intel.retailMix || [],
-              cannibalisationRisk: intel.cannibalisationRisk || [],
-              crowdPullers: intel.crowdPullers || [],
-              similarMarkets: intel.similarMarkets || [],
-              populationLifestyle: {
-                affluenceIndicator: intel.affluenceIndicator,
-                totalHouseholds: intel.totalHouseholds,
-                rentPerSqft: intel.rentContext?.marketMid ?? null,
-                marketRentLow: intel.rentContext?.marketLow ?? null,
-                marketRentHigh: intel.rentContext?.marketHigh ?? null,
-                rentDataSource: intel.rentContext?.source ?? null,
-              },
-              accessibility: {
-                nearestMetro: intel.metroName
-                  ? { name: String(intel.metroName), distanceMeters: Number(intel.metroDistance || 0) }
-                  : null,
-                nearestBusStop: intel.busStops
-                  ? { name: 'Nearby Bus Stops', distanceMeters: 300 }
-                  : null,
-              },
-              nearestCommercialAreaKey: intel.nearestAreaKey ?? null,
-            }
-            triggerBackgroundSynthesis(propertyId, property, brand, rawIntelForSynthesis, matchMeta, resolvedCoords)
-          }
           return
         }
       }
@@ -1420,11 +1295,10 @@ export default function BrandDashboardPage() {
             retailMix: retailMixOrdered,
             storeClosureRisk: deriveStoreClosureRisk(retailMixOrdered),
             locationSynthesis: null,
-            locationSynthesisLoading: true,
+            locationSynthesisPending: true,
             locationSynthesisError: null,
           })
           setIntelLoading(false)
-          triggerBackgroundSynthesis(propertyId, property, brand, liveData.data, matchMeta, resolvedCoords)
           return
         }
       }
@@ -1433,7 +1307,7 @@ export default function BrandDashboardPage() {
     }
 
     setIntelLoading(false)
-  }, [data, triggerBackgroundSynthesis])
+  }, [data])
 
   const selectProperty = (m: MatchedProperty) => {
     setSelectedMatch(m)
@@ -1936,9 +1810,6 @@ export default function BrandDashboardPage() {
                   }`}
                 >
                   {label}
-                  {intelData?.locationSynthesisLoading && key !== 'map' && (
-                    <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-[#FF5200] animate-pulse flex-shrink-0" />
-                  )}
                 </button>
               ))}
             </nav>
@@ -2249,13 +2120,12 @@ export default function BrandDashboardPage() {
 
                     {/* Lokazen location synthesis — one engine pass, surfaced on every intelligence tab */}
                     <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-orange-50/45 to-transparent">
-                      {intelData.locationSynthesisLoading && (
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-100 rounded-xl mb-3">
-                          <div className="w-3 h-3 rounded-full border-2 border-[#FF5200] border-t-transparent animate-spin flex-shrink-0" />
-                          <div>
-                            <p className="text-[11px] font-semibold text-[#FF5200]">Lokazen Intelligence Running</p>
-                            <p className="text-[10px] text-gray-500 mt-0.5">Analysing catchment · mapping competitors · reading market signals</p>
-                          </div>
+                      {intelData.locationSynthesisPending && !intelData.locationSynthesis && (
+                        <div className="px-4 py-2.5 bg-white border border-orange-100 rounded-xl mb-3">
+                          <p className="text-[11px] font-semibold text-gray-800">Intelligence ready in 24hrs</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                            Location narrative is prepared on a schedule — not while you view this page. Metrics and charts above are live from cache; refresh later to see synthesis when it is available.
+                          </p>
                         </div>
                       )}
                       <div className="flex items-center justify-between gap-2 mb-2">
@@ -2282,11 +2152,10 @@ export default function BrandDashboardPage() {
                       {intelData.locationSynthesisError && (
                         <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">{intelData.locationSynthesisError}</p>
                       )}
-                      {intelData.locationSynthesisLoading ? (
-                        <>
-                          <SynthesisSectionSkeleton label="Building location intelligence..." lines={3} />
-                          <SynthesisSectionSkeleton label="Scoring brand fit..." lines={2} />
-                        </>
+                      {intelData.locationSynthesisPending && !intelData.locationSynthesis ? (
+                        <p className="text-[11px] text-gray-500 leading-relaxed">
+                          Full location synthesis will appear here after the next scheduled intelligence run.
+                        </p>
                       ) : intelData.locationSynthesis ? (
                         <div className="space-y-3 text-xs text-gray-700">
                           <p className="leading-relaxed text-gray-800">{intelData.locationSynthesis.executiveSummary}</p>
@@ -2615,7 +2484,8 @@ export default function BrandDashboardPage() {
                       title="For your brand — catchment"
                       narrative={intelData.locationSynthesis?.catchmentForBrand}
                       bullets={intelData.locationSynthesis?.catchmentBullets}
-                      loading={intelData.locationSynthesisLoading}
+                      loading={false}
+                      synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                       analysisLabel="Reading catchment & lifestyle fit..."
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
@@ -2721,7 +2591,7 @@ export default function BrandDashboardPage() {
                         </div>
                       )}
 
-                      {(intelData.locationSynthesisLoading ||
+                      {((intelData.locationSynthesisPending && !intelData.locationSynthesis) ||
                         intelData.catchmentLandmarks.length > 0 ||
                         intelData.locationSynthesis?.residentsForBrand ||
                         intelData.locationSynthesis?.apartmentsForBrand ||
@@ -2745,7 +2615,8 @@ export default function BrandDashboardPage() {
                               title="Residents — profile & spending context"
                               narrative={intelData.locationSynthesis?.residentsForBrand}
                               bullets={intelData.locationSynthesis?.residentsBullets}
-                              loading={intelData.locationSynthesisLoading}
+                              loading={false}
+                              synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                               analysisLabel="Profiling residential catchment..."
                               analysisLines={2}
                               synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
@@ -2754,7 +2625,8 @@ export default function BrandDashboardPage() {
                               title="Apartments & housing stock"
                               narrative={intelData.locationSynthesis?.apartmentsForBrand}
                               bullets={intelData.locationSynthesis?.apartmentsBullets}
-                              loading={intelData.locationSynthesisLoading}
+                              loading={false}
+                              synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                               analysisLabel="Mapping nearby societies..."
                               analysisLines={2}
                               synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
@@ -2763,7 +2635,8 @@ export default function BrandDashboardPage() {
                               title="Workplaces — offices & commute pockets"
                               narrative={intelData.locationSynthesis?.workplacesForBrand}
                               bullets={intelData.locationSynthesis?.workplacesBullets}
-                              loading={intelData.locationSynthesisLoading}
+                              loading={false}
+                              synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                               analysisLabel="Identifying office catchment..."
                               analysisLines={2}
                               synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
@@ -2815,7 +2688,8 @@ export default function BrandDashboardPage() {
                       title="For your brand — market"
                       narrative={intelData.locationSynthesis?.marketForBrand}
                       bullets={intelData.locationSynthesis?.marketBullets}
-                      loading={intelData.locationSynthesisLoading}
+                      loading={false}
+                      synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                       analysisLabel="Reading market conditions..."
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
@@ -2826,14 +2700,14 @@ export default function BrandDashboardPage() {
                         <span className={`text-xs rounded-full px-2 py-0.5 ${
                           intelData.locationSynthesis?.liveEconomics
                             ? 'bg-orange-100 text-orange-900 font-medium'
-                            : intelData.locationSynthesisLoading
+                            : intelData.locationSynthesisPending && !intelData.locationSynthesis
                               ? 'bg-amber-50 text-amber-800'
                               : 'bg-slate-100 text-slate-600'
                         }`}>
                           {intelData.locationSynthesis?.liveEconomics
                             ? 'Synthesized rent + platform band'
-                            : intelData.locationSynthesisLoading
-                              ? 'Updating live rent…'
+                            : intelData.locationSynthesisPending && !intelData.locationSynthesis
+                              ? 'Intelligence sync pending'
                               : intelData.rentDataSource === 'listing'
                                 ? 'Listing + area band'
                                 : 'Area benchmark model'}
@@ -2850,9 +2724,7 @@ export default function BrandDashboardPage() {
                           label={
                             intelData.locationSynthesis?.liveEconomics
                               ? 'COMM. RENT (LIVE)'
-                              : intelData.locationSynthesisLoading
-                                ? 'COMM. RENT (…)'
-                                : 'COMM. RENT (MODEL)'
+                              : 'COMM. RENT (MODEL)'
                           }
                           value={(() => {
                             const le = intelData.locationSynthesis?.liveEconomics
@@ -3013,7 +2885,8 @@ export default function BrandDashboardPage() {
                       title="For your brand — competition"
                       narrative={intelData.locationSynthesis?.competitionForBrand}
                       bullets={intelData.locationSynthesis?.competitionBullets}
-                      loading={intelData.locationSynthesisLoading}
+                      loading={false}
+                      synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                       analysisLabel="Finding category competitors..."
                       analysisLines={3}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
@@ -3198,7 +3071,8 @@ export default function BrandDashboardPage() {
                       title="For your brand — risk"
                       narrative={intelData.locationSynthesis?.riskForBrand}
                       bullets={intelData.locationSynthesis?.riskBullets}
-                      loading={intelData.locationSynthesisLoading}
+                      loading={false}
+                      synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                       analysisLabel="Assessing category risks..."
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
@@ -3352,7 +3226,8 @@ export default function BrandDashboardPage() {
                       title="For your brand — similar markets"
                       narrative={intelData.locationSynthesis?.similarMarketsForBrand}
                       bullets={intelData.locationSynthesis?.similarMarketsBullets}
-                      loading={intelData.locationSynthesisLoading}
+                      loading={false}
+                      synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
                       analysisLabel="Matching comparable markets..."
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
