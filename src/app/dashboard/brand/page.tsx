@@ -315,11 +315,14 @@ function TabSynthesisCallout({
   const bs = (bullets || []).filter(Boolean)
   if (synthesisPending && !hasN && bs.length === 0) {
     return (
-      <div className="px-4 sm:px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-orange-50/40 to-transparent">
+      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-blue-50/30 to-transparent">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
-        <div className="text-[11px] text-gray-600 py-2 leading-relaxed rounded-lg border border-orange-100 bg-white/80 px-3">
-          <span className="font-semibold text-gray-800">Intelligence ready in 24hrs.</span>{' '}
-          Location narrative is prepared on a schedule, not when you open this page. Charts and metrics above stay live from cache.
+        <div className="text-[11px] text-gray-500 py-2 leading-relaxed rounded-lg border border-gray-100 bg-gray-50/80 px-3 flex items-start gap-2">
+          <span className="text-gray-400 mt-0.5">◌</span>
+          <span>
+            <span className="font-medium text-gray-700">Narrative syncing.</span>{' '}
+            Scores and metrics above are live. Location narrative is generated on a scheduled cycle and will appear here shortly.
+          </span>
         </div>
       </div>
     )
@@ -1053,9 +1056,9 @@ export default function BrandDashboardPage() {
   // Market tab: weekday vs weekend footfall view
   const [footfallView, setFootfallView] = useState<'weekday' | 'weekend'>('weekday')
   const [rightPanelTab, setRightPanelTab] = useState<IntelTab>('overview')
-  const [copiedMapLink, setCopiedMapLink] = useState(false)
-  const [locationShareOpen, setLocationShareOpen] = useState(false)
-  const locationShareRef = useRef<HTMLDivElement>(null)
+  const [competitorFallback, setCompetitorFallback] = useState<string | null>(null)
+  const [competitorFallbackLoading, setCompetitorFallbackLoading] = useState(false)
+  const competitorFallbackInFlight = useRef(false)
 
   // Google Maps loader
   const { isLoaded } = useLoadScript({ googleMapsApiKey: getGoogleMapsApiKey(), libraries: GOOGLE_MAPS_LIBRARIES })
@@ -1090,19 +1093,95 @@ export default function BrandDashboardPage() {
   }, [hoveredPropertyId, mapRef, matches])
 
   useEffect(() => {
-    setCopiedMapLink(false)
-    setLocationShareOpen(false)
-  }, [selectedMatch?.property.id, rightPanelTab])
+    setCompetitorFallback(null)
+    competitorFallbackInFlight.current = false
+  }, [selectedMatch?.property.id])
 
   useEffect(() => {
-    if (!locationShareOpen) return
-    const onDown = (e: MouseEvent) => {
-      const el = locationShareRef.current
-      if (el && !el.contains(e.target as Node)) setLocationShareOpen(false)
+    if (intelData && intelData.competitors.length > 0) {
+      setCompetitorFallback(null)
     }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [locationShareOpen])
+  }, [intelData?.competitors.length])
+
+  useEffect(() => {
+    if (
+      rightPanelTab !== 'competitors' ||
+      !intelData ||
+      intelLoading ||
+      intelData.competitors.length !== 0 ||
+      !selectedMatch ||
+      competitorFallback !== null ||
+      competitorFallbackInFlight.current
+    ) {
+      return
+    }
+
+    competitorFallbackInFlight.current = true
+    setCompetitorFallbackLoading(true)
+
+    const b = data?.brand
+    const industry = b?.industry || 'F&B'
+    const address = selectedMatch.property.address
+    const city = selectedMatch.property.city
+    const area = selectedMatch.property.city
+
+    void fetch('/api/dashboard/brand/intel-enrich', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        brandId,
+        prompt: `You are a Bangalore commercial real estate intelligence expert. 
+
+A ${industry} brand is evaluating a property at: ${address}, ${city}.
+
+Google Places returned no direct competitors for their category in the immediate area.
+
+Based on your knowledge of Bangalore's ${area} market, provide a SHORT competitive landscape analysis (max 120 words) covering:
+1. What ${industry} brands typically operate in this area or nearby
+2. Whether the absence of mapped competitors means whitespace or data gap
+3. The competitive dynamic a new ${industry} brand should expect
+
+Be specific to ${area} / ${address}. No generic statements.`,
+        brand: {
+          name: b?.companyName || brandName || 'Brand',
+          industry,
+          companyName: b?.companyName,
+        },
+        rawIntel: null,
+        property: {
+          title: selectedMatch.property.title,
+          address: selectedMatch.property.address,
+          city: selectedMatch.property.city,
+          propertyType: selectedMatch.property.propertyType,
+        },
+        useSimplePrompt: true,
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { data?: { narrative?: string }; narrative?: string; text?: string } | null) => {
+        const text = json?.data?.narrative || json?.narrative || json?.text || null
+        if (text) setCompetitorFallback(text)
+      })
+      .catch(() => null)
+      .finally(() => {
+        competitorFallbackInFlight.current = false
+        setCompetitorFallbackLoading(false)
+      })
+
+    return () => {
+      competitorFallbackInFlight.current = false
+    }
+  }, [
+    rightPanelTab,
+    intelData,
+    intelLoading,
+    selectedMatch?.property.id,
+    brandId,
+    brandName,
+    data?.brand?.industry,
+    data?.brand?.companyName,
+    competitorFallback,
+  ])
 
   useEffect(() => {
     if (!intelData?.coords || !selectedMatch?.property) {
@@ -2001,40 +2080,123 @@ export default function BrandDashboardPage() {
                   </InfoWindow>
                 )
               })}
-              {/* Heatmap — property locations in map mode; competitor density in intelligence mode */}
+              {/* Heatmap — matches-only in map mode; multi-layer coloured signals in intelligence mode */}
               {isLoaded && mapMode === 'heatmap' && (() => {
-                let heatPoints: google.maps.LatLng[] = []
                 if (rightMode === 'intelligence' && intelData && selectedMatch?.coords) {
                   const base = selectedMatch.coords
-                  const allPlaces = [...(intelData.competitors ?? []), ...(intelData.complementaryBrands ?? []), ...(intelData.crowdPullers ?? [])]
-                  const n = Math.max(1, allPlaces.length)
-                  heatPoints = allPlaces
+                  const offsetPoint = (distanceM: number, angleDeg: number) => {
+                    const rad = (angleDeg * Math.PI) / 180
+                    const dlat = (distanceM * Math.cos(rad)) / 111320
+                    const dlng = (distanceM * Math.sin(rad)) / (111320 * Math.cos((base.lat * Math.PI) / 180))
+                    return new google.maps.LatLng(base.lat + dlat, base.lng + dlng)
+                  }
+
+                  const officePoints: google.maps.LatLng[] = (intelData.catchmentLandmarks ?? [])
+                    .filter((l) => l.kind === 'tech_park' || l.kind === 'corporate')
+                    .flatMap((l) => {
+                      const pt = new google.maps.LatLng(l.lat, l.lng)
+                      return [pt, pt, pt, pt]
+                    })
+
+                  const residentialPoints: google.maps.LatLng[] = (intelData.catchmentLandmarks ?? [])
+                    .filter((l) => l.kind === 'residential')
+                    .flatMap((l) => {
+                      const pt = new google.maps.LatLng(l.lat, l.lng)
+                      return [pt, pt, pt]
+                    })
+
+                  const pullers = intelData.crowdPullers ?? []
+                  const compBrands = intelData.complementaryBrands ?? []
+                  const anchorPoints: google.maps.LatLng[] = [
+                    ...pullers
+                      .filter((c) => c.distance > 0)
+                      .map((c, i) => {
+                        const co = c as { lat?: number; lng?: number; distance: number }
+                        if (co.lat != null && co.lng != null && Number.isFinite(co.lat) && Number.isFinite(co.lng)) {
+                          return new google.maps.LatLng(co.lat, co.lng)
+                        }
+                        return offsetPoint(co.distance, (i / Math.max(1, pullers.length)) * 360)
+                      }),
+                    ...compBrands
+                      .filter((c) => c.distance > 0)
+                      .map((c, i) => {
+                        if (c.lat != null && c.lng != null && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+                          return new google.maps.LatLng(c.lat, c.lng)
+                        }
+                        return offsetPoint(c.distance, (i / Math.max(1, compBrands.length)) * 360)
+                      }),
+                  ]
+
+                  const comps = intelData.competitors ?? []
+                  const competitorPoints: google.maps.LatLng[] = comps
                     .filter((c) => c.distance > 0)
                     .map((c, i) => {
-                      const po = c as { distance: number; lat?: number; lng?: number }
-                      if (po.lat != null && po.lng != null && Number.isFinite(po.lat) && Number.isFinite(po.lng)) {
-                        return new google.maps.LatLng(po.lat, po.lng)
+                      if (c.lat != null && c.lng != null && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+                        return new google.maps.LatLng(c.lat, c.lng)
                       }
-                      const angle = (i / n) * 2 * Math.PI
-                      const dist = c.distance / 111320
-                      return new google.maps.LatLng(base.lat + dist * Math.cos(angle), base.lng + dist * Math.sin(angle))
+                      return offsetPoint(c.distance, (i / Math.max(1, comps.length)) * 360)
                     })
-                  for (const lm of intelData.catchmentLandmarks ?? []) {
-                    const weight = lm.kind === 'residential' ? 5 : lm.kind === 'tech_park' ? 4 : 3
-                    for (let w = 0; w < weight; w++) {
-                      heatPoints.push(new google.maps.LatLng(lm.lat, lm.lng))
-                    }
-                  }
-                  for (let j = 0; j < 5; j++) {
-                    heatPoints.push(
-                      new google.maps.LatLng(base.lat + (Math.random() - 0.5) * 0.002, base.lng + (Math.random() - 0.5) * 0.002)
-                    )
-                  }
-                } else {
-                  heatPoints = matches
-                    .filter((m) => m.coords)
-                    .map((m) => new google.maps.LatLng(m.coords!.lat, m.coords!.lng))
+
+                  const centerBoost: google.maps.LatLng[] = Array.from({ length: 8 }, (_, i) => {
+                    const angle = (i / 8) * 2 * Math.PI
+                    const d = 0.00035
+                    return new google.maps.LatLng(base.lat + d * Math.cos(angle), base.lng + d * Math.sin(angle))
+                  })
+
+                  return (
+                    <>
+                      {officePoints.length > 0 && (
+                        <HeatmapLayer
+                          data={officePoints}
+                          options={{
+                            radius: 60,
+                            opacity: 0.7,
+                            gradient: ['rgba(255,255,255,0)', 'rgba(255,165,0,0.3)', '#FF5200', '#E4002B'],
+                          }}
+                        />
+                      )}
+                      {residentialPoints.length > 0 && (
+                        <HeatmapLayer
+                          data={residentialPoints}
+                          options={{
+                            radius: 55,
+                            opacity: 0.65,
+                            gradient: ['rgba(255,255,255,0)', 'rgba(99,102,241,0.3)', '#6366f1', '#4338ca'],
+                          }}
+                        />
+                      )}
+                      {anchorPoints.length > 0 && (
+                        <HeatmapLayer
+                          data={anchorPoints}
+                          options={{
+                            radius: 45,
+                            opacity: 0.6,
+                            gradient: ['rgba(255,255,255,0)', 'rgba(34,197,94,0.3)', '#22c55e', '#15803d'],
+                          }}
+                        />
+                      )}
+                      {competitorPoints.length > 0 && (
+                        <HeatmapLayer
+                          data={competitorPoints}
+                          options={{
+                            radius: 40,
+                            opacity: 0.55,
+                            gradient: ['rgba(255,255,255,0)', 'rgba(239,68,68,0.2)', '#ef4444', '#b91c1c'],
+                          }}
+                        />
+                      )}
+                      <HeatmapLayer
+                        data={centerBoost}
+                        options={{
+                          radius: 35,
+                          opacity: 0.9,
+                          gradient: ['rgba(255,255,255,0)', '#FFB899', '#FF5200', '#E4002B'],
+                        }}
+                      />
+                    </>
+                  )
                 }
+                const heatPoints = matches.filter((m) => m.coords).map((m) => new google.maps.LatLng(m.coords!.lat, m.coords!.lng))
                 if (heatPoints.length === 0) return null
                 return (
                   <HeatmapLayer
@@ -2050,7 +2212,7 @@ export default function BrandDashboardPage() {
             </div>
           )}
 
-          {/* Map controls + compact share (intel map tab) */}
+          {/* Map controls (pins / heatmap / satellite) */}
           <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-1.5">
             <div className="bg-white/95 backdrop-blur rounded-xl shadow-md p-1.5 flex flex-col gap-1">
               {(['pins', 'heatmap', 'satellite'] as const).map((mode) => (
@@ -2061,81 +2223,29 @@ export default function BrandDashboardPage() {
                 </button>
               ))}
             </div>
-            {rightMode === 'intelligence' && rightPanelTab === 'map' && selectedMatch && (() => {
-              const mapLink = getMapLinkFromAmenities(selectedMatch.property.amenities)
-              const ml = mapLink?.trim() || null
-              const coords = selectedMatch.coords
-              const googleMapsUrl =
-                ml || (coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : null)
-              const waText = googleMapsUrl
-                ? `Check out this property on Lokazen:\n${selectedMatch.property.title}\n${selectedMatch.property.address}, ${selectedMatch.property.city}\n${googleMapsUrl}`
-                : null
-              if (!googleMapsUrl) return null
-              return (
-                <div className="relative" ref={locationShareRef}>
-                  <button
-                    type="button"
-                    aria-expanded={locationShareOpen}
-                    aria-haspopup="menu"
-                    onClick={() => setLocationShareOpen((o) => !o)}
-                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-200/80 hover:border-[#FF5200]/40 hover:text-[#FF5200] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                    Share
-                  </button>
-                  {locationShareOpen && (
-                    <div
-                      role="menu"
-                      className="absolute right-0 top-full mt-1 w-44 py-1 bg-white rounded-xl shadow-lg border border-gray-100 z-[30] overflow-hidden"
-                    >
-                      <a
-                        role="menuitem"
-                        href={googleMapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setLocationShareOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-800 hover:bg-orange-50"
-                      >
-                        Open in Maps
-                      </a>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(googleMapsUrl).then(() => {
-                            setCopiedMapLink(true)
-                            setTimeout(() => setCopiedMapLink(false), 2000)
-                            setLocationShareOpen(false)
-                          })
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-800 hover:bg-gray-50 text-left"
-                      >
-                        {copiedMapLink ? '✓ Copied' : 'Copy link'}
-                      </button>
-                      {waText ? (
-                        <a
-                          role="menuitem"
-                          href={`https://wa.me/?text=${encodeURIComponent(waText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => setLocationShareOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-50"
-                        >
-                          WhatsApp
-                        </a>
-                      ) : null}
-                      <p className="px-3 py-1.5 text-[9px] text-gray-400 border-t border-gray-50 leading-snug">
-                        {ml ? 'Exact pin' : 'Area approx.'}
-                        {coords ? ` · ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : ''}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
           </div>
+
+          {mapMode === 'heatmap' && rightMode === 'intelligence' && intelData && (
+            <div className="absolute bottom-10 left-2 z-20 bg-white/95 rounded-xl shadow-md px-3 py-2 text-[9px] space-y-1 max-w-[11rem]">
+              <p className="font-semibold text-gray-700 uppercase tracking-wide mb-1">Heatmap layers</p>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#FF5200] flex-shrink-0" />
+                <span className="text-gray-600">Office / Tech parks</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#6366f1] flex-shrink-0" />
+                <span className="text-gray-600">Residential</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#22c55e] flex-shrink-0" />
+                <span className="text-gray-600">Anchor brands</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#ef4444] flex-shrink-0" />
+                <span className="text-gray-600">Competitors</span>
+              </div>
+            </div>
+          )}
 
           {/* Legend */}
           <div className="absolute bottom-3 left-2 right-14 sm:right-16 z-20 max-w-[min(100%,18rem)] min-w-0 bg-white/95 backdrop-blur rounded-xl shadow-md px-2.5 sm:px-3 py-2 flex items-center gap-2">
@@ -2416,10 +2526,10 @@ export default function BrandDashboardPage() {
                     {/* Lokazen location synthesis — one engine pass, surfaced on every intelligence tab */}
                     <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-gradient-to-b from-orange-50/45 to-transparent">
                       {intelData.locationSynthesisPending && !intelData.locationSynthesis && (
-                        <div className="px-4 py-2.5 bg-white border border-orange-100 rounded-xl mb-3">
-                          <p className="text-[11px] font-semibold text-gray-800">Intelligence ready in 24hrs</p>
+                        <div className="px-4 py-2.5 bg-white border border-gray-100 rounded-xl mb-3">
+                          <p className="text-[11px] font-medium text-gray-700">Narrative syncing</p>
                           <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
-                            Location narrative is prepared on a schedule — not while you view this page. Metrics and charts above are live from cache; refresh later to see synthesis when it is available.
+                            Scores and metrics above are live. Location narrative is generated on a scheduled cycle and will appear here shortly.
                           </p>
                         </div>
                       )}
@@ -2448,9 +2558,7 @@ export default function BrandDashboardPage() {
                         <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">{intelData.locationSynthesisError}</p>
                       )}
                       {intelData.locationSynthesisPending && !intelData.locationSynthesis ? (
-                        <p className="text-[11px] text-gray-500 leading-relaxed">
-                          Full location synthesis will appear here after the next scheduled intelligence run.
-                        </p>
+                        <p className="text-xs text-gray-400">Scores and data above are live. Full narrative syncing shortly.</p>
                       ) : intelData.locationSynthesis ? (
                         <div className="space-y-3 text-xs text-gray-700">
                           <p className="leading-relaxed text-gray-800">{intelData.locationSynthesis.executiveSummary}</p>
@@ -3376,9 +3484,32 @@ export default function BrandDashboardPage() {
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
                       </div>
                       {intelData.competitors.length === 0 ? (
-                        <p className="text-sm text-gray-400 italic">
-                          No direct segment peers mapped here — check complementary retail below or widen the trade area.
-                        </p>
+                        <div className="space-y-3">
+                          {competitorFallbackLoading ? (
+                            <div className="rounded-xl bg-orange-50 border border-orange-100 p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-3 h-3 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
+                                <p className="text-xs text-gray-600 font-medium">
+                                  Analysing competitive landscape for {brand?.industry || 'your category'}...
+                                </p>
+                              </div>
+                            </div>
+                          ) : competitorFallback ? (
+                            <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
+                              <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide mb-2">
+                                Lokazen Intelligence — {brand?.industry || 'Category'} Competitive Landscape
+                              </p>
+                              <p className="text-sm text-gray-700 leading-relaxed">{competitorFallback}</p>
+                              <p className="text-[9px] text-gray-400 mt-2">
+                                AI-generated analysis · Google Places returned no pins for this segment in this area
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-400 italic">
+                              No direct segment peers mapped — check complementary retail below or widen the trade area.
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <>
                           <div className="space-y-2 md:hidden">

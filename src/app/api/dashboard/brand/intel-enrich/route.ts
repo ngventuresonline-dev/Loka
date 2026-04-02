@@ -1,17 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
 import { getPrisma } from '@/lib/get-prisma'
 import { toIndustryKey } from '@/lib/intelligence/industry-key'
+import { INTEL_SYNTHESIS_MODEL } from '@/lib/claude'
 import type { BrandContextForIntel, PropertyContextForIntel } from '@/lib/intelligence/brand-intel-enrichment.types'
 
 /**
- * Brand dashboard: synthesis is read-only from DB. No live Claude calls.
- * Populated by /api/ai/synthesize (cron) and admin warm-intel-cache (in-process worker).
+ * Brand dashboard: default path reads synthesis from DB (cron / warm cache).
+ * Optional `useSimplePrompt` runs a short live Claude call for on-demand UI (e.g. competitor tab fallback).
  */
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const useSimplePrompt = body.useSimplePrompt === true
+    const simplePrompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+
+    if (useSimplePrompt && simplePrompt) {
+      const bp = body.brand as { industry?: string; companyName?: string; name?: string } | undefined
+      const pp = body.property as (PropertyContextForIntel & { id?: string }) | undefined
+      if (!pp?.title?.trim()) {
+        return NextResponse.json(
+          { success: false, error: 'property.title is required for simple prompt' },
+          { status: 400 }
+        )
+      }
+      const key = process.env.ANTHROPIC_API_KEY
+      if (!key) {
+        return NextResponse.json({ success: false, error: 'AI unavailable' }, { status: 503 })
+      }
+      try {
+        const anthropic = new Anthropic({ apiKey: key, timeout: 120_000 })
+        const message = await anthropic.messages.create({
+          model: INTEL_SYNTHESIS_MODEL,
+          max_tokens: 500,
+          temperature: 0.35,
+          messages: [{ role: 'user', content: simplePrompt }],
+        })
+        const text = message.content
+          .filter((block) => block.type === 'text')
+          .map((block) => (block as { type: 'text'; text: string }).text)
+          .join('')
+          .trim()
+        return NextResponse.json({ success: true, narrative: text, data: { narrative: text } })
+      } catch (e) {
+        console.error('[intel-enrich] simple prompt error', e)
+        return NextResponse.json({ success: false, error: 'Analysis failed' }, { status: 500 })
+      }
+    }
+
     const brandId = body.brandId as string | undefined
     const brandPayload = body.brand as BrandContextForIntel | undefined
     const propertyPayload = body.property as (PropertyContextForIntel & { id?: string }) | undefined
