@@ -476,6 +476,24 @@ const lokazenCommercialApr2026: GVSProperty[] = [
     propertyType: 'retail',
     zipCode: '560001',
   },
+  {
+    title: 'Ultra-Prime Commercial Kiosk | JP Nagar – Phase 2',
+    address: 'JP Nagar, Phase 2',
+    city: 'Bangalore',
+    size: 150,
+    sizeNote: '150 Sq. Ft. (Kiosk Space)',
+    price: 100000,
+    priceType: 'monthly',
+    securityDepositMonths: 9,
+    powerBackup: false,
+    mapLink: 'https://share.google/ivyCyZT6j5lJspuXM',
+    idealFor: 'Beverage | Dessert | QSR | Grab & Go',
+    listingsBrand: 'lokazen',
+    locationHighlight: 'High Footfall | Prime Micro-Market',
+    depositNote: '8–10 months rent',
+    propertyType: 'retail',
+    zipCode: '560078',
+  },
 ]
 
 async function generatePropertyId(index: number): Promise<string> {
