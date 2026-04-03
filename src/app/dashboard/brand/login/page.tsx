@@ -9,6 +9,7 @@ import Image from 'next/image'
 export default function BrandLoginPage() {
   const router = useRouter()
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -18,12 +19,16 @@ export default function BrandLoginPage() {
     setError(null)
 
     const normalized = phone.replace(/\s+/g, '').replace(/^(\+91|91)/, '')
+    const emailTrim = email.trim().toLowerCase()
 
     try {
       const res = await fetch('/api/auth/brand', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: normalized }),
+        body: JSON.stringify({
+          ...(normalized ? { phone: normalized } : {}),
+          ...(emailTrim ? { email: emailTrim } : {}),
+        }),
       })
 
       const data = await res.json().catch(() => ({}))
@@ -77,7 +82,7 @@ export default function BrandLoginPage() {
               Brand Dashboard
             </h1>
             <p className="text-sm text-gray-500 text-center mb-8">
-              Enter the phone number registered with Lokazen to access your dashboard.
+              Enter the phone number or email registered with Lokazen to access your dashboard.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -96,12 +101,28 @@ export default function BrandLoginPage() {
                       setError(null)
                       setPhone(e.target.value)
                     }}
-                    required
                     autoFocus
                     placeholder="98765 43210"
                     className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:border-[#FF5200] focus:outline-none transition-colors text-sm"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Or registered email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setError(null)
+                    setEmail(e.target.value)
+                  }}
+                  placeholder="you@company.com"
+                  autoComplete="email"
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:border-[#FF5200] focus:outline-none transition-colors text-sm"
+                />
               </div>
 
               {error && (
@@ -115,7 +136,7 @@ export default function BrandLoginPage() {
 
               <button
                 type="submit"
-                disabled={loading || !phone.trim()}
+                disabled={loading || (!phone.trim() && !email.trim())}
                 className="w-full py-3.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold text-sm hover:shadow-lg transition-all hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
               >
                 {loading ? (

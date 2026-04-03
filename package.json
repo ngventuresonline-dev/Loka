@@ -29,6 +29,8 @@
     "db:seed-wards": "tsx scripts/seed-wards.ts",
     "db:setup-census": "node scripts/run-prisma-with-env.js db push && npm run db:seed-census",
     "db:import-featured-brands": "tsx scripts/import-featured-brands.ts",
+    "db:seed-brand-ticoo": "tsx scripts/seed-brand-ticoo.ts",
+    "db:seed-brand-ticoo-bp730": "tsx scripts/seed-brand-ticoo-bp730.ts",
     "db:update-property-ids": "tsx scripts/update-property-ids.ts",
     "db:update-brand-ids": "tsx scripts/update-brand-ids.ts",
     "db:studio": "prisma studio",

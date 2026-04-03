@@ -674,6 +674,24 @@ function sortRetailMixForBrand(
   })
 }
 
+/** Map API / DB competitor coords (lat/lng vs latitude/longitude) to optional pin coordinates */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCompetitorLatLngFromApi(c: any): { lat?: number; lng?: number } {
+  const lat =
+    c.lat != null && Number.isFinite(Number(c.lat))
+      ? Number(c.lat)
+      : c.latitude != null && Number.isFinite(Number(c.latitude))
+        ? Number(c.latitude)
+        : undefined
+  const lng =
+    c.lng != null && Number.isFinite(Number(c.lng))
+      ? Number(c.lng)
+      : c.longitude != null && Number.isFinite(Number(c.longitude))
+        ? Number(c.longitude)
+        : undefined
+  return { lat, lng }
+}
+
 function splitCompetitors(
   all: IntelligenceData['competitors'],
   brandIndustry: string | null | undefined
@@ -706,8 +724,7 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
       distance: Number(c.distanceMeters) || 0,
       rating: c.rating != null ? Number(c.rating) : undefined,
       branded: c.brandType === 'popular',
-      lat: c.lat != null && Number.isFinite(Number(c.lat)) ? Number(c.lat) : undefined,
-      lng: c.lng != null && Number.isFinite(Number(c.lng)) ? Number(c.lng) : undefined,
+      ...mapCompetitorLatLngFromApi(c),
       reviewCount:
         c.userRatingsTotal != null && Number.isFinite(Number(c.userRatingsTotal))
           ? Number(c.userRatingsTotal)
@@ -1056,6 +1073,7 @@ export default function BrandDashboardPage() {
   // Market tab: weekday vs weekend footfall view
   const [footfallView, setFootfallView] = useState<'weekday' | 'weekend'>('weekday')
   const [rightPanelTab, setRightPanelTab] = useState<IntelTab>('overview')
+  const [mobileView, setMobileView] = useState<'list' | 'map' | 'intel'>('list')
   const [competitorFallback, setCompetitorFallback] = useState<string | null>(null)
   const [competitorFallbackLoading, setCompetitorFallbackLoading] = useState(false)
   const competitorFallbackInFlight = useRef(false)
@@ -1292,8 +1310,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
             distance: Number(c.distanceMeters || c.distance) || 0,
             rating: c.rating != null ? Number(c.rating) : undefined,
             branded: Boolean(c.brandType === 'popular' || c.branded),
-            lat: c.lat != null && Number.isFinite(Number(c.lat)) ? Number(c.lat) : undefined,
-            lng: c.lng != null && Number.isFinite(Number(c.lng)) ? Number(c.lng) : undefined,
+            ...mapCompetitorLatLngFromApi(c),
             reviewCount:
               c.userRatingsTotal != null && Number.isFinite(Number(c.userRatingsTotal))
                 ? Number(c.userRatingsTotal)
@@ -1461,6 +1478,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
     setSelectedMatch(m)
     setRightPanelTab('overview')
     setActiveInfoWindowId(m.property.id)
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setMobileView('intel')
+    }
     if (m.coords && mapRef) { mapRef.panTo(m.coords); mapRef.setZoom(15) }
     fetchPropertyIntelligence(m.property.id, m.property, m.coords, m)
   }
@@ -1499,10 +1519,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
   ]
 
   return (
-    <div className="flex flex-col lg:flex-row h-[100dvh] min-h-0 bg-[#F7F7F5] overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-[100dvh] bg-[#F7F7F5] overflow-hidden">
 
       {/* ══ LEFT PANEL ══ */}
-      <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col min-h-0 h-[46vh] lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-gray-100 overflow-hidden">
+      <div
+        className={`w-full lg:w-[380px] flex-shrink-0 flex flex-col min-h-0 lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-gray-100 overflow-hidden transition-all duration-200 ${
+          mobileView === 'list' ? 'h-[100dvh]' : 'h-0 lg:h-full overflow-hidden pointer-events-none lg:pointer-events-auto'
+        }`}
+      >
 
         {/* Brand Header */}
         <div className="p-4 border-b border-gray-100 flex-shrink-0">
@@ -1694,7 +1718,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0">
 
           {/* ── Matches Tab ── */}
           {activeTab === 'matched' && (
@@ -1916,11 +1940,34 @@ Be specific to ${area} / ${address}. No generic statements.`,
       </div>
 
       {/* ══ RIGHT PANEL ══ */}
-      <div className="flex-1 flex flex-col min-h-0 h-[54vh] lg:h-full overflow-hidden relative">
+      <div
+        className={`flex-1 flex flex-col min-h-0 lg:h-full overflow-hidden relative transition-all duration-200 ${
+          mobileView === 'list' ? 'h-0 lg:h-full pointer-events-none lg:pointer-events-auto' : 'h-[100dvh]'
+        }`}
+      >
+        {/* Mobile intel header — list back; only when intel mode on mobile */}
+        {selectedMatch && mobileView === 'intel' && (
+          <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button
+              type="button"
+              onClick={() => setMobileView('list')}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 flex-shrink-0"
+            >
+              ←
+            </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-gray-900 truncate">{selectedMatch.property.title}</p>
+              <p className="text-[10px] text-gray-500 truncate">{selectedMatch.property.address}</p>
+            </div>
+            <span className="text-xs font-black text-white bg-[#FF5200] rounded-full px-2.5 py-1 flex-shrink-0">
+              {selectedMatch.bfiScore} BFI
+            </span>
+          </div>
+        )}
 
-        {/* Intelligence header — only when property selected */}
+        {/* Intelligence header — only when property selected (desktop / large screens) */}
         {rightMode === 'intelligence' && selectedMatch && (
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
+          <div className="hidden lg:flex lg:flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
             <button
               onClick={() => { setRightMode('map'); setSelectedMatch(null); setIntelData(null) }}
               className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
@@ -1967,7 +2014,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
         {/* Intelligence tab bar */}
         {rightMode === 'intelligence' && (
-          <div className="flex-shrink-0 border-b border-gray-100 bg-white z-10">
+          <div
+            className={`flex-shrink-0 border-b border-gray-100 bg-white z-10 ${
+              mobileView === 'map' ? 'hidden lg:block' : ''
+            }`}
+          >
             <nav className="flex overflow-x-auto px-1 sm:px-2 scrollbar-hide pb-px">
               {INTEL_TABS.map(({ key, label }) => (
                 <button
@@ -2226,7 +2277,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
           </div>
 
           {mapMode === 'heatmap' && rightMode === 'intelligence' && intelData && (
-            <div className="absolute bottom-10 left-2 z-20 bg-white/95 rounded-xl shadow-md px-3 py-2 text-[9px] space-y-1 max-w-[11rem]">
+            <div className="absolute bottom-10 max-lg:bottom-32 left-2 z-20 bg-white/95 rounded-xl shadow-md px-3 py-2 text-[9px] space-y-1 max-w-[11rem]">
               <p className="font-semibold text-gray-700 uppercase tracking-wide mb-1">Heatmap layers</p>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-[#FF5200] flex-shrink-0" />
@@ -2248,23 +2299,56 @@ Be specific to ${area} / ${address}. No generic statements.`,
           )}
 
           {/* Legend */}
-          <div className="absolute bottom-3 left-2 right-14 sm:right-16 z-20 max-w-[min(100%,18rem)] min-w-0 bg-white/95 backdrop-blur rounded-xl shadow-md px-2.5 sm:px-3 py-2 flex items-center gap-2">
+          <div className="absolute bottom-3 max-lg:bottom-28 left-2 right-14 sm:right-16 z-20 max-w-[min(100%,18rem)] min-w-0 bg-white/95 backdrop-blur rounded-xl shadow-md px-2.5 sm:px-3 py-2 flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-[#FF5200] flex flex-shrink-0 items-center justify-center"><span className="text-white text-[8px] font-bold">85</span></div>
             <span className="text-[11px] sm:text-xs text-gray-700 font-medium truncate">{matches.length} Matched Properties</span>
           </div>
 
           {/* "Select property" hint */}
-          {rightMode === 'map' && (
-            <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-20 max-w-[min(92vw,22rem)] bg-white/95 backdrop-blur rounded-2xl shadow-md px-3 py-2 pointer-events-none">
+          {rightMode === 'map' && !(selectedMatch && mobileView === 'map') && (
+            <div className="absolute bottom-14 max-lg:bottom-24 left-1/2 -translate-x-1/2 z-20 max-w-[min(92vw,22rem)] bg-white/95 backdrop-blur rounded-2xl shadow-md px-3 py-2 pointer-events-none">
               <p className="text-[10px] sm:text-xs text-gray-600 text-center leading-snug whitespace-normal">Select a property to see full Location Intelligence →</p>
+            </div>
+          )}
+
+          {/* Mobile: floating property bottom sheet when map is active */}
+          {selectedMatch && mobileView === 'map' && (
+            <div className="lg:hidden absolute bottom-16 inset-x-0 z-30 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setMobileView('intel')
+                  }
+                }}
+                className="bg-white rounded-2xl shadow-xl border border-gray-100 p-3 flex items-center gap-3 cursor-pointer active:bg-gray-50"
+                onClick={() => setMobileView('intel')}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-gray-900 truncate">{selectedMatch.property.title}</p>
+                  <p className="text-[10px] text-gray-500 truncate">{selectedMatch.property.address}</p>
+                  <p className="text-[10px] font-semibold text-[#FF5200] mt-0.5">
+                    {formatPrice(selectedMatch.property.price, selectedMatch.property.priceType)} · {selectedMatch.property.size.toLocaleString('en-IN')} sqft
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                  <span className="text-xs font-black text-white bg-[#FF5200] rounded-full px-2.5 py-1">
+                    {selectedMatch.bfiScore} BFI
+                  </span>
+                  <span className="text-[9px] text-gray-400">Tap for intel →</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {/* ── Intelligence content panel ── */}
         {rightMode === 'intelligence' && rightPanelTab !== 'map' && (
-          <div className="absolute inset-0 overflow-y-auto overflow-x-hidden bg-white z-20 min-h-0">
+          <div className="absolute inset-0 overflow-y-auto overflow-x-hidden bg-white z-20 min-h-0 pb-20 lg:pb-0">
             {selectedMatch && (
+              <div className="hidden lg:block">
               <QuickActionRail
                 onScheduleVisit={() => setVisitModal(v => ({ ...v, open: true }))}
                 onToggleSave={() => setVisitModal(v => ({ ...v, saved: !v.saved }))}
@@ -2273,6 +2357,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 isSaved={visitModal.saved}
                 isInterested={visitModal.interested}
               />
+              </div>
             )}
 
             {/* Intelligence loading */}
@@ -2442,26 +2527,68 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       })()}
                     </div>
 
-                    {/* Demand Composition — visual pie */}
+                    {/* Demand Composition — visual pie (landmarks + competitors + households + area priors) */}
                     {(() => {
-                      const offDemand =
+                      const officeSignals = [
                         intelData.catchmentLandmarks.filter(
-                          (l) => l.kind === 'corporate' || l.kind === 'tech_park',
-                        ).length * 200
-                      const resDemand =
-                        intelData.totalHouseholds > 0
-                          ? intelData.totalHouseholds
-                          : intelData.catchmentLandmarks.filter((l) => l.kind === 'residential').length * 150
-                      const totalDemand = offDemand + resDemand
-                      if (totalDemand === 0) return null
+                          (l) => l.kind === 'tech_park' || l.kind === 'corporate',
+                        ).length * 200,
+                        intelData.competitors.filter((c) => {
+                          const cat = c.category?.toLowerCase() ?? ''
+                          return cat.includes('cafe') || cat.includes('qsr')
+                        }).length * 150,
+                      ].reduce((a, b) => a + b, 0)
 
-                      const offPct = Math.round((offDemand / totalDemand) * 100)
-                      const resPct = 100 - offPct
+                      const residentialSignals = [
+                        intelData.catchmentLandmarks.filter((l) => l.kind === 'residential').length * 150,
+                        intelData.totalHouseholds > 0 ? intelData.totalHouseholds * 0.05 : 0,
+                      ].reduce((a, b) => a + b, 0)
 
-                      const pieData = [
-                        { name: 'Office/Daytime', value: offPct, fill: '#FF5200' },
-                        { name: 'Residential', value: resPct, fill: '#6366f1' },
+                      const areaKey = intelData.nearestCommercialAreaKey?.toLowerCase() || ''
+                      const knownOfficePct: Record<string, number> = {
+                        hsr: 55,
+                        whitefield: 65,
+                        'electronic city': 72,
+                        manyata: 70,
+                        marathahalli: 55,
+                        bellandur: 58,
+                        sarjapur: 62,
+                        ecity: 72,
+                        koramangala: 40,
+                        indiranagar: 28,
+                        'mg road': 38,
+                        'kalyan nagar': 32,
+                        'new bel': 45,
+                        jayanagar: 12,
+                      }
+                      const officePctFromArea =
+                        Object.entries(knownOfficePct).find(([k]) => areaKey.includes(k))?.[1] ?? null
+
+                      const totalSignals = officeSignals + residentialSignals
+                      const computedOfficePct =
+                        totalSignals > 0 ? Math.round((officeSignals / totalSignals) * 100) : null
+                      const officePct = officePctFromArea ?? computedOfficePct ?? 35
+                      const resPct = 100 - officePct
+
+                      const isLeisureHeavy = ['indiranagar', 'koramangala', 'mg road', 'brigade', 'church street'].some(
+                        (k) => areaKey.includes(k),
+                      )
+                      const transitPct = isLeisureHeavy ? Math.round((officePct + resPct) * 0.12) : 0
+                      const adjustedOfficePct = officePct - Math.round(transitPct * 0.4)
+                      const adjustedResPct = resPct - Math.round(transitPct * 0.6)
+
+                      let demandData: { name: string; value: number; fill: string }[] = [
+                        { name: 'Office/Daytime', value: adjustedOfficePct, fill: '#FF5200' },
+                        { name: 'Residential', value: adjustedResPct, fill: '#6366f1' },
+                        ...(transitPct > 0 ? [{ name: 'Leisure/Transit', value: transitPct, fill: '#22c55e' }] : []),
                       ]
+                      const sliceSum = demandData.reduce((s, d) => s + d.value, 0)
+                      if (demandData.length > 0 && sliceSum !== 100) {
+                        const last = demandData[demandData.length - 1]
+                        demandData = [...demandData.slice(0, -1), { ...last, value: last.value + (100 - sliceSum) }]
+                      }
+
+                      const narrativeOfficePct = transitPct > 0 ? adjustedOfficePct : officePct
 
                       return (
                         <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
@@ -2471,7 +2598,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           <div className="flex items-center gap-4">
                             <PieChart width={80} height={80}>
                               <Pie
-                                data={pieData}
+                                data={demandData}
                                 cx={35}
                                 cy={35}
                                 innerRadius={22}
@@ -2479,13 +2606,13 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                 dataKey="value"
                                 strokeWidth={0}
                               >
-                                {pieData.map((entry, i) => (
+                                {demandData.map((entry, i) => (
                                   <Cell key={i} fill={entry.fill} />
                                 ))}
                               </Pie>
                             </PieChart>
                             <div className="flex-1 space-y-2">
-                              {pieData.map((d) => (
+                              {demandData.map((d) => (
                                 <div key={d.name} className="flex items-center justify-between">
                                   <div className="flex items-center gap-1.5">
                                     <div
@@ -2498,11 +2625,13 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                 </div>
                               ))}
                               <p className="text-[9px] text-gray-400 pt-1">
-                                {offPct > 60
-                                  ? 'Office-dominant — weekday peak, strong delivery, lower weekend'
-                                  : offPct > 40
-                                    ? 'Mixed catchment — good daily spread across all day-parts'
-                                    : 'Residential-dominant — strong evenings, weekends, and family dining'}
+                                {transitPct > 0
+                                  ? 'Leisure/transit corridor — strong evening & weekend footfall alongside base office/residential mix'
+                                  : narrativeOfficePct > 60
+                                    ? 'Office-dominant — weekday peak, strong delivery, lower weekend'
+                                    : narrativeOfficePct > 40
+                                      ? 'Mixed catchment — good daily spread across all day-parts'
+                                      : 'Residential-dominant — strong evenings, weekends, and family dining'}
                               </p>
                             </div>
                           </div>
@@ -3645,6 +3774,37 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         (() => {
                           const brandFilteredCompetitorCount = intelData.competitors.length
                           const brand = data?.brand
+                          const brandedChains = [...intelData.competitors]
+                            .filter((c) => c.branded)
+                            .sort((a, b) => a.distance - b.distance)
+                            .slice(0, 6)
+                          const nonBrandedCompetitors = [...intelData.competitors]
+                            .filter((c) => !c.branded)
+                            .sort((a, b) => a.distance - b.distance)
+                            .slice(0, 4)
+                          const renderCompetitorRow = (c: IntelligenceData['competitors'][number], i: number) => (
+                            <div
+                              key={`${c.name}-${c.distance}-${i}`}
+                              className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                            >
+                              <div>
+                                <p className="text-xs font-medium text-gray-800">{c.name}</p>
+                                <p className="text-[10px] text-gray-500 capitalize">
+                                  {c.category} · {(c.distance / 1000).toFixed(2)}km away
+                                </p>
+                              </div>
+                              {c.rating != null && (
+                                <div className="text-right">
+                                  <p className="text-xs font-bold text-gray-700">⭐ {c.rating.toFixed(1)}</p>
+                                  {c.reviewCount != null && c.reviewCount > 0 && (
+                                    <p className="text-[9px] text-gray-400">
+                                      {c.reviewCount.toLocaleString()} reviews
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )
                           return (
                             <div className="space-y-3">
                               <div
@@ -3686,35 +3846,21 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                 </p>
                               </div>
 
-                              {intelData.competitors.length > 0 && (
+                              {brandedChains.length > 0 && (
                                 <div>
                                   <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                    {brand?.industry || 'Category'} brands in trade area
+                                    Branded chains in your category
+                                  </p>
+                                  <div className="space-y-1.5">{brandedChains.map((c, i) => renderCompetitorRow(c, i))}</div>
+                                </div>
+                              )}
+                              {nonBrandedCompetitors.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                    Independent competitors
                                   </p>
                                   <div className="space-y-1.5">
-                                    {intelData.competitors.slice(0, 6).map((c, i) => (
-                                      <div
-                                        key={`${c.name}-${c.distance}-${i}`}
-                                        className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
-                                      >
-                                        <div>
-                                          <p className="text-xs font-medium text-gray-800">{c.name}</p>
-                                          <p className="text-[10px] text-gray-500 capitalize">
-                                            {c.category} · {(c.distance / 1000).toFixed(2)}km away
-                                          </p>
-                                        </div>
-                                        {c.rating != null && (
-                                          <div className="text-right">
-                                            <p className="text-xs font-bold text-gray-700">⭐ {c.rating.toFixed(1)}</p>
-                                            {c.reviewCount != null && c.reviewCount > 0 && (
-                                              <p className="text-[9px] text-gray-400">
-                                                {c.reviewCount.toLocaleString()} reviews
-                                              </p>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
+                                    {nonBrandedCompetitors.map((c, i) => renderCompetitorRow(c, i))}
                                   </div>
                                 </div>
                               )}
@@ -3944,7 +4090,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               <button
                                 type="button"
                                 className="w-full text-[10px] text-center py-1.5 border border-gray-200 rounded-lg text-gray-500 hover:text-[#FF5200] hover:border-orange-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
-                                onClick={() => { if (mapRef) { mapRef.panTo({ lat: m.lat, lng: m.lng }); mapRef.setZoom(15); setRightPanelTab('map') } }}
+                                onClick={() => {
+                                  if (mapRef) {
+                                    mapRef.panTo({ lat: m.lat, lng: m.lng })
+                                    mapRef.setZoom(15)
+                                    setRightPanelTab('map')
+                                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                                      setMobileView('map')
+                                    }
+                                  }
+                                }}
                               >
                                 View on Map
                               </button>
@@ -3963,9 +4118,95 @@ Be specific to ${area} / ${address}. No generic statements.`,
         </div>
       </div>
 
+      {/* Mobile bottom navigation — Google Maps style */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex">
+          <button
+            type="button"
+            onClick={() => setMobileView('list')}
+            className={`relative flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[10px] font-semibold transition-colors ${
+              mobileView === 'list' ? 'text-[#FF5200]' : 'text-gray-500'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            <span>Matches</span>
+            {matches.length > 0 && mobileView !== 'list' && (
+              <span className="absolute top-1.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#FF5200] text-white text-[8px] rounded-full flex items-center justify-center font-bold">
+                {matches.length > 99 ? '99+' : matches.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMobileView('map')
+              setRightPanelTab('map')
+            }}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[10px] font-semibold transition-colors ${
+              mobileView === 'map' ? 'text-[#FF5200]' : 'text-gray-500'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+              />
+            </svg>
+            <span>Map</span>
+          </button>
+
+          {selectedMatch && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileView('intel')
+                setRightPanelTab((t) => (t === 'map' ? 'overview' : t))
+              }}
+              className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[10px] font-semibold transition-colors relative ${
+                mobileView === 'intel' ? 'text-[#FF5200]' : 'text-gray-500'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <span>Intel</span>
+              {mobileView !== 'intel' && (
+                <span className="absolute top-1 right-[22%] w-1.5 h-1.5 bg-[#FF5200] rounded-full" aria-hidden />
+              )}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setVisitModal((v) => ({ ...v, open: true }))}
+            className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[10px] font-semibold text-gray-500"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <span>Visit</span>
+          </button>
+        </div>
+      </nav>
+
       {/* Schedule Visit Modal */}
       {visitModal.open && selectedMatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-[340px] max-w-full mx-4">
             <h3 className="font-bold text-gray-900 text-base mb-1">Schedule a Visit</h3>
             <p className="text-xs text-gray-500 mb-4 line-clamp-1">{selectedMatch.property.title} — {selectedMatch.property.city}</p>
