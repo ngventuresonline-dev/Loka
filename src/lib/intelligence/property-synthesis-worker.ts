@@ -1,6 +1,6 @@
 /**
  * Server-only: runs Claude synthesis and upserts property_synthesis_cache.
- * Used by cron (/api/ai/synthesize) and admin warm-intel-cache — never from the brand dashboard request path.
+ * Used by cron (/api/ai/synthesize), admin warm-intel-cache, and scheduleWarmIntelCacheForProperty (e.g. on listing approval).
  */
 import {
   enrichBrandLocationIntel,

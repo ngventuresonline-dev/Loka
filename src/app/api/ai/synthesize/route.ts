@@ -5,7 +5,7 @@ import { runPropertySynthesisForIndustry } from '@/lib/intelligence/property-syn
 
 export const maxDuration = 300
 
-const MAX_SYNTHESIS_JOBS_PER_RUN = 20
+const MAX_SYNTHESIS_JOBS_PER_RUN = 48
 
 function isAuthorizedCronOrAdmin(request: NextRequest): boolean {
   const auth = request.headers.get('authorization')

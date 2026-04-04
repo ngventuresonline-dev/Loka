@@ -6,6 +6,7 @@ import { generatePropertyId } from '@/lib/property-id-generator'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import { formatPropertyForPlatform } from '@/lib/property-formatter'
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
+import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-warm-intel-cache'
 import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
 import { getMapLinkFromAmenities } from '@/lib/property-coordinates'
 
@@ -1068,6 +1069,10 @@ export async function PATCH(request: NextRequest) {
           console.error('[Intelligence] Background enrichment failed after admin update', propertyId, err)
         })
       }, 0)
+    }
+
+    if (updateData.status === 'approved') {
+      scheduleWarmIntelCacheForProperty(propertyId, { forceRefresh: true })
     }
 
     return NextResponse.json({

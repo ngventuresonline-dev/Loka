@@ -36,7 +36,9 @@
     "db:studio": "prisma studio",
     "favicon:convert": "tsx scripts/convert-favicon-to-png.ts",
     "check-timezone": "tsx scripts/check-timezone.ts",
-    "debug:clear": "node scripts/remove-debug-logs.js"
+    "debug:clear": "node scripts/remove-debug-logs.js",
+    "intel:warm-all": "tsx scripts/warm-all-properties-intel.ts",
+    "intel:warm-all:dry": "tsx scripts/warm-all-properties-intel.ts --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

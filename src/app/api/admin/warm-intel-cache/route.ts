@@ -73,7 +73,19 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  const results = { total: 0, locationCached: 0, synthesisCached: 0, skipped: 0, errors: 0, timeouts: 0 }
+  const results = {
+    total: 0,
+    locationCached: 0,
+    synthesisCached: 0,
+    skipped: 0,
+    errors: 0,
+    timeouts: 0,
+    /** First N messages so operators can see why errors/timeouts happen (Vercel logs also have stack). */
+    messages: [] as string[],
+  }
+  const pushMsg = (m: string) => {
+    if (results.messages.length < 25) results.messages.push(m.slice(0, 500))
+  }
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin || 'https://www.lokazen.in'
   const industryPauseMs = targetPropertyId ? 0 : INDUSTRY_PAUSE_MS
 
@@ -240,7 +252,12 @@ export async function POST(request: NextRequest) {
             results.locationCached++
           } else if (intelRes.timeout) {
             results.timeouts++
+            pushMsg(`${property.id}: location-intel fetch timeout (${LOCATION_INTEL_TIMEOUT_MS}ms)`)
+          } else if (!intelRes.ok) {
+            pushMsg(`${property.id}: location-intelligence HTTP not ok (no body cached)`)
           }
+        } else {
+          pushMsg(`${property.id}: no lat/lng — skipped location refresh (add map link or address)`)
         }
       } else {
         results.skipped++
@@ -258,6 +275,9 @@ export async function POST(request: NextRequest) {
           results.synthesisCached++
         } else if (synResult.status === 'error') {
           results.errors++
+          pushMsg(`${property.id}/${industryKey}: synthesis ${synResult.message}`)
+        } else if (synResult.status === 'skipped_no_location') {
+          pushMsg(`${property.id}/${industryKey}: synthesis skipped (no location cache row)`)
         }
 
         if (industryPauseMs > 0) {
@@ -265,8 +285,10 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
       console.error(`[WarmIntelCache] Error for property ${property.id}:`, err)
       results.errors++
+      pushMsg(`${property.id}: exception ${msg}`)
     }
   }
 

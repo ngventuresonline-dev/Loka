@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { toIndustryKey } from '@/lib/intelligence/industry-key'
+import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-warm-intel-cache'
 
 export const revalidate = 0
 
@@ -56,15 +57,7 @@ export async function GET(
   const synthesisIsFallback = Boolean(synRow?.synthesis_fallback)
 
   if (!location) {
-    const origin = request.nextUrl.origin || process.env.NEXT_PUBLIC_APP_URL || 'https://www.lokazen.in'
-    fetch(`${origin}/api/admin/warm-intel-cache`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: `Bearer ${process.env.ADMIN_SECRET || 'lokazen-admin-secret'}`,
-      },
-      body: JSON.stringify({ propertyId, forceRefresh: false }),
-    }).catch(() => {})
+    scheduleWarmIntelCacheForProperty(propertyId, { forceRefresh: false, industry: industryKey })
 
     return NextResponse.json(
       {

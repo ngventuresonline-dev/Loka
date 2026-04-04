@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserType } from '@/lib/api-auth'
 import { getPrisma } from '@/lib/get-prisma'
+import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-warm-intel-cache'
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,6 +86,10 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    if (action === 'approve') {
+      scheduleWarmIntelCacheForProperty(propertyId, { forceRefresh: true })
+    }
 
     return NextResponse.json({
       success: true,
