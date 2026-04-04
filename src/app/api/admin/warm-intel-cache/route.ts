@@ -20,6 +20,18 @@ function safeDate(v: unknown): Date | null {
   return Number.isFinite(d.getTime()) ? d : null
 }
 
+/** Avoid NULL / NaN in NOT NULL columns on property_location_cache (Postgres 23502). */
+function sqlFiniteNumber(v: unknown, fallback: number): number {
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function sqlNonEmptyText(v: unknown, fallback: string): string {
+  if (v == null) return fallback
+  const s = String(v).trim()
+  return s.length > 0 ? s : fallback
+}
+
 async function fetchJsonWithTimeout(
   url: string,
   init: RequestInit,
@@ -161,6 +173,8 @@ export async function POST(request: NextRequest) {
           if (intelRes.ok) {
             const intelData = (intelRes.json || {}) as { data?: Record<string, any> } | Record<string, any>
             const d: any = (intelData as { data?: Record<string, any> }).data || intelData
+            const pl = d.populationLifestyle || {}
+            const metro = d.accessibility?.nearestMetro
 
             await prisma.$executeRaw`
               INSERT INTO property_location_cache (
@@ -176,35 +190,35 @@ export async function POST(request: NextRequest) {
                 cached_at, cache_expires_at, data_quality, source
               ) VALUES (
                 ${property.id},
-                ${d.marketPotentialScore || 50},
-                ${d.footfall?.dailyAverage || 0},
+                ${sqlFiniteNumber(d.marketPotentialScore, 50)},
+                ${sqlFiniteNumber(d.footfall?.dailyAverage, 0)},
                 ${Array.isArray(d.footfall?.peakHours) ? d.footfall.peakHours.join(', ') : d.footfall?.peakHours || '12-2pm, 7-10pm'},
-                ${d.footfall?.weekendBoost || 20},
+                ${sqlFiniteNumber(d.footfall?.weekendBoost, 20)},
                 ${JSON.stringify(d.competitors || [])}::jsonb,
-                ${d.market?.competitorCount || 0},
+                ${sqlFiniteNumber(d.market?.competitorCount, 0)},
                 ${JSON.stringify(d.complementaryBrands || [])}::jsonb,
                 ${JSON.stringify(d.retailMix || [])}::jsonb,
                 ${JSON.stringify(d.catchment || [])}::jsonb,
                 ${JSON.stringify(d.catchmentLandmarks || [])}::jsonb,
-                ${d.market?.saturationLevel || 'medium'},
-                ${d.market?.summary || ''},
-                ${d.scores?.saturationIndex || 0.5},
-                ${d.scores?.whitespaceScore || 50},
-                ${d.scores?.demandGapScore || 50},
-                ${d.marketPotentialScore || 50},
+                ${sqlNonEmptyText(d.market?.saturationLevel, 'medium')},
+                ${d.market?.summary != null ? String(d.market.summary) : ''},
+                ${sqlFiniteNumber(d.scores?.saturationIndex, 0.5)},
+                ${sqlFiniteNumber(d.scores?.whitespaceScore, 50)},
+                ${sqlFiniteNumber(d.scores?.demandGapScore, 50)},
+                ${sqlFiniteNumber(d.marketPotentialScore, 50)},
                 ${JSON.stringify(d.cannibalisationRisk || [])}::jsonb,
                 ${JSON.stringify(d.crowdPullers || [])}::jsonb,
                 ${JSON.stringify(d.similarMarkets || [])}::jsonb,
-                ${d.accessibility?.nearestMetro?.name || null},
-                ${d.accessibility?.nearestMetro?.distanceMeters || null},
+                ${sqlNonEmptyText(metro?.name, '')},
+                ${metro?.distanceMeters != null ? sqlFiniteNumber(metro.distanceMeters, 0) : 0},
                 ${d.accessibility?.nearestBusStop ? 1 : 0},
-                ${d.populationLifestyle?.affluenceIndicator || 'Medium'},
-                ${d.populationLifestyle?.totalHouseholds || null},
-                ${d.populationLifestyle?.rentPerSqft || null},
-                ${d.populationLifestyle?.marketRentLow || null},
-                ${d.populationLifestyle?.marketRentHigh || null},
-                ${d.populationLifestyle?.rentDataSource || null},
-                ${d.nearestCommercialAreaKey || null},
+                ${sqlNonEmptyText(pl.affluenceIndicator, 'Medium')},
+                ${pl.totalHouseholds != null ? sqlFiniteNumber(pl.totalHouseholds, 0) : 0},
+                ${pl.rentPerSqft != null ? sqlFiniteNumber(pl.rentPerSqft, 0) : 0},
+                ${pl.marketRentLow != null ? sqlFiniteNumber(pl.marketRentLow, 0) : 0},
+                ${pl.marketRentHigh != null ? sqlFiniteNumber(pl.marketRentHigh, 0) : 0},
+                ${sqlNonEmptyText(pl.rentDataSource, 'area_benchmark')},
+                ${sqlNonEmptyText(d.nearestCommercialAreaKey, 'unknown')},
                 ${lat},
                 ${lng},
                 NOW(),
