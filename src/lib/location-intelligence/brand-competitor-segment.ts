@@ -8,6 +8,10 @@ export function brandContextWantsQsrCompetitors(brandIndustryContext: string): b
 
 const FULL_SERVICE_DINING_HINT = /\b(north indian|mughlai|biryani house|andhra |kerala |fine dining|thali house|family restaurant|grand restaurant|dosa house|meals hotel)\b/i
 
+/** Chains / formats that share QSR trade zones even when Google types them as restaurant. */
+const QSR_CHAIN_OR_FORMAT =
+  /\b(pizza|burger|ice cream|gelato|frozen yogurt|dessert parlor|polar bear|baskin|corner house|domino|pizza hut|mcdonald|kfc|subway|shawarma|momos|rolls?|vada|pav\b|quick service|snack|takeaway|cloud kitchen)\b/i
+
 /**
  * Strict same-segment match for QSR-focused brands: Jumbo King, Goli, etc. count; typical North Indian dining does not.
  */
@@ -17,6 +21,7 @@ export function competitorMatchesQsrFocus(competitorName: string, placeCategory:
 
   const mapped = getBrandCategory(competitorName)
   if (mapped === 'QSR') return true
+  if (QSR_CHAIN_OR_FORMAT.test(n)) return true
   if (mapped === 'Restaurant' || mapped === 'Cafe') return false
   if (FULL_SERVICE_DINING_HINT.test(n) || FULL_SERVICE_DINING_HINT.test(c)) return false
 

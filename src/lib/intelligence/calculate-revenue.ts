@@ -91,7 +91,7 @@ export type PropertyLocationProfile = {
   floor: 'ground' | 'basement' | 'upper' | 'unknown'
   frontageMeters: number | null
 
-  /** Traffic signal within ~100m — slight impulse / visibility lift for walk-in pool. */
+  /** Traffic signal within ~100m — walkable main roads get a footfall/capture lift; highway/arterial signals get smaller walk-in (see calculateRevenueFromBenchmarks). */
   hasSignalNearby: boolean
   /** Site-visit daily footfall estimate; floors modelled addressable pool when set. */
   adminDailyFootfallEstimate: number | null
@@ -783,7 +783,14 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
     const rt = rtFromPocket ?? lp.roadType
     roadWalkIn = roadWalkInFromRoadType(rt, baseRoad)
   }
-  if (lp.hasSignalNearby) roadWalkIn *= 1.06
+  /** Signal on true highway: visibility remains but walk-in pool is car-dominated (crossing friction). Main roads / high streets keep full lift (e.g. Brigade, MG, dense Sarjapur strips). */
+  const signalHighwayChoke = lp.hasSignalNearby && lp.roadType === 'highway'
+  const signalWalkable = lp.hasSignalNearby && !signalHighwayChoke
+  if (signalWalkable) {
+    roadWalkIn *= 1.06
+  } else if (signalHighwayChoke) {
+    roadWalkIn *= 0.92
+  }
 
   const officeIntensity =
     lp.totalOfficeEmployees ?? (lp.officesWithin500m * 200 + lp.coworkingSpacesWithin500m * 80)
@@ -803,7 +810,9 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
   if (lp.isCornerUnit) captureRate *= 1.18
   if (lp.isStreetFacing) captureRate *= 1.1
   if (lp.hasParking) captureRate *= 1.12
-  if (lp.hasSignalNearby) captureRate *= 1.06
+  if (signalWalkable) {
+    captureRate *= 1.06
+  }
   if (lp.floor === 'ground') captureRate *= 1.0
   else if (lp.floor === 'basement') captureRate *= 0.75
   else if (lp.floor === 'upper') captureRate *= 0.65
@@ -939,7 +948,8 @@ export function calculateRevenueFromBenchmarks(input: RevenueCalculationInput): 
       lp.isCornerUnit && 'Corner unit +18%',
       lp.hasParking && 'Parking +12%',
       lp.isStreetFacing && 'Street facing +10%',
-      lp.hasSignalNearby && 'Signal nearby +6%',
+      signalWalkable && 'Signal nearby +6% walk-in & capture',
+      signalHighwayChoke && 'Signal on highway — walk-in tempered, visibility +4%',
       lp.collegesWithin500m >= 1 && 'College footfall',
       lp.gymsClinicsWithin300m >= 2 && 'Gym/clinic catchment',
     ].filter(Boolean) as string[],

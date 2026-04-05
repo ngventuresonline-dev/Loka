@@ -192,11 +192,13 @@ export async function GET(request: NextRequest) {
     }
 
     const rawProperties = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-      SELECT id, title, address, city, state, price::text as price, price_type, size,
-             property_type, amenities, images, status, created_at
-      FROM properties
-      WHERE status = 'approved' AND is_available = true
-      ORDER BY created_at DESC
+      SELECT p.id, p.title, p.address, p.city, p.state, p.price::text as price, p.price_type, p.size,
+             p.property_type, p.amenities, p.images, p.status, p.created_at,
+             plc.resolved_lat, plc.resolved_lng
+      FROM properties p
+      LEFT JOIN property_location_cache plc ON plc.property_id = p.id
+      WHERE p.status = 'approved' AND p.is_available = true
+      ORDER BY p.created_at DESC
       LIMIT 150
     `.catch((e: unknown) => {
       console.error('[Brand Matches API] property raw query failed:', e)
@@ -216,6 +218,8 @@ export async function GET(request: NextRequest) {
       amenities: p['amenities'],
       images: p['images'],
       status: p['status'],
+      resolved_lat: p['resolved_lat'],
+      resolved_lng: p['resolved_lng'],
     }))
 
     const excludedTitles = parseExcludedMatchPropertyTitles(profile.weight_config_json)
@@ -292,9 +296,21 @@ export async function GET(request: NextRequest) {
         : null
 
       if (!coords) {
+        const rlat = Number(p.resolved_lat)
+        const rlng = Number(p.resolved_lng)
+        if (Number.isFinite(rlat) && Number.isFinite(rlng)) {
+          coords = { lat: rlat, lng: rlng }
+        }
+      }
+
+      if (!coords) {
         const cityLower = (p.city || '').toLowerCase()
         const addrLower = (p.address || '').toLowerCase()
-        const area = BANGALORE_AREAS.find((a) => cityLower.includes(a.key) || addrLower.includes(a.key))
+        const titleLower = (p.title || '').toLowerCase()
+        const blob = `${titleLower} ${addrLower} ${cityLower}`
+        const area = [...BANGALORE_AREAS].sort((a, b) => b.key.length - a.key.length).find(
+          (a) => cityLower.includes(a.key) || addrLower.includes(a.key) || titleLower.includes(a.key) || blob.includes(a.key)
+        )
         if (area) coords = { lat: area.lat, lng: area.lng }
       }
       if (!coords) {

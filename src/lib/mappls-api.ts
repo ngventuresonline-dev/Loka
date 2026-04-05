@@ -9,11 +9,15 @@ import { getMapplsRestApiKey } from './mappls-config'
 const MAPPLS_SEARCH_BASE = 'https://search.mappls.com/search'
 
 /** Map property/business type to Mappls Nearby keywords */
-export function mapToMapplsNearbyParams(propertyType?: string, businessType?: string): {
+export function mapToMapplsNearbyParams(
+  propertyType?: string,
+  businessType?: string,
+  listingTitle?: string
+): {
   keywords: string
   categoryCode?: string
 } {
-  const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
+  const raw = `${businessType || ''} ${propertyType || ''} ${listingTitle || ''}`.toLowerCase()
   const p = (propertyType || '').toLowerCase()
 
   if (
@@ -27,8 +31,14 @@ export function mapToMapplsNearbyParams(propertyType?: string, businessType?: st
     }
   }
 
-  if (/\b(qsr|quick service|fast food)\b/.test(raw) || /\b(cafe|coffee)\b/.test(raw)) {
-    return { keywords: 'coffee;cafe;fast food;burger;pizza;qsr;shawarma;biryani', categoryCode: 'FODCOF' }
+  if (
+    /\b(qsr|quick service|fast food|pizza|burger|ice cream|dessert)\b/.test(raw) ||
+    /\b(cafe|coffee)\b/.test(raw)
+  ) {
+    return {
+      keywords: 'coffee;cafe;fast food;burger;pizza;ice cream;dessert;qsr;shawarma;biryani;momos',
+      categoryCode: 'FODCOF',
+    }
   }
   if (/\brestaurant\b/.test(raw) || p.includes('restaurant')) return { keywords: 'restaurant', categoryCode: 'FODCOF' }
   if (/\b(bakery|dessert|sweet)\b/.test(raw)) return { keywords: 'bakery;dessert' }

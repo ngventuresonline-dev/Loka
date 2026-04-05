@@ -46,6 +46,7 @@ export const BRAND_CATEGORY_MAP: Record<string, string> = {
   'faasos': 'QSR',
   'oven story': 'QSR',
   'la pino': 'QSR',
+  'polar bear': 'QSR',
 
   // RESTAURANTS (Casual / Fine Dining)
   'empire': 'Restaurant',

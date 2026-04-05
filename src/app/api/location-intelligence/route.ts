@@ -17,6 +17,7 @@ import {
 } from '@/lib/location-intelligence/india-benchmarks'
 import { cacheGet, cacheSet, locationIntelCacheKey } from '@/lib/redis'
 import { classifyBrand } from '@/lib/location-intelligence/brand-classifier'
+import { getBrandCategory } from '@/lib/intelligence/brand-category-map'
 import { getPrisma } from '@/lib/get-prisma'
 import { findNearestCensusWard } from '@/lib/intelligence/census-lookup'
 import { censusToDemographics } from '@/lib/intelligence/census-to-demographics'
@@ -270,6 +271,14 @@ function inferPlaceCategory(
   if (googleTypes?.includes('jewelry_store')) return 'retail'
   if (googleTypes?.includes('beauty_salon')) return 'salon'
   if (googleTypes?.includes('gym')) return 'gym'
+
+  const brandCat = getBrandCategory(placeName)
+  if (brandCat === 'QSR') return 'qsr'
+  if (brandCat === 'Cafe') return 'cafe'
+  if (brandCat === 'Restaurant') return 'restaurant'
+  if (brandCat === 'Retail') return 'retail'
+  if (brandCat === 'Salon') return 'salon'
+
   const st = searchPlaceType || 'point_of_interest'
   if (st === 'cafe') return 'cafe'
   if (st === 'meal_takeaway') return 'qsr'
@@ -343,15 +352,19 @@ async function fetchCatchmentLandmarks(
 
 /** True when we intentionally run paired cafe + QSR Mappls queries (not any 2-entry placeTypes). */
 function isCafeQsrPlaceTypes(placeTypes: { type: string; keyword: string }[]): boolean {
-  return (
-    placeTypes.some((p) => p.type === 'cafe') &&
-    placeTypes.some((p) => p.type === 'meal_takeaway')
-  )
+  const hasTakeaway = placeTypes.some((p) => p.type === 'meal_takeaway')
+  const hasCafe = placeTypes.some((p) => p.type === 'cafe')
+  const hasRestaurant = placeTypes.some((p) => p.type === 'restaurant')
+  return (hasCafe && hasTakeaway) || (hasTakeaway && hasRestaurant)
 }
 
 /** Google Places: type + keyword. When Cafe/QSR, returns multiple so we fetch both. */
-function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string): { type: string; keyword: string }[] {
-  const raw = `${businessType || ''} ${propertyType || ''}`.toLowerCase()
+function mapToPlaceTypeAndKeyword(
+  propertyType?: string,
+  businessType?: string,
+  listingTitle?: string
+): { type: string; keyword: string }[] {
+  const raw = `${businessType || ''} ${propertyType || ''} ${listingTitle || ''}`.toLowerCase()
   const p = (propertyType || '').toLowerCase()
 
   // Eyewear / optical retail (premium chains + India keywords — before generic "retail" → clothing)
@@ -413,13 +426,16 @@ function mapToPlaceTypeAndKeyword(propertyType?: string, businessType?: string):
       { type: 'meal_takeaway', keyword: 'fast food burger pizza' },
     ]
   }
-  // QSR / Fast Food / vada pav
-  if (/\b(qsr|quick service|fast food|vada|vadapav|burger|pizza|biryani|momos|shawarma)\b/i.test(raw)) {
+  // QSR / Fast Food / vada pav / dessert chains (often same trade zone as QSR)
+  if (
+    /\b(qsr|quick service|fast food|vada|vadapav|burger|pizza|biryani|momos|shawarma|ice cream|gelato|frozen yogurt|dessert parlor|polar bear)\b/i.test(
+      raw
+    )
+  ) {
     return [
-      {
-        type: 'meal_takeaway',
-        keyword: 'vada pav Goli Jumbo King fast food QSR snack momos shawarma takeaway India',
-      },
+      { type: 'meal_takeaway', keyword: 'pizza burger fast food QSR takeaway India' },
+      { type: 'restaurant', keyword: 'Pizza Hut Domino KFC McDonald restaurant dining' },
+      { type: 'bakery', keyword: 'ice cream dessert Polar Bear Baskin sweets cafe' },
     ]
   }
   // Full-service restaurant
@@ -725,7 +741,7 @@ export async function POST(request: NextRequest) {
         if (typeof monthlyRent === 'number' && monthlyRent > 0 && cached.scores?.revenueProjectionMonthly) {
           const rev = cached.scores.revenueProjectionMonthly
           const rentPct = (monthlyRent / rev) * 100
-          const placeTypes = mapToPlaceTypeAndKeyword(propertyType, businessType)
+          const placeTypes = mapToPlaceTypeAndKeyword(propertyType, businessType, title)
           const primaryPlaceType = placeTypes[0]?.type || 'point_of_interest'
           const isFbCache = ['restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway'].includes(primaryPlaceType)
           const healthyPctCache = isFbCache ? RENT_VIABILITY.fnbHealthyRentToRevenuePct : RENT_VIABILITY.healthyRentToRevenuePct
@@ -770,9 +786,9 @@ export async function POST(request: NextRequest) {
       console.warn('[LocationIntelligence API]', errorMsg)
     }
     
-    const placeTypes = mapToPlaceTypeAndKeyword(propertyType, businessType)
+    const placeTypes = mapToPlaceTypeAndKeyword(propertyType, businessType, title)
     const primaryPlaceType = placeTypes[0]?.type || 'point_of_interest'
-    const mapplsParams = mapToMapplsNearbyParams(propertyType, businessType)
+    const mapplsParams = mapToMapplsNearbyParams(propertyType, businessType, title)
 
     let competitors: Competitor[] = []
     let competitorsSource: 'mappls' | 'google' | 'none' | 'mixed' = 'none'
@@ -885,6 +901,63 @@ export async function POST(request: NextRequest) {
         if (googleAdds.length > 0) {
           if (hadMapplsCompetitors && beforeCount > 0) competitorsSource = 'mixed'
           else if (!hadMapplsCompetitors) competitorsSource = 'google'
+        }
+
+        // Tight-radius F&B sweep — same-building / podium tenants (pizza, ice cream) often missed when primary queries skew
+        const btRaw = `${businessType || ''} ${propertyType || ''} ${title || ''}`.toLowerCase()
+        const runMicroFb =
+          competitors.length < 12 ||
+          /\b(qsr|restaurant|cafe|f&b|fnb|food|commercial|retail|bakery|dining|ice cream|pizza|meal_takeaway)\b/.test(
+            btRaw
+          )
+        if (runMicroFb) {
+          const scans: { type?: string; kw: string; r: number }[] = [
+            { type: 'restaurant', kw: '', r: 500 },
+            { type: 'meal_takeaway', kw: 'pizza burger ice cream', r: 500 },
+            { type: 'bakery', kw: 'dessert sweets cafe', r: 500 },
+            { type: 'cafe', kw: 'coffee', r: 450 },
+          ]
+          const batchResults = await Promise.all(
+            scans.map((sc) =>
+              fetchGoogleNearbyPlaces(lat, lng, googleApiKey, { keyword: sc.kw, type: sc.type }, sc.r)
+            )
+          )
+          const microAdds: Competitor[] = []
+          for (let si = 0; si < scans.length; si++) {
+            const results = batchResults[si]
+            const scType = scans[si].type || 'restaurant'
+            for (const place of results) {
+              const compLat = place.geometry?.location?.lat
+              const compLng = place.geometry?.location?.lng
+              const placeName = typeof place.name === 'string' ? place.name : String(place.name ?? 'Unknown')
+              if (typeof compLat !== 'number' || typeof compLng !== 'number') continue
+              const distanceMeters = Math.round(
+                haversineDistanceMeters({ lat: lat as number, lng: lng as number }, { lat: compLat, lng: compLng })
+              )
+              if (!Number.isFinite(distanceMeters) || distanceMeters < 0 || distanceMeters > 2000) continue
+              const urt = typeof place.user_ratings_total === 'number' ? place.user_ratings_total : undefined
+              const placeCategory = inferPlaceCategory(placeName, place.types, scType, businessType)
+              microAdds.push({
+                name: placeName,
+                lat: compLat,
+                lng: compLng,
+                distanceMeters,
+                rating: typeof place.rating === 'number' ? place.rating : undefined,
+                userRatingsTotal: urt,
+                address: place.vicinity || place.formatted_address,
+                brandType: classifyBrand(placeName, urt),
+                placeCategory,
+              })
+            }
+          }
+          const beforeMicro = competitors.length
+          competitors = mergeDedupeCompetitors(competitors, microAdds)
+          competitors = competitors.filter((c) => Number.isFinite(c.distanceMeters) && c.distanceMeters >= 0)
+          if (microAdds.length > 0 && competitors.length > beforeMicro && competitorsSource === 'none') {
+            competitorsSource = 'google'
+          } else if (microAdds.length > 0 && competitors.length > beforeMicro && competitorsSource === 'mappls') {
+            competitorsSource = 'mixed'
+          }
         }
       } catch (placesError: any) {
         console.error('[LocationIntelligence API] Places API fetch failed:', placesError.message)

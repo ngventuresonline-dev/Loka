@@ -60,6 +60,11 @@ export function buildGeocodeQueryCandidates(
 function bangaloreLocalityCentroid(title: string, address: string): { lat: number; lng: number } | null {
   const blob = `${title} ${address}`.toLowerCase()
   const hits: Array<{ re: RegExp; lat: number; lng: number }> = [
+    {
+      re: /sarjapur\s+junction|ambalipura|kasavanahalli|wipro\s*sarjapur|la\s*milano/i,
+      lat: 12.9185,
+      lng: 77.6775,
+    },
     { re: /kalyan\s*nagar|hrbr\b|560043/, lat: 13.022, lng: 77.647 },
     { re: /kammanahalli|560084/, lat: 13.009, lng: 77.648 },
     { re: /hbr\s*layout|560085/, lat: 13.033, lng: 77.637 },

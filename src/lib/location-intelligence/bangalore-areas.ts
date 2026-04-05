@@ -30,6 +30,8 @@ export const BANGALORE_AREAS: AreaDefinition[] = [
   { key: 'st marks road', lat: 12.9752, lng: 77.6062, pincode: '560001' },
   { key: 'bellandur', lat: 12.926, lng: 77.6762, pincode: '560103' },
   { key: 'electronic city', lat: 12.8456, lng: 77.6603, pincode: '560100' },
+  /** Sarjapur main commercial strip (Ambalipura / junction) — tighter than generic “sarjapur road” centroid */
+  { key: 'sarjapur junction', lat: 12.9185, lng: 77.6775, pincode: '560035' },
   { key: 'sarjapur road', lat: 12.9102, lng: 77.6878, pincode: '560035' },
   { key: 'banashankari', lat: 12.9254, lng: 77.5468, pincode: '560070' },
   { key: 'kalyan nagar', lat: 13.022, lng: 77.647, pincode: '560043' },

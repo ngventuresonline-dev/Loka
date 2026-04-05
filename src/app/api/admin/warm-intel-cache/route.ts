@@ -14,6 +14,21 @@ export const maxDuration = 300
 const LOCATION_INTEL_TIMEOUT_MS = 20000
 const INDUSTRY_PAUSE_MS = 2000
 
+/** Richer than a generic string so mapToPlaceTypeAndKeyword / Places pick up QSR + restaurant + dessert POIs. */
+function inferBusinessTypeForWarm(title: string, propertyType: string | null | undefined): string {
+  const raw = `${title || ''} ${propertyType || ''}`.toLowerCase()
+  if (/\b(qsr|quick service|fast food|pizza|burger|ice cream|dessert|vada|vadapav|momos|shawarma|takeaway|cloud kitchen)\b/.test(raw)) {
+    return 'QSR quick service fast food pizza burger ice cream dessert restaurant cafe meal_takeaway bakery retail'
+  }
+  if (/\b(cafe|coffee|darshini)\b/.test(raw)) {
+    return 'cafe coffee restaurant meal_takeaway retail'
+  }
+  if (/\b(optical|eyewear|lenskart|spectacle)\b/.test(raw)) {
+    return 'optical eyewear retail'
+  }
+  return 'restaurant cafe retail meal_takeaway bakery qsr'
+}
+
 function safeDate(v: unknown): Date | null {
   if (!v) return null
   const d = v instanceof Date ? v : new Date(String(v))
@@ -164,7 +179,7 @@ export async function POST(request: NextRequest) {
               state: property.state || 'Karnataka',
               title: property.title,
               propertyType: property.propertyType,
-              businessType: 'restaurant cafe retail',
+              businessType: inferBusinessTypeForWarm(property.title ?? '', property.propertyType),
             }),
             },
             LOCATION_INTEL_TIMEOUT_MS

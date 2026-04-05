@@ -692,6 +692,28 @@ function mapCompetitorLatLngFromApi(c: any): { lat?: number; lng?: number } {
   return { lat, lng }
 }
 
+function competitorPinStyle(
+  category: string | undefined,
+  isDirectSegment: boolean
+): { fillColor: string; fillOpacity: number } {
+  const c = (category || 'other').toLowerCase()
+  const colors: Record<string, string> = {
+    qsr: '#dc2626',
+    restaurant: '#ea580c',
+    cafe: '#b45309',
+    bakery: '#ca8a04',
+    retail: '#2563eb',
+    salon: '#9333ea',
+    gym: '#059669',
+    pharmacy: '#0891b2',
+    optical: '#4f46e5',
+    bar: '#7c3aed',
+    other: '#64748b',
+  }
+  const fillColor = colors[c] ?? colors.other
+  return { fillColor, fillOpacity: isDirectSegment ? 0.9 : 0.55 }
+}
+
 function splitCompetitors(
   all: IntelligenceData['competitors'],
   brandIndustry: string | null | undefined
@@ -1077,6 +1099,14 @@ export default function BrandDashboardPage() {
   const [competitorFallback, setCompetitorFallback] = useState<string | null>(null)
   const [competitorFallbackLoading, setCompetitorFallbackLoading] = useState(false)
   const competitorFallbackInFlight = useRef(false)
+
+  /** Listing pin: prefer geocoded coords from intelligence over coarse match-list centroids. */
+  const selectedListingCoords = useMemo(() => {
+    if (!selectedMatch) return null
+    const ic = intelData?.coords
+    if (ic && Number.isFinite(ic.lat) && Number.isFinite(ic.lng)) return ic
+    return selectedMatch.coords ?? null
+  }, [selectedMatch, intelData?.coords])
 
   // Google Maps loader
   const { isLoaded } = useLoadScript({ googleMapsApiKey: getGoogleMapsApiKey(), libraries: GOOGLE_MAPS_LIBRARIES })
@@ -1989,7 +2019,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
               {(() => {
                 const mapLink = getMapLinkFromAmenities(selectedMatch.property.amenities)
                 const ml = mapLink?.trim() || null
-                const coords = selectedMatch.coords
+                const coords = selectedListingCoords
                 const googleMapsUrl =
                   ml || (coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : null)
                 if (!googleMapsUrl) return null
@@ -2043,7 +2073,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
           {isLoaded ? (
             <GoogleMap
               mapContainerClassName="w-full h-full"
-              center={selectedMatch?.coords ?? { lat: 12.9716, lng: 77.5946 }}
+              center={selectedListingCoords ?? selectedMatch?.coords ?? { lat: 12.9716, lng: 77.5946 }}
               zoom={rightMode === 'intelligence' ? 15 : 12}
               options={{ ...DEFAULT_MAP_OPTIONS, zoomControl: true }}
               onLoad={(map) => setMapRef(map)}
@@ -2053,10 +2083,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 if (!m.coords) return null
                 const isActive = selectedMatch?.property.id === m.property.id
                 const isHovered = hoveredPropertyId === m.property.id
+                const position = isActive ? selectedListingCoords ?? m.coords : m.coords
                 return (
                   <Marker
                     key={m.property.id}
-                    position={m.coords}
+                    position={position}
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
                       scale: isActive ? 32 : isHovered ? 30 : 26,
@@ -2069,9 +2100,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 )
               })}
               {/* Pulse ring for active/selected property */}
-              {isLoaded && selectedMatch?.coords && (
+              {isLoaded && selectedListingCoords && (
                 <Marker
-                  position={selectedMatch.coords}
+                  position={selectedListingCoords}
                   icon={{
                     path: google.maps.SymbolPath.CIRCLE,
                     scale: 44,
@@ -2087,8 +2118,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
               )}
               {/* Competitor pins when in intelligence mode */}
               {isLoaded && rightMode === 'intelligence' && intelData && [...intelData.competitors, ...intelData.complementaryBrands].map((c, i) => {
-                if (!selectedMatch?.coords) return null
-                const row = c as { name: string; distance: number; lat?: number; lng?: number }
+                if (!selectedListingCoords) return null
+                const row = c as { name: string; distance: number; lat?: number; lng?: number; category?: string }
                 if (
                   row.lat == null ||
                   row.lng == null ||
@@ -2098,6 +2129,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   return null
                 }
                 const isCompetitor = intelData.competitors.some((x) => x.name === row.name && x.distance === row.distance)
+                const pin = competitorPinStyle(row.category, isCompetitor)
                 return (
                   <Marker
                     key={`comp-${i}-${row.name}`}
@@ -2105,8 +2137,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
                       scale: 9,
-                      fillColor: isCompetitor ? '#ef4444' : '#6366f1',
-                      fillOpacity: 0.85,
+                      fillColor: pin.fillColor,
+                      fillOpacity: pin.fillOpacity,
                       strokeColor: '#fff',
                       strokeWeight: 1.5,
                     }}
@@ -2117,8 +2149,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
               {/* InfoWindows */}
               {isLoaded && matches.map((m) => {
                 if (!m.coords || activeInfoWindowId !== m.property.id) return null
+                const iwPos =
+                  selectedMatch?.property.id === m.property.id ? selectedListingCoords ?? m.coords : m.coords
                 return (
-                  <InfoWindow key={`iw-${m.property.id}`} position={m.coords} onCloseClick={() => setActiveInfoWindowId(null)}>
+                  <InfoWindow key={`iw-${m.property.id}`} position={iwPos} onCloseClick={() => setActiveInfoWindowId(null)}>
                     <div className="p-2 min-w-[190px]">
                       <p className="font-semibold text-gray-900 text-sm mb-1 line-clamp-1">{m.property.title}</p>
                       <p className="text-xs text-gray-500 mb-2">{m.property.address}, {m.property.city}</p>
@@ -2133,8 +2167,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
               })}
               {/* Heatmap — matches-only in map mode; multi-layer coloured signals in intelligence mode */}
               {isLoaded && mapMode === 'heatmap' && (() => {
-                if (rightMode === 'intelligence' && intelData && selectedMatch?.coords) {
-                  const base = selectedMatch.coords
+                if (rightMode === 'intelligence' && intelData && selectedListingCoords) {
+                  const base = selectedListingCoords
                   const offsetPoint = (distanceM: number, angleDeg: number) => {
                     const rad = (angleDeg * Math.PI) / 180
                     const dlat = (distanceM * Math.cos(rad)) / 111320
@@ -3557,18 +3591,18 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     {/* Competitor map — show pins of all competitors around selected property */}
-                    {selectedMatch?.coords && isLoaded && (
+                    {selectedListingCoords && isLoaded && (
                       <div className="h-[220px] relative rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
                         <GoogleMap
                           mapContainerClassName="w-full h-full"
-                          center={selectedMatch.coords}
+                          center={selectedListingCoords}
                           zoom={14}
                           options={{ ...DEFAULT_MAP_OPTIONS, zoomControl: false }}
                         >
-                          <Marker position={selectedMatch.coords} icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} label={{ text: 'P', color: '#fff', fontWeight: 'bold', fontSize: '10px' }} />
+                          <Marker position={selectedListingCoords} icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: '#FF5200', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }} label={{ text: 'P', color: '#fff', fontWeight: 'bold', fontSize: '10px' }} />
                           {[...intelData.competitors, ...intelData.complementaryBrands].map((c, i) => {
-                            if (!selectedMatch.coords) return null
-                            const row = c as { name: string; distance: number; lat?: number; lng?: number }
+                            if (!selectedListingCoords) return null
+                            const row = c as { name: string; distance: number; lat?: number; lng?: number; category?: string }
                             if (
                               row.lat == null ||
                               row.lng == null ||
@@ -3578,6 +3612,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               return null
                             }
                             const isCompetitorRow = intelData.competitors.some((x) => x.name === row.name && x.distance === row.distance)
+                            const pin = competitorPinStyle(row.category, isCompetitorRow)
                             return (
                               <Marker
                                 key={`comp-map-${i}-${row.name}`}
@@ -3585,8 +3620,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                 icon={{
                                   path: google.maps.SymbolPath.CIRCLE,
                                   scale: 9,
-                                  fillColor: isCompetitorRow ? '#ef4444' : '#6366f1',
-                                  fillOpacity: 0.85,
+                                  fillColor: pin.fillColor,
+                                  fillOpacity: pin.fillOpacity,
                                   strokeColor: '#fff',
                                   strokeWeight: 1.5,
                                 }}
@@ -3595,10 +3630,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
                             )
                           })}
                         </GoogleMap>
-                        <div className="absolute bottom-2 left-2 bg-white/90 rounded-lg px-2 py-1 flex items-center gap-3 text-[9px] text-gray-600">
-                          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#FF5200] inline-block" /> Your property</span>
-                          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> Your segment</span>
-                          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" /> Other categories</span>
+                        <div className="absolute bottom-2 left-2 bg-white/90 rounded-lg px-2 py-1 max-w-[95%] text-[8px] text-gray-600 leading-tight">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                            <span className="flex items-center gap-1 whitespace-nowrap"><span className="w-2.5 h-2.5 rounded-full bg-[#FF5200] inline-block shrink-0" /> Property</span>
+                            <span className="opacity-90">Pins by type: QSR · restaurant · café · bakery · retail · other (lighter = outside your segment)</span>
+                          </div>
                         </div>
                       </div>
                     )}

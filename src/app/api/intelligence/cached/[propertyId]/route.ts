@@ -3,52 +3,10 @@ import { getPrisma } from '@/lib/get-prisma'
 import { toIndustryKey } from '@/lib/intelligence/industry-key'
 import { buildDeterministicLocationSynthesis } from '@/lib/intelligence/property-synthesis-worker'
 import type { LocationSynthesis, PropertyContextForIntel } from '@/lib/intelligence/brand-intel-enrichment.types'
+import { mergePartialLocationSynthesis } from '@/lib/intelligence/brand-intel-enrich'
 import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-warm-intel-cache'
 
 export const revalidate = 0
-
-function catchmentNarrativesMissing(s: unknown): boolean {
-  if (!s || typeof s !== 'object') return true
-  const o = s as Record<string, unknown>
-  const empty = (p: unknown, b: unknown) =>
-    !String(p ?? '').trim() && !(Array.isArray(b) && (b as unknown[]).some(Boolean))
-  return (
-    empty(o.residentsForBrand, o.residentsBullets) &&
-    empty(o.apartmentsForBrand, o.apartmentsBullets) &&
-    empty(o.workplacesForBrand, o.workplacesBullets)
-  )
-}
-
-/** Older cache rows may lack catchment tab fields; overlay deterministic copy without dropping Claude prose elsewhere. */
-function mergeCatchmentNarrativesFromDeterministic(
-  stored: unknown,
-  det: LocationSynthesis
-): LocationSynthesis {
-  const merged = { ...det, ...(stored as Partial<LocationSynthesis>) }
-  const blockOk = (p: string | undefined, bs: string[] | undefined) =>
-    Boolean(String(p ?? '').trim()) || (bs || []).some(Boolean)
-  return {
-    ...merged,
-    residentsForBrand: blockOk(merged.residentsForBrand, merged.residentsBullets)
-      ? merged.residentsForBrand ?? ''
-      : det.residentsForBrand,
-    residentsBullets: blockOk(merged.residentsForBrand, merged.residentsBullets)
-      ? merged.residentsBullets ?? []
-      : det.residentsBullets,
-    apartmentsForBrand: blockOk(merged.apartmentsForBrand, merged.apartmentsBullets)
-      ? merged.apartmentsForBrand ?? ''
-      : det.apartmentsForBrand,
-    apartmentsBullets: blockOk(merged.apartmentsForBrand, merged.apartmentsBullets)
-      ? merged.apartmentsBullets ?? []
-      : det.apartmentsBullets,
-    workplacesForBrand: blockOk(merged.workplacesForBrand, merged.workplacesBullets)
-      ? merged.workplacesForBrand ?? ''
-      : det.workplacesForBrand,
-    workplacesBullets: blockOk(merged.workplacesForBrand, merged.workplacesBullets)
-      ? merged.workplacesBullets ?? []
-      : det.workplacesBullets,
-  }
-}
 
 export async function GET(
   request: NextRequest,
@@ -114,7 +72,7 @@ export async function GET(
     )
   }
 
-  if (location && (!synthesis || catchmentNarrativesMissing(synthesis))) {
+  if (location) {
     const propRow = await prisma.property.findUnique({
       where: { id: propertyId },
       select: {
@@ -147,7 +105,7 @@ export async function GET(
         synthesisProvisional = true
         scheduleWarmIntelCacheForProperty(propertyId, { industry: industryKey })
       } else {
-        synthesis = mergeCatchmentNarrativesFromDeterministic(synthesis, det)
+        synthesis = mergePartialLocationSynthesis(synthesis, det)
       }
     }
   }

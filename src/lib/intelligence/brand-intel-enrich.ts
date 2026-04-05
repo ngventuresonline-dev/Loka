@@ -10,6 +10,70 @@ import type {
   LiveEconomicsConfidence,
 } from '@/lib/intelligence/brand-intel-enrichment.types'
 
+/**
+ * Fill empty tab narratives (risk, competition, catchment, etc.) from deterministic synthesis
+ * while preserving any non-empty Claude fields — fixes perpetual "Narrative syncing" when only some keys are missing.
+ */
+export function mergePartialLocationSynthesis(stored: unknown, det: LocationSynthesis): LocationSynthesis {
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return { ...det }
+  const s = stored as Record<string, unknown>
+  const pickStr = (k: keyof LocationSynthesis): string => {
+    const v = s[k as string]
+    return typeof v === 'string' && v.trim() ? v.trim() : (det[k] as string)
+  }
+  const pickArr = (k: keyof LocationSynthesis): string[] => {
+    const v = s[k as string]
+    const a = Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : []
+    return a.length > 0 ? a.slice(0, 12) : (det[k] as string[])
+  }
+  const fitRaw = String(s.strategicFit || '').toLowerCase()
+  const strategicFit: BrandIntelStrategicFit = ['strong', 'viable', 'cautionary', 'weak'].includes(fitRaw)
+    ? (fitRaw as BrandIntelStrategicFit)
+    : det.strategicFit
+
+  let liveEconomics = det.liveEconomics
+  if (s.liveEconomics && typeof s.liveEconomics === 'object' && !Array.isArray(s.liveEconomics)) {
+    const le = s.liveEconomics as Record<string, unknown>
+    const mid = Number(le.commercialRentPerSqftTypical)
+    if (Number.isFinite(mid) && mid > 0) {
+      liveEconomics = parseLiveEconomics(s.liveEconomics, {
+        mid: det.liveEconomics.commercialRentPerSqftTypical,
+        low: det.liveEconomics.commercialRentLow,
+        high: det.liveEconomics.commercialRentHigh,
+      })
+    }
+  }
+
+  return {
+    executiveSummary: pickStr('executiveSummary'),
+    strategicFit,
+    strengths: pickArr('strengths'),
+    risks: pickArr('risks'),
+    opportunities: pickArr('opportunities'),
+    competitorTakeaway: pickStr('competitorTakeaway'),
+    footfallInterpretation: pickStr('footfallInterpretation'),
+    nextSteps: pickArr('nextSteps'),
+    disclaimer: pickStr('disclaimer'),
+    liveEconomics,
+    catchmentForBrand: pickStr('catchmentForBrand'),
+    catchmentBullets: pickArr('catchmentBullets'),
+    marketForBrand: pickStr('marketForBrand'),
+    marketBullets: pickArr('marketBullets'),
+    competitionForBrand: pickStr('competitionForBrand'),
+    competitionBullets: pickArr('competitionBullets'),
+    riskForBrand: pickStr('riskForBrand'),
+    riskBullets: pickArr('riskBullets'),
+    similarMarketsForBrand: pickStr('similarMarketsForBrand'),
+    similarMarketsBullets: pickArr('similarMarketsBullets'),
+    residentsForBrand: pickStr('residentsForBrand'),
+    residentsBullets: pickArr('residentsBullets'),
+    apartmentsForBrand: pickStr('apartmentsForBrand'),
+    apartmentsBullets: pickArr('apartmentsBullets'),
+    workplacesForBrand: pickStr('workplacesForBrand'),
+    workplacesBullets: pickArr('workplacesBullets'),
+  }
+}
+
 export type {
   LocationSynthesis,
   BrandIntelStrategicFit,
