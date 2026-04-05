@@ -64,8 +64,10 @@ async function fetchJsonWithTimeout(
 }
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.ADMIN_SECRET || 'lokazen-admin-secret'}`) {
+  const secret = (process.env.ADMIN_SECRET || 'lokazen-admin-secret').trim()
+  const expected = `Bearer ${secret}`
+  const authHeader = request.headers.get('authorization')?.trim() ?? ''
+  if (authHeader !== expected) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
