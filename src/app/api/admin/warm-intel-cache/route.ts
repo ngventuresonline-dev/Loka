@@ -75,10 +75,13 @@ export async function POST(request: NextRequest) {
     forceRefresh?: boolean
     propertyId?: string
     industry?: IndustryKey
+    /** When true, only refresh `property_location_cache` (competitors, footfall, etc.) — skips per-industry Claude synthesis. Use for bulk refresh so the route finishes within serverless time limits. */
+    locationOnly?: boolean
   }
   const forceRefresh = body.forceRefresh === true
   const targetPropertyId = body.propertyId
   const targetIndustry = body.industry
+  const locationOnly = body.locationOnly === true
 
   const prisma = await getPrisma()
   if (!prisma) {
@@ -294,25 +297,28 @@ export async function POST(request: NextRequest) {
         results.skipped++
       }
 
-      const industriesToWarm = targetIndustry ? [targetIndustry] : INDUSTRY_KEYS
-      for (const industryKey of industriesToWarm) {
-        const synResult = await runPropertySynthesisForIndustry(prisma, {
-          propertyId: property.id,
-          industryKey,
-          forceRefresh,
-          cacheTtlDays: 7,
-        })
-        if (synResult.status === 'ok') {
-          results.synthesisCached++
-        } else if (synResult.status === 'error') {
-          results.errors++
-          pushMsg(`${property.id}/${industryKey}: synthesis ${synResult.message}`)
-        } else if (synResult.status === 'skipped_no_location') {
-          pushMsg(`${property.id}/${industryKey}: synthesis skipped (no location cache row)`)
-        }
+      if (!locationOnly) {
+        const industriesToWarm = targetIndustry ? [targetIndustry] : INDUSTRY_KEYS
+        for (let ii = 0; ii < industriesToWarm.length; ii++) {
+          const industryKey = industriesToWarm[ii]
+          const synResult = await runPropertySynthesisForIndustry(prisma, {
+            propertyId: property.id,
+            industryKey,
+            forceRefresh,
+            cacheTtlDays: 7,
+          })
+          if (synResult.status === 'ok') {
+            results.synthesisCached++
+          } else if (synResult.status === 'error') {
+            results.errors++
+            pushMsg(`${property.id}/${industryKey}: synthesis ${synResult.message}`)
+          } else if (synResult.status === 'skipped_no_location') {
+            pushMsg(`${property.id}/${industryKey}: synthesis skipped (no location cache row)`)
+          }
 
-        if (industryPauseMs > 0) {
-          await new Promise((r) => setTimeout(r, industryPauseMs))
+          if (industryPauseMs > 0 && ii < industriesToWarm.length - 1) {
+            await new Promise((r) => setTimeout(r, industryPauseMs))
+          }
         }
       }
     } catch (err) {
@@ -323,5 +329,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, results })
+  return NextResponse.json({ success: true, locationOnly, results })
 }
