@@ -10,9 +10,9 @@
  * Env:
  *   WARM_URL             default https://www.lokazen.in
  *   WARM_PROPERTY_ID     optional — single listing id (cuid); skips chunking
- *   WARM_CHUNK           default 15 — properties per request (bulk)
+ *   WARM_CHUNK           default 10 — properties per request (bulk; ~20s intel cap each)
  *   WARM_MAX_ROUNDS      default 40 — safety cap on chunk iterations
- *   WARM_TIMEOUT_MS      default 120000 per HTTP request
+ *   WARM_TIMEOUT_MS      default 280000 per HTTP request (15 listings × ~20s intel cap)
  *   FULL_WARM=1          also run Claude synthesis per industry (slow; single-property recommended)
  *
  * Default: locationOnly + chunked bulk so each request stays under Vercel maxDuration.
@@ -30,8 +30,8 @@ const base = (process.env.WARM_URL || 'https://www.lokazen.in').replace(/\/$/, '
 const propertyId = process.env.WARM_PROPERTY_ID?.trim() || undefined
 const fullWarm = process.env.FULL_WARM === '1'
 const locationOnly = !fullWarm
-const timeoutMs = Number(process.env.WARM_TIMEOUT_MS || 120000)
-const chunk = Number(process.env.WARM_CHUNK || 15)
+const timeoutMs = Number(process.env.WARM_TIMEOUT_MS || 280000)
+const chunk = Number(process.env.WARM_CHUNK || 10)
 const maxRounds = Number(process.env.WARM_MAX_ROUNDS || 40)
 
 async function oneRequest(body) {
