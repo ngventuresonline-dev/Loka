@@ -77,11 +77,23 @@ export async function POST(request: NextRequest) {
     industry?: IndustryKey
     /** When true, only refresh `property_location_cache` (competitors, footfall, etc.) — skips per-industry Claude synthesis. Use for bulk refresh so the route finishes within serverless time limits. */
     locationOnly?: boolean
+    /** Max properties to process this request (bulk only). Chunks large warms to fit serverless maxDuration. */
+    limit?: number
+    /** Bulk only: offset for paging with `limit` (stable order by property id). */
+    skip?: number
   }
   const forceRefresh = body.forceRefresh === true
   const targetPropertyId = body.propertyId
   const targetIndustry = body.industry
   const locationOnly = body.locationOnly === true
+  const bulkLimit =
+    typeof body.limit === 'number' && Number.isFinite(body.limit) && body.limit > 0
+      ? Math.min(Math.floor(body.limit), 500)
+      : undefined
+  const bulkSkip =
+    typeof body.skip === 'number' && Number.isFinite(body.skip) && body.skip >= 0
+      ? Math.min(Math.floor(body.skip), 100_000)
+      : 0
 
   const prisma = await getPrisma()
   if (!prisma) {
@@ -91,6 +103,7 @@ export async function POST(request: NextRequest) {
   const whereClause = targetPropertyId ? { id: targetPropertyId } : { status: 'approved' as const }
   const properties = await prisma.property.findMany({
     where: whereClause,
+    ...(bulkLimit != null && !targetPropertyId ? { take: bulkLimit, orderBy: { updatedAt: 'desc' as const } } : {}),
     select: {
       id: true,
       title: true,
@@ -329,5 +342,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, locationOnly, results })
+  return NextResponse.json({
+    success: true,
+    locationOnly,
+    limit: bulkLimit ?? null,
+    skip: targetPropertyId ? null : bulkSkip,
+    results,
+  })
 }

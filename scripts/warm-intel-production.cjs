@@ -2,17 +2,20 @@
  * Refresh intelligence cache on production (or any URL).
  *
  * Requires ../.env.local with ADMIN_SECRET matching the target deployment.
+ * Copy the value from Vercel Production → ADMIN_SECRET (must match exactly).
  *
  * Usage:
  *   node scripts/warm-intel-production.cjs
  *
  * Env:
- *   WARM_URL            default https://www.lokazen.in
- *   WARM_PROPERTY_ID    optional — single listing id (cuid)
- *   WARM_TIMEOUT_MS     default 240000
- *   FULL_WARM=1         also run Claude synthesis per industry (slow; omit for bulk)
+ *   WARM_URL             default https://www.lokazen.in
+ *   WARM_PROPERTY_ID     optional — single listing id (cuid); skips chunking
+ *   WARM_CHUNK           default 15 — properties per request (bulk)
+ *   WARM_MAX_ROUNDS      default 40 — safety cap on chunk iterations
+ *   WARM_TIMEOUT_MS      default 120000 per HTTP request
+ *   FULL_WARM=1          also run Claude synthesis per industry (slow; single-property recommended)
  *
- * Default body uses locationOnly: true so bulk refresh fits Vercel maxDuration.
+ * Default: locationOnly + chunked bulk so each request stays under Vercel maxDuration.
  */
 const path = require('path')
 require('dotenv').config({ path: path.join(__dirname, '..', '.env.local'), quiet: true })
@@ -27,34 +30,56 @@ const base = (process.env.WARM_URL || 'https://www.lokazen.in').replace(/\/$/, '
 const propertyId = process.env.WARM_PROPERTY_ID?.trim() || undefined
 const fullWarm = process.env.FULL_WARM === '1'
 const locationOnly = !fullWarm
-const timeoutMs = Number(process.env.WARM_TIMEOUT_MS || 240000)
+const timeoutMs = Number(process.env.WARM_TIMEOUT_MS || 120000)
+const chunk = Number(process.env.WARM_CHUNK || 15)
+const maxRounds = Number(process.env.WARM_MAX_ROUNDS || 40)
 
-const body = {
-  forceRefresh: true,
-  locationOnly,
-  ...(propertyId ? { propertyId } : {}),
+async function oneRequest(body) {
+  const res = await fetch(`${base}/api/admin/warm-intel-cache`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  const text = await res.text()
+  let json
+  try {
+    json = JSON.parse(text)
+  } catch {
+    json = { raw: text.slice(0, 2000) }
+  }
+  return { res, json }
 }
 
-console.log('POST', `${base}/api/admin/warm-intel-cache`, { locationOnly, propertyId: propertyId || '(all approved)' })
-
-fetch(`${base}/api/admin/warm-intel-cache`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
-  body: JSON.stringify(body),
-  signal: AbortSignal.timeout(timeoutMs),
-})
-  .then(async (res) => {
-    const text = await res.text()
+async function main() {
+  if (propertyId) {
+    const body = { forceRefresh: true, locationOnly, propertyId }
+    console.log('POST (single property)', body)
+    const { res, json } = await oneRequest(body)
     console.log('HTTP', res.status)
-    try {
-      const j = JSON.parse(text)
-      console.log(JSON.stringify(j, null, 2).slice(0, 16000))
-    } catch {
-      console.log(text.slice(0, 4000))
-    }
+    console.log(JSON.stringify(json, null, 2).slice(0, 16000))
     if (!res.ok) process.exit(1)
-  })
-  .catch((e) => {
-    console.error(e.message || e)
-    process.exit(1)
-  })
+    return
+  }
+
+  let skip = 0
+  for (let round = 1; round <= maxRounds; round++) {
+    const body = { forceRefresh: true, locationOnly, limit: chunk, skip }
+    console.log(`POST chunk ${round} (skip=${skip}, limit=${chunk})`)
+    const { res, json } = await oneRequest(body)
+    console.log('HTTP', res.status)
+    console.log(JSON.stringify(json, null, 2).slice(0, 12000))
+    if (!res.ok) process.exit(1)
+    const total = json.results?.total ?? 0
+    if (total < chunk) {
+      console.log('Done (last page smaller than chunk).')
+      break
+    }
+    skip += chunk
+  }
+}
+
+main().catch((e) => {
+  console.error(e.message || e)
+  process.exit(1)
+})
