@@ -5,8 +5,13 @@
 import {
   enrichBrandLocationIntel,
   buildLocationIntelSnapshot,
+  buildFallbackLocationSynthesis,
 } from '@/lib/intelligence/brand-intel-enrich'
-import type { BrandContextForIntel, PropertyContextForIntel } from '@/lib/intelligence/brand-intel-enrichment.types'
+import type {
+  BrandContextForIntel,
+  LocationSynthesis,
+  PropertyContextForIntel,
+} from '@/lib/intelligence/brand-intel-enrichment.types'
 import type { IndustryKey } from '@/lib/intelligence/industry-key'
 import { INTEL_SYNTHESIS_MODEL } from '@/lib/claude'
 import type { PrismaClient } from '@prisma/client'
@@ -21,6 +26,122 @@ function safeDate(v: unknown): Date | null {
   if (!v) return null
   const d = v instanceof Date ? v : new Date(String(v))
   return Number.isFinite(d.getTime()) ? d : null
+}
+
+/** Landmarks in DB/API may use `distance` or `distanceMeters`; snapshot expects meters for breakdown. */
+function normalizeCatchmentLandmarksJson(raw: unknown): unknown {
+  if (!Array.isArray(raw)) return raw
+  return raw.map((item: Record<string, unknown>) => ({
+    ...item,
+    distanceMeters:
+      item.distanceMeters != null && Number.isFinite(Number(item.distanceMeters))
+        ? Number(item.distanceMeters)
+        : item.distance != null && Number.isFinite(Number(item.distance))
+          ? Number(item.distance)
+          : 0,
+  }))
+}
+
+/** Same shape as runPropertySynthesisForIndustry feeds into buildLocationIntelSnapshot. */
+export function rawIntelFromLocationCacheRow(lc: Record<string, unknown>): Record<string, unknown> {
+  return {
+    competitors: lc.competitors,
+    footfall: {
+      dailyAverage: lc.daily_footfall,
+      peakHours: String(lc.peak_hours || '')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean),
+      weekendBoost: lc.weekend_boost,
+    },
+    market: {
+      saturationLevel: lc.saturation_level,
+      competitorCount: lc.competitor_count,
+      summary: lc.market_summary,
+    },
+    scores: {
+      saturationIndex: lc.saturation_index,
+      whitespaceScore: lc.whitespace_score,
+      demandGapScore: lc.demand_gap_score,
+    },
+    marketPotentialScore: lc.overall_score,
+    catchment: lc.catchment,
+    catchmentLandmarks: normalizeCatchmentLandmarksJson(lc.catchment_landmarks),
+    retailMix: lc.retail_mix,
+    cannibalisationRisk: lc.cannibalisation_risk,
+    crowdPullers: lc.crowd_pullers,
+    similarMarkets: lc.similar_markets,
+    populationLifestyle: {
+      affluenceIndicator: lc.affluence_indicator,
+      totalHouseholds: lc.total_households,
+      rentPerSqft: lc.rent_per_sqft,
+      marketRentLow: lc.market_rent_low,
+      marketRentHigh: lc.market_rent_high,
+      rentDataSource: lc.rent_data_source,
+    },
+    accessibility: {
+      nearestMetro: lc.metro_name
+        ? { name: lc.metro_name, distanceMeters: lc.metro_distance_m }
+        : null,
+      nearestBusStop: lc.bus_stops ? { name: 'Nearby Bus Stops', distanceMeters: 300 } : null,
+    },
+    nearestCommercialAreaKey: lc.nearest_area_key,
+  }
+}
+
+function platformRentFromIntelSnapshot(intelSnapshot: Record<string, unknown>): {
+  mid: number
+  low: number
+  high: number
+} {
+  const li = intelSnapshot.localityIntel as Record<string, unknown> | null | undefined
+  const rc = intelSnapshot.rentContext as Record<string, unknown> | undefined
+  const ward = intelSnapshot.ward as Record<string, unknown> | null | undefined
+  const pl = intelSnapshot.populationLifestyle as Record<string, unknown> | undefined
+  const midRaw = Number(
+    rc?.marketMid ?? pl?.rentPerSqft ?? li?.commercialRentGFMin ?? ward?.commercialRentMin ?? 0
+  )
+  const lowRaw = Number(
+    li?.commercialRentGFMin ?? ward?.commercialRentMin ?? rc?.marketLow ?? pl?.marketRentLow ?? 0
+  )
+  const highRaw = Number(
+    li?.commercialRentGFMax ?? ward?.commercialRentMax ?? rc?.marketHigh ?? pl?.marketRentHigh ?? 0
+  )
+  const platformRent = {
+    mid: Number.isFinite(midRaw) && midRaw > 0 ? Math.round(midRaw) : 135,
+    low: Number.isFinite(lowRaw) && lowRaw > 0 ? Math.round(lowRaw) : 95,
+    high: Number.isFinite(highRaw) && highRaw > 0 ? Math.round(highRaw) : 175,
+  }
+  if (platformRent.low > platformRent.high) {
+    const t = platformRent.low
+    platformRent.low = platformRent.high
+    platformRent.high = t
+  }
+  return platformRent
+}
+
+/**
+ * When property_synthesis_cache is empty but property_location_cache exists, still return tab narratives
+ * (residents / apartments / workplaces) from the same live metrics — avoids permanent "Narrative syncing" in the UI.
+ */
+export function buildDeterministicLocationSynthesis(params: {
+  locationRow: Record<string, unknown>
+  property: PropertyContextForIntel
+  industryKey: IndustryKey
+}): LocationSynthesis {
+  const { locationRow, property, industryKey } = params
+  const rawIntel = rawIntelFromLocationCacheRow(locationRow)
+  const intelSnapshot = buildLocationIntelSnapshot(rawIntel, null, undefined)
+  const brand: BrandContextForIntel = {
+    name: `${industryKey.charAt(0).toUpperCase()}${industryKey.slice(1)} Brand`,
+    companyName: null,
+    industry: industryKey,
+    budgetMin: null,
+    budgetMax: null,
+    preferredLocations: null,
+  }
+  const platformRent = platformRentFromIntelSnapshot(intelSnapshot)
+  return buildFallbackLocationSynthesis(brand, property, intelSnapshot, platformRent)
 }
 
 /**
@@ -75,49 +196,7 @@ export async function runPropertySynthesisForIndustry(
     return { status: 'error', message: 'property_not_found' }
   }
 
-  const rawIntel: Record<string, unknown> = {
-    competitors: lc.competitors,
-    footfall: {
-      dailyAverage: lc.daily_footfall,
-      peakHours: String(lc.peak_hours || '')
-        .split(',')
-        .map((s: string) => s.trim())
-        .filter(Boolean),
-      weekendBoost: lc.weekend_boost,
-    },
-    market: {
-      saturationLevel: lc.saturation_level,
-      competitorCount: lc.competitor_count,
-      summary: lc.market_summary,
-    },
-    scores: {
-      saturationIndex: lc.saturation_index,
-      whitespaceScore: lc.whitespace_score,
-      demandGapScore: lc.demand_gap_score,
-    },
-    marketPotentialScore: lc.overall_score,
-    catchment: lc.catchment,
-    catchmentLandmarks: lc.catchment_landmarks,
-    retailMix: lc.retail_mix,
-    cannibalisationRisk: lc.cannibalisation_risk,
-    crowdPullers: lc.crowd_pullers,
-    similarMarkets: lc.similar_markets,
-    populationLifestyle: {
-      affluenceIndicator: lc.affluence_indicator,
-      totalHouseholds: lc.total_households,
-      rentPerSqft: lc.rent_per_sqft,
-      marketRentLow: lc.market_rent_low,
-      marketRentHigh: lc.market_rent_high,
-      rentDataSource: lc.rent_data_source,
-    },
-    accessibility: {
-      nearestMetro: lc.metro_name
-        ? { name: lc.metro_name, distanceMeters: lc.metro_distance_m }
-        : null,
-      nearestBusStop: lc.bus_stops ? { name: 'Nearby Bus Stops', distanceMeters: 300 } : null,
-    },
-    nearestCommercialAreaKey: lc.nearest_area_key,
-  }
+  const rawIntel = rawIntelFromLocationCacheRow(lc)
 
   const brand: BrandContextForIntel = {
     name: `${industryKey.charAt(0).toUpperCase()}${industryKey.slice(1)} Brand`,

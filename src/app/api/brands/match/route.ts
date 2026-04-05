@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { brandProfileDisplayName } from '@/lib/brand-display-name'
 import { getPrisma } from '@/lib/get-prisma'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
@@ -284,6 +285,9 @@ export async function POST(request: NextRequest) {
     // Fetch brands from database
     const dbBrands = await prisma.brand_profiles.findMany({
       take: 50, // limit
+      include: {
+        user: { select: { name: true, email: true } },
+      },
     })
 
     if (dbBrands.length === 0) {
@@ -332,7 +336,7 @@ export async function POST(request: NextRequest) {
 
           return {
             id: brand.id,
-            name: brand.company_name || 'Unknown Brand',
+            name: brandProfileDisplayName(brand, brand.user),
             businessType: brand.industry || 'Brand',
             matchScore: pfiScore,
             sizeRange: sizeMin > 0 && sizeMax !== Number.MAX_SAFE_INTEGER 
@@ -368,7 +372,7 @@ export async function POST(request: NextRequest) {
             try {
               return {
                 id: brand.id || 'unknown',
-                name: brand.company_name || 'Unknown Brand',
+                name: brandProfileDisplayName(brand, brand.user),
                 businessType: brand.industry || 'Brand',
                 matchScore: 25, // Default score for fallback
                 sizeRange: 'Size flexible',

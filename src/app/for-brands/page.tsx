@@ -12,11 +12,14 @@ import { PhonePeCheckout } from '@/components/PhonePeCheckout'
 
 const PRIME_ZONES = ['Indiranagar', 'Koramangala', 'Whitefield', 'MG Road', 'HSR Layout', 'Brigade Road']
 
+/** Shown in pricing, plans, process, FAQ, and CTA so brands see it consistently. */
+const SUCCESS_FEE_NOTE = 'Success fee applies on deal closure'
+
 const PROCESS_STEPS = [
-  { num: '01', title: 'Choose Plan', desc: 'Pick Starter, Professional, or Premium. Pay your service fee and onboard in minutes.', color: 'FF5200' },
+  { num: '01', title: 'Choose Plan', desc: `Pick Starter, Professional, or Premium. Pay your onboarding fee and start in minutes. ${SUCCESS_FEE_NOTE} (separate from plan fees).`, color: 'FF5200' },
   { num: '02', title: 'Get Matched', desc: 'Our AI and experts curate property matches based on your requirements.', color: 'E4002B' },
   { num: '03', title: 'Visit Sites', desc: 'Schedule and attend site visits with our team (included in Professional & Premium).', color: 'FF6B35' },
-  { num: '04', title: 'Close Deal', desc: 'Negotiate and sign. We support you through documentation and handover.', color: '22c55e' },
+  { num: '04', title: 'Close Deal', desc: `Negotiate and sign. We support you through documentation and handover. ${SUCCESS_FEE_NOTE}.`, color: '22c55e' },
 ]
 
 const WHY_CHOOSE = [
@@ -29,9 +32,9 @@ const WHY_CHOOSE = [
 ]
 
 const FAQ_ITEMS = [
-  { q: "What's in each plan?", a: 'Starter: property database access, AI matching, location reports, owner contacts, email support, 30 days. Professional adds dedicated manager, 3 site visits, negotiation support, WhatsApp, 60 days. Premium adds 24/7 priority support, unlimited site visits, legal review, multi-location, 90 days.' },
+  { q: "What's in each plan?", a: `Starter: property database access, AI matching, location reports, owner contacts, email support, 30 days. Professional adds dedicated manager, 3 site visits, negotiation support, WhatsApp, 60 days. Premium adds 24/7 priority support, unlimited site visits, legal review, multi-location, 90 days. ${SUCCESS_FEE_NOTE} (in addition to the plan fee; terms shared before you commit).` },
   { q: 'How long does it take?', a: 'Typically 2–4 weeks from onboarding to lease signing, depending on your requirements and market availability.' },
-  { q: 'What fees are included?', a: 'Your plan’s onboarding fee covers our placement and advisory support. A success fee may apply on deal closure and is independent from the onboarding fee. Standard market practices (e.g. one month’s rent to property owner) may also apply at closure.' },
+  { q: 'What fees are included?', a: `Your plan’s onboarding fee covers our placement and advisory support. ${SUCCESS_FEE_NOTE} — separate from the onboarding fee. Standard market practices (e.g. one month’s rent to property owner) may also apply at closure.` },
   { q: 'Can I upgrade?', a: 'Yes. You can upgrade anytime and pay only the difference for the new plan.' },
   { q: 'Which areas are covered?', a: 'We serve prime commercial zones in Bangalore: Indiranagar, Koramangala, Whitefield, MG Road, HSR Layout, Brigade Road, and 15+ more locations.' },
 ]
@@ -257,6 +260,9 @@ export default function ForBrandsPage() {
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
               Simple, transparent <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">pricing</span>
             </h2>
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto mt-3 leading-relaxed">
+              {SUCCESS_FEE_NOTE}
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
@@ -272,6 +278,7 @@ export default function ForBrandsPage() {
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Owner contacts</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Email support</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> 30 days validity</li>
+                <li className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-1"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200] flex-shrink-0" /> {SUCCESS_FEE_NOTE}</li>
               </ul>
               <button
                 type="button"
@@ -297,6 +304,7 @@ export default function ForBrandsPage() {
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Deal assistance</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> WhatsApp support</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> 60 days validity</li>
+                <li className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-1"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200] flex-shrink-0" /> {SUCCESS_FEE_NOTE}</li>
               </ul>
               <button
                 type="button"
@@ -321,6 +329,7 @@ export default function ForBrandsPage() {
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Post-lease support</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Multi-location search</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> 90 days validity</li>
+                <li className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-1"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200] flex-shrink-0" /> {SUCCESS_FEE_NOTE}</li>
               </ul>
               <button type="button" onClick={onPremiumClick} className="mt-8 w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 min-h-[48px] transition-all">
                 Get Started
@@ -645,7 +654,9 @@ export default function ForBrandsPage() {
               Premium — ₹19,999
             </button>
           </div>
-          <p className="text-sm text-gray-400 mt-6">Secure payment • No hidden fees</p>
+          <p className="text-sm text-gray-400 mt-6 max-w-lg mx-auto leading-relaxed">
+            Secure payment • No hidden plan fees • {SUCCESS_FEE_NOTE}
+          </p>
           {phonepeError && (
             <p className="mt-2 text-sm text-red-400">{phonepeError}</p>
           )}

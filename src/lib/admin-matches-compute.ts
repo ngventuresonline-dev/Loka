@@ -2,6 +2,7 @@
  * Shared BFI/PFI match computation for admin matches API and CRM email sends.
  */
 
+import { brandProfileDisplayName } from '@/lib/brand-display-name'
 import { calculateBFI } from '@/lib/matching-engine'
 import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
 
@@ -220,7 +221,13 @@ export async function computeAdminMatches(
       ? ({ id: { in: brandIds } } as { id: { in: string[] } })
       : {
           ...(brandName
-            ? { company_name: { contains: brandName, mode: 'insensitive' as const } }
+            ? {
+                OR: [
+                  { company_name: { contains: brandName, mode: 'insensitive' as const } },
+                  { user: { name: { contains: brandName, mode: 'insensitive' as const } } },
+                  { user: { email: { contains: brandName, mode: 'insensitive' as const } } },
+                ],
+              }
             : {}),
         }
 
@@ -231,7 +238,7 @@ export async function computeAdminMatches(
 
   const brands = await prisma.brand_profiles.findMany({
     where: brandWhere,
-    orderBy: { company_name: 'asc' },
+    orderBy: [{ company_name: 'asc' }, { user: { name: 'asc' } }],
     ...(brandIds?.length ? {} : { skip: (Math.max(1, brandPage) - 1) * brandLimit, take: brandLimit }),
     select: {
       id: true,
@@ -366,7 +373,7 @@ export async function computeAdminMatches(
           id: `${brand.id}-${property.id}`,
           brand: {
             id: brand.id,
-            name: brand.company_name || 'Unknown Brand',
+            name: brandProfileDisplayName(brand, brand.user),
             contactName: (brand.user as { name?: string } | undefined)?.name || undefined,
             businessType: brand.industry || 'Brand',
             email: brand.user?.email || '',
