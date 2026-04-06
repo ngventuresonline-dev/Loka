@@ -126,15 +126,31 @@ export function extractLatLngFromMapLink(mapLink: string | null | undefined): { 
   if (placeMatch) return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) }
   const qMatch = s.match(/[?&]q=(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
   if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) }
+  const llMatch = s.match(/[?&]ll=(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
+  if (llMatch) return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) }
   return null
+}
+
+/** City-level fallback used when geocoding / cache only yield a generic centroid (matches brand dashboard + matches API). */
+export const DEFAULT_BANGALORE_MAP_CENTER = { lat: 12.9716, lng: 77.5946 } as const
+
+export function isDefaultBangaloreMapCenter(c: { lat: number; lng: number } | null | undefined): boolean {
+  if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return false
+  return (
+    Math.abs(c.lat - DEFAULT_BANGALORE_MAP_CENTER.lat) < 0.0006 &&
+    Math.abs(c.lng - DEFAULT_BANGALORE_MAP_CENTER.lng) < 0.0006
+  )
 }
 
 /** Get map_link from amenities (stored as JSON: { features: [], map_link: "..." } or legacy array) */
 export function getMapLinkFromAmenities(amenities: unknown): string | null {
   if (!amenities) return null
   if (typeof amenities === 'object' && !Array.isArray(amenities) && amenities !== null) {
-    const mapLink = (amenities as Record<string, unknown>).map_link
-    return typeof mapLink === 'string' ? mapLink : null
+    const o = amenities as Record<string, unknown>
+    const raw = o.map_link ?? o.mapLink
+    if (typeof raw !== 'string') return null
+    const t = raw.trim()
+    return t.length > 0 ? t : null
   }
   return null
 }
@@ -155,6 +171,50 @@ export function getPropertyCoordinatesFromRow(row: {
   const coords = extractLatLngFromMapLink(mapLink)
   if (coords) return { ...coords, mapLink: mapLink || null }
   return null
+}
+
+/**
+ * Prefer parseable `amenities.map_link` when resolved coords are missing or still the generic city centroid
+ * (e.g. warm cache wrote Bengaluru center). Otherwise keep resolved — same rule as the brand dashboard.
+ */
+export function mergeCoordsWithMapLink(
+  property: { amenities?: unknown } | null | undefined,
+  resolved: { lat: number; lng: number } | null | undefined
+): { lat: number; lng: number } {
+  const fromLink = getPropertyCoordinatesFromRow({ amenities: property?.amenities })
+  const r =
+    resolved && Number.isFinite(resolved.lat) && Number.isFinite(resolved.lng)
+      ? { lat: resolved.lat, lng: resolved.lng }
+      : null
+  if (fromLink) {
+    if (!r || isDefaultBangaloreMapCenter(r)) {
+      return { lat: fromLink.lat, lng: fromLink.lng }
+    }
+    return r
+  }
+  return r ?? DEFAULT_BANGALORE_MAP_CENTER
+}
+
+/**
+ * Same precedence as {@link mergeCoordsWithMapLink}, but returns null if neither map link nor resolved coords apply.
+ * Used by the brand matches API before area/heuristic fallbacks.
+ */
+export function mergeListingCoordsPreferringMapLink(
+  resolved: { lat: number; lng: number } | null | undefined,
+  amenities: unknown
+): { lat: number; lng: number } | null {
+  const fromLink = getPropertyCoordinatesFromRow({ amenities })
+  const r =
+    resolved && Number.isFinite(resolved.lat) && Number.isFinite(resolved.lng)
+      ? { lat: resolved.lat, lng: resolved.lng }
+      : null
+  if (fromLink) {
+    if (!r || isDefaultBangaloreMapCenter(r)) {
+      return { lat: fromLink.lat, lng: fromLink.lng }
+    }
+    return r
+  }
+  return r
 }
 
 /**

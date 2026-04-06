@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
-import { getPropertyCoordinatesFromRow, getListingHeuristicCoords } from '@/lib/property-coordinates'
+import { mergeListingCoordsPreferringMapLink, getListingHeuristicCoords } from '@/lib/property-coordinates'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 import {
   deriveMonthlyRentFromListing,
@@ -283,25 +283,15 @@ export async function GET(request: NextRequest) {
         budgetFit * 0.24 + sizeFit * 0.2 + locationFit * 0.2 + visibility * 0.18 + vfm * 0.14 + 4
       )
 
-      const rawCoords = getPropertyCoordinatesFromRow({
-        amenities: p.amenities,
-        address: p.address,
-        city: p.city,
-        state: p.state,
-        title: p.title,
-      })
+      const rlat = Number(p.resolved_lat)
+      const rlng = Number(p.resolved_lng)
+      const cacheCoords =
+        Number.isFinite(rlat) && Number.isFinite(rlng) ? { lat: rlat, lng: rlng } : null
 
-      let coords: { lat: number; lng: number } | null = rawCoords
-        ? { lat: rawCoords.lat, lng: rawCoords.lng }
-        : null
-
-      if (!coords) {
-        const rlat = Number(p.resolved_lat)
-        const rlng = Number(p.resolved_lng)
-        if (Number.isFinite(rlat) && Number.isFinite(rlng)) {
-          coords = { lat: rlat, lng: rlng }
-        }
-      }
+      let coords: { lat: number; lng: number } | null = mergeListingCoordsPreferringMapLink(
+        cacheCoords,
+        p.amenities
+      )
 
       if (!coords) {
         const cityLower = (p.city || '').toLowerCase()
@@ -339,7 +329,7 @@ export async function GET(request: NextRequest) {
     if (preScoredList.length === 0 && sortedByBfi.length > 0) preScoredList = pickWithMinBfi(0)
 
     // Do not geocode here: parallel address lookups added 5–60s+ to first paint. Map pins use
-    // map_link / area / heuristic above; precise coords load with per-property intelligence.
+    // map_link (over generic cache centroid) + area + heuristic; precise coords load with per-property intelligence.
 
     const scored: ScoredMatch[] = preScoredList
 

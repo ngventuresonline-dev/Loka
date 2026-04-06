@@ -17,7 +17,14 @@ import {
 import type { LocationSynthesis } from '@/lib/intelligence/brand-intel-enrichment.types'
 import { toIndustryKey } from '@/lib/intelligence/industry-key'
 import { buildRevenueLocationProfile, calculateRevenueFromBenchmarks } from '@/lib/intelligence/calculate-revenue'
-import { getMapLinkFromAmenities } from '@/lib/property-coordinates'
+import {
+  DEFAULT_BANGALORE_MAP_CENTER,
+  getMapLinkFromAmenities,
+  extractLatLngFromMapLink,
+  mergeCoordsWithMapLink,
+} from '@/lib/property-coordinates'
+
+const DEFAULT_MAP_CENTER = DEFAULT_BANGALORE_MAP_CENTER
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -180,6 +187,9 @@ type IntelligenceData = {
   rentDataSource: 'listing' | 'area_benchmark' | null
   nearestCommercialAreaKey: string | null
   incomeLevel: string | null
+  /** Ward / model income band shares (%) when present on intel payload */
+  incomeAbove15L?: number | null
+  income10to15L?: number | null
   /** Proprietary Lokazen location synthesis (one pass, all tabs) */
   locationSynthesis: LocationSynthesis | null
   /** Narrative not in cache yet — filled by scheduled /api/ai/synthesize */
@@ -735,9 +745,38 @@ function splitCompetitors(
   }
 }
 
+function pickIntelIncomePercent(
+  data: Record<string, unknown>,
+  key: 'incomeAbove15L' | 'income10to15L'
+): number | null {
+  const asNum = (v: unknown): number | null => {
+    if (v == null) return null
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  const top = asNum(data[key])
+  if (top != null) return top
+  for (const nest of ['populationLifestyle', 'demographics', 'projections2026'] as const) {
+    const block = data[nest]
+    if (block && typeof block === 'object' && !Array.isArray(block)) {
+      const n = asNum((block as Record<string, unknown>)[key])
+      if (n != null) return n
+    }
+  }
+  return null
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformLiveIntelligence(data: any, coords: { lat: number; lng: number } | null): IntelligenceData {
-  const resolvedCoords = coords ?? { lat: data?.lat ?? 12.9716, lng: data?.lng ?? 77.5946 }
+function transformLiveIntelligence(
+  data: any,
+  coords: { lat: number; lng: number } | null,
+  property?: { amenities?: unknown } | null
+): IntelligenceData {
+  let resolvedCoords = coords ?? {
+    lat: data?.lat ?? DEFAULT_MAP_CENTER.lat,
+    lng: data?.lng ?? DEFAULT_MAP_CENTER.lng,
+  }
+  resolvedCoords = mergeCoordsWithMapLink(property, resolvedCoords)
   const competitors: IntelligenceData['competitors'] = (data.competitors || []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (c: any) => ({
@@ -769,9 +808,16 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
   }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const similarMarkets: IntelligenceData['similarMarkets'] = (data.similarMarkets || []).map((m: any) => {
-    const areaKey = String(m.area || '')
+    const areaKey = String(m.area || m.key || '')
     const area = BANGALORE_AREAS.find((a) => a.key === areaKey)
-    return { key: areaKey, lat: area?.lat || resolvedCoords.lat, lng: area?.lng || resolvedCoords.lng, score: Number(m.score) || 50 }
+    const mlat = m.lat != null && Number.isFinite(Number(m.lat)) ? Number(m.lat) : undefined
+    const mlng = m.lng != null && Number.isFinite(Number(m.lng)) ? Number(m.lng) : undefined
+    return {
+      key: areaKey,
+      lat: mlat ?? area?.lat ?? resolvedCoords.lat,
+      lng: mlng ?? area?.lng ?? resolvedCoords.lng,
+      score: Number(m.score) || 50,
+    }
   })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const crowdPullers: IntelligenceData['crowdPullers'] = (data.crowdPullers || []).map((p: any) => ({
@@ -837,7 +883,14 @@ function transformLiveIntelligence(data: any, coords: { lat: number; lng: number
       ? data.populationLifestyle.rentDataSource
       : null,
     nearestCommercialAreaKey: data.nearestCommercialAreaKey != null ? String(data.nearestCommercialAreaKey) : null,
-    incomeLevel: data.demographics?.incomeLevel ? String(data.demographics.incomeLevel) : null,
+    incomeLevel:
+      data.populationLifestyle?.incomeLevel != null
+        ? String(data.populationLifestyle.incomeLevel)
+        : data.demographics?.incomeLevel != null
+          ? String(data.demographics.incomeLevel)
+          : null,
+    incomeAbove15L: pickIntelIncomePercent(data as Record<string, unknown>, 'incomeAbove15L'),
+    income10to15L: pickIntelIncomePercent(data as Record<string, unknown>, 'income10to15L'),
     locationSynthesis: null,
     locationSynthesisPending: true,
     locationSynthesisError: null,
@@ -1100,12 +1153,15 @@ export default function BrandDashboardPage() {
   const [competitorFallbackLoading, setCompetitorFallbackLoading] = useState(false)
   const competitorFallbackInFlight = useRef(false)
 
-  /** Listing pin: prefer geocoded coords from intelligence over coarse match-list centroids. */
+  /** Listing pin: intel coords + map_link override for generic centroid; before intel loads, use map_link or match coords. */
   const selectedListingCoords = useMemo(() => {
     if (!selectedMatch) return null
+    const fromAmenities = extractLatLngFromMapLink(getMapLinkFromAmenities(selectedMatch.property.amenities))
     const ic = intelData?.coords
-    if (ic && Number.isFinite(ic.lat) && Number.isFinite(ic.lng)) return ic
-    return selectedMatch.coords ?? null
+    if (ic && Number.isFinite(ic.lat) && Number.isFinite(ic.lng)) {
+      return mergeCoordsWithMapLink(selectedMatch.property, ic)
+    }
+    return fromAmenities ?? selectedMatch.coords ?? null
   }, [selectedMatch, intelData?.coords])
 
   // Google Maps loader
@@ -1329,10 +1385,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
         if (cachedData.cached && cachedData.intel) {
           const intel = cachedData.intel
-          const resolvedCoords =
-            (intel.coords && Number.isFinite(Number(intel.coords.lat)) && Number.isFinite(Number(intel.coords.lng)))
+          let resolvedCoords =
+            intel.coords && Number.isFinite(Number(intel.coords.lat)) && Number.isFinite(Number(intel.coords.lng))
               ? { lat: Number(intel.coords.lat), lng: Number(intel.coords.lng) }
-              : coords ?? { lat: 12.9716, lng: 77.5946 }
+              : coords ?? { lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng }
+          resolvedCoords = mergeCoordsWithMapLink(property, resolvedCoords)
 
           const competitors: IntelligenceData['competitors'] = (intel.competitors || []).map((c: any) => ({
             name: String(c.name || ''),
@@ -1392,10 +1449,12 @@ Be specific to ${area} / ${address}. No generic statements.`,
           const similarMarkets: IntelligenceData['similarMarkets'] = (intel.similarMarkets || []).map((m: any) => {
             const areaKey = String(m.area || m.key || '')
             const area = BANGALORE_AREAS.find((a) => a.key === areaKey)
+            const mlat = m.lat != null && Number.isFinite(Number(m.lat)) ? Number(m.lat) : undefined
+            const mlng = m.lng != null && Number.isFinite(Number(m.lng)) ? Number(m.lng) : undefined
             return {
               key: areaKey,
-              lat: area?.lat || resolvedCoords.lat,
-              lng: area?.lng || resolvedCoords.lng,
+              lat: mlat ?? area?.lat ?? resolvedCoords.lat,
+              lng: mlng ?? area?.lng ?? resolvedCoords.lng,
               score: Number(m.score) || 50,
             }
           })
@@ -1419,8 +1478,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
             numberOfStores: Number(intel.numberOfStores || sameCat.length || 0),
             retailIndex: Number(intel.retailIndex || 0.5),
             hourlyPattern: [],
-            totalHouseholds: Number(intel.totalHouseholds || 0),
-            affluenceIndicator: String(intel.affluenceIndicator || 'Medium'),
+            totalHouseholds: Number(
+              intel.totalHouseholds ?? (intel as { populationLifestyle?: { totalHouseholds?: number } }).populationLifestyle?.totalHouseholds ?? 0
+            ),
+            affluenceIndicator: String(
+              intel.affluenceIndicator ??
+                (intel as { populationLifestyle?: { affluenceIndicator?: string } }).populationLifestyle?.affluenceIndicator ??
+                'Medium'
+            ),
             catchment,
             catchmentLandmarks,
             competitors: sameCat,
@@ -1441,7 +1506,13 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 ? intel.rentContext.source
                 : null,
             nearestCommercialAreaKey: intel.nearestAreaKey != null ? String(intel.nearestAreaKey) : null,
-            incomeLevel: null,
+            incomeLevel: String(
+              (intel as { incomeLevel?: string }).incomeLevel ??
+                (intel as { populationLifestyle?: { incomeLevel?: string } }).populationLifestyle?.incomeLevel ??
+                'medium'
+            ),
+            incomeAbove15L: pickIntelIncomePercent(intel as Record<string, unknown>, 'incomeAbove15L'),
+            income10to15L: pickIntelIncomePercent(intel as Record<string, unknown>, 'income10to15L'),
             locationSynthesis: cachedData.synthesisAvailable ? (cachedData.synthesis as LocationSynthesis) : null,
             locationSynthesisPending: !cachedData.synthesisAvailable,
             locationSynthesisError: null,
@@ -1470,14 +1541,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
       if (liveRes.ok) {
         const liveData = await liveRes.json()
         if (liveData.success) {
-          const resolvedCoords = coords ??
+          let resolvedCoords =
+            coords ??
             (liveData.data?.coordinates
               ? {
                   lat: Number(liveData.data.coordinates.lat),
                   lng: Number(liveData.data.coordinates.lng),
                 }
-              : { lat: 12.9716, lng: 77.5946 })
-          const intel = transformLiveIntelligence(liveData.data, resolvedCoords)
+              : { lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng })
+          resolvedCoords = mergeCoordsWithMapLink(property, resolvedCoords)
+          const intel = transformLiveIntelligence(liveData.data, resolvedCoords, property)
           const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(
             intel.competitors,
             brand?.industry
@@ -2073,7 +2146,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
           {isLoaded ? (
             <GoogleMap
               mapContainerClassName="w-full h-full"
-              center={selectedListingCoords ?? selectedMatch?.coords ?? { lat: 12.9716, lng: 77.5946 }}
+              center={selectedListingCoords ?? selectedMatch?.coords ?? DEFAULT_MAP_CENTER}
               zoom={rightMode === 'intelligence' ? 15 : 12}
               options={{ ...DEFAULT_MAP_OPTIONS, zoomControl: true }}
               onLoad={(map) => setMapRef(map)}
@@ -3179,6 +3252,68 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         <MetricCell label="AFFLUENCE INDICATOR" value={intelData.affluenceIndicator || '—'} trend="up" benchmark="Bengaluru Avg 0.49" />
                       </div>
                     </div>
+                    {(intelData.totalHouseholds > 0 || Boolean(intelData.affluenceIndicator)) && (
+                      <div className="p-4 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <h3 className="font-bold text-gray-900 text-sm mb-3">Resident Profile</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-orange-50 rounded-xl p-3 text-center">
+                            <p className="text-xl font-black text-gray-900">
+                              {intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString('en-IN') : '—'}
+                            </p>
+                            <p className="text-[9px] text-gray-500 uppercase tracking-wide mt-0.5">Households (Ward)</p>
+                          </div>
+                          <div className="bg-purple-50 rounded-xl p-3 text-center">
+                            <p className="text-xl font-black text-gray-900">{intelData.affluenceIndicator || '—'}</p>
+                            <p className="text-[9px] text-gray-500 uppercase tracking-wide mt-0.5">Affluence Level</p>
+                          </div>
+                        </div>
+                        {(() => {
+                          const incomeAbove15L = Number(intelData.incomeAbove15L ?? 0)
+                          const income10to15L = Number(intelData.income10to15L ?? 0)
+                          const below10L = Math.max(0, 100 - incomeAbove15L - income10to15L)
+                          if (!incomeAbove15L && !income10to15L) return null
+                          return (
+                            <div className="mt-3">
+                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Income Distribution</p>
+                              <div className="flex h-5 rounded-full overflow-hidden gap-0.5">
+                                <div
+                                  style={{ width: `${incomeAbove15L}%` }}
+                                  className="bg-green-500 flex items-center justify-center text-[8px] text-white font-bold"
+                                >
+                                  {incomeAbove15L > 8 ? `${incomeAbove15L}%` : ''}
+                                </div>
+                                <div
+                                  style={{ width: `${income10to15L}%` }}
+                                  className="bg-amber-400 flex items-center justify-center text-[8px] text-white font-bold"
+                                >
+                                  {income10to15L > 8 ? `${income10to15L}%` : ''}
+                                </div>
+                                <div
+                                  style={{ width: `${below10L}%` }}
+                                  className="bg-gray-200 flex items-center justify-center text-[8px] text-gray-600 font-bold"
+                                >
+                                  {below10L > 8 ? `${below10L}%` : ''}
+                                </div>
+                              </div>
+                              <div className="flex gap-3 mt-1.5 flex-wrap">
+                                <span className="flex items-center gap-1 text-[9px] text-gray-500">
+                                  <span className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
+                                  &gt;₹15L/yr
+                                </span>
+                                <span className="flex items-center gap-1 text-[9px] text-gray-500">
+                                  <span className="w-2 h-2 bg-amber-400 rounded-full shrink-0" />
+                                  ₹10-15L
+                                </span>
+                                <span className="flex items-center gap-1 text-[9px] text-gray-500">
+                                  <span className="w-2 h-2 bg-gray-200 rounded-full shrink-0" />
+                                  &lt;₹10L
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
                     <TabSynthesisCallout
                       title="For your brand — catchment"
                       narrative={intelData.locationSynthesis?.catchmentForBrand}
@@ -3590,6 +3725,62 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       analysisLines={3}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
+                    {intelData.competitors.length > 0 &&
+                      (() => {
+                        const within500 = intelData.competitors.filter((c) => c.distance <= 500).length
+                        const within1km = intelData.competitors.filter((c) => c.distance > 500 && c.distance <= 1000).length
+                        const beyond1km = intelData.competitors.filter((c) => c.distance > 1000).length
+                        const branded = intelData.competitors.filter((c) => c.branded).length
+                        const rated = intelData.competitors.filter((c) => c.rating != null && Number.isFinite(c.rating))
+                        const avgRating =
+                          rated.length > 0 ? rated.reduce((s, c) => s + (c.rating || 0), 0) / rated.length : 0
+                        const total = intelData.competitors.length
+                        return (
+                          <div className="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 className="font-bold text-gray-900 text-sm mb-3">
+                              {brand?.industry || 'Category'} Competition Summary
+                            </h3>
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              <div className="bg-red-50 rounded-xl p-2.5 text-center">
+                                <p className="text-lg font-black text-red-600">{total}</p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide">Total</p>
+                              </div>
+                              <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                                <p className="text-lg font-black text-orange-600">{branded}</p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide">Chains</p>
+                              </div>
+                              <div className="bg-gray-50 rounded-xl p-2.5 text-center">
+                                <p
+                                  className={`text-lg font-black ${avgRating >= 4.0 ? 'text-green-600' : 'text-amber-600'}`}
+                                >
+                                  {avgRating > 0 ? avgRating.toFixed(1) : '—'}
+                                </p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide">Avg Rating</p>
+                              </div>
+                            </div>
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Distance Distribution</p>
+                            <div className="space-y-1.5">
+                              {[
+                                { label: 'Within 500m', count: within500, color: 'bg-red-500' },
+                                { label: '500m – 1km', count: within1km, color: 'bg-amber-400' },
+                                { label: 'Beyond 1km', count: beyond1km, color: 'bg-gray-300' },
+                              ].map(({ label, count, color }) => (
+                                <div key={label} className="flex items-center gap-2">
+                                  <span className="text-[10px] text-gray-500 w-20 shrink-0">{label}</span>
+                                  <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${color} rounded-full flex items-center justify-end pr-1.5`}
+                                      style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}
+                                    >
+                                      {count > 0 && <span className="text-[8px] text-white font-bold">{count}</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })()}
                     {/* Competitor map — show pins of all competitors around selected property */}
                     {selectedListingCoords && isLoaded && (
                       <div className="h-[220px] relative rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
@@ -3676,86 +3867,62 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           )}
                         </div>
                       ) : (
-                        <>
-                          <div className="space-y-2 md:hidden">
-                            {[...intelData.competitors]
-                              .sort((a, b) => a.distance - b.distance)
-                              .slice(0, 8)
-                              .map((c, i) => (
-                                <div key={`${c.name}-${c.distance}-${i}`} className="rounded-xl border border-gray-100 p-3 bg-white transition-all hover:-translate-y-0.5 hover:shadow-sm">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-sm text-gray-800 font-semibold truncate">{c.name}</span>
-                                        {c.branded && <span className="text-[10px] bg-orange-100 text-orange-700 rounded px-1.5 py-0.5 font-medium">Chain</span>}
-                                        {(c.reviewCount ?? 0) >= 1000 && <span className="text-[10px] bg-green-100 text-green-700 rounded px-1.5 py-0.5 font-medium">High footfall</span>}
+                        <div className="space-y-2">
+                          {[...intelData.competitors]
+                            .sort((a, b) => a.distance - b.distance)
+                            .slice(0, 8)
+                            .map((c, i) => (
+                              <div
+                                key={`${c.name}-${c.distance}-${i}`}
+                                className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-orange-200 transition-all"
+                              >
+                                <div
+                                  className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${
+                                    c.branded ? 'bg-red-500' : 'bg-gray-400'
+                                  }`}
+                                >
+                                  {c.category?.charAt(0)?.toUpperCase() || 'F'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-xs font-semibold text-gray-900 truncate">{c.name}</p>
+                                    {c.branded && (
+                                      <span className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full shrink-0 font-medium">
+                                        Chain
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] text-gray-500 capitalize">{c.category}</span>
+                                    <span className="text-[10px] text-gray-400">·</span>
+                                    <span className="text-[10px] text-gray-500">{(c.distance / 1000).toFixed(2)}km away</span>
+                                  </div>
+                                  {c.rating != null && (
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                      <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                          className={`h-full rounded-full ${
+                                            c.rating >= 4.2 ? 'bg-green-500' : c.rating >= 3.8 ? 'bg-amber-400' : 'bg-red-400'
+                                          }`}
+                                          style={{ width: `${(c.rating / 5) * 100}%` }}
+                                        />
                                       </div>
-                                      <p className="text-[11px] text-gray-500 capitalize mt-0.5">{c.category}</p>
-                                      {c.rating != null && (
-                                        <p className="text-[11px] text-gray-500 mt-0.5">
-                                          {'★'.repeat(Math.min(5, Math.round(c.rating)))} {c.rating.toFixed(1)}
-                                        </p>
+                                      <span
+                                        className={`text-[9px] font-bold shrink-0 ${
+                                          c.rating >= 4.2 ? 'text-green-600' : c.rating >= 3.8 ? 'text-amber-600' : 'text-red-500'
+                                        }`}
+                                      >
+                                        ⭐ {c.rating.toFixed(1)}
+                                      </span>
+                                      {c.reviewCount != null && c.reviewCount > 0 && (
+                                        <span className="text-[9px] text-gray-400">({c.reviewCount.toLocaleString('en-IN')})</span>
                                       )}
                                     </div>
-                                    <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                                      {c.distance < 500 ? `${Math.round(c.distance)}m` : `${(c.distance / 1000).toFixed(2)}km`}
-                                    </span>
-                                  </div>
+                                  )}
                                 </div>
-                              ))}
-                          </div>
-                          <table className="w-full text-xs hidden md:table">
-                            <thead>
-                              <tr className="text-gray-400 border-b">
-                                <th className="text-left py-1">Brand</th>
-                                <th className="text-left">Cat</th>
-                                <th className="text-right">Dist</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {[...intelData.competitors]
-                                .sort((a, b) => a.distance - b.distance)
-                                .slice(0, 10)
-                                .map((c, i) => (
-                                  <tr key={`${c.name}-${c.distance}-${i}`} className="border-b border-gray-50 hover:bg-gray-50/50">
-                                    <td className="py-2">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-gray-800 font-semibold text-[11px]">{c.name}</span>
-                                        {c.branded && (
-                                          <span className="text-[9px] bg-orange-100 text-orange-600 rounded px-1 font-medium">Chain</span>
-                                        )}
-                                        {(c.reviewCount ?? 0) >= 1000 && (
-                                          <span className="text-[9px] bg-green-100 text-green-700 rounded px-1 font-medium">
-                                            High footfall
-                                          </span>
-                                        )}
-                                      </div>
-                                      {c.rating != null && (
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                          <span className="text-yellow-500 text-[10px]">
-                                            {'★'.repeat(Math.min(5, Math.round(c.rating)))}
-                                          </span>
-                                          <span className="text-[10px] text-gray-500">{c.rating.toFixed(1)}</span>
-                                          {c.reviewCount != null && c.reviewCount > 0 && (
-                                            <span className="text-[10px] text-gray-400">
-                                              ·{' '}
-                                              {c.reviewCount >= 1000
-                                                ? `${(c.reviewCount / 1000).toFixed(1)}K reviews`
-                                                : `${c.reviewCount} reviews`}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                    </td>
-                                    <td className="text-gray-500 capitalize text-[11px]">{c.category}</td>
-                                    <td className="text-right text-gray-600 text-[11px] whitespace-nowrap">
-                                      {c.distance < 500 ? `${Math.round(c.distance)}m` : `${(c.distance / 1000).toFixed(2)}km`}
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
-                        </>
+                              </div>
+                            ))}
+                        </div>
                       )}
                     </div>
 
@@ -3801,6 +3968,107 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
+                    {(() => {
+                      const brandFilteredCount = intelData.competitors.length
+                      const price = selectedMatch?.property?.price != null ? Number(selectedMatch.property.price) : 0
+                      const ff = intelData.totalFootfall
+                      const estRev = ff > 0 ? ff * 0.04 * 300 * 26 : 0
+                      const rentToRev = price > 0 && estRev > 0 && Number.isFinite(estRev) ? price / estRev : 0.2
+                      const levelConfig = {
+                        low: { color: 'bg-green-500', bg: 'bg-green-50 border-green-100', text: 'text-green-700', label: 'Low' },
+                        medium: { color: 'bg-amber-400', bg: 'bg-amber-50 border-amber-100', text: 'text-amber-700', label: 'Medium' },
+                        high: { color: 'bg-orange-500', bg: 'bg-orange-50 border-orange-100', text: 'text-orange-700', label: 'High' },
+                        critical: { color: 'bg-red-600', bg: 'bg-red-50 border-red-100', text: 'text-red-700', label: 'Critical' },
+                      } as const
+                      type RK = keyof typeof levelConfig
+                      const risks: Array<{ label: string; level: RK; value: string; icon: string }> = [
+                        {
+                          label: 'Competition Risk',
+                          level:
+                            brandFilteredCount === 0
+                              ? 'low'
+                              : brandFilteredCount <= 3
+                                ? 'low'
+                                : brandFilteredCount <= 6
+                                  ? 'medium'
+                                  : brandFilteredCount <= 10
+                                    ? 'high'
+                                    : 'critical',
+                          value: brandFilteredCount === 0 ? 'First mover' : `${brandFilteredCount} direct competitors`,
+                          icon: '⚔️',
+                        },
+                        {
+                          label: 'Rent Risk',
+                          level:
+                            rentToRev < 0.12 ? 'low' : rentToRev < 0.2 ? 'medium' : rentToRev < 0.3 ? 'high' : 'critical',
+                          value: selectedMatch?.property?.price
+                            ? `₹${Number(selectedMatch.property.price).toLocaleString('en-IN')}/mo`
+                            : '—',
+                          icon: '💰',
+                        },
+                        {
+                          label: 'Market Saturation',
+                          level:
+                            intelData.numberOfStores <= 3
+                              ? 'low'
+                              : intelData.numberOfStores <= 6
+                                ? 'medium'
+                                : intelData.numberOfStores <= 10
+                                  ? 'high'
+                                  : 'critical',
+                          value: `${intelData.numberOfStores} total F&B outlets`,
+                          icon: '📊',
+                        },
+                        {
+                          label: 'Footfall Risk',
+                          level:
+                            intelData.totalFootfall > 6000
+                              ? 'low'
+                              : intelData.totalFootfall > 3000
+                                ? 'medium'
+                                : intelData.totalFootfall > 1500
+                                  ? 'high'
+                                  : 'critical',
+                          value: `~${intelData.totalFootfall.toLocaleString()} daily`,
+                          icon: '🚶',
+                        },
+                      ]
+                      return (
+                        <div className="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                          <h3 className="font-bold text-gray-900 text-sm mb-3">Risk Matrix</h3>
+                          <div className="space-y-2">
+                            {risks.map((r) => {
+                              const cfg = levelConfig[r.level]
+                              return (
+                                <div key={r.label} className={`flex items-center gap-3 p-3 rounded-xl border ${cfg.bg}`}>
+                                  <span className="text-lg shrink-0" aria-hidden>
+                                    {r.icon}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-gray-800">{r.label}</p>
+                                    <p className="text-[10px] text-gray-500">{r.value}</p>
+                                  </div>
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/80 ${cfg.text} bg-white/90 shrink-0`}
+                                  >
+                                    {cfg.label}
+                                  </span>
+                                  <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden shrink-0">
+                                    <div
+                                      className={`h-full ${cfg.color} rounded-full`}
+                                      style={{
+                                        width:
+                                          r.level === 'low' ? '25%' : r.level === 'medium' ? '50%' : r.level === 'high' ? '75%' : '100%',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })()}
                     <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Cannibalisation Effects</h3>
@@ -4075,27 +4343,34 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   <div className="px-3 sm:px-4 py-3 bg-[#F8F9FB] space-y-3">
                     <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-gray-900">Similar Markets</h3>
-                      <div className="flex gap-1">
-                        <button className="text-xs px-2.5 py-1 bg-orange-50 text-[#FF5200] rounded-full border border-orange-200">Nearby</button>
-                        <button className="text-xs px-2.5 py-1 text-gray-500 rounded-full">Within City</button>
+                        <h3 className="font-bold text-gray-900">Similar Markets</h3>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            className="text-xs px-2.5 py-1 bg-orange-50 text-[#FF5200] rounded-full border border-orange-200"
+                          >
+                            Nearby
+                          </button>
+                          <button type="button" className="text-xs px-2.5 py-1 text-gray-500 rounded-full">
+                            Within City
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <TabSynthesisCallout
-                      title="For your brand — similar markets"
-                      narrative={intelData.locationSynthesis?.similarMarketsForBrand}
-                      bullets={intelData.locationSynthesis?.similarMarketsBullets}
-                      loading={false}
-                      synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
-                      analysisLabel="Matching comparable markets..."
-                      analysisLines={2}
-                      synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
-                    />
-                    {intelData.similarMarkets.length === 0 ? (
-                      <p className="text-sm text-gray-400 italic">No similar market data available.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {intelData.similarMarkets.slice(0, 6).map((m) => {
+                      <TabSynthesisCallout
+                        title="For your brand — similar markets"
+                        narrative={intelData.locationSynthesis?.similarMarketsForBrand}
+                        bullets={intelData.locationSynthesis?.similarMarketsBullets}
+                        loading={false}
+                        synthesisPending={Boolean(intelData.locationSynthesisPending && !intelData.locationSynthesis)}
+                        analysisLabel="Matching comparable markets..."
+                        analysisLines={2}
+                        synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
+                      />
+                      {intelData.similarMarkets.length === 0 ? (
+                        <p className="text-sm text-gray-400 italic">No similar market data available.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {intelData.similarMarkets.slice(0, 6).map((m) => {
                           // Derive category counts from retail mix data (seeded by area key for consistency)
                           const seed = m.key.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)
                           const abs = Math.abs(seed)
@@ -4141,9 +4416,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               </button>
                             </div>
                           )
-                        })}
-                      </div>
-                    )}
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
