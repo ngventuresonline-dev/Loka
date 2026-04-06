@@ -8,11 +8,11 @@ export const maxDuration = 300
 const MAX_SYNTHESIS_JOBS_PER_RUN = 48
 
 function isAuthorizedCronOrAdmin(request: NextRequest): boolean {
-  const auth = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  const adminSecret = process.env.ADMIN_SECRET || 'lokazen-admin-secret'
-  if (auth === `Bearer ${adminSecret}`) return true
-  if (cronSecret && auth === `Bearer ${cronSecret}`) return true
+  const authHeader = request.headers.get('authorization')?.trim() ?? ''
+  const cronSecret = process.env.CRON_SECRET?.trim()
+  const adminSecret = (process.env.ADMIN_SECRET || 'lokazen-admin-secret').trim()
+  if (authHeader === `Bearer ${adminSecret}`) return true
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true
   return false
 }
 
