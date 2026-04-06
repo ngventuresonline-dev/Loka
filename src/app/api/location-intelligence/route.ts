@@ -29,6 +29,7 @@ import {
   computeMarketPotentialScore,
   findSimilarMarkets,
   computeCannibalisationRisk,
+  appendWorkplaceLandmarkSeeds,
 } from '@/lib/location-intelligence/geoiq-features'
 import { buildPopulationRentContext } from '@/lib/location-intelligence/location-rent-context'
 import { geocodeAddress } from '@/lib/property-coordinates'
@@ -324,6 +325,7 @@ async function fetchCatchmentLandmarks(
     { keyword: 'apartment society residential complex gated community', kind: 'residential' },
     { keyword: 'IT park technology park tech campus software park', kind: 'tech_park' },
     { keyword: 'corporate tower business park SEZ office campus', kind: 'corporate' },
+    { keyword: 'Indiqube coworking WeWork Awfis 91springboard', kind: 'corporate' },
   ]
   const out: Array<{
     name: string
@@ -347,7 +349,8 @@ async function fetchCatchmentLandmarks(
       out.push({ name: placeName, kind: q.kind, lat: plat, lng: plng, distanceMeters })
     }
   }
-  return out.sort((x, y) => x.distanceMeters - y.distanceMeters).slice(0, 20)
+  const merged = appendWorkplaceLandmarkSeeds(lat, lng, out)
+  return merged.sort((x, y) => x.distanceMeters - y.distanceMeters).slice(0, 24)
 }
 
 /** True when we intentionally run paired cafe + QSR Mappls queries (not any 2-entry placeTypes). */

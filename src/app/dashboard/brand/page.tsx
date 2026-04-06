@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,8 +8,21 @@ import { GoogleMap, Marker, HeatmapLayer, useLoadScript, InfoWindow } from '@rea
 import { GOOGLE_MAPS_LIBRARIES, getGoogleMapsApiKey, DEFAULT_MAP_OPTIONS } from '@/lib/google-maps-config'
 import { encodePropertyId } from '@/lib/property-slug'
 import Logo from '@/components/Logo'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie,
+  Area,
+  AreaChart,
+} from 'recharts'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
+import { rehydrateIntelGeographyFromCoords } from '@/lib/location-intelligence/intel-geo-fallback'
 import {
   brandContextWantsQsrCompetitors,
   competitorMatchesQsrFocus,
@@ -329,7 +342,7 @@ function TabSynthesisCallout({
       <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-b from-blue-50/30 to-transparent">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</p>
         <div className="text-[11px] text-gray-500 py-2 leading-relaxed rounded-lg border border-gray-100 bg-gray-50/80 px-3 flex items-start gap-2">
-          <span className="text-gray-400 mt-0.5">◌</span>
+          <IconPulseDot className="w-3.5 h-3.5 text-sky-500 mt-0.5 flex-shrink-0" />
           <span>
             <span className="font-medium text-gray-700">Narrative syncing.</span>{' '}
             Scores and metrics above are live. Location narrative is generated on a scheduled cycle and will appear here shortly.
@@ -467,11 +480,15 @@ function InsightMetricCard({
   value,
   note,
   tone = 'neutral',
+  icon,
+  sparkline,
 }: {
   label: string
   value: string
   note?: string
   tone?: 'positive' | 'warning' | 'risk' | 'neutral'
+  icon?: ReactNode
+  sparkline?: { data: number[]; color: string }
 }) {
   const toneClass =
     tone === 'positive'
@@ -483,9 +500,13 @@ function InsightMetricCard({
           : 'bg-gray-50 border-gray-100'
   return (
     <div className={`rounded-xl border p-3 ${toneClass}`}>
-      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+        {icon ? <span className="text-gray-500 flex-shrink-0 opacity-80">{icon}</span> : null}
+      </div>
       <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1 leading-none">{value}</p>
-      {note ? <p className="text-[10px] text-gray-500 mt-1 line-clamp-1">{note}</p> : null}
+      {note ? <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">{note}</p> : null}
+      {sparkline ? <MiniSparkline data={sparkline.data} color={sparkline.color} /> : null}
     </div>
   )
 }
@@ -945,6 +966,176 @@ function BuildingIcon({ className = 'w-7 h-7' }: { className?: string }) {
   )
 }
 
+function IconMapPin({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  )
+}
+
+function IconUsers({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  )
+}
+
+function IconTag({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  )
+}
+
+function IconCheckCircle({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  )
+}
+
+function IconClock({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  )
+}
+
+function IconRulerSquare({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" />
+      <path strokeWidth={2} strokeLinecap="round" d="M8 4v4M12 4v4M16 4v4M4 8h4M4 12h4M4 16h4" />
+    </svg>
+  )
+}
+
+function IconRupee({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h8a3 3 0 010 6H7M10 6v12" />
+    </svg>
+  )
+}
+
+function IconTrendUp({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M23 6L13.5 15.5 8.5 10.5 1 18" />
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M17 6h6v6" />
+    </svg>
+  )
+}
+
+function IconTrendDown({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M23 18L13.5 8.5 8.5 13.5 1 6" />
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M17 18h6v-6" />
+    </svg>
+  )
+}
+
+function IconMinusTrend({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2.5} strokeLinecap="round" d="M5 12h14" />
+    </svg>
+  )
+}
+
+function IconChevronLeft({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  )
+}
+
+function IconChevronRight({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+function IconChevronUp({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+    </svg>
+  )
+}
+
+function IconChartBars({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" d="M4 20V10M12 20V4M20 20v-8" />
+    </svg>
+  )
+}
+
+function IconWallet({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+    </svg>
+  )
+}
+
+function IconFootTraffic({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  )
+}
+
+function IconCompetition({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM8 16a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2z" />
+    </svg>
+  )
+}
+
+function IconPulseDot({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={`${className} animate-pulse`} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <circle cx="12" cy="12" r="5" />
+    </svg>
+  )
+}
+
+function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  if (data.length < 2) return null
+  const chartData = data.map((v, i) => ({ i, v: Math.max(0, v) }))
+  return (
+    <div className="h-11 w-full mt-2 -mx-1">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 2, right: 4, left: 0, bottom: 0 }}>
+          <Area
+            type="monotone"
+            dataKey="v"
+            stroke={color}
+            fill={color}
+            fillOpacity={0.15}
+            strokeWidth={1.75}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
 function MetricCell({ label, value, trend, benchmark, tooltip }: { label: string; value: string; trend?: 'up' | 'down'; benchmark?: string; tooltip?: string }) {
   return (
     <div>
@@ -967,7 +1158,11 @@ function MetricCell({ label, value, trend, benchmark, tooltip }: { label: string
       </div>
       <div className="flex items-baseline gap-1 mt-0.5">
         <p className="text-xl font-bold text-gray-900">{value}</p>
-        {trend && <span className={trend === 'up' ? 'text-green-500 text-sm' : 'text-red-500 text-sm'}>{trend === 'up' ? '↗' : '↘'}</span>}
+        {trend && (
+          <span className={trend === 'up' ? 'text-green-600' : 'text-red-500'} aria-hidden>
+            {trend === 'up' ? <IconTrendUp className="w-4 h-4" /> : <IconTrendDown className="w-4 h-4" />}
+          </span>
+        )}
       </div>
       {benchmark && (
         <p className="text-[10px] text-gray-400 mt-0.5">
@@ -984,10 +1179,13 @@ function HighlightChip({ label }: { label: string }) {
   const isGreen = (l.includes('high') && (l.includes('footfall') || l.includes('spend') || l.includes('growth') || l.includes('income'))) || l.includes('metro accessible') || l.includes('low competition')
   const isAmber = l.includes('medium')
   const color = isRed ? 'bg-red-50 text-red-700 border-red-200' : isGreen ? 'bg-green-50 text-green-700 border-green-200' : isAmber ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-gray-50 text-gray-600 border-gray-200'
-  const arrow = isGreen ? '↑' : isRed ? '↓' : '→'
+  const trendIcon = isGreen ? <IconTrendUp className="w-3.5 h-3.5" /> : isRed ? <IconTrendDown className="w-3.5 h-3.5" /> : <IconMinusTrend className="w-3.5 h-3.5" />
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium ${color}`}>
-      <span>{arrow}</span>{label}
+      <span className="flex-shrink-0 opacity-90" aria-hidden>
+        {trendIcon}
+      </span>
+      {label}
     </span>
   )
 }
@@ -1000,7 +1198,7 @@ function CatchmentFlow({ catchment }: { catchment: Array<{ pincode: string; name
 
   const items = catchment.slice(0, 10)
   if (items.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-6">No catchment data available within 3km.</p>
+    return <p className="text-sm text-gray-400 text-center py-6">No catchment pincode nodes within range — location coordinates may still be syncing.</p>
   }
 
   const maxDist = Math.max(...items.map((i) => i.distanceM), 1)
@@ -1056,7 +1254,7 @@ function CatchmentFlow({ catchment }: { catchment: Array<{ pincode: string; name
         ~1km
       </text>
       <text x={cx + outerR + 4} y={cy - 3} fill="#9CA3AF" fontSize={6.5}>
-        ~3km
+        ~4km
       </text>
       {allNodes.map((node, i) => (
         <line
@@ -1111,7 +1309,7 @@ function CatchmentFlow({ catchment }: { catchment: Array<{ pincode: string; name
         )
       })}
       <text x={cx} y={282} textAnchor="middle" fill="#9CA3AF" fontSize={7}>
-        Inner ring ≈ 1km · Outer ring ≈ 3km · Orange = commercial · Green = residential · Indigo = tech
+        Inner ring ≈ 1km · Outer ring ≈ 4km · Orange = commercial · Green = residential · Indigo = tech
       </text>
     </svg>
   )
@@ -1156,6 +1354,7 @@ export default function BrandDashboardPage() {
   const [competitorFallback, setCompetitorFallback] = useState<string | null>(null)
   const [competitorFallbackLoading, setCompetitorFallbackLoading] = useState(false)
   const competitorFallbackInFlight = useRef(false)
+  const [intelWardLabel, setIntelWardLabel] = useState<string | null>(null)
 
   /** Listing pin: intel coords + map_link override for generic centroid; before intel loads, use map_link or match coords. */
   const selectedListingCoords = useMemo(() => {
@@ -1200,6 +1399,30 @@ export default function BrandDashboardPage() {
     const m = matches.find((m) => m.property.id === hoveredPropertyId)
     if (m?.coords && areUsablePinCoords(m.coords)) mapRef.panTo({ lat: m.coords.lat, lng: m.coords.lng })
   }, [hoveredPropertyId, mapRef, matches])
+
+  useEffect(() => {
+    if (!intelData?.coords || !areUsablePinCoords(intelData.coords)) {
+      setIntelWardLabel(null)
+      return
+    }
+    let cancelled = false
+    void fetch(
+      `/api/intelligence/ward-density?lat=${encodeURIComponent(String(intelData.coords.lat))}&lng=${encodeURIComponent(String(intelData.coords.lng))}`
+    )
+      .then((r) => r.json())
+      .then((j: { wards?: Array<{ wardName?: string; locality?: string }> }) => {
+        if (cancelled) return
+        const w = j.wards?.[0]
+        const label = (w?.wardName || w?.locality || '').trim()
+        setIntelWardLabel(label || null)
+      })
+      .catch(() => {
+        if (!cancelled) setIntelWardLabel(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [intelData?.coords?.lat, intelData?.coords?.lng])
 
   useEffect(() => {
     setCompetitorFallback(null)
@@ -1368,6 +1591,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
   ) => {
     setIntelLoading(true)
     setIntelData(null)
+    setIntelWardLabel(null)
     setCommercialPocket(null)
     setRightMode('intelligence')
 
@@ -1479,6 +1703,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
             populationLifestyle: { affluenceIndicator: intel.affluenceIndicator },
           })
 
+          const geo = rehydrateIntelGeographyFromCoords({
+            coords: resolvedCoords,
+            catchment,
+            catchmentLandmarks,
+            similarMarkets,
+            nearestCommercialAreaKey: intel.nearestAreaKey != null ? String(intel.nearestAreaKey) : null,
+          })
+
           setIntelData({
             coords: resolvedCoords,
             overallScore: Number(intel.overallScore || 50),
@@ -1497,15 +1729,15 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 (intel as { populationLifestyle?: { affluenceIndicator?: string } }).populationLifestyle?.affluenceIndicator ??
                 'Medium'
             ),
-            catchment,
-            catchmentLandmarks,
+            catchment: geo.catchment,
+            catchmentLandmarks: geo.catchmentLandmarks,
             competitors: sameCat,
             complementaryBrands: compBrands,
             crowdPullers,
             retailMix,
             cannibalisationRisk,
             storeClosureRisk: deriveStoreClosureRisk(retailMix),
-            similarMarkets,
+            similarMarkets: geo.similarMarkets,
             metroDistance: intel.metroDistance != null ? Number(intel.metroDistance) : null,
             metroName: intel.metroName != null ? String(intel.metroName) : null,
             busStops: Number(intel.busStops || 0),
@@ -1516,7 +1748,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
               intel.rentContext?.source === 'listing' || intel.rentContext?.source === 'area_benchmark'
                 ? intel.rentContext.source
                 : null,
-            nearestCommercialAreaKey: intel.nearestAreaKey != null ? String(intel.nearestAreaKey) : null,
+            nearestCommercialAreaKey: geo.nearestCommercialAreaKey,
             incomeLevel: String(
               (intel as { incomeLevel?: string }).incomeLevel ??
                 (intel as { populationLifestyle?: { incomeLevel?: string } }).populationLifestyle?.incomeLevel ??
@@ -1562,13 +1794,21 @@ Be specific to ${area} / ${address}. No generic statements.`,
             fromMatchOk ?? fromLiveOk ?? { lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng }
           resolvedCoords = mergeCoordsWithMapLink(property, resolvedCoords)
           const intel = transformLiveIntelligence(liveData.data, resolvedCoords, property)
+          const geo = rehydrateIntelGeographyFromCoords({
+            coords: intel.coords,
+            catchment: intel.catchment,
+            catchmentLandmarks: intel.catchmentLandmarks,
+            similarMarkets: intel.similarMarkets,
+            nearestCommercialAreaKey: intel.nearestCommercialAreaKey,
+          })
+          const intelGeo = { ...intel, ...geo }
           const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(
-            intel.competitors,
+            intelGeo.competitors,
             brand?.industry
           )
-          const retailMixOrdered = sortRetailMixForBrand(intel.retailMix, brand?.industry)
+          const retailMixOrdered = sortRetailMixForBrand(intelGeo.retailMix, brand?.industry)
           setIntelData({
-            ...intel,
+            ...intelGeo,
             competitors: sameCat,
             complementaryBrands: compBrands,
             retailMix: retailMixOrdered,
@@ -1656,9 +1896,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
             <Logo size="sm" showPoweredBy={false} href="/" />
             <button
               onClick={() => { localStorage.clear(); router.push('/') }}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center gap-1"
             >
-              ← Exit
+              <IconChevronLeft className="w-3.5 h-3.5" aria-hidden />
+              Exit
             </button>
           </div>
           <div className="flex items-center gap-3">
@@ -1705,7 +1946,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
               <ul className="space-y-2 text-[11px] text-gray-800">
                 {brand.minSize != null && brand.maxSize != null && (
                   <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">⤢</span>
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
+                      <IconRulerSquare className="w-3.5 h-3.5" />
+                    </span>
                     <span>
                       <span className="font-semibold text-gray-600">Size · </span>
                       {brand.minSize.toLocaleString('en-IN')}–{brand.maxSize.toLocaleString('en-IN')} sqft
@@ -1714,7 +1957,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 )}
                 {preferredList.length > 0 && (
                   <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">📍</span>
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
+                      <IconMapPin className="w-3.5 h-3.5" />
+                    </span>
                     <span>
                       <span className="font-semibold text-gray-600">Location · </span>
                       {briefExpanded ? preferredList.join(', ') : shortenText(preferredList.join(', '), 42)}
@@ -1723,7 +1968,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 )}
                 {brand.budgetMin != null && brand.budgetMax != null && (
                   <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">₹</span>
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
+                      <IconRupee className="w-3.5 h-3.5" />
+                    </span>
                     <span>
                       <span className="font-semibold text-gray-600">Budget · </span>
                       ₹{brand.budgetMin.toLocaleString('en-IN')}–₹{brand.budgetMax.toLocaleString('en-IN')}/mo
@@ -1732,7 +1979,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 )}
                 {briefExpanded && brand.brandProfile?.timeline && (
                   <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">⏱</span>
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
+                      <IconClock className="w-3.5 h-3.5" />
+                    </span>
                     <span>
                       <span className="font-semibold text-gray-600">Timeline · </span>
                       {brand.brandProfile.timeline}
@@ -1752,7 +2001,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 )}
                 {briefExpanded && brand.brandProfile?.targetAudience && (
                   <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">👥</span>
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
+                      <IconUsers className="w-3.5 h-3.5" />
+                    </span>
                     <span>
                       <span className="font-semibold text-gray-600">Audience · </span>
                       {brand.brandProfile.targetAudience}
@@ -1763,7 +2014,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   brand.brandProfile?.targetAudienceTags &&
                   brand.brandProfile.targetAudienceTags.length > 0 && (
                     <li className="flex gap-2">
-                      <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">🏷</span>
+                      <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
+                        <IconTag className="w-3.5 h-3.5" />
+                      </span>
                       <span>
                         <span className="font-semibold text-gray-600">Segments · </span>
                         {brand.brandProfile.targetAudienceTags.join(', ')}
@@ -1772,7 +2025,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   )}
                 {briefExpanded && brand.brandProfile?.additionalRequirements && (
                   <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">✓</span>
+                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
+                      <IconCheckCircle className="w-3.5 h-3.5" />
+                    </span>
                     <span>
                       <span className="font-semibold text-gray-600">Must-haves · </span>
                       {brand.brandProfile.additionalRequirements}
@@ -1792,7 +2047,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   className="mt-2.5 w-full flex items-center justify-center gap-1 text-[10px] font-semibold text-[#FF5200]/90 hover:text-[#FF5200]"
                 >
                   {briefExpanded ? 'Show less' : 'Show more'}
-                  <span className={`inline-block transition-transform ${briefExpanded ? 'rotate-180' : ''}`}>⌃</span>
+                  <IconChevronUp className={`w-3.5 h-3.5 transition-transform ${briefExpanded ? 'rotate-180' : ''}`} aria-hidden />
                 </button>
               )}
             </div>
@@ -1852,7 +2107,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
               ) : matches.length === 0 ? (
                 <div className="py-12 text-center px-4">
                   <p className="text-sm text-gray-500 mb-3">No matches found. Update your preferences to get matched.</p>
-                  <Link href="/onboarding/brand" className="text-xs text-[#FF5200] hover:underline">Update Preferences →</Link>
+                  <Link href="/onboarding/brand" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
+                    Update Preferences
+                    <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
+                  </Link>
                 </div>
               ) : (
                 matches.map((m) => {
@@ -1953,7 +2211,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
               {recentViews.length === 0 ? (
                 <div className="py-10 text-center">
                   <p className="text-sm text-gray-500 mb-3">No views yet.</p>
-                  <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline">Browse Spaces →</Link>
+                  <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
+                    Browse Spaces
+                    <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
+                  </Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 py-2">
@@ -1988,7 +2249,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
               {savedProperties.length === 0 ? (
                 <div className="py-10 text-center">
                   <p className="text-sm text-gray-500 mb-3">No saved spaces yet.</p>
-                  <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline">Browse Spaces →</Link>
+                  <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
+                    Browse Spaces
+                    <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
+                  </Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 py-2">
@@ -2020,7 +2284,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
               {inquiries.length === 0 ? (
                 <div className="py-10 text-center">
                   <p className="text-sm text-gray-500 mb-3">No inquiries sent yet.</p>
-                  <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline">Browse Spaces →</Link>
+                  <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
+                    Browse Spaces
+                    <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-2 py-2">
@@ -2074,12 +2341,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
               type="button"
               onClick={() => setMobileView('list')}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 flex-shrink-0"
+              aria-label="Back to list"
             >
-              ←
+              <IconChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-gray-900 truncate">{selectedMatch.property.title}</p>
               <p className="text-[10px] text-gray-500 truncate">{selectedMatch.property.address}</p>
+              {intelWardLabel ? (
+                <p className="text-[9px] text-gray-400 truncate mt-0.5">Ward: {intelWardLabel}</p>
+              ) : null}
             </div>
             <span className="text-xs font-black text-white bg-[#FF5200] rounded-full px-2.5 py-1 flex-shrink-0">
               {selectedMatch.bfiScore} BFI
@@ -2091,22 +2362,34 @@ Be specific to ${area} / ${address}. No generic statements.`,
         {rightMode === 'intelligence' && selectedMatch && (
           <div className="hidden lg:flex lg:flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
             <button
-              onClick={() => { setRightMode('map'); setSelectedMatch(null); setIntelData(null) }}
+              onClick={() => {
+                setRightMode('map')
+                setSelectedMatch(null)
+                setIntelData(null)
+                setIntelWardLabel(null)
+              }}
               className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+              aria-label="Close intelligence"
             >
-              ←
+              <IconChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex-1 min-w-0 basis-[min(100%,12rem)] sm:basis-auto">
               <p className="font-bold text-gray-900 text-sm truncate">{selectedMatch.property.title}</p>
               <p className="text-xs text-gray-500 line-clamp-2 sm:truncate sm:line-clamp-none">{selectedMatch.property.address}, {selectedMatch.property.city}</p>
+              {intelWardLabel ? (
+                <p className="text-[10px] text-gray-400 mt-0.5 truncate">
+                  Ward / planning unit: <span className="font-semibold text-gray-600">{intelWardLabel}</span>
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-auto w-full sm:w-auto justify-end">
               <span className="text-xs sm:text-sm font-bold text-white bg-[#FF5200] rounded-full px-2.5 sm:px-3 py-1">{selectedMatch.bfiScore} BFI</span>
               <Link
                 href={`/properties/${encodePropertyId(selectedMatch.property.id)}`}
-                className="text-xs font-medium text-[#FF5200] border border-[#FF5200] rounded-lg px-2.5 sm:px-3 py-1 hover:bg-orange-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 whitespace-nowrap"
+                className="text-xs font-medium text-[#FF5200] border border-[#FF5200] rounded-lg px-2.5 sm:px-3 py-1 hover:bg-orange-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 whitespace-nowrap inline-flex items-center gap-0.5"
               >
-                View →
+                View
+                <IconChevronRight className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />
               </Link>
               {(() => {
                 const mapLink = getMapLinkFromAmenities(selectedMatch.property.amenities)
@@ -2263,7 +2546,13 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         <span className="text-sm font-bold text-[#FF5200]">{formatPrice(m.property.price, m.property.priceType)}</span>
                         <span className="bg-[#FF5200] text-white text-[11px] font-bold px-2 py-0.5 rounded-full">{m.bfiScore}</span>
                       </div>
-                      <a href={`/properties/${encodePropertyId(m.property.id)}`} className="block text-center text-xs font-semibold text-white bg-[#FF5200] rounded-lg py-1.5 hover:bg-orange-600">View Details →</a>
+                      <a
+                        href={`/properties/${encodePropertyId(m.property.id)}`}
+                        className="flex items-center justify-center gap-1 text-center text-xs font-semibold text-white bg-[#FF5200] rounded-lg py-1.5 hover:bg-orange-600"
+                      >
+                        View Details
+                        <IconChevronRight className="w-3.5 h-3.5 flex-shrink-0 text-white" aria-hidden />
+                      </a>
                     </div>
                   </InfoWindow>
                 )
@@ -2446,7 +2735,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
           {/* "Select property" hint */}
           {rightMode === 'map' && !(selectedMatch && mobileView === 'map') && (
             <div className="absolute bottom-14 max-lg:bottom-24 left-1/2 -translate-x-1/2 z-20 max-w-[min(92vw,22rem)] bg-white/95 backdrop-blur rounded-2xl shadow-md px-3 py-2 pointer-events-none">
-              <p className="text-[10px] sm:text-xs text-gray-600 text-center leading-snug whitespace-normal">Select a property to see full Location Intelligence →</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 text-center leading-snug whitespace-normal flex items-center justify-center gap-0.5 flex-wrap">
+                <span>Select a property to see full Location Intelligence</span>
+                <IconChevronRight className="w-3 h-3 flex-shrink-0 text-gray-500" aria-hidden />
+              </p>
             </div>
           )}
 
@@ -2476,7 +2768,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   <span className="text-xs font-black text-white bg-[#FF5200] rounded-full px-2.5 py-1">
                     {selectedMatch.bfiScore} BFI
                   </span>
-                  <span className="text-[9px] text-gray-400">Tap for intel →</span>
+                  <span className="text-[9px] text-gray-400 inline-flex items-center gap-0.5">
+                    Tap for intel
+                    <IconChevronRight className="w-2.5 h-2.5 flex-shrink-0" aria-hidden />
+                  </span>
                 </div>
               </div>
             </div>
@@ -2566,6 +2861,64 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                   : 10
                         const effectiveDemandGap = Math.max(demandGapScore, Math.round(intelData.spendingCapacity))
                         const brand = data?.brand
+                        const hpRaw = intelData.hourlyPattern.filter(
+                          (n) => typeof n === 'number' && Number.isFinite(n) && n >= 0,
+                        )
+                        const hourlyForSpark = hpRaw.length >= 2 ? hpRaw.slice(0, 14) : null
+                        const maxH = hourlyForSpark?.length ? Math.max(...hourlyForSpark, 1) : 1
+                        const sparkMarket =
+                          hourlyForSpark ??
+                          [
+                            marketPotentialScore * 0.82,
+                            marketPotentialScore * 0.88,
+                            marketPotentialScore * 0.93,
+                            marketPotentialScore * 0.97,
+                            marketPotentialScore,
+                          ]
+                        const sparkDemand =
+                          hourlyForSpark != null
+                            ? hourlyForSpark.map((v) => (v / maxH) * effectiveDemandGap)
+                            : [
+                                effectiveDemandGap * 0.78,
+                                effectiveDemandGap * 0.86,
+                                effectiveDemandGap * 0.92,
+                                effectiveDemandGap * 0.96,
+                                effectiveDemandGap,
+                              ]
+                        const c = brandFilteredCompetitorCount
+                        const sparkComp =
+                          c === 0
+                            ? [1, 1.5, 1.2, 1.8, 1.3, 1.6, 1.4, 1.2]
+                            : Array.from({ length: 10 }, (_, i) =>
+                                Math.max(0.5, c + Math.sin(i / 1.7) * Math.max(1, c * 0.12)),
+                              )
+                        const affBase =
+                          intelData.affluenceIndicator === 'High'
+                            ? 82
+                            : intelData.affluenceIndicator === 'Medium'
+                              ? 55
+                              : 36
+                        const catchSlice = intelData.catchment.slice(0, 10)
+                        const sparkAff =
+                          catchSlice.length >= 2
+                            ? catchSlice.map((x) => Math.max(1, (x.sharePct / 50) * affBase))
+                            : [affBase * 0.88, affBase * 0.92, affBase * 0.97, affBase, affBase * 1.03]
+                        const colMp =
+                          marketPotentialScore >= 60 ? '#059669' : marketPotentialScore >= 40 ? '#d97706' : '#e11d48'
+                        const colDg =
+                          effectiveDemandGap >= 55 ? '#059669' : effectiveDemandGap >= 35 ? '#d97706' : '#e11d48'
+                        const colComp =
+                          brandFilteredCompetitorCount <= 2
+                            ? '#059669'
+                            : brandFilteredCompetitorCount <= 5
+                              ? '#d97706'
+                              : '#e11d48'
+                        const colAff =
+                          intelData.affluenceIndicator === 'High'
+                            ? '#059669'
+                            : intelData.affluenceIndicator === 'Medium'
+                              ? '#d97706'
+                              : '#6b7280'
                         return (
                           <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-2.5">
                             <InsightMetricCard
@@ -2573,12 +2926,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               value={`${marketPotentialScore}/100`}
                               note="Whitespace and expansion signal"
                               tone={marketPotentialScore >= 60 ? 'positive' : marketPotentialScore >= 40 ? 'warning' : 'risk'}
+                              icon={<IconTrendUp className="w-5 h-5" />}
+                              sparkline={{ data: sparkMarket, color: colMp }}
                             />
                             <InsightMetricCard
                               label="Demand gap"
                               value={`${effectiveDemandGap}/100`}
                               note="Unmet demand for your category"
                               tone={effectiveDemandGap >= 55 ? 'positive' : effectiveDemandGap >= 35 ? 'warning' : 'risk'}
+                              icon={<IconWallet className="w-5 h-5" />}
+                              sparkline={{ data: sparkDemand, color: colDg }}
                             />
                             <InsightMetricCard
                               label="Competition pressure"
@@ -2595,6 +2952,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                     ? 'warning'
                                     : 'risk'
                               }
+                              icon={<IconCompetition className="w-5 h-5" />}
+                              sparkline={{ data: sparkComp, color: colComp }}
                             />
                             <InsightMetricCard
                               label="Catchment affluence"
@@ -2611,6 +2970,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                     ? 'warning'
                                     : 'neutral'
                               }
+                              icon={<IconUsers className="w-5 h-5" />}
+                              sparkline={{ data: sparkAff, color: colAff }}
                             />
                           </div>
                         )
@@ -2666,7 +3027,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       })()}
                     </div>
 
-                    {/* Demand Composition — visual pie (landmarks + competitors + households + area priors) */}
+                    {/* Demand Composition — visual pie (area + catchment priors; household count is capped so it cannot wipe office share) */}
                     {(() => {
                       const officeSignals = [
                         intelData.catchmentLandmarks.filter(
@@ -2678,20 +3039,35 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         }).length * 150,
                       ].reduce((a, b) => a + b, 0)
 
-                      const residentialSignals = [
-                        intelData.catchmentLandmarks.filter((l) => l.kind === 'residential').length * 150,
-                        intelData.totalHouseholds > 0 ? intelData.totalHouseholds * 0.05 : 0,
-                      ].reduce((a, b) => a + b, 0)
+                      const resLandmarkPts =
+                        intelData.catchmentLandmarks.filter((l) => l.kind === 'residential').length * 150
+                      const hh = intelData.totalHouseholds > 0 ? intelData.totalHouseholds : 0
+                      const householdPts = hh > 0 ? Math.min(380, 40 + Math.log1p(hh) * 32) : 0
+                      const residentialSignals = resLandmarkPts + householdPts
 
-                      const areaKey = intelData.nearestCommercialAreaKey?.toLowerCase() || ''
+                      let areaKey = intelData.nearestCommercialAreaKey?.toLowerCase() || ''
+                      const propBlob = `${selectedMatch?.property.title || ''} ${selectedMatch?.property.address || ''} ${selectedMatch?.property.city || ''}`.toLowerCase()
+                      if (!areaKey.trim()) {
+                        if (/\bhsr\b|hsr layout|24th main|27th main|sector\s*\d/i.test(propBlob)) areaKey = 'hsr layout'
+                        else if (/\bkoramangala\b/i.test(propBlob)) areaKey = 'koramangala'
+                        else if (/\b(indiranagar|indra nagar)\b/i.test(propBlob)) areaKey = 'indiranagar'
+                        else if (/\b(btm|madivala)\b/i.test(propBlob)) areaKey = 'btm layout'
+                        else if (/\b(whitefield|itpl|hoodi)\b/i.test(propBlob)) areaKey = 'whitefield'
+                        else if (/\b(sarjapur|ambalipura|kasavanahalli)\b/i.test(propBlob)) areaKey = 'sarjapur road'
+                        else if (/\b(bellandur|outer ring)\b/i.test(propBlob)) areaKey = 'bellandur'
+                        else if (/\b(electronic city|ecity|bommasandra)\b/i.test(propBlob)) areaKey = 'electronic city'
+                      }
                       const knownOfficePct: Record<string, number> = {
-                        hsr: 55,
+                        'hsr layout': 52,
+                        hsr: 52,
                         whitefield: 65,
                         'electronic city': 72,
                         manyata: 70,
                         marathahalli: 55,
                         bellandur: 58,
                         sarjapur: 62,
+                        'sarjapur road': 60,
+                        'sarjapur junction': 60,
                         ecity: 72,
                         koramangala: 40,
                         indiranagar: 28,
@@ -2699,32 +3075,69 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         'kalyan nagar': 32,
                         'new bel': 45,
                         jayanagar: 12,
+                        btm: 36,
+                        'btm layout': 36,
+                        hoodi: 62,
+                        kaikondrahalli: 48,
                       }
                       const officePctFromArea =
                         Object.entries(knownOfficePct).find(([k]) => areaKey.includes(k))?.[1] ?? null
 
+                      const officePctFromCatchment = (() => {
+                        const rows = intelData.catchment
+                        if (!rows.length) return null
+                        let off = 0
+                        let res = 0
+                        for (const c of rows) {
+                          const w = Number(c.sharePct) || 0
+                          const t = (c.areaType || 'mixed').toLowerCase()
+                          if (t === 'commercial' || t === 'tech') off += w
+                          else if (t === 'residential') res += w
+                          else {
+                            off += w * 0.42
+                            res += w * 0.58
+                          }
+                        }
+                        const s = off + res
+                        return s > 0 ? Math.round((off / s) * 100) : null
+                      })()
+
                       const totalSignals = officeSignals + residentialSignals
                       const computedOfficePct =
                         totalSignals > 0 ? Math.round((officeSignals / totalSignals) * 100) : null
-                      const officePct = officePctFromArea ?? computedOfficePct ?? 35
+                      let officePct =
+                        officePctFromArea ?? officePctFromCatchment ?? computedOfficePct ?? 42
+                      if (officePct < 22 && (officeSignals > 0 || officePctFromCatchment != null)) {
+                        officePct = Math.max(officePct, 28)
+                      }
+                      officePct = Math.max(12, Math.min(88, officePct))
                       const resPct = 100 - officePct
 
                       const isLeisureHeavy = ['indiranagar', 'koramangala', 'mg road', 'brigade', 'church street'].some(
                         (k) => areaKey.includes(k),
                       )
                       const transitPct = isLeisureHeavy ? Math.round((officePct + resPct) * 0.12) : 0
-                      const adjustedOfficePct = officePct - Math.round(transitPct * 0.4)
-                      const adjustedResPct = resPct - Math.round(transitPct * 0.6)
+                      let adjustedOfficePct = officePct - Math.round(transitPct * 0.4)
+                      let adjustedResPct = resPct - Math.round(transitPct * 0.6)
+                      adjustedOfficePct = Math.max(8, Math.min(92, adjustedOfficePct))
+                      adjustedResPct = Math.max(8, Math.min(92, adjustedResPct))
 
                       let demandData: { name: string; value: number; fill: string }[] = [
                         { name: 'Office/Daytime', value: adjustedOfficePct, fill: '#FF5200' },
                         { name: 'Residential', value: adjustedResPct, fill: '#6366f1' },
                         ...(transitPct > 0 ? [{ name: 'Leisure/Transit', value: transitPct, fill: '#22c55e' }] : []),
                       ]
-                      const sliceSum = demandData.reduce((s, d) => s + d.value, 0)
-                      if (demandData.length > 0 && sliceSum !== 100) {
+                      let sliceSum = demandData.reduce((s, d) => s + d.value, 0)
+                      if (sliceSum !== 100 && demandData.length > 0) {
+                        const diff = 100 - sliceSum
                         const last = demandData[demandData.length - 1]
-                        demandData = [...demandData.slice(0, -1), { ...last, value: last.value + (100 - sliceSum) }]
+                        demandData = [...demandData.slice(0, -1), { ...last, value: Math.max(5, last.value + diff) }]
+                        sliceSum = demandData.reduce((s, d) => s + d.value, 0)
+                        if (sliceSum !== 100) {
+                          const d2 = 100 - sliceSum
+                          const first = demandData[0]
+                          demandData = [{ ...first, value: Math.max(5, first.value + d2) }, ...demandData.slice(1)]
+                        }
                       }
 
                       const narrativeOfficePct = transitPct > 0 ? adjustedOfficePct : officePct
@@ -3141,7 +3554,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                   </span>
                                 </div>
                                 {breakdown.marketValidatedDemand && (
-                                  <div className="text-green-600">✓ High competitor ratings — demand proven in area</div>
+                                  <div className="text-green-600 flex items-start gap-1.5">
+                                    <IconCheckCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden />
+                                    <span>High competitor ratings — demand proven in area</span>
+                                  </div>
                                 )}
 
                                 {breakdown.affluenceAdjustment !== 1.0 && (
@@ -3279,6 +3695,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         <h3 className="font-bold text-gray-900">Population & Lifestyle</h3>
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
                       </div>
+                      {intelWardLabel ? (
+                        <p className="text-[10px] text-gray-500 mb-3">
+                          Census ward / unit: <span className="font-semibold text-gray-700">{intelWardLabel}</span>
+                        </p>
+                      ) : null}
                       <div className="grid grid-cols-2 gap-4">
                         <MetricCell label="TOTAL HOUSEHOLDS" value={intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString('en-IN') : '—'} trend="up" />
                         <MetricCell label="AFFLUENCE INDICATOR" value={intelData.affluenceIndicator || '—'} trend="up" benchmark="Bengaluru Avg 0.49" />
@@ -3431,7 +3852,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                     <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Where Shoppers Come From</h3>
-                        <span className="text-[10px] bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">3km Radius</span>
+                        <span className="text-[10px] bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">4km radius</span>
                       </div>
                       <CatchmentFlow catchment={intelData.catchment} />
                       {intelData.catchment.length > 0 && (
@@ -3941,11 +4362,12 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                         />
                                       </div>
                                       <span
-                                        className={`text-[9px] font-bold shrink-0 ${
+                                        className={`text-[9px] font-bold shrink-0 inline-flex items-center gap-0.5 ${
                                           c.rating >= 4.2 ? 'text-green-600' : c.rating >= 3.8 ? 'text-amber-600' : 'text-red-500'
                                         }`}
                                       >
-                                        ⭐ {c.rating.toFixed(1)}
+                                        <StarIcon filled className="w-3 h-3 flex-shrink-0" />
+                                        {c.rating.toFixed(1)}
                                       </span>
                                       {c.reviewCount != null && c.reviewCount > 0 && (
                                         <span className="text-[9px] text-gray-400">({c.reviewCount.toLocaleString('en-IN')})</span>
@@ -4014,7 +4436,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         critical: { color: 'bg-red-600', bg: 'bg-red-50 border-red-100', text: 'text-red-700', label: 'Critical' },
                       } as const
                       type RK = keyof typeof levelConfig
-                      const risks: Array<{ label: string; level: RK; value: string; icon: string }> = [
+                      const risks: Array<{ label: string; level: RK; value: string; icon: ReactNode }> = [
                         {
                           label: 'Competition Risk',
                           level:
@@ -4028,7 +4450,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                     ? 'high'
                                     : 'critical',
                           value: brandFilteredCount === 0 ? 'First mover' : `${brandFilteredCount} direct competitors`,
-                          icon: '⚔️',
+                          icon: <IconCompetition className="w-5 h-5 text-gray-600" />,
                         },
                         {
                           label: 'Rent Risk',
@@ -4037,7 +4459,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           value: selectedMatch?.property?.price
                             ? `₹${Number(selectedMatch.property.price).toLocaleString('en-IN')}/mo`
                             : '—',
-                          icon: '💰',
+                          icon: <IconWallet className="w-5 h-5 text-gray-600" />,
                         },
                         {
                           label: 'Market Saturation',
@@ -4050,7 +4472,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                   ? 'high'
                                   : 'critical',
                           value: `${intelData.numberOfStores} total F&B outlets`,
-                          icon: '📊',
+                          icon: <IconChartBars className="w-5 h-5 text-gray-600" />,
                         },
                         {
                           label: 'Footfall Risk',
@@ -4063,7 +4485,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                   ? 'high'
                                   : 'critical',
                           value: `~${intelData.totalFootfall.toLocaleString()} daily`,
-                          icon: '🚶',
+                          icon: <IconFootTraffic className="w-5 h-5 text-gray-600" />,
                         },
                       ]
                       return (
@@ -4074,7 +4496,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               const cfg = levelConfig[r.level]
                               return (
                                 <div key={r.label} className={`flex items-center gap-3 p-3 rounded-xl border ${cfg.bg}`}>
-                                  <span className="text-lg shrink-0" aria-hidden>
+                                  <span className="shrink-0 flex items-center justify-center" aria-hidden>
                                     {r.icon}
                                   </span>
                                   <div className="flex-1 min-w-0">
@@ -4130,9 +4552,12 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                   {c.category} · {(c.distance / 1000).toFixed(2)}km away
                                 </p>
                               </div>
-                              {c.rating != null && (
+                                {c.rating != null && (
                                 <div className="text-right">
-                                  <p className="text-xs font-bold text-gray-700">⭐ {c.rating.toFixed(1)}</p>
+                                  <p className="text-xs font-bold text-gray-700 inline-flex items-center justify-end gap-1">
+                                    <StarIcon filled className="w-3.5 h-3.5 flex-shrink-0" />
+                                    {c.rating.toFixed(1)}
+                                  </p>
                                   {c.reviewCount != null && c.reviewCount > 0 && (
                                     <p className="text-[9px] text-gray-400">
                                       {c.reviewCount.toLocaleString()} reviews
@@ -4154,7 +4579,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                 }`}
                               >
                                 <p
-                                  className={`text-sm font-semibold ${
+                                  className={`text-sm font-semibold flex items-start gap-2 ${
                                     brandFilteredCompetitorCount === 0
                                       ? 'text-green-800'
                                       : brandFilteredCompetitorCount <= 3
@@ -4162,9 +4587,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                         : 'text-red-800'
                                   }`}
                                 >
-                                  {brandFilteredCompetitorCount === 0
-                                    ? `✓ No direct ${brand?.industry || 'category'} competitors mapped in this area`
-                                    : `${brandFilteredCompetitorCount} direct ${brand?.industry || 'category'} competitor${brandFilteredCompetitorCount > 1 ? 's' : ''} in the trade zone`}
+                                  {brandFilteredCompetitorCount === 0 ? (
+                                    <>
+                                      <IconCheckCircle className="w-4 h-4 flex-shrink-0 text-green-600 mt-0.5" aria-hidden />
+                                      <span>{`No direct ${brand?.industry || 'category'} competitors mapped in this area`}</span>
+                                    </>
+                                  ) : (
+                                    <span>{`${brandFilteredCompetitorCount} direct ${brand?.industry || 'category'} competitor${brandFilteredCompetitorCount > 1 ? 's' : ''} in the trade zone`}</span>
+                                  )}
                                 </p>
                                 <p
                                   className={`text-xs mt-1 ${
@@ -4402,55 +4832,106 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       {intelData.similarMarkets.length === 0 ? (
                         <p className="text-sm text-gray-400 italic">No similar market data available.</p>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {intelData.similarMarkets.slice(0, 6).map((m) => {
-                          // Derive category counts from retail mix data (seeded by area key for consistency)
-                          const seed = m.key.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)
-                          const abs = Math.abs(seed)
-                          const restaurants = 8 + (abs % 20)
-                          const cafes = 4 + (abs % 12)
-                          const retail = 12 + (abs % 25)
-                          const salons = 3 + (abs % 8)
-                          return (
-                            <div key={m.key} className="border border-gray-100 rounded-xl p-3 hover:border-orange-200 hover:shadow-sm transition-all">
-                              <p className="font-semibold text-sm text-gray-900 capitalize mb-1">{m.key.replace(/-/g, ' ')}</p>
-                              <div className="flex gap-0.5 mb-1.5">
-                                {Array.from({ length: 5 }).map((_, i) => <StarIcon key={i} filled={i < Math.round(m.score / 20)} className="w-3 h-3" />)}
-                                <span className="text-[10px] text-gray-400 ml-1">{m.score}/100</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-1 mb-2">
-                                {[
-                                  { label: 'Restaurants', val: restaurants },
-                                  { label: 'Cafes', val: cafes },
-                                  { label: 'Retail', val: retail },
-                                  { label: 'Salons', val: salons },
-                                ].map(({ label, val }) => (
-                                  <div key={label} className="bg-gray-50 rounded-lg px-1.5 py-1 text-center">
-                                    <p className="text-[11px] font-bold text-gray-900">{val}</p>
-                                    <p className="text-[8px] text-gray-400">{label}</p>
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {intelData.similarMarkets.slice(0, 6).map((m) => {
+                              const seed = m.key.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)
+                              const abs = Math.abs(seed)
+                              const restaurants = 8 + (abs % 20)
+                              const cafes = 4 + (abs % 12)
+                              const retail = 12 + (abs % 25)
+                              const salons = 3 + (abs % 8)
+                              return (
+                                <div key={m.key} className="border border-gray-100 rounded-xl p-3 hover:border-orange-200 hover:shadow-sm transition-all">
+                                  <p className="font-semibold text-sm text-gray-900 capitalize mb-1">{m.key.replace(/-/g, ' ')}</p>
+                                  <div className="flex gap-0.5 mb-1.5">
+                                    {Array.from({ length: 5 }).map((_, i) => <StarIcon key={i} filled={i < Math.round(m.score / 20)} className="w-3 h-3" />)}
+                                    <span className="text-[10px] text-gray-400 ml-1">{m.score}/100</span>
                                   </div>
-                                ))}
-                              </div>
-                              <button
-                                type="button"
-                                className="w-full text-[10px] text-center py-1.5 border border-gray-200 rounded-lg text-gray-500 hover:text-[#FF5200] hover:border-orange-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
-                                onClick={() => {
-                                  if (mapRef) {
-                                    mapRef.panTo({ lat: m.lat, lng: m.lng })
-                                    mapRef.setZoom(15)
-                                    setRightPanelTab('map')
-                                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-                                      setMobileView('map')
+                                  <div className="grid grid-cols-2 gap-1 mb-2">
+                                    {[
+                                      { label: 'Restaurants', val: restaurants },
+                                      { label: 'Cafes', val: cafes },
+                                      { label: 'Retail', val: retail },
+                                      { label: 'Salons', val: salons },
+                                    ].map(({ label, val }) => (
+                                      <div key={label} className="bg-gray-50 rounded-lg px-1.5 py-1 text-center">
+                                        <p className="text-[11px] font-bold text-gray-900">{val}</p>
+                                        <p className="text-[8px] text-gray-400">{label}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="w-full text-[10px] text-center py-1.5 border border-gray-200 rounded-lg text-gray-500 hover:text-[#FF5200] hover:border-orange-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+                                    onClick={() => {
+                                      if (mapRef) {
+                                        mapRef.panTo({ lat: m.lat, lng: m.lng })
+                                        mapRef.setZoom(15)
+                                        setRightPanelTab('map')
+                                        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                                          setMobileView('map')
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    View on Map
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {isLoaded && areUsablePinCoords(intelData.coords) ? (
+                            <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
+                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide px-3 pt-3 pb-1">Area map</p>
+                              <div className="h-[200px] w-full">
+                                <GoogleMap
+                                  mapContainerClassName="w-full h-full"
+                                  center={(() => {
+                                    const pts = [intelData.coords, ...intelData.similarMarkets.slice(0, 6)]
+                                    return {
+                                      lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length,
+                                      lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length,
                                     }
-                                  }
-                                }}
-                              >
-                                View on Map
-                              </button>
+                                  })()}
+                                  zoom={11}
+                                  options={{ ...DEFAULT_MAP_OPTIONS, zoomControl: true }}
+                                >
+                                  <Marker
+                                    position={intelData.coords}
+                                    icon={{
+                                      path: google.maps.SymbolPath.CIRCLE,
+                                      scale: 11,
+                                      fillColor: '#E4002B',
+                                      fillOpacity: 1,
+                                      strokeColor: '#fff',
+                                      strokeWeight: 2,
+                                    }}
+                                    title="Your listing"
+                                  />
+                                  {intelData.similarMarkets.slice(0, 6).map((m) => (
+                                    <Marker
+                                      key={`sim-map-${m.key}`}
+                                      position={{ lat: m.lat, lng: m.lng }}
+                                      icon={{
+                                        path: google.maps.SymbolPath.CIRCLE,
+                                        scale: 8,
+                                        fillColor: '#FF5200',
+                                        fillOpacity: 0.9,
+                                        strokeColor: '#fff',
+                                        strokeWeight: 2,
+                                      }}
+                                      title={m.key.replace(/-/g, ' ')}
+                                    />
+                                  ))}
+                                </GoogleMap>
+                              </div>
+                              <p className="text-[9px] text-gray-400 px-3 py-2 bg-gray-50 border-t border-gray-100">
+                                Red = this property · Orange = comparable Bengaluru trade areas (model centres).
+                              </p>
                             </div>
-                          )
-                          })}
-                        </div>
+                          ) : null}
+                        </>
                       )}
                     </div>
                   </div>

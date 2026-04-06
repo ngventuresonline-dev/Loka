@@ -136,11 +136,17 @@ export const DEFAULT_BANGALORE_MAP_CENTER = { lat: 12.9716, lng: 77.5946 } as co
 
 /**
  * DB / cache often store 0,0 as a placeholder when geocoding failed — maps render that as "Null Island"
- * off Africa. Bengaluru listings are never there; treat as missing so fallbacks can run.
+ * off Africa. Also reject swapped lat/lng (longitude stored as latitude) and coordinates outside India,
+ * which plot in the ocean or wrong continent while still being "finite".
  */
 export function areUsablePinCoords(c: { lat: number; lng: number } | null | undefined): boolean {
   if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return false
-  if (Math.abs(c.lat) < 1e-4 && Math.abs(c.lng) < 1e-4) return false
+  const { lat, lng } = c
+  if (Math.abs(lat) < 5e-4 && Math.abs(lng) < 5e-4) return false
+  // Classic swapped India coords: lat accidentally holds ~77, lng holds ~12–13
+  if (lat >= 68 && lat <= 98 && lng >= 6 && lng <= 37) return false
+  // India bounding box (Lokazen listings are domestic). Drops Atlantic/Pacific bad points.
+  if (lat < 6 || lat > 37 || lng < 68 || lng > 98) return false
   return true
 }
 

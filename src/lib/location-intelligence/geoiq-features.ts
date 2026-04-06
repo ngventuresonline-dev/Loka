@@ -18,11 +18,64 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
   return EARTH_RADIUS_M * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
 
-/** Catchment proxy: nearby micro-areas with share % by distance inverse (within default 3 km). */
+/** Nearest Bangalore macro area for labels, office-mix priors, and cache repair (≤ maxDistM). */
+export function getNearestBangaloreArea(
+  lat: number,
+  lng: number,
+  maxDistM = 8000
+): { key: string; distM: number } | null {
+  let nearest: { key: string; distM: number } | null = null
+  for (const area of BANGALORE_AREAS) {
+    const d = Math.round(haversineMeters({ lat, lng }, { lat: area.lat, lng: area.lng }))
+    if (!nearest || d < nearest.distM) nearest = { key: area.key, distM: d }
+  }
+  return nearest && nearest.distM <= maxDistM ? nearest : null
+}
+
+/** Known office / coworking anchors — merged when Google returns thin results (e.g. HSR + IndiQube). */
+const NAMED_WORKSPACE_SEEDS: Array<{
+  name: string
+  lat: number
+  lng: number
+  kind: 'tech_park' | 'corporate'
+  maxIncludeM: number
+}> = [
+  { name: 'IndiQube — HSR / 24th Main corridor', lat: 12.9127, lng: 77.6419, kind: 'corporate', maxIncludeM: 2200 },
+  { name: 'RMZ Eco World', lat: 12.9384, lng: 77.6972, kind: 'tech_park', maxIncludeM: 3500 },
+  { name: 'Embassy Tech Village', lat: 12.938, lng: 77.684, kind: 'tech_park', maxIncludeM: 3500 },
+  { name: 'Manyata Tech Park', lat: 13.045, lng: 77.625, kind: 'tech_park', maxIncludeM: 4000 },
+  { name: 'Bagmane Tech Park', lat: 12.985, lng: 77.663, kind: 'tech_park', maxIncludeM: 3500 },
+  { name: 'Global Village Tech Park', lat: 12.902, lng: 77.499, kind: 'tech_park', maxIncludeM: 4000 },
+]
+
+export function appendWorkplaceLandmarkSeeds<
+  T extends { name: string; kind: string; lat: number; lng: number; distanceMeters: number },
+>(lat: number, lng: number, existing: T[]): T[] {
+  const seen = new Set(existing.map((e) => e.name.toLowerCase()))
+  const out = [...existing]
+  for (const p of NAMED_WORKSPACE_SEEDS) {
+    const distanceMeters = Math.round(haversineMeters({ lat, lng }, { lat: p.lat, lng: p.lng }))
+    if (distanceMeters > p.maxIncludeM) continue
+    const key = p.name.toLowerCase()
+    if (seen.has(key)) continue
+    if ([...seen].some((s) => s.includes('indiqube') && key.includes('indiqube'))) continue
+    seen.add(key)
+    out.push({
+      name: p.name,
+      kind: p.kind,
+      lat: p.lat,
+      lng: p.lng,
+      distanceMeters,
+    } as T)
+  }
+  return out.sort((a, b) => a.distanceMeters - b.distanceMeters).slice(0, 24)
+}
+
+/** Catchment proxy: nearby micro-areas with share % by distance inverse (default 4 km for fuller HSR/ORR coverage). */
 export function computeCatchment(
   lat: number,
   lng: number,
-  maxDistKm = 3
+  maxDistKm = 4
 ): Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType: string }> {
   const maxM = maxDistKm * 1000
   const point = { lat, lng }
