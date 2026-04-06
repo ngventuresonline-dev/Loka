@@ -134,6 +134,16 @@ export function extractLatLngFromMapLink(mapLink: string | null | undefined): { 
 /** City-level fallback used when geocoding / cache only yield a generic centroid (matches brand dashboard + matches API). */
 export const DEFAULT_BANGALORE_MAP_CENTER = { lat: 12.9716, lng: 77.5946 } as const
 
+/**
+ * DB / cache often store 0,0 as a placeholder when geocoding failed — maps render that as "Null Island"
+ * off Africa. Bengaluru listings are never there; treat as missing so fallbacks can run.
+ */
+export function areUsablePinCoords(c: { lat: number; lng: number } | null | undefined): boolean {
+  if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return false
+  if (Math.abs(c.lat) < 1e-4 && Math.abs(c.lng) < 1e-4) return false
+  return true
+}
+
 export function isDefaultBangaloreMapCenter(c: { lat: number; lng: number } | null | undefined): boolean {
   if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return false
   return (
@@ -183,9 +193,7 @@ export function mergeCoordsWithMapLink(
 ): { lat: number; lng: number } {
   const fromLink = getPropertyCoordinatesFromRow({ amenities: property?.amenities })
   const r =
-    resolved && Number.isFinite(resolved.lat) && Number.isFinite(resolved.lng)
-      ? { lat: resolved.lat, lng: resolved.lng }
-      : null
+    resolved && areUsablePinCoords(resolved) ? { lat: resolved.lat, lng: resolved.lng } : null
   if (fromLink) {
     if (!r || isDefaultBangaloreMapCenter(r)) {
       return { lat: fromLink.lat, lng: fromLink.lng }
@@ -204,10 +212,7 @@ export function mergeListingCoordsPreferringMapLink(
   amenities: unknown
 ): { lat: number; lng: number } | null {
   const fromLink = getPropertyCoordinatesFromRow({ amenities })
-  const r =
-    resolved && Number.isFinite(resolved.lat) && Number.isFinite(resolved.lng)
-      ? { lat: resolved.lat, lng: resolved.lng }
-      : null
+  const r = resolved && areUsablePinCoords(resolved) ? { lat: resolved.lat, lng: resolved.lng } : null
   if (fromLink) {
     if (!r || isDefaultBangaloreMapCenter(r)) {
       return { lat: fromLink.lat, lng: fromLink.lng }

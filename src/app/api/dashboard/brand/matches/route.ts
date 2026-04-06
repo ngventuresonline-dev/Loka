@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
-import { mergeListingCoordsPreferringMapLink, getListingHeuristicCoords } from '@/lib/property-coordinates'
+import {
+  areUsablePinCoords,
+  mergeListingCoordsPreferringMapLink,
+  getListingHeuristicCoords,
+} from '@/lib/property-coordinates'
 import { BANGALORE_AREAS } from '@/lib/location-intelligence/bangalore-areas'
 import {
   deriveMonthlyRentFromListing,
@@ -285,8 +289,9 @@ export async function GET(request: NextRequest) {
 
       const rlat = Number(p.resolved_lat)
       const rlng = Number(p.resolved_lng)
-      const cacheCoords =
+      const rawCache =
         Number.isFinite(rlat) && Number.isFinite(rlng) ? { lat: rlat, lng: rlng } : null
+      const cacheCoords = rawCache && areUsablePinCoords(rawCache) ? rawCache : null
 
       let coords: { lat: number; lng: number } | null = mergeListingCoordsPreferringMapLink(
         cacheCoords,
@@ -354,7 +359,7 @@ export async function GET(request: NextRequest) {
           sizeFit: m.sizeFit,
           locationFit: m.locationFit,
         },
-        coords: m.coords,
+        coords: m.coords && areUsablePinCoords(m.coords) ? m.coords : null,
       })),
       total: scored.length,
     })

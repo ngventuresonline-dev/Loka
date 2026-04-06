@@ -19,6 +19,7 @@ import { toIndustryKey } from '@/lib/intelligence/industry-key'
 import { buildRevenueLocationProfile, calculateRevenueFromBenchmarks } from '@/lib/intelligence/calculate-revenue'
 import {
   DEFAULT_BANGALORE_MAP_CENTER,
+  areUsablePinCoords,
   getMapLinkFromAmenities,
   extractLatLngFromMapLink,
   mergeCoordsWithMapLink,
@@ -772,10 +773,13 @@ function transformLiveIntelligence(
   coords: { lat: number; lng: number } | null,
   property?: { amenities?: unknown } | null
 ): IntelligenceData {
-  let resolvedCoords = coords ?? {
-    lat: data?.lat ?? DEFAULT_MAP_CENTER.lat,
-    lng: data?.lng ?? DEFAULT_MAP_CENTER.lng,
-  }
+  let resolvedCoords =
+    coords && areUsablePinCoords(coords)
+      ? coords
+      : {
+          lat: data?.lat ?? DEFAULT_MAP_CENTER.lat,
+          lng: data?.lng ?? DEFAULT_MAP_CENTER.lng,
+        }
   resolvedCoords = mergeCoordsWithMapLink(property, resolvedCoords)
   const competitors: IntelligenceData['competitors'] = (data.competitors || []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1158,10 +1162,11 @@ export default function BrandDashboardPage() {
     if (!selectedMatch) return null
     const fromAmenities = extractLatLngFromMapLink(getMapLinkFromAmenities(selectedMatch.property.amenities))
     const ic = intelData?.coords
-    if (ic && Number.isFinite(ic.lat) && Number.isFinite(ic.lng)) {
+    if (ic && areUsablePinCoords(ic)) {
       return mergeCoordsWithMapLink(selectedMatch.property, ic)
     }
-    return fromAmenities ?? selectedMatch.coords ?? null
+    const mc = selectedMatch.coords
+    return fromAmenities ?? (mc && areUsablePinCoords(mc) ? mc : null) ?? null
   }, [selectedMatch, intelData?.coords])
 
   // Google Maps loader
@@ -1182,7 +1187,7 @@ export default function BrandDashboardPage() {
   // Auto-fit map to matches
   useEffect(() => {
     if (!mapRef || matches.length === 0 || rightMode === 'intelligence') return
-    const withCoords = matches.filter((m) => m.coords)
+    const withCoords = matches.filter((m) => m.coords && areUsablePinCoords(m.coords))
     if (withCoords.length === 0) return
     const bounds = new google.maps.LatLngBounds()
     withCoords.forEach((m) => bounds.extend(m.coords!))
@@ -1193,7 +1198,7 @@ export default function BrandDashboardPage() {
   useEffect(() => {
     if (!mapRef || !hoveredPropertyId) return
     const m = matches.find((m) => m.property.id === hoveredPropertyId)
-    if (m?.coords) mapRef.panTo({ lat: m.coords.lat, lng: m.coords.lng })
+    if (m?.coords && areUsablePinCoords(m.coords)) mapRef.panTo({ lat: m.coords.lat, lng: m.coords.lng })
   }, [hoveredPropertyId, mapRef, matches])
 
   useEffect(() => {
@@ -1288,7 +1293,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
   ])
 
   useEffect(() => {
-    if (!intelData?.coords || !selectedMatch?.property) {
+    if (!intelData?.coords || !areUsablePinCoords(intelData.coords) || !selectedMatch?.property) {
       setCommercialPocket(null)
       return
     }
@@ -1385,10 +1390,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
         if (cachedData.cached && cachedData.intel) {
           const intel = cachedData.intel
-          let resolvedCoords =
-            intel.coords && Number.isFinite(Number(intel.coords.lat)) && Number.isFinite(Number(intel.coords.lng))
+          const intelPair =
+            intel.coords != null &&
+            Number.isFinite(Number(intel.coords.lat)) &&
+            Number.isFinite(Number(intel.coords.lng))
               ? { lat: Number(intel.coords.lat), lng: Number(intel.coords.lng) }
-              : coords ?? { lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng }
+              : null
+          const fromIntel = intelPair && areUsablePinCoords(intelPair) ? intelPair : null
+          const fromMatch = coords && areUsablePinCoords(coords) ? coords : null
+          let resolvedCoords =
+            fromIntel ?? fromMatch ?? { lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng }
           resolvedCoords = mergeCoordsWithMapLink(property, resolvedCoords)
 
           const competitors: IntelligenceData['competitors'] = (intel.competitors || []).map((c: any) => ({
@@ -1541,14 +1552,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
       if (liveRes.ok) {
         const liveData = await liveRes.json()
         if (liveData.success) {
+          const liveLat = liveData.data?.coordinates ? Number(liveData.data.coordinates.lat) : NaN
+          const liveLng = liveData.data?.coordinates ? Number(liveData.data.coordinates.lng) : NaN
+          const fromLive =
+            Number.isFinite(liveLat) && Number.isFinite(liveLng) ? { lat: liveLat, lng: liveLng } : null
+          const fromLiveOk = fromLive && areUsablePinCoords(fromLive) ? fromLive : null
+          const fromMatchOk = coords && areUsablePinCoords(coords) ? coords : null
           let resolvedCoords =
-            coords ??
-            (liveData.data?.coordinates
-              ? {
-                  lat: Number(liveData.data.coordinates.lat),
-                  lng: Number(liveData.data.coordinates.lng),
-                }
-              : { lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng })
+            fromMatchOk ?? fromLiveOk ?? { lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng }
           resolvedCoords = mergeCoordsWithMapLink(property, resolvedCoords)
           const intel = transformLiveIntelligence(liveData.data, resolvedCoords, property)
           const { competitors: sameCat, complementaryBrands: compBrands } = splitCompetitors(
@@ -1584,8 +1595,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setMobileView('intel')
     }
-    if (m.coords && mapRef) { mapRef.panTo(m.coords); mapRef.setZoom(15) }
-    fetchPropertyIntelligence(m.property.id, m.property, m.coords, m)
+    if (m.coords && areUsablePinCoords(m.coords) && mapRef) {
+      mapRef.panTo(m.coords)
+      mapRef.setZoom(15)
+    }
+    fetchPropertyIntelligence(
+      m.property.id,
+      m.property,
+      m.coords && areUsablePinCoords(m.coords) ? m.coords : null,
+      m
+    )
   }
 
   const brand = data?.brand ?? null
@@ -2094,7 +2113,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 const ml = mapLink?.trim() || null
                 const coords = selectedListingCoords
                 const googleMapsUrl =
-                  ml || (coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : null)
+                  ml ||
+                  (coords && areUsablePinCoords(coords)
+                    ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}`
+                    : null)
                 if (!googleMapsUrl) return null
                 return (
                   <a
@@ -2146,14 +2168,20 @@ Be specific to ${area} / ${address}. No generic statements.`,
           {isLoaded ? (
             <GoogleMap
               mapContainerClassName="w-full h-full"
-              center={selectedListingCoords ?? selectedMatch?.coords ?? DEFAULT_MAP_CENTER}
+              center={
+                selectedListingCoords ??
+                (selectedMatch?.coords && areUsablePinCoords(selectedMatch.coords)
+                  ? selectedMatch.coords
+                  : null) ??
+                DEFAULT_MAP_CENTER
+              }
               zoom={rightMode === 'intelligence' ? 15 : 12}
               options={{ ...DEFAULT_MAP_OPTIONS, zoomControl: true }}
               onLoad={(map) => setMapRef(map)}
             >
               {/* All match pins */}
               {isLoaded && matches.map((m) => {
-                if (!m.coords) return null
+                if (!m.coords || !areUsablePinCoords(m.coords)) return null
                 const isActive = selectedMatch?.property.id === m.property.id
                 const isHovered = hoveredPropertyId === m.property.id
                 const position = isActive ? selectedListingCoords ?? m.coords : m.coords
@@ -2173,7 +2201,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 )
               })}
               {/* Pulse ring for active/selected property */}
-              {isLoaded && selectedListingCoords && (
+              {isLoaded && selectedListingCoords && areUsablePinCoords(selectedListingCoords) && (
                 <Marker
                   position={selectedListingCoords}
                   icon={{
@@ -2197,7 +2225,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   row.lat == null ||
                   row.lng == null ||
                   !Number.isFinite(row.lat) ||
-                  !Number.isFinite(row.lng)
+                  !Number.isFinite(row.lng) ||
+                  !areUsablePinCoords({ lat: row.lat, lng: row.lng })
                 ) {
                   return null
                 }
@@ -2221,7 +2250,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
               })}
               {/* InfoWindows */}
               {isLoaded && matches.map((m) => {
-                if (!m.coords || activeInfoWindowId !== m.property.id) return null
+                if (!m.coords || !areUsablePinCoords(m.coords) || activeInfoWindowId !== m.property.id)
+                  return null
                 const iwPos =
                   selectedMatch?.property.id === m.property.id ? selectedListingCoords ?? m.coords : m.coords
                 return (
@@ -2354,7 +2384,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                     </>
                   )
                 }
-                const heatPoints = matches.filter((m) => m.coords).map((m) => new google.maps.LatLng(m.coords!.lat, m.coords!.lng))
+                const heatPoints = matches
+                  .filter((m) => m.coords && areUsablePinCoords(m.coords))
+                  .map((m) => new google.maps.LatLng(m.coords!.lat, m.coords!.lng))
                 if (heatPoints.length === 0) return null
                 return (
                   <HeatmapLayer
@@ -3782,7 +3814,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         )
                       })()}
                     {/* Competitor map — show pins of all competitors around selected property */}
-                    {selectedListingCoords && isLoaded && (
+                    {selectedListingCoords && areUsablePinCoords(selectedListingCoords) && isLoaded && (
                       <div className="h-[220px] relative rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
                         <GoogleMap
                           mapContainerClassName="w-full h-full"
@@ -3798,7 +3830,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               row.lat == null ||
                               row.lng == null ||
                               !Number.isFinite(row.lat) ||
-                              !Number.isFinite(row.lng)
+                              !Number.isFinite(row.lng) ||
+                              !areUsablePinCoords({ lat: row.lat, lng: row.lng })
                             ) {
                               return null
                             }
