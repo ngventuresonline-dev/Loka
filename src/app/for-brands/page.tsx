@@ -393,38 +393,38 @@ export default function ForBrandsPage() {
           </div>
 
           {/* Product Preview — below hero stats, inside dark hero */}
-          <div className="mt-12 w-full max-w-5xl mx-auto px-2 sm:px-4 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
-            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
-              <div className="bg-[#1a1a1a] px-4 py-3 flex items-center gap-3">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
+          <div className="mt-8 sm:mt-12 w-full max-w-5xl mx-auto px-2 sm:px-4 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
+            <div className="rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
+              <div className="bg-[#1a1a1a] px-3 py-2 sm:px-4 sm:py-3 flex items-center gap-2 sm:gap-3">
+                <div className="flex gap-1 sm:gap-1.5">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500" />
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500" />
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500" />
                 </div>
-                <div className="flex-1 bg-[#2a2a2a] rounded-lg px-4 py-1.5 text-xs text-gray-400 text-center truncate">
+                <div className="flex-1 bg-[#2a2a2a] rounded-md sm:rounded-lg px-2.5 py-1 sm:px-4 sm:py-1.5 text-[10px] sm:text-xs text-gray-400 text-center truncate">
                   lokazen.in/dashboard/brand
                 </div>
               </div>
-              <div className="bg-white flex flex-col lg:flex-row min-h-[18rem] lg:h-72 overflow-hidden">
+              <div className="bg-white flex flex-col lg:flex-row min-h-0 lg:h-72 overflow-hidden">
                 {(() => {
                   const mock = DASHBOARD_MOCK_CATEGORIES[dashboardMockTab] ?? DASHBOARD_MOCK_CATEGORIES[0]
                   return (
                     <>
-                <div className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-gray-100 bg-white p-4 flex flex-col gap-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#FF5200] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{mock.initial}</div>
+                <div className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-gray-100 bg-white p-3 gap-2.5 sm:p-4 sm:gap-4 flex flex-col">
+                  <div className="flex items-center gap-2 sm:gap-2.5">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-[#FF5200] flex items-center justify-center text-white text-xs sm:text-sm font-bold flex-shrink-0">{mock.initial}</div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-[#0A0A0A] truncate">{mock.tabLabel}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{mock.tabLabel}</p>
+                      <p className="text-xs sm:text-sm font-bold text-[#0A0A0A] truncate">{mock.tabLabel}</p>
+                      <p className="hidden sm:block text-[10px] text-gray-400 truncate">{mock.tabLabel}</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1 sm:gap-1.5">
                     {DASHBOARD_MOCK_CATEGORIES.map((c, i) => (
                       <button
                         key={c.id}
                         type="button"
                         onClick={() => setDashboardMockTab(i)}
-                        className={`text-[10px] font-semibold px-3 py-1 rounded-full transition-colors ${
+                        className={`text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full transition-colors ${
                           i === dashboardMockTab ? 'bg-[#FF5200] text-white' : 'bg-gray-100 text-gray-500'
                         }`}
                       >
@@ -432,57 +432,57 @@ export default function ForBrandsPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
-                    <p className="text-2xl font-black text-[#FF5200]">15</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">Matched properties</p>
+                  <div className="bg-orange-50 border border-orange-100 rounded-lg sm:rounded-xl p-2 sm:p-3">
+                    <p className="text-xl sm:text-2xl font-black text-[#FF5200] leading-none">15</p>
+                    <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-wide mt-0.5">Matched properties</p>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">Your requirements</p>
+                  <div className="space-y-1 sm:space-y-2">
+                    <p className="text-[8px] sm:text-[9px] font-semibold text-gray-400 uppercase tracking-wide">Your requirements</p>
                     {[
                       ['Size', '100–300 sqft'],
                       ['Location', 'HSR, Koramangala, Indiranagar'],
                       ['Budget', '₹50K–₹1.2L/mo'],
                     ].map(([k, v]) => (
-                      <div key={k} className="flex gap-2 text-[10px]">
-                        <span className="text-gray-400 font-medium w-14 flex-shrink-0">{k}</span>
+                      <div key={k} className="flex gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] leading-snug">
+                        <span className="text-gray-400 font-medium w-12 sm:w-14 flex-shrink-0">{k}</span>
                         <span className="text-gray-700 font-medium">{v}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="flex-1 bg-[#F8F7F4] p-4 sm:p-5 flex flex-col sm:flex-row gap-4 overflow-hidden min-h-0">
-                  <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-4 min-w-0">
-                    <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="flex-1 bg-[#F8F7F4] p-3 sm:p-5 flex flex-col sm:flex-row gap-2.5 sm:gap-4 overflow-hidden min-h-0">
+                  <div className="flex-1 bg-white rounded-lg sm:rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4 min-w-0">
+                    <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-[#0A0A0A]">{mock.title}</p>
-                        <p className="text-[10px] text-gray-400">{mock.detailLine}</p>
-                        <p className="text-[10px] font-semibold text-[#FF5200] mt-0.5">{mock.rent}</p>
+                        <p className="text-[11px] sm:text-xs font-bold text-[#0A0A0A] leading-snug">{mock.title}</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-400 leading-snug">{mock.detailLine}</p>
+                        <p className="text-[9px] sm:text-[10px] font-semibold text-[#FF5200] mt-0.5">{mock.rent}</p>
                       </div>
-                      <div className="w-12 h-12 rounded-xl bg-[#FF5200] flex items-center justify-center flex-shrink-0">
-                        <p className="text-white text-xs font-black leading-none text-center">{mock.bfi}<br /><span className="text-[8px]">BFI</span></p>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#FF5200] flex items-center justify-center flex-shrink-0">
+                        <p className="text-white text-[10px] sm:text-xs font-black leading-none text-center">{mock.bfi}<br /><span className="text-[7px] sm:text-[8px]">BFI</span></p>
                       </div>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1 sm:space-y-1.5">
                       {([['Location Match', 100], ['Budget Fit', 100], ['Size Match', 100], ['Type Match', 95]] as const).map(([label, pct]) => (
-                        <div key={label} className="flex items-center gap-2">
-                          <span className="text-[9px] text-gray-400 w-24 flex-shrink-0">{label}</span>
-                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div key={label} className="flex items-center gap-1 sm:gap-2">
+                          <span className="text-[8px] sm:text-[9px] text-gray-400 w-[4.25rem] sm:w-24 flex-shrink-0 leading-tight">{label}</span>
+                          <div className="flex-1 h-1 sm:h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div className="h-full bg-[#FF5200] rounded-full" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-[9px] font-bold text-gray-700 w-7 text-right">{pct}%</span>
                         </div>
                       ))}
                     </div>
-                    <div className="relative mt-3">
-                      <div className="grid grid-cols-3 gap-1.5">
+                    <div className="relative mt-2 sm:mt-3">
+                      <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
                         {([['Conservative', '₹3L'], ['Base Case', '₹5L'], ['Optimistic', '₹9L']] as const).map(([l, v]) => (
-                          <div key={l} className="bg-gray-50 rounded-lg p-2 text-center">
-                            <p className="text-[8px] text-gray-400 uppercase tracking-wide">{l}</p>
-                            <p className="text-sm font-black text-[#0A0A0A] select-none" style={{ filter: 'blur(4px)' }}>{v}</p>
+                          <div key={l} className="bg-gray-50 rounded-md sm:rounded-lg p-1.5 sm:p-2 text-center">
+                            <p className="text-[7px] sm:text-[8px] text-gray-400 uppercase tracking-wide leading-tight">{l}</p>
+                            <p className="text-xs sm:text-sm font-black text-[#0A0A0A] select-none" style={{ filter: 'blur(4px)' }}>{v}</p>
                           </div>
                         ))}
                       </div>
-                      <p className="mt-1.5 flex items-center justify-center gap-1 text-[9px] text-gray-400 text-center">
+                      <p className="mt-1 sm:mt-1.5 flex items-center justify-center gap-1 text-[8px] sm:text-[9px] text-gray-400 text-center">
                         <svg className="w-3 h-3 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
@@ -490,7 +490,7 @@ export default function ForBrandsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="w-full sm:w-44 h-40 sm:h-auto flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden relative min-h-[10rem] sm:min-h-0">
+                  <div className="w-full sm:w-44 h-28 sm:h-auto flex-shrink-0 bg-gray-100 rounded-lg sm:rounded-xl overflow-hidden relative min-h-[7rem] sm:min-h-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300" />
                     <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 176 288" preserveAspectRatio="none">
                       {[0, 40, 80, 120, 160, 200, 240, 280].map((y) => (
@@ -511,8 +511,8 @@ export default function ForBrandsPage() {
                         <span className="text-white text-[7px] font-bold">{75 - i * 3}</span>
                       </div>
                     ))}
-                    <div className="absolute bottom-2 left-2 right-2 bg-white/90 rounded-lg p-1.5 text-center">
-                      <p className="text-[8px] font-semibold text-gray-700">15 matched properties</p>
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5 sm:bottom-2 sm:left-2 sm:right-2 bg-white/90 rounded-md sm:rounded-lg p-1 sm:p-1.5 text-center">
+                      <p className="text-[7px] sm:text-[8px] font-semibold text-gray-700 leading-tight">15 matched properties</p>
                     </div>
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export default function ForBrandsPage() {
                 })()}
               </div>
             </div>
-            <p className="text-center text-xs text-white/50 mt-3">Your personalised brand dashboard — live matches, location intelligence, revenue potential</p>
+            <p className="text-center text-[11px] sm:text-xs text-white/50 mt-2 sm:mt-3 leading-snug px-1">Your personalised brand dashboard — live matches, location intelligence, revenue potential</p>
           </div>
 
           <div className="mt-10 flex flex-col items-center gap-2 opacity-70">
