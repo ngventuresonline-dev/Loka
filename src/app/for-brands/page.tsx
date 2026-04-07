@@ -362,37 +362,40 @@ export default function ForBrandsPage() {
         </div>
       </div>
 
-      {/* Section 1: Hero — dark BG (from our platform / about For Brands) */}
-      <div className="relative min-h-screen flex flex-col items-center pt-20 sm:pt-24 pb-16 sm:pb-20 bg-gradient-to-b from-[#0A0A0A] via-black to-[#0A0A0A] overflow-hidden border-b border-white/5" style={{ zIndex: 10 }}>
-        <div className="absolute inset-0 opacity-[0.12] pointer-events-none" style={{
-          backgroundImage: 'linear-gradient(#FF5200 1px, transparent 1px), linear-gradient(90deg, #FF5200 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
-          animation: 'grid 20s linear infinite',
-        }} />
-        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-br from-[#FF5200]/25 to-[#E4002B]/20 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite]" />
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-[#E4002B]/20 to-[#FF5200]/10 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite_5s]" />
-        <div className="absolute inset-0 opacity-15 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_4s_ease-in-out_infinite]" />
-          <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_4s_ease-in-out_infinite_2s]" />
+      {/* Section 1: Hero — Reflect-style depth: calm dark canvas, glass layers, soft orbs (Dribbble 21339985-inspired) */}
+      <div className="relative min-h-screen flex flex-col items-center pt-20 sm:pt-24 pb-16 sm:pb-20 overflow-hidden border-b border-white/[0.06] bg-gradient-to-b from-[#080a10] via-[#05060a] to-[#080a10]" style={{ zIndex: 10 }}>
+        {/* Ambient mesh — cool undertone + brand warmth */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[8%] left-[15%] w-[min(90vw,520px)] h-[min(90vw,520px)] rounded-full bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08)_0%,transparent_65%)] blur-2xl" />
+          <div className="absolute bottom-[5%] right-[10%] w-[min(85vw,480px)] h-[min(85vw,480px)] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,82,0,0.12)_0%,transparent_60%)] blur-3xl animate-[float_22s_ease-in-out_infinite]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(120vw,900px)] h-[min(120vw,900px)] rounded-full bg-[radial-gradient(circle_at_center,rgba(228,0,43,0.06)_0%,transparent_55%)] blur-3xl" />
         </div>
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
-          {[ { top: '18%', left: '12%' }, { top: '28%', left: '82%' }, { top: '55%', left: '18%' }, { top: '72%', left: '78%' }, { top: '42%', left: '88%' }, { top: '22%', left: '52%' } ].map((dot, i) => (
-            <div key={i} className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse" style={{ top: dot.top, left: dot.left, animationDelay: `${i * 0.3}s` }} />
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.35) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+          animation: 'grid 32s linear infinite',
+        }} />
+        <div className="absolute inset-0 opacity-[0.35] pointer-events-none mix-blend-overlay" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")`,
+        }} aria-hidden />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.12]">
+          {[ { top: '22%', left: '18%' }, { top: '38%', left: '78%' }, { top: '62%', left: '24%' }, { top: '48%', left: '52%' } ].map((dot, i) => (
+            <div key={i} className="absolute w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_12px_rgba(255,255,255,0.35)]" style={{ top: dot.top, left: dot.left }} />
           ))}
         </div>
 
         <div className="relative flex flex-col items-center justify-center flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.07] backdrop-blur-xl border border-[#FF5200]/35 rounded-full mb-4 sm:mb-6 shadow-[0_0_24px_rgba(255,82,0,0.15)] opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
-            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse" />
-            <span className="text-sm font-medium text-white">For Brands — Premium placement & advisory</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/[0.06] backdrop-blur-2xl border border-white/[0.12] rounded-full mb-4 sm:mb-6 shadow-[0_8px_40px_rgba(0,0,0,0.45)] opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
+            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] ring-2 ring-[#FF5200]/25" />
+            <span className="text-sm font-medium text-white/90 tracking-wide">For Brands — Premium placement & advisory</span>
           </div>
 
-          <h1 className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-2.5 md:mb-3 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2 sm:px-4">
-            <span className="text-white">Find & Secure Your Perfect</span>
+          <h1 className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-2.5 md:mb-3 leading-[1.08] tracking-[-0.02em] opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2 sm:px-4">
+            <span className="text-white [text-shadow:0_2px_40px_rgba(0,0,0,0.35)]">Find & Secure Your Perfect</span>
             <br className="block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-[length:200%_200%] animate-gradientShift">Commercial Space</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF8A4C] via-[#FF5200] to-[#E4002B] bg-[length:200%_200%] animate-gradientShift">Commercial Space</span>
           </h1>
-          <p className="text-center text-sm sm:text-base md:text-lg lg:text-xl text-white/70 mb-6 sm:mb-8 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] px-3 sm:px-4 leading-relaxed">
+          <p className="text-center text-sm sm:text-base md:text-lg lg:text-xl text-white/55 mb-6 sm:mb-8 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] px-3 sm:px-4 leading-relaxed font-medium">
             Full-service property placement with dedicated expert support
           </p>
 
@@ -400,41 +403,42 @@ export default function ForBrandsPage() {
             <button
               type="button"
               onClick={scrollToPricing}
-              className="relative min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white bg-[#FF5200] hover:bg-[#E4002B] shadow-lg shadow-[#FF5200]/25 hover:shadow-[#FF5200]/40 hover:scale-[1.02] transition-all duration-200"
+              className="relative min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:brightness-110 shadow-[0_12px_40px_rgba(255,82,0,0.28)] hover:shadow-[0_16px_48px_rgba(255,82,0,0.38)] hover:-translate-y-0.5 transition-all duration-300"
             >
               <span className="relative z-10">View Our Plans</span>
             </button>
             <Link
               href="/contact-us"
-              className="min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white border-2 border-white/20 bg-white/[0.06] backdrop-blur-md hover:bg-white/10 hover:border-[#FF5200]/50 transition-all duration-200"
+              className="min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-semibold text-white/95 border border-white/[0.14] bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] hover:bg-white/[0.09] hover:border-white/25 transition-all duration-300"
             >
               Talk to placement team
             </Link>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards]">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-5 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards]">
             {[
               { value: '50+', label: 'Brands placed' },
               { value: '500+', label: 'Properties' },
               { value: '20+', label: 'Prime Locations' },
             ].map((stat, i) => (
-              <div key={i} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.06] backdrop-blur border border-white/10">
-                <span className="text-lg sm:text-xl font-bold text-[#FF5200]">{stat.value}</span>
-                <span className="text-sm text-white/60">{stat.label}</span>
+              <div key={i} className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-white/[0.05] backdrop-blur-2xl border border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
+                <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#FF8A4C] to-[#FF5200] bg-clip-text text-transparent">{stat.value}</span>
+                <span className="text-sm text-white/50 font-medium">{stat.label}</span>
               </div>
             ))}
           </div>
 
           {/* Product Preview — below hero stats, inside dark hero */}
           <div className="mt-8 sm:mt-12 w-full max-w-5xl mx-auto px-2 sm:px-4 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
-            <div className="rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
-              <div className="bg-[#1a1a1a] px-3 py-2 sm:px-4 sm:py-3 flex items-center gap-2 sm:gap-3">
-                <div className="flex gap-1 sm:gap-1.5">
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500" />
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500" />
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500" />
+            <div className="rounded-[1.25rem] sm:rounded-[1.75rem] p-[1px] bg-gradient-to-b from-white/[0.18] via-white/[0.06] to-white/[0.03] shadow-[0_32px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.06)_inset]">
+              <div className="rounded-[1.2rem] sm:rounded-[1.65rem] overflow-hidden bg-[#0c0d12]/90 backdrop-blur-xl border border-white/[0.06]">
+              <div className="bg-gradient-to-b from-[#14151c] to-[#0e0f14] px-3 py-2.5 sm:px-4 sm:py-3 flex items-center gap-2 sm:gap-3 border-b border-white/[0.06]">
+                <div className="flex gap-1.5 sm:gap-2">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#ff5f57] shadow-[0_0_6px_rgba(255,95,87,0.5)]" />
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#febc2e] shadow-[0_0_6px_rgba(254,188,46,0.4)]" />
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#28c840] shadow-[0_0_6px_rgba(40,200,64,0.45)]" />
                 </div>
-                <div className="flex-1 bg-[#2a2a2a] rounded-md sm:rounded-lg px-2.5 py-1 sm:px-4 sm:py-1.5 text-[10px] sm:text-xs text-gray-400 text-center truncate">
+                <div className="flex-1 bg-black/35 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs text-white/45 text-center truncate border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   lokazen.in/dashboard/brand
                 </div>
               </div>
@@ -553,19 +557,20 @@ export default function ForBrandsPage() {
                   )
                 })()}
               </div>
+              </div>
             </div>
-            <p className="text-center text-[11px] sm:text-xs text-white/50 mt-2 sm:mt-3 leading-snug px-1">Your personalised brand dashboard — live matches, location intelligence, revenue potential</p>
-          </div>
+            <p className="text-center text-[11px] sm:text-xs text-white/40 mt-2 sm:mt-3 leading-snug px-1 font-medium">Your personalised brand dashboard — live matches, location intelligence, revenue potential</p>
 
-          <div className="mt-10 flex flex-col items-center gap-2 opacity-70">
-            <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Scroll</span>
-            <button type="button" onClick={scrollToPricing} className="w-8 h-8 rounded-full border-2 border-white/25 flex items-center justify-center hover:border-[#FF5200] text-white/70 hover:text-[#FF5200] transition-colors" aria-label="Scroll to plans">
+          <div className="mt-10 flex flex-col items-center gap-2 opacity-60">
+            <span className="text-xs font-medium text-white/35 uppercase tracking-[0.2em]">Scroll</span>
+            <button type="button" onClick={scrollToPricing} className="w-9 h-9 rounded-full border border-white/[0.12] bg-white/[0.04] backdrop-blur-md flex items-center justify-center hover:border-[#FF5200]/50 text-white/50 hover:text-[#FF5200] transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.35)]" aria-label="Scroll to plans">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
             </button>
           </div>
+          </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200]/60 to-transparent opacity-60" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
       </div>
 
       {/* Section 2: Trusted by Leading Brands — exact copy from homepage */}
