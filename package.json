@@ -40,7 +40,8 @@
     "intel:warm-all": "tsx scripts/warm-all-properties-intel.ts",
     "intel:warm-all:dry": "tsx scripts/warm-all-properties-intel.ts --dry-run",
     "videos:marketing": "tsx scripts/record-marketing-videos.ts",
-    "videos:marketing:install": "npx playwright install chromium"
+    "videos:marketing:install": "npx playwright install chromium",
+    "marketing:screenshots": "tsx scripts/capture-marketing-screenshots.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

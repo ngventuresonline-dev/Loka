@@ -365,4 +365,10 @@ Open in a browser (double-click or drag into Chrome/Edge):
 
 **`marketing/linkedin-visual-deck.html`**
 
-Eight slides (1080×1350 aspect): overview, two-sided product, brand features, owner features, location intelligence, scoring/maps/charts, full tech stack from `package.json`, data/API ops. Screenshot each slide for a LinkedIn carousel — instructions are in a bar at the top of the file.
+Eight slides (1080×1350 aspect) with **embedded real screenshots** from production (`marketing/screenshots/*.png`): homepage, `/filter/brand`, `/filter/owner`, `/for-brands`, `/location-intelligence`, BFI/PFI section, brand login, etc. Refresh captures anytime:
+
+```bash
+npm run marketing:screenshots
+```
+
+Screenshot each slide for LinkedIn — instructions are in the bar at the top of the HTML file.

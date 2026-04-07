@@ -194,11 +194,52 @@
       opacity: 0.07;
       line-height: 1;
     }
+    .shot {
+      display: block;
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      object-fit: cover;
+      object-position: top center;
+      max-height: min(44vh, 580px);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
+      margin-bottom: 8px;
+      background: #111;
+    }
+    .shot-mini {
+      max-height: min(22vh, 280px);
+      margin-bottom: 10px;
+    }
+    .shot-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .shot-row img {
+      width: 100%;
+      max-height: min(36vh, 460px);
+      object-fit: cover;
+      object-position: top center;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      background: #111;
+    }
+    .shot-cap {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    ul.feat.tight { gap: 6px; }
+    ul.feat.tight li { padding: 8px 10px; font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="hint">
-    Open this file in Chrome/Edge → zoom so one slide fills the screen → <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> to screenshot each slide for LinkedIn (or print to PDF). Slides are <strong>1080×1350</strong> aspect.
+    Real app captures from <strong>lokazen.in</strong> live in <code>screenshots/</code>. Refresh: <code>npm run marketing:screenshots</code>. Open in Chrome/Edge → zoom each slide full screen → <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> for LinkedIn. Aspect <strong>1080×1350</strong>.
   </div>
 
   <div class="deck">
@@ -208,14 +249,13 @@
       <div class="slide-inner">
         <span class="tag">Commercial real estate · Bangalore-first</span>
         <h1><span class="grad">Lokazen</span></h1>
-        <p class="sub">Two-sided platform for brands that need space and owners that list it — matching, location intelligence, dashboards, and optional expert support.</p>
-        <ul class="feat" style="margin-top:8px;">
-          <li>Structured briefs, not random PDF dumps</li>
-          <li>Footfall, demographics, competition, accessibility signals</li>
-          <li>Brand Fit Index (BFI) &amp; Property Fit Index (PFI)</li>
-          <li>Starter / Professional / Premium plans · PhonePe checkout</li>
+        <p class="sub" style="margin-bottom:10px;">Two-sided platform — matching, location intelligence, dashboards, expert support.</p>
+        <div class="shot-cap">Live · Homepage hero (lokazen.in)</div>
+        <img class="shot" src="screenshots/01-home-hero.png" alt="Lokazen homepage hero with brand and list property search" width="1080" height="1350" />
+        <ul class="feat tight" style="margin-top:4px;">
+          <li>BFI &amp; PFI scoring · Intel layer · Plans + PhonePe</li>
         </ul>
-        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a> · Visual deck for social</div>
+        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a> · Screenshots captured from production</div>
       </div>
     </section>
 
@@ -224,22 +264,21 @@
       <div class="slide-inner">
         <span class="tag">Product</span>
         <h2>Two audiences, one stack</h2>
-        <p class="sub">Same data model and scoring lens whether you’re hunting space or listing it.</p>
-        <div class="grid2">
-          <div class="tile">
-            <strong>Brands</strong>
-            Natural-language or structured search → <code>/filter/brand</code> → curated matches → brand dashboard with map &amp; intel panels → plans on <code>/for-brands</code>.
+        <p class="sub" style="margin-bottom:8px;">Same scoring lens for hunt vs list.</p>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">/filter/brand</div>
+            <img src="screenshots/02-filter-brand.png" alt="Brand filter search UI" width="600" height="750" />
           </div>
-          <div class="tile">
-            <strong>Owners</strong>
-            Rich listing flow → <code>/filter/owner</code> → verified-style inventory → matched to serious operators by fit, not spam.
+          <div>
+            <div class="shot-cap">/filter/owner</div>
+            <img src="screenshots/03-filter-owner.png" alt="Owner list property UI" width="600" height="750" />
           </div>
         </div>
-        <ul class="feat" style="margin-top:14px;">
-          <li>Hero search toggles Brand vs List Property modes on the homepage</li>
-          <li>Location intelligence preview page for area + category experiments</li>
+        <ul class="feat tight">
+          <li>Brands: brief → matches → dashboard · Owners: structured listing → qualified inbound</li>
         </ul>
-        <div class="footer-slide">Public flows + logged-in dashboards (owner / brand / admin)</div>
+        <div class="footer-slide">+ location-intelligence preview · hero toggles Brand / List</div>
       </div>
     </section>
 
@@ -248,15 +287,16 @@
       <div class="slide-inner">
         <span class="tag">Brands</span>
         <h2>What brands get</h2>
-        <ul class="feat">
-          <li><strong>AI-assisted search</strong> — messy brief → structured filters (query parsing + URL params to matching)</li>
-          <li><strong>Brand dashboard</strong> — matches, requirements, fit bars, map (Google Maps), property intel &amp; competitor context</li>
-          <li><strong>Revenue-style scenarios</strong> — shown in-product with clear gating / honesty on guarantees</li>
-          <li><strong>Category guidance</strong> — F&amp;B, café, retail, wellness, services, cloud kitchen lenses on marketing pages</li>
-          <li><strong>Plans</strong> — email vs WhatsApp vs dedicated manager, site visits, negotiation, legal on higher tiers</li>
-          <li><strong>Payments</strong> — PhonePe integration for brand onboarding flows</li>
+        <div class="shot-cap">Live · Brand search (/filter/brand)</div>
+        <img class="shot shot-mini" src="screenshots/02-filter-brand.png" alt="Brand looking for space filter" width="1080" height="800" />
+        <ul class="feat tight">
+          <li>AI-assisted brief → structured filters &amp; matching</li>
+          <li>Dashboard: matches, fit bars, Google Maps, intel &amp; competitors</li>
+          <li>For-brands plans · PhonePe · category playbooks</li>
         </ul>
-        <div class="footer-slide">Success fee messaging surfaced consistently on for-brands content</div>
+        <div class="shot-cap" style="margin-top:6px;">Brand access · /dashboard/brand/login</div>
+        <img class="shot shot-mini" src="screenshots/09-brand-login.png" alt="Brand dashboard login screen" width="1080" height="800" />
+        <div class="footer-slide">Success fee on closure called out on for-brands</div>
       </div>
     </section>
 
@@ -265,13 +305,13 @@
       <div class="slide-inner">
         <span class="tag">Owners</span>
         <h2>What owners get</h2>
-        <ul class="feat">
-          <li><strong>Structured listing UX</strong> — property type (F&amp;B + full taxonomy), Bangalore micro-markets, size sliders, rent, features, availability</li>
-          <li><strong>Owner dashboard</strong> — pipeline view, property management, alignment with platform workflows</li>
-          <li><strong>Matching</strong> — brands scored against inventory (PFI / mandate fit)</li>
-          <li><strong>Same intelligence story</strong> — listings benefit from the same location &amp; category thinking as brand-side</li>
+        <div class="shot-cap">Live · List property flow (/filter/owner)</div>
+        <img class="shot" src="screenshots/03-filter-owner.png" alt="Owner property listing interface" width="1080" height="1200" />
+        <ul class="feat tight">
+          <li>F&amp;B + full type taxonomy · areas · size · rent · features</li>
+          <li>Owner dashboard · PFI / mandate fit matching</li>
         </ul>
-        <div class="footer-slide">Onboarding &amp; admin tooling in-app + API-backed persistence</div>
+        <div class="footer-slide">API-backed persistence · admin tooling</div>
       </div>
     </section>
 
@@ -279,19 +319,22 @@
       <span class="num">05</span>
       <div class="slide-inner">
         <span class="tag">Intelligence</span>
-        <h2>Location intelligence layer</h2>
-        <p class="sub">Rich geo schema in Postgres (wards, micro-markets, census-style attributes) powers APIs and UI copy — not just a lat/lng pin.</p>
-        <div class="grid2">
-          <div class="tile"><strong>Footfall &amp; mobility</strong> Pedestrian / peak signals, weekend lift — messaging aligned to Google &amp; MapMyIndia-class data in product.</div>
-          <div class="tile"><strong>Demographics</strong> Income bands, age mix, catchment framing for spend fit.</div>
-          <div class="tile"><strong>Competition</strong> Category proximity, saturation, “whitespace vs data gap” style analysis in dashboard intel.</div>
-          <div class="tile"><strong>Accessibility</strong> Metro, buses, parking — operational reality for formats that need it.</div>
+        <h2>Location intelligence</h2>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Homepage · intel grid</div>
+            <img src="screenshots/07-home-intel-grid.png" alt="Footfall demographics competitor accessibility cards" width="540" height="675" />
+          </div>
+          <div>
+            <div class="shot-cap">/location-intelligence</div>
+            <img src="screenshots/06-location-intelligence.png" alt="Location intelligence preview page" width="540" height="675" />
+          </div>
         </div>
-        <ul class="feat" style="margin-top:12px;">
-          <li>Ward density &amp; enrichment APIs (e.g. ward labels from coordinates)</li>
-          <li>Optional AI enrichment when Places data is thin (server-side prompts)</li>
+        <ul class="feat tight">
+          <li>Footfall · demographics · competition · accessibility</li>
+          <li>Postgres + Prisma <code>Location</code> · ward APIs · AI enrichment when Places is thin</li>
         </ul>
-        <div class="footer-slide">Schema: Prisma <code>Location</code> + related intelligence models</div>
+        <div class="footer-slide">Not just a pin — catchment &amp; ops context</div>
       </div>
     </section>
 
@@ -300,13 +343,13 @@
       <div class="slide-inner">
         <span class="tag">Scoring</span>
         <h2>BFI · PFI · charts</h2>
-        <ul class="feat">
-          <li><strong>BFI (Brand Fit Index)</strong> — property ↔ brand mandate (size, budget, format, geography)</li>
-          <li><strong>PFI (Property Fit Index)</strong> — brand ↔ asset economics &amp; use-type fit</li>
-          <li><strong>Recharts</strong> — bar, pie, area visualizations in dashboards for engagement &amp; intel</li>
-          <li><strong>Maps</strong> — React Google Maps, markers, heatmap layer where enabled; geo helpers for coords &amp; property amenities</li>
+        <div class="shot-cap">Live · Dual AI scoring (homepage)</div>
+        <img class="shot" src="screenshots/08-home-bfi-pfi.png" alt="BFI and PFI scoring section on website" width="1080" height="900" />
+        <ul class="feat tight">
+          <li>BFI: property ↔ mandate · PFI: brand ↔ asset</li>
+          <li>Recharts in-app · Google Maps + heatmaps · TS revenue calculators</li>
         </ul>
-        <div class="footer-slide">Revenue benchmarks &amp; industry keys used in server-side calculators (typed TS)</div>
+        <div class="footer-slide">Match score visual language carries into dashboards</div>
       </div>
     </section>
 
@@ -315,7 +358,9 @@
       <div class="slide-inner">
         <span class="tag">Stack</span>
         <h2>Tech in the repo</h2>
-        <p class="sub">From <code>package.json</code> + Prisma — actual dependencies, not buzzwords.</p>
+        <div class="shot-cap">Live UI · For brands hero + dashboard mock</div>
+        <img class="shot shot-mini" src="screenshots/04-for-brands-hero.png" alt="For brands page with dashboard preview" width="1080" height="500" />
+        <p class="sub" style="margin-bottom:10px;font-size:13px;">From <code>package.json</code> + Prisma — shipped stack.</p>
         <div class="tech-grid">
           <div class="tech"><div class="name">Next.js 16</div><div class="use">App Router, webpack build, production on Node 18+</div></div>
           <div class="tech"><div class="name">React 19</div><div class="use">UI, client components, concurrent-ready</div></div>
@@ -347,13 +392,14 @@
       <div class="slide-inner">
         <span class="tag">Data &amp; ops</span>
         <h2>Under the hood</h2>
-        <ul class="feat">
-          <li><strong>Prisma schema</strong> — users, properties, brands, locations, intel, payments-related fields, admin workflows</li>
-          <li><strong>Seed &amp; import scripts</strong> — tsx scripts for featured properties, brands, census, wards, growth patterns</li>
-          <li><strong>API routes</strong> — REST-style handlers for dashboard, intel, payments, auth (brand magic-link style), location intelligence</li>
-          <li><strong>Session &amp; tracking</strong> — client session ids, button funnels, filter analytics</li>
+        <div class="shot-cap">Live · Category guidance (/for-brands)</div>
+        <img class="shot shot-mini" src="screenshots/05-for-brands-category.png" alt="For brands category tabs and guidance card" width="1080" height="600" />
+        <ul class="feat tight">
+          <li>Prisma: users, properties, brands, locations, intel, payments, admin</li>
+          <li>Seed/import tsx · API routes · session &amp; funnel tracking</li>
+          <li>Deploy: <code>vercel-build</code> → Prisma generate + Next build</li>
         </ul>
-        <div class="footer-slide">Deploy: Vercel-friendly build (<code>vercel-build</code> runs Prisma generate + next build)</div>
+        <div class="footer-slide">Screenshots from <a href="https://lokazen.in">lokazen.in</a> · Regenerate anytime locally</div>
       </div>
     </section>
 
