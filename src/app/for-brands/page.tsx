@@ -37,6 +37,164 @@ const FAQ_ITEMS = [
   { q: 'What fees are included?', a: `Your plan’s onboarding fee covers our placement and advisory support. ${SUCCESS_FEE_NOTE} — separate from the onboarding fee. Standard market practices (e.g. one month’s rent to property owner) may also apply at closure.` },
   { q: 'Can I upgrade?', a: 'Yes. You can upgrade anytime and pay only the difference for the new plan.' },
   { q: 'Which areas are covered?', a: 'We serve prime commercial zones in Bangalore: Indiranagar, Koramangala, Whitefield, MG Road, HSR Layout, Brigade Road, and 15+ more locations.' },
+  { q: 'We run multiple outlets or a franchise—can you help?', a: 'Yes. Share your expansion roadmap, preferred micro-markets, and rollout timing. Premium is built for multi-location searches; Professional works well for a focused cluster. We align shortlists so each site fits your brand standards and ops constraints.' },
+  { q: 'Do you work on exclusivity for a micro-market?', a: 'We can prioritise your search in specific corridors or wards and avoid obvious conflicts where agreed. Exact exclusivity depends on mandate scope and timing—tell us your priority catchments and we’ll confirm what we can commit to before you onboard.' },
+  { q: 'What if we do not close a deal within the plan window?', a: 'Reach out to support@lokazen.in with your case reference. Extensions or upgrades depend on how far along the pipeline is; we focus on keeping momentum with fresh options and clear next steps rather than leaving you guessing.' },
+]
+
+type BrandCategory = {
+  id: string
+  label: string
+  tagline: string
+  points: string[]
+  intel: string
+}
+
+const BRAND_CATEGORY_GUIDANCE: BrandCategory[] = [
+  {
+    id: 'fb',
+    label: 'F&B & QSR',
+    tagline: 'Throughput, compliance, and visibility',
+    points: [
+      'Frontage and evening/weekend pull often matter more than the lowest rent per sq.ft.',
+      'Validate grease trap, exhaust, water load, and landlord permissions before you commit emotionally to a unit.',
+      'We weigh footfall, competitor clusters, and delivery catchment when shortlisting.',
+    ],
+    intel: 'Peak-hour footfall, catchment spend bands, dine-in vs delivery mix, and nearby F&B density.',
+  },
+  {
+    id: 'cafe',
+    label: 'Café & bakery',
+    tagline: 'Day-part rhythm and seating',
+    points: [
+      'Morning office traffic and weekend dwell time behave differently—micro-market choice should match your day-parts.',
+      'Outdoor seating, parking, and façade character can drive trial as much as raw footfall.',
+      'We look for adjacencies (offices, colleges, retail) that match your average ticket.',
+    ],
+    intel: 'Weekday vs weekend patterns, seating-friendly frontage, and competing cafés within walking distance.',
+  },
+  {
+    id: 'retail',
+    label: 'Retail & lifestyle',
+    tagline: 'Conversion and brand adjacency',
+    points: [
+      'High streets vs malls trade off rent, CAM, and operating hours—your category usually has a natural fit.',
+      'Co-tenancy and anchor traffic affect conversion more than headline footfall numbers alone.',
+      'We shortlist with visibility, vitrine depth, and stock movement in mind—not just size.',
+    ],
+    intel: 'Shopping patterns, anchor draw, vitrine visibility, and category-relevant co-tenants.',
+  },
+  {
+    id: 'beauty',
+    label: 'Beauty & wellness',
+    tagline: 'Privacy, appointments, and repeat visits',
+    points: [
+      'Upper-floor or quieter frontages can work when your model is appointment-led and parking is easy.',
+      'Ceiling height, wet areas, and power for equipment need a quick ops check early.',
+      'Catchment income and competitor density guide positioning for premium vs mass.',
+    ],
+    intel: 'Residential catchment quality, parking access, nearby salons/spas, and suitable floor plates.',
+  },
+  {
+    id: 'services',
+    label: 'Services & clinics',
+    tagline: 'Access, trust, and compliance',
+    points: [
+      'Signage visibility and lift access matter when you are not relying on walk-in impulse.',
+      'Fire NOC, usage permissions, and floor loading vary—flag your compliance needs up front.',
+      'We balance rent efficiency with professional address credibility for your segment.',
+    ],
+    intel: 'Commute patterns for your clientele, building grade, and permissible use for your service type.',
+  },
+  {
+    id: 'cloud',
+    label: 'Cloud / delivery kitchen',
+    tagline: 'Logistics over storefront',
+    points: [
+      'Aggregator reach, rider access, and parking for handoff beat “pretty” frontage.',
+      'Load-in, storage, and hood requirements differ from a dine-in fit-out—size accordingly.',
+      'We map delivery radii and competitor density to suggest practical micro-markets.',
+    ],
+    intel: 'Delivery heat maps (where available), rider access, ceiling height for exhaust, and dark-kitchen clusters.',
+  },
+]
+
+const MATCHING_INTEL_POINTS = [
+  {
+    title: 'Structured brief',
+    desc: 'We translate your budget band, size, catchments, and non-negotiables into a searchable mandate.',
+    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  },
+  {
+    title: 'Curated shortlist',
+    desc: 'Algorithms surface candidates; our team filters for fit, landlord appetite, and real availability.',
+    icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
+  },
+  {
+    title: 'Location intelligence',
+    desc: 'Reports layer footfall proxies, demographics, and competitor context—so you compare apples to apples.',
+    icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+  },
+  {
+    title: 'What we do not claim',
+    desc: 'We do not guarantee a specific rent, footfall number, or lease outcome—markets move; we stay transparent.',
+    icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+  },
+]
+
+const COMPARE_PATHS = [
+  {
+    title: 'Self-search',
+    subtitle: 'DIY outreach',
+    rows: ['You source listings', 'Intel varies by listing', 'Time cost on your team', 'Negotiation on you'],
+  },
+  {
+    title: 'Traditional broker',
+    subtitle: 'Relationship-led',
+    rows: ['Inventory depends on broker', 'Insights vary widely', 'Often success-fee heavy', 'Less productised data'],
+  },
+  {
+    title: 'Lokazen',
+    subtitle: 'Platform + experts',
+    rows: ['500+ verified inventory lens', 'Location reports & matching', 'Clear plan + advisory', 'Human curation on Pro/Premium'],
+    highlight: true,
+  },
+] as const
+
+const READINESS_CHECKLIST = [
+  'Approximate monthly rent band and security deposit comfort',
+  'Size range (carpet / built-up) and frontage preferences',
+  'Target micro-markets or “no-go” corridors',
+  'Launch or relocation timeline and decision-maker',
+  'Entity ready to sign (or timeline to incorporate)',
+  'Non-negotiables: parking, hours, exhaust, loading, etc.',
+]
+
+const LEASE_BASICS = [
+  {
+    title: 'Security deposit',
+    body: 'Often a multiple of monthly rent; negotiate clarity on interest (if any) and refund timeline.',
+  },
+  {
+    title: 'Lock-in & exit',
+    body: 'Lock-in protects both sides; understand notice period, exit penalties, and fit-out amortisation clauses.',
+  },
+  {
+    title: 'Rent escalation',
+    body: 'Fixed step-ups vs percentage bumps—model 3–5 years so total occupancy cost is predictable.',
+  },
+  {
+    title: 'CAM & charges',
+    body: 'Common area maintenance and utilities can surprise—ask what is included vs billed separately.',
+  },
+  {
+    title: 'Handover & fit-out',
+    body: 'Shell vs warm shell, rent-free fit-out days, and who does MEP/fire baseline work.',
+  },
+  {
+    title: 'Permitted use',
+    body: 'Ensure the agreement and building NOC align with your category—especially F&B and health.',
+  },
 ]
 
 // Logo slider helpers (match homepage)
@@ -65,6 +223,7 @@ export default function ForBrandsPage() {
   const [phonepePlan, setPhonepePlan] = useState<'starter' | 'professional' | 'premium'>('starter')
   const [phonepeLoading, setPhonepeLoading] = useState(false)
   const [phonepeError, setPhonepeError] = useState<string | null>(null)
+  const [categoryTab, setCategoryTab] = useState<string>(BRAND_CATEGORY_GUIDANCE[0]?.id ?? 'fb')
 
   const startPhonePePayment = async (plan: 'starter' | 'professional' | 'premium') => {
     setPhonepePlan(plan)
@@ -159,13 +318,20 @@ export default function ForBrandsPage() {
             Full-service property placement with dedicated expert support
           </p>
 
-          <div className="mt-2 mb-10 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards]">
+          <div className="mt-2 mb-10 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards] px-2">
             <button
+              type="button"
               onClick={scrollToPricing}
-              className="relative inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:shadow-xl hover:shadow-[#FF5200]/40 hover:scale-105 transition-all duration-200 shadow-lg"
+              className="relative inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:shadow-xl hover:shadow-[#FF5200]/40 hover:scale-[1.02] transition-all duration-200 shadow-lg"
             >
               <span className="relative z-10">View Our Plans</span>
             </button>
+            <Link
+              href="/contact-us"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white border-2 border-white/25 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-[#FF5200]/50 transition-all duration-200"
+            >
+              Talk to placement team
+            </Link>
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 sm:gap-6 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards]">
@@ -245,6 +411,268 @@ export default function ForBrandsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Category-wise guidance */}
+      <section className="relative z-10 py-14 md:py-20 overflow-hidden bg-gradient-to-b from-slate-950 via-gray-900 to-slate-950">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-[420px] h-[420px] bg-[#FF5200]/12 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-1/4 w-[380px] h-[380px] bg-[#E4002B]/10 rounded-full blur-[90px]" />
+          <div className="absolute inset-0 opacity-[0.07]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,82,0,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,82,0,0.4) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }} />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-8 md:mb-10">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/10 backdrop-blur-md mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] mr-2 animate-pulse" />
+              <span className="text-xs sm:text-sm font-medium text-gray-200">By category</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">
+              Guidance for <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35]">your segment</span>
+            </h2>
+            <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto">
+              Practical lenses we use when shortlisting—so you compare locations with the right criteria, not generic buzzwords.
+            </p>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 md:mb-8 -mx-1 px-1 md:flex-wrap md:justify-center md:overflow-visible">
+            {BRAND_CATEGORY_GUIDANCE.map((c) => {
+              const active = categoryTab === c.id
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoryTab(c.id)}
+                  className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border ${
+                    active
+                      ? 'text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] border-transparent shadow-lg shadow-[#FF5200]/25'
+                      : 'text-gray-300 bg-white/5 border-white/10 hover:bg-white/10 hover:border-[#FF5200]/30'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              )
+            })}
+          </div>
+          {(() => {
+            const cat = BRAND_CATEGORY_GUIDANCE.find((c) => c.id === categoryTab) ?? BRAND_CATEGORY_GUIDANCE[0]
+            if (!cat) return null
+            return (
+              <div className="relative rounded-3xl p-[1px] bg-gradient-to-br from-[#FF5200]/50 via-[#E4002B]/30 to-[#FF6B35]/40 shadow-2xl shadow-black/40">
+                <div className="rounded-[22px] bg-gray-900/90 backdrop-blur-xl border border-white/5 overflow-hidden">
+                  <div className="grid lg:grid-cols-5 gap-0">
+                    <div className="lg:col-span-3 p-6 sm:p-8 md:p-10">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[#FF6B35] mb-2">{cat.label}</p>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white mb-4">{cat.tagline}</h3>
+                      <ul className="space-y-4">
+                        {cat.points.map((pt, i) => (
+                          <li key={i} className="flex gap-3 text-gray-300 text-sm sm:text-base leading-relaxed">
+                            <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-[#FF5200]/20 to-[#E4002B]/10 border border-[#FF5200]/20 flex items-center justify-center text-[#FF5200] text-xs font-bold">{i + 1}</span>
+                            <span>{pt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="lg:col-span-2 p-6 sm:p-8 md:p-10 bg-gradient-to-br from-[#FF5200]/10 via-transparent to-[#E4002B]/5 border-t lg:border-t-0 lg:border-l border-white/10">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-bold text-white">Intel we emphasise</span>
+                      </div>
+                      <p className="text-gray-300 text-sm leading-relaxed">{cat.intel}</p>
+                      <div className="mt-6 pt-6 border-t border-white/10">
+                        <Link href="/contact-us" className="inline-flex items-center gap-2 text-sm font-semibold text-[#FF6B35] hover:text-[#FF5200] transition-colors">
+                          Discuss your brief
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </div>
+      </section>
+
+      {/* Which plan fits you */}
+      <section className="relative z-10 py-14 md:py-20 bg-gradient-to-b from-white via-orange-50/20 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 md:mb-12">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#FF5200]/10 border border-[#FF5200]/20 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF5200] mr-2" />
+              <span className="text-xs sm:text-sm font-medium text-gray-800">Choose confidently</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
+              Which plan <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">fits you?</span>
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto mt-2">A quick decision lens—upgrade anytime if your search gets more hands-on.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+            <div className="group relative rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-xl hover:border-gray-300 transition-all duration-300 overflow-hidden">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-gray-100 to-transparent rounded-bl-full opacity-60" />
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-gray-100 text-gray-800 text-xs font-bold uppercase tracking-wide mb-4">Starter</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">You know the market reasonably well</h3>
+                <p className="text-sm text-gray-600 leading-relaxed mb-6">
+                  You want verified inventory, AI-led matching, location reports, and owner contacts—without a heavy field programme. Ideal when you can run visits yourself and mainly need speed and data.
+                </p>
+                <ul className="space-y-2.5 text-sm text-gray-700">
+                  <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Tight budget for advisory, strong internal ops</li>
+                  <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Single location, clear micro-market shortlist</li>
+                  <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Email-led coordination works for you</li>
+                </ul>
+                <button type="button" onClick={scrollToPricing} className="mt-8 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-gray-800 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors">
+                  See Starter pricing
+                </button>
+              </div>
+            </div>
+            <div className="group relative rounded-2xl border-2 border-[#FF5200] bg-white p-8 shadow-xl shadow-[#FF5200]/10 transition-all duration-300 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/5 via-transparent to-[#E4002B]/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-[10px] font-bold uppercase tracking-wide">Most brands</div>
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#FF5200]/10 text-[#E4002B] text-xs font-bold uppercase tracking-wide mb-4">Professional</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">You want experts on the ground</h3>
+                <p className="text-sm text-gray-600 leading-relaxed mb-6">
+                  Dedicated manager, scheduled site visits, negotiation support, and WhatsApp—when the lease outcome matters as much as the shortlist.
+                </p>
+                <ul className="space-y-2.5 text-sm text-gray-700">
+                  <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> First flagship or high-stakes spend</li>
+                  <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> You value deal support, not just listings</li>
+                  <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Faster alignment with stakeholders via manager</li>
+                </ul>
+                <button type="button" onClick={scrollToPricing} className="mt-8 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-md transition-opacity">
+                  See Professional pricing
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-center text-sm text-gray-500 mt-8 max-w-xl mx-auto">
+            <span className="font-semibold text-gray-700">Premium</span> suits multi-location programmes, priority support, and deeper legal review—available as we roll it out.{' '}
+            <Link href="/contact-us" className="text-[#FF5200] font-medium hover:underline">Ask us</Link> if you are unsure.
+          </p>
+        </div>
+      </section>
+
+      {/* How matching & data work */}
+      <section className="relative z-10 py-14 md:py-20 bg-white border-y border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 md:mb-12">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] mr-2" />
+              <span className="text-xs sm:text-sm font-medium text-gray-700">Under the hood</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
+              How <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">matching</span> works
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto mt-2">Product and people together—so you are not guessing from stale listings alone.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {MATCHING_INTEL_POINTS.map((item, idx) => (
+              <div key={idx} className="relative rounded-2xl border border-gray-200 bg-gradient-to-b from-white to-gray-50/80 p-6 hover:border-[#FF5200]/40 hover:shadow-lg transition-all duration-300 group">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center shadow-lg mb-4 group-hover:scale-105 transition-transform">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} /></svg>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Compare paths */}
+      <section className="relative z-10 py-14 md:py-20 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+        <div className="absolute top-20 right-0 w-72 h-72 bg-[#FF5200]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-10 md:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
+              Three ways brands <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">search</span>
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto mt-2">Same city, different trade-offs—pick what matches how you like to decide.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-6 items-stretch">
+            {COMPARE_PATHS.map((col, idx) => (
+              <div
+                key={idx}
+                className={`rounded-2xl p-8 flex flex-col border-2 transition-all duration-300 ${
+                  'highlight' in col && col.highlight
+                    ? 'border-[#FF5200] bg-white shadow-2xl shadow-[#FF5200]/15 md:scale-[1.02] z-10'
+                    : 'border-gray-200 bg-white/80 hover:border-gray-300 hover:shadow-md'
+                }`}
+              >
+                {'highlight' in col && col.highlight && (
+                  <div className="text-xs font-bold uppercase tracking-wide text-[#FF5200] mb-2">Recommended</div>
+                )}
+                <h3 className="text-xl font-bold text-gray-900">{col.title}</h3>
+                <p className="text-sm text-gray-500 mb-6">{col.subtitle}</p>
+                <ul className="space-y-3 flex-1">
+                  {col.rows.map((row, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-gray-700">
+                      <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5 ${'highlight' in col && col.highlight ? 'bg-[#FF5200]' : 'bg-gray-300'}`} />
+                      {row}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Readiness checklist + Lease basics */}
+      <section className="relative z-10 py-14 md:py-20 bg-slate-900 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-30 pointer-events-none" style={{
+          backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,82,0,0.15) 0%, transparent 45%), radial-gradient(circle at 80% 80%, rgba(228,0,43,0.12) 0%, transparent 40%)',
+        }} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+            <div>
+              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/10 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF5200] mr-2" />
+                <span className="text-xs font-medium text-gray-200">Before you onboard</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">
+                Readiness <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">checklist</span>
+              </h2>
+              <p className="text-gray-400 text-sm sm:text-base mb-8 leading-relaxed">
+                Sharpening these upfront saves weeks of back-and-forth and keeps shortlists relevant.
+              </p>
+              <ul className="space-y-4">
+                {READINESS_CHECKLIST.map((line, i) => (
+                  <li key={i} className="flex gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-md bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center mt-0.5">
+                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    </span>
+                    <span className="text-gray-300 text-sm sm:text-base leading-relaxed">{line}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/contact-us" className="inline-flex mt-8 items-center gap-2 px-5 py-3 rounded-xl font-semibold bg-white text-gray-900 hover:bg-gray-100 transition-colors">
+                Share your brief
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              </Link>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/[0.06] backdrop-blur-md p-6 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Commercial lease basics (Bengaluru)</h3>
+              <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                Orientation only—not legal advice. Have your counsel review the agreement before you sign.
+              </p>
+              <div className="grid gap-4">
+                {LEASE_BASICS.map((item, i) => (
+                  <div key={i} className="rounded-xl border border-white/10 bg-black/20 p-4 hover:border-[#FF5200]/30 transition-colors">
+                    <h4 className="font-semibold text-[#FF6B35] text-sm mb-1">{item.title}</h4>
+                    <p className="text-gray-400 text-sm leading-relaxed">{item.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
