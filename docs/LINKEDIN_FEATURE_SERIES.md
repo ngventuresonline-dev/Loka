@@ -33,6 +33,70 @@
 
 ---
 
+## Professional posting: what to copy-paste exactly
+
+LinkedIn gives you **one main text box** for the post. Use this rule:
+
+| Where | What you paste |
+|--------|----------------|
+| **Post composer (the big text box)** | Only the **words under “Copy:”** or **“Post body:”** in each section below. Nothing else from this file. |
+| **Do not paste into LinkedIn** | Markdown tables, `**bold**` markers (remove them or LinkedIn won’t format them — see below), slide specs, “Visual:” lines. |
+| **On carousel images (Canva/Figma)** | Only the **short headlines** from the table (e.g. “One platform. Two journeys.”). Keep slides minimal: big type, one idea per slide. |
+| **First comment (optional, professional)** | Extra links so the main post stays clean: e.g. `Brands → https://lokazen.in/for-brands` and `List space → https://lokazen.in/filter/owner` |
+
+**Formatting for a polished look**
+
+- Copy the text from this doc, then in LinkedIn **remove `**`** around words and use **Ctrl+B** (bold) on 2–4 key phrases only, or leave plain text (also fine for a corporate tone).  
+- Put a **blank line** between paragraphs (Enter twice).  
+- Put the **URL on its own line** at the end (before hashtags). Use full `https://lokazen.in` for a proper preview.  
+- Use **3–5 hashtags** on the last line, separated by spaces — not a giant block of twenty tags.
+
+---
+
+### Example — Post 0, ready to paste (plain text)
+
+Copy everything in the box into LinkedIn, then add your image/video, then post:
+
+```
+Commercial real estate in India is still too much "who do you know?" and too little "here's the data."
+
+Lokazen is a two-sided platform for brands hunting space and owners listing commercial property — structured matching, location intelligence, and hands-on support when someone needs experts on the ground.
+
+If you're expanding in Bangalore (F&B, retail, services, clinics, cloud kitchens), it's the kind of stack I wish had been normal when I was living this problem.
+
+https://lokazen.in
+
+What's one feature you'd want in a commercial leasing product? Drop it below.
+
+#PropTech #Bangalore #CommercialRealEstate
+```
+
+*(Optional: bold “Lokazen”, “two-sided platform”, and “Bangalore” in the composer.)*
+
+---
+
+### Example — Post 1 with a carousel (what goes where)
+
+1. **Images:** 5 PNGs exported from Canva — each slide shows only the **Headline** text from the table (and optional tiny subline).  
+2. **Post text box** — paste **only** this:
+
+```
+Most marketplaces optimize for clicks. I care more about fit.
+
+Brands start with a plain-English brief (or structured filters) and get curated commercial matches with context — not a random PDF dump.
+
+Owners list verified inventory and reach serious operators who already fit the micro-market.
+
+Swipe for how the two journeys connect.
+
+#PropTech #Bangalore #CommercialRealEstate
+```
+
+3. Click **Add media** → select images **slide 1 through 5 in order**.  
+4. Post.
+
+---
+
 Use the sections below as **copy-paste** text. Pair with **screenshots or clips** from [lokazen.in](https://lokazen.in). Recommended image size: **1080 × 1350 px** (portrait) or **1200 × 627** (link preview).
 
 **Voice:** First person (**I**), but **Lokazen** carries the product facts (features, scoring) so it doesn’t read like “here’s everything I coded.”
