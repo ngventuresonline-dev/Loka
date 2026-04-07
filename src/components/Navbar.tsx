@@ -10,9 +10,11 @@ import ProfileModal from './ProfileModal'
 
 interface NavbarProps {
   hideOnMobile?: boolean
+  /** Replaces default “List Property” CTA (e.g. on For Brands). */
+  primaryCta?: { href: string; label: string }
 }
 
-export default function Navbar({ hideOnMobile = false }: NavbarProps) {
+export default function Navbar({ hideOnMobile = false, primaryCta }: NavbarProps) {
   const { user, isLoggedIn, logout, loading } = useAuth()
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -149,30 +151,36 @@ export default function Navbar({ hideOnMobile = false }: NavbarProps) {
                   Looking For A Space
                 </Link>
                 <div className="relative">
-                  <Button href="/filter/owner" size="sm" className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:from-[#FF6B35] hover:to-[#FF5200] border-0 px-3 sm:px-4 lg:px-6 py-1.5 sm:py-2 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-[#FF5200]/30 flex items-center gap-2">
-                    <span>List Property</span>
-                    <span 
-                      className="px-2 py-0.5 relative overflow-hidden text-white text-[10px] font-bold rounded-full border border-red-500/70 flex items-center gap-1 flex-shrink-0"
-                      style={{
-                        background: 'linear-gradient(90deg, rgba(244, 114, 182, 1), rgba(236, 72, 153, 1), rgba(244, 114, 182, 1), rgba(251, 113, 133, 1), rgba(244, 114, 182, 1))',
-                        backgroundSize: '300% 100%',
-                        animation: 'gradientShift 2s ease-in-out infinite',
-                        boxShadow: '0 0 8px rgba(236, 72, 153, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2)'
-                      }}
-                    >
-                      <span className="w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                        <svg className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </span>
-                      <span className="whitespace-nowrap z-10">Instant</span>
-                      <span 
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full pointer-events-none"
+                  <Button
+                    href={primaryCta?.href ?? '/filter/owner'}
+                    size="sm"
+                    className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:from-[#FF6B35] hover:to-[#FF5200] border-0 px-3 sm:px-4 lg:px-6 py-1.5 sm:py-2 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-[#FF5200]/30 flex items-center gap-2"
+                  >
+                    <span>{primaryCta?.label ?? 'List Property'}</span>
+                    {!primaryCta && (
+                      <span
+                        className="px-2 py-0.5 relative overflow-hidden text-white text-[10px] font-bold rounded-full border border-red-500/70 flex items-center gap-1 flex-shrink-0"
                         style={{
-                          animation: 'shine 2.5s ease-in-out infinite',
+                          background: 'linear-gradient(90deg, rgba(244, 114, 182, 1), rgba(236, 72, 153, 1), rgba(244, 114, 182, 1), rgba(251, 113, 133, 1), rgba(244, 114, 182, 1))',
+                          backgroundSize: '300% 100%',
+                          animation: 'gradientShift 2s ease-in-out infinite',
+                          boxShadow: '0 0 8px rgba(236, 72, 153, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2)',
                         }}
-                      />
-                    </span>
+                      >
+                        <span className="w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                          <svg className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </span>
+                        <span className="whitespace-nowrap z-10">Instant</span>
+                        <span
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full pointer-events-none"
+                          style={{
+                            animation: 'shine 2.5s ease-in-out infinite',
+                          }}
+                        />
+                      </span>
+                    )}
                   </Button>
                 </div>
               </>

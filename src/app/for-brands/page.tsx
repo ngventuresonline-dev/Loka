@@ -119,6 +119,9 @@ const BRAND_CATEGORY_GUIDANCE: BrandCategory[] = [
   },
 ]
 
+/** Category guidance auto-rotate + progress bar (keep in sync with `category-tab-progress` in tailwind.config.js). */
+const CATEGORY_TAB_ROTATE_MS = 6500
+
 const MATCHING_INTEL_POINTS = [
   {
     title: 'Structured brief',
@@ -274,7 +277,6 @@ export default function ForBrandsPage() {
   const skipCategoryTabScrollRef = useRef(true)
 
   useEffect(() => {
-    const ms = 6500
     const id = window.setInterval(() => {
       setCategoryTab((prev) => {
         const idx = BRAND_CATEGORY_GUIDANCE.findIndex((c) => c.id === prev)
@@ -282,7 +284,7 @@ export default function ForBrandsPage() {
         const next = (i + 1) % BRAND_CATEGORY_GUIDANCE.length
         return BRAND_CATEGORY_GUIDANCE[next]!.id
       })
-    }, ms)
+    }, CATEGORY_TAB_ROTATE_MS)
     return () => window.clearInterval(id)
   }, [])
 
@@ -333,7 +335,7 @@ export default function ForBrandsPage() {
 
   return (
     <main className="min-h-screen bg-white antialiased">
-      <Navbar />
+      <Navbar primaryCta={{ href: '/onboarding/brand', label: 'Brand Onboard' }} />
 
       {/* Same gradient background as homepage */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -628,10 +630,10 @@ export default function ForBrandsPage() {
                   type="button"
                   data-category-tab={c.id}
                   onClick={() => setCategoryTab(c.id)}
-                  className={`snap-start shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border min-h-[44px] ${
+                  className={`snap-start shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ease-out border min-h-[44px] motion-safe:transition-[transform,box-shadow,background-color,border-color,color] ${
                     active
-                      ? 'text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] border-transparent shadow-lg shadow-[#FF5200]/20'
-                      : 'text-[#0A0A0A] bg-white border-gray-200 hover:border-[#FF5200]/40 hover:shadow-md shadow-sm'
+                      ? 'text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] border-transparent shadow-lg shadow-[#FF5200]/20 motion-safe:scale-[1.02]'
+                      : 'text-[#0A0A0A] bg-white border-gray-200 hover:border-[#FF5200]/40 hover:shadow-md shadow-sm motion-safe:scale-100'
                   }`}
                 >
                   {c.label}
@@ -639,27 +641,41 @@ export default function ForBrandsPage() {
               )
             })}
           </div>
+          <div
+            className="mb-5 md:mb-7 max-w-full px-0.5"
+            aria-hidden
+          >
+            <div className="relative h-1 rounded-full bg-gray-300/80 overflow-hidden">
+              <div
+                key={categoryTab}
+                className="absolute inset-y-0 left-0 w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] motion-safe:animate-category-tab-progress motion-reduce:scale-x-100 motion-reduce:animate-none"
+              />
+            </div>
+          </div>
           {(() => {
             const cat = BRAND_CATEGORY_GUIDANCE.find((c) => c.id === categoryTab) ?? BRAND_CATEGORY_GUIDANCE[0]
             if (!cat) return null
             return (
-              <div className="relative rounded-3xl p-[1px] bg-gradient-to-br from-[#FF5200]/50 via-[#E4002B]/30 to-[#FF6B35]/40 shadow-2xl shadow-black/40">
+              <div
+                key={categoryTab}
+                className="relative rounded-3xl p-[1px] bg-gradient-to-br from-[#FF5200]/50 via-[#E4002B]/30 to-[#FF6B35]/40 shadow-2xl shadow-black/40 motion-safe:animate-category-reveal motion-reduce:opacity-100"
+              >
                 <div className="rounded-[22px] bg-gray-900/90 backdrop-blur-xl border border-white/5 overflow-hidden">
                   <div className="grid lg:grid-cols-5 gap-0">
-                    <div className="lg:col-span-3 p-6 sm:p-8 md:p-10">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-[#FF6B35] mb-2">{cat.label}</p>
-                      <h3 className="text-xl sm:text-2xl font-bold text-white mb-4">{cat.tagline}</h3>
-                      <ul className="space-y-4">
+                    <div className="lg:col-span-3 p-5 sm:p-8 md:p-10">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[#FF6B35] mb-1.5 sm:mb-2">{cat.label}</p>
+                      <h3 className="text-lg sm:text-2xl font-bold text-white mb-3 sm:mb-4">{cat.tagline}</h3>
+                      <ul className="space-y-3 sm:space-y-4">
                         {cat.points.map((pt, i) => (
-                          <li key={i} className="flex gap-3 text-gray-300 text-sm sm:text-base leading-relaxed">
+                          <li key={i} className="flex gap-2.5 sm:gap-3 text-gray-300 text-sm sm:text-base leading-relaxed">
                             <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-[#FF5200]/20 to-[#E4002B]/10 border border-[#FF5200]/20 flex items-center justify-center text-[#FF5200] text-xs font-bold">{i + 1}</span>
                             <span>{pt}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
-                    <div className="lg:col-span-2 p-6 sm:p-8 md:p-10 bg-gradient-to-br from-[#FF5200]/10 via-transparent to-[#E4002B]/5 border-t lg:border-t-0 lg:border-l border-white/10">
-                      <div className="flex items-center gap-2 mb-4">
+                    <div className="lg:col-span-2 p-5 sm:p-8 md:p-10 bg-gradient-to-br from-[#FF5200]/10 via-transparent to-[#E4002B]/5 border-t lg:border-t-0 lg:border-l border-white/10">
+                      <div className="flex items-center gap-2 mb-3 sm:mb-4">
                         <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
                           <svg className="w-5 h-5 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -668,7 +684,7 @@ export default function ForBrandsPage() {
                         <span className="text-sm font-bold text-white">Intel we emphasise</span>
                       </div>
                       <p className="text-gray-300 text-sm leading-relaxed">{cat.intel}</p>
-                      <div className="mt-6 pt-6 border-t border-white/10">
+                      <div className="mt-5 sm:mt-6 pt-5 sm:pt-6 border-t border-white/10">
                         <Link href="/contact-us" className="inline-flex items-center gap-2 text-sm font-semibold text-[#FF6B35] hover:text-[#FF5200] transition-colors">
                           Discuss your brief
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>

@@ -29,6 +29,8 @@ module.exports = {
         'scroll-right-fast': 'scroll-right-fast 50s linear infinite',
         'gridScroll': 'gridScroll 20s linear infinite',
         'scanLine': 'scanLine 8s ease-in-out infinite',
+        'category-tab-progress': 'categoryTabProgress 6.5s linear forwards',
+        'category-reveal': 'categoryReveal 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards',
       },
       keyframes: {
         'gradient-xy': {
@@ -101,7 +103,16 @@ module.exports = {
         'scanLine': {
           '0%, 100%': { transform: 'translateY(-100%)', opacity: '0' },
           '50%': { transform: 'translateY(100vh)', opacity: '1' }
-        }
+        },
+        /** For-brands category guidance: content swap + tab rotation timer */
+        categoryTabProgress: {
+          '0%': { transform: 'scaleX(0)' },
+          '100%': { transform: 'scaleX(1)' },
+        },
+        categoryReveal: {
+          '0%': { opacity: '0', transform: 'translate3d(0, 10px, 0)' },
+          '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+        },
       }
     },
   },
