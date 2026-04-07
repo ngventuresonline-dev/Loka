@@ -219,9 +219,49 @@ function hasBlackBackground(brandName: string) {
 
 const COLS_PER_ROW = 3
 
+const DASHBOARD_MOCK_CATEGORIES = [
+  {
+    id: 'cafe',
+    tabLabel: 'Café / Beverage',
+    initial: 'C',
+    title: 'Premium Café Space',
+    detailLine: '12th Main, Indiranagar · 280 sqft',
+    rent: '₹85,000/mo',
+    bfi: 88,
+  },
+  {
+    id: 'qsr',
+    tabLabel: 'QSR / Fast Casual',
+    initial: 'Q',
+    title: 'Prime Corner QSR Space',
+    detailLine: '17th Main, Koramangala · 450 sqft',
+    rent: '₹1,55,000/mo',
+    bfi: 81,
+  },
+  {
+    id: 'salon',
+    tabLabel: 'Salon & Wellness',
+    initial: 'S',
+    title: 'Ground Floor Retail',
+    detailLine: 'HSR Layout 27th Main · 350 sqft',
+    rent: '₹90,000/mo',
+    bfi: 79,
+  },
+  {
+    id: 'retail',
+    tabLabel: 'Retail & Lifestyle',
+    initial: 'R',
+    title: 'High-Street Retail Space',
+    detailLine: 'Commercial Street · 600 sqft',
+    rent: '₹2,20,000/mo',
+    bfi: 75,
+  },
+] as const
+
 export default function ForBrandsPage() {
   const pricingRef = useRef<HTMLDivElement>(null)
   const [faqOpen, setFaqOpen] = useState<number | null>(null)
+  const [dashboardMockTab, setDashboardMockTab] = useState(0)
   const [showPremiumSoon, setShowPremiumSoon] = useState(false)
   const [phonepeOpen, setPhonepeOpen] = useState(false)
   const [phonepeRedirectUrl, setPhonepeRedirectUrl] = useState<string | null>(null)
@@ -366,13 +406,31 @@ export default function ForBrandsPage() {
                 </div>
               </div>
               <div className="bg-white flex flex-col lg:flex-row min-h-[18rem] lg:h-72 overflow-hidden">
+                {(() => {
+                  const mock = DASHBOARD_MOCK_CATEGORIES[dashboardMockTab] ?? DASHBOARD_MOCK_CATEGORIES[0]
+                  return (
+                    <>
                 <div className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-gray-100 bg-white p-4 flex flex-col gap-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#FF5200] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">T</div>
-                    <div>
-                      <p className="text-sm font-bold text-[#0A0A0A]">Ticoo</p>
-                      <p className="text-[10px] text-gray-400">QSR · HSR Layout</p>
+                    <div className="w-9 h-9 rounded-xl bg-[#FF5200] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{mock.initial}</div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[#0A0A0A] truncate">{mock.tabLabel}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{mock.tabLabel}</p>
                     </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DASHBOARD_MOCK_CATEGORIES.map((c, i) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setDashboardMockTab(i)}
+                        className={`text-[10px] font-semibold px-3 py-1 rounded-full transition-colors ${
+                          i === dashboardMockTab ? 'bg-[#FF5200] text-white' : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {c.tabLabel}
+                      </button>
+                    ))}
                   </div>
                   <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
                     <p className="text-2xl font-black text-[#FF5200]">15</p>
@@ -395,13 +453,13 @@ export default function ForBrandsPage() {
                 <div className="flex-1 bg-[#F8F7F4] p-4 sm:p-5 flex flex-col sm:flex-row gap-4 overflow-hidden min-h-0">
                   <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-4 min-w-0">
                     <div className="flex items-start justify-between mb-3 gap-2">
-                      <div>
-                        <p className="text-xs font-bold text-[#0A0A0A]">Prime Corner QSR Space</p>
-                        <p className="text-[10px] text-gray-400">17th Main, Koramangala · 450 sqft</p>
-                        <p className="text-[10px] font-semibold text-[#FF5200] mt-0.5">₹1,55,000/mo</p>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-[#0A0A0A]">{mock.title}</p>
+                        <p className="text-[10px] text-gray-400">{mock.detailLine}</p>
+                        <p className="text-[10px] font-semibold text-[#FF5200] mt-0.5">{mock.rent}</p>
                       </div>
                       <div className="w-12 h-12 rounded-xl bg-[#FF5200] flex items-center justify-center flex-shrink-0">
-                        <p className="text-white text-xs font-black leading-none text-center">81<br /><span className="text-[8px]">BFI</span></p>
+                        <p className="text-white text-xs font-black leading-none text-center">{mock.bfi}<br /><span className="text-[8px]">BFI</span></p>
                       </div>
                     </div>
                     <div className="space-y-1.5">
@@ -415,13 +473,21 @@ export default function ForBrandsPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5 mt-3">
-                      {([['Conservative', '₹3L'], ['Base Case', '₹5L'], ['Optimistic', '₹9L']] as const).map(([l, v]) => (
-                        <div key={l} className="bg-gray-50 rounded-lg p-2 text-center">
-                          <p className="text-[8px] text-gray-400 uppercase tracking-wide">{l}</p>
-                          <p className="text-sm font-black text-[#0A0A0A]">{v}</p>
-                        </div>
-                      ))}
+                    <div className="relative mt-3">
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([['Conservative', '₹3L'], ['Base Case', '₹5L'], ['Optimistic', '₹9L']] as const).map(([l, v]) => (
+                          <div key={l} className="bg-gray-50 rounded-lg p-2 text-center">
+                            <p className="text-[8px] text-gray-400 uppercase tracking-wide">{l}</p>
+                            <p className="text-sm font-black text-[#0A0A0A] select-none" style={{ filter: 'blur(4px)' }}>{v}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-1.5 flex items-center justify-center gap-1 text-[9px] text-gray-400 text-center">
+                        <svg className="w-3 h-3 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Unlock with brand onboarding
+                      </p>
                     </div>
                   </div>
                   <div className="w-full sm:w-44 h-40 sm:h-auto flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden relative min-h-[10rem] sm:min-h-0">
@@ -436,7 +502,7 @@ export default function ForBrandsPage() {
                     </svg>
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                       <div className="w-8 h-8 bg-[#FF5200] rounded-full flex items-center justify-center shadow-lg">
-                        <span className="text-white text-[10px] font-black">81</span>
+                        <span className="text-white text-[10px] font-black">{mock.bfi}</span>
                       </div>
                       <div className="w-2 h-2 bg-[#FF5200] mx-auto -mt-0.5" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
                     </div>
@@ -450,6 +516,9 @@ export default function ForBrandsPage() {
                     </div>
                   </div>
                 </div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
             <p className="text-center text-xs text-white/50 mt-3">Your personalised brand dashboard — live matches, location intelligence, revenue potential</p>
