@@ -356,3 +356,13 @@ Use a **template** (Canva/Figma): dark bg, orange gradient accent `#FF5200` → 
 | 4 | Post 9 | Post 10 | Carousel A |
 
 Adjust for launches, press, or customer stories (swap in **quote posts** when you have permission).
+
+---
+
+## Ready-made visuals (features + tech)
+
+Open in a browser (double-click or drag into Chrome/Edge):
+
+**`marketing/linkedin-visual-deck.html`**
+
+Eight slides (1080×1350 aspect): overview, two-sided product, brand features, owner features, location intelligence, scoring/maps/charts, full tech stack from `package.json`, data/API ops. Screenshot each slide for a LinkedIn carousel — instructions are in a bar at the top of the file.

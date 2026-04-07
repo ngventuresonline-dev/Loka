@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lokazen — LinkedIn visual deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #06080d;
+      --bg1: #0e1219;
+      --card: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #e8eaef;
+      --muted: #8b92a8;
+      --orange: #ff5200;
+      --red: #e4002b;
+      --accent: #ff6b35;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg0);
+      color: var(--text);
+      line-height: 1.45;
+      padding-bottom: 4rem;
+    }
+    .hint {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 10px 16px;
+      font-size: 12px;
+      background: rgba(6, 8, 13, 0.92);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      text-align: center;
+    }
+    .hint kbd { background: var(--card); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); }
+    .deck {
+      max-width: 1080px;
+      margin: 52px auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      padding: 0 16px;
+    }
+    .slide {
+      width: 100%;
+      aspect-ratio: 1080 / 1350;
+      max-height: min(92vh, 1350px);
+      background: linear-gradient(160deg, var(--bg1) 0%, #0a0d14 50%, #080a10 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: clamp(28px, 4vw, 48px);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
+    }
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(circle at 30% 20%, rgba(255, 82, 0, 0.12), transparent 45%),
+                  radial-gradient(circle at 80% 70%, rgba(228, 0, 43, 0.08), transparent 40%);
+      pointer-events: none;
+    }
+    .slide-inner { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-family: Syne, sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 4.5vw, 3.25rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+    h1 .grad {
+      background: linear-gradient(105deg, #ff8a4c, var(--orange), var(--red));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h2 {
+      font-family: Syne, sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+      margin-bottom: 14px;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      font-size: clamp(14px, 1.6vw, 17px);
+      color: var(--muted);
+      max-width: 52ch;
+      margin-bottom: 20px;
+    }
+    ul.feat {
+      list-style: none;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: clamp(13px, 1.4vw, 15px);
+    }
+    ul.feat li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    ul.feat li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange), var(--red));
+      box-shadow: 0 0 12px rgba(255, 82, 0, 0.5);
+    }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      flex: 1;
+      align-content: start;
+    }
+    @media (max-width: 640px) {
+      .grid2 { grid-template-columns: 1fr; }
+    }
+    .tile {
+      padding: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .tile strong {
+      display: block;
+      font-family: Syne, sans-serif;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      flex: 1;
+      font-size: 12px;
+      align-content: start;
+    }
+    @media (min-width: 700px) {
+      .tech-grid { grid-template-columns: repeat(3, 1fr); font-size: 13px; }
+    }
+    .tech {
+      padding: 12px;
+      background: rgba(255, 82, 0, 0.06);
+      border: 1px solid rgba(255, 82, 0, 0.2);
+      border-radius: 10px;
+    }
+    .tech .name { font-weight: 700; color: #fff; margin-bottom: 4px; font-size: 13px; }
+    .tech .use { color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .footer-slide {
+      margin-top: auto;
+      font-size: 11px;
+      color: var(--muted);
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-slide a { color: var(--accent); text-decoration: none; }
+    .num {
+      position: absolute;
+      top: clamp(28px, 4vw, 48px);
+      right: clamp(28px, 4vw, 48px);
+      font-family: Syne, sans-serif;
+      font-size: 72px;
+      font-weight: 800;
+      opacity: 0.07;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="hint">
+    Open this file in Chrome/Edge → zoom so one slide fills the screen → <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> to screenshot each slide for LinkedIn (or print to PDF). Slides are <strong>1080×1350</strong> aspect.
+  </div>
+
+  <div class="deck">
+
+    <section class="slide" id="s1">
+      <span class="num">01</span>
+      <div class="slide-inner">
+        <span class="tag">Commercial real estate · Bangalore-first</span>
+        <h1><span class="grad">Lokazen</span></h1>
+        <p class="sub">Two-sided platform for brands that need space and owners that list it — matching, location intelligence, dashboards, and optional expert support.</p>
+        <ul class="feat" style="margin-top:8px;">
+          <li>Structured briefs, not random PDF dumps</li>
+          <li>Footfall, demographics, competition, accessibility signals</li>
+          <li>Brand Fit Index (BFI) &amp; Property Fit Index (PFI)</li>
+          <li>Starter / Professional / Premium plans · PhonePe checkout</li>
+        </ul>
+        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a> · Visual deck for social</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s2">
+      <span class="num">02</span>
+      <div class="slide-inner">
+        <span class="tag">Product</span>
+        <h2>Two audiences, one stack</h2>
+        <p class="sub">Same data model and scoring lens whether you’re hunting space or listing it.</p>
+        <div class="grid2">
+          <div class="tile">
+            <strong>Brands</strong>
+            Natural-language or structured search → <code>/filter/brand</code> → curated matches → brand dashboard with map &amp; intel panels → plans on <code>/for-brands</code>.
+          </div>
+          <div class="tile">
+            <strong>Owners</strong>
+            Rich listing flow → <code>/filter/owner</code> → verified-style inventory → matched to serious operators by fit, not spam.
+          </div>
+        </div>
+        <ul class="feat" style="margin-top:14px;">
+          <li>Hero search toggles Brand vs List Property modes on the homepage</li>
+          <li>Location intelligence preview page for area + category experiments</li>
+        </ul>
+        <div class="footer-slide">Public flows + logged-in dashboards (owner / brand / admin)</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s3">
+      <span class="num">03</span>
+      <div class="slide-inner">
+        <span class="tag">Brands</span>
+        <h2>What brands get</h2>
+        <ul class="feat">
+          <li><strong>AI-assisted search</strong> — messy brief → structured filters (query parsing + URL params to matching)</li>
+          <li><strong>Brand dashboard</strong> — matches, requirements, fit bars, map (Google Maps), property intel &amp; competitor context</li>
+          <li><strong>Revenue-style scenarios</strong> — shown in-product with clear gating / honesty on guarantees</li>
+          <li><strong>Category guidance</strong> — F&amp;B, café, retail, wellness, services, cloud kitchen lenses on marketing pages</li>
+          <li><strong>Plans</strong> — email vs WhatsApp vs dedicated manager, site visits, negotiation, legal on higher tiers</li>
+          <li><strong>Payments</strong> — PhonePe integration for brand onboarding flows</li>
+        </ul>
+        <div class="footer-slide">Success fee messaging surfaced consistently on for-brands content</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s4">
+      <span class="num">04</span>
+      <div class="slide-inner">
+        <span class="tag">Owners</span>
+        <h2>What owners get</h2>
+        <ul class="feat">
+          <li><strong>Structured listing UX</strong> — property type (F&amp;B + full taxonomy), Bangalore micro-markets, size sliders, rent, features, availability</li>
+          <li><strong>Owner dashboard</strong> — pipeline view, property management, alignment with platform workflows</li>
+          <li><strong>Matching</strong> — brands scored against inventory (PFI / mandate fit)</li>
+          <li><strong>Same intelligence story</strong> — listings benefit from the same location &amp; category thinking as brand-side</li>
+        </ul>
+        <div class="footer-slide">Onboarding &amp; admin tooling in-app + API-backed persistence</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s5">
+      <span class="num">05</span>
+      <div class="slide-inner">
+        <span class="tag">Intelligence</span>
+        <h2>Location intelligence layer</h2>
+        <p class="sub">Rich geo schema in Postgres (wards, micro-markets, census-style attributes) powers APIs and UI copy — not just a lat/lng pin.</p>
+        <div class="grid2">
+          <div class="tile"><strong>Footfall &amp; mobility</strong> Pedestrian / peak signals, weekend lift — messaging aligned to Google &amp; MapMyIndia-class data in product.</div>
+          <div class="tile"><strong>Demographics</strong> Income bands, age mix, catchment framing for spend fit.</div>
+          <div class="tile"><strong>Competition</strong> Category proximity, saturation, “whitespace vs data gap” style analysis in dashboard intel.</div>
+          <div class="tile"><strong>Accessibility</strong> Metro, buses, parking — operational reality for formats that need it.</div>
+        </div>
+        <ul class="feat" style="margin-top:12px;">
+          <li>Ward density &amp; enrichment APIs (e.g. ward labels from coordinates)</li>
+          <li>Optional AI enrichment when Places data is thin (server-side prompts)</li>
+        </ul>
+        <div class="footer-slide">Schema: Prisma <code>Location</code> + related intelligence models</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s6">
+      <span class="num">06</span>
+      <div class="slide-inner">
+        <span class="tag">Scoring</span>
+        <h2>BFI · PFI · charts</h2>
+        <ul class="feat">
+          <li><strong>BFI (Brand Fit Index)</strong> — property ↔ brand mandate (size, budget, format, geography)</li>
+          <li><strong>PFI (Property Fit Index)</strong> — brand ↔ asset economics &amp; use-type fit</li>
+          <li><strong>Recharts</strong> — bar, pie, area visualizations in dashboards for engagement &amp; intel</li>
+          <li><strong>Maps</strong> — React Google Maps, markers, heatmap layer where enabled; geo helpers for coords &amp; property amenities</li>
+        </ul>
+        <div class="footer-slide">Revenue benchmarks &amp; industry keys used in server-side calculators (typed TS)</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s7">
+      <span class="num">07</span>
+      <div class="slide-inner">
+        <span class="tag">Stack</span>
+        <h2>Tech in the repo</h2>
+        <p class="sub">From <code>package.json</code> + Prisma — actual dependencies, not buzzwords.</p>
+        <div class="tech-grid">
+          <div class="tech"><div class="name">Next.js 16</div><div class="use">App Router, webpack build, production on Node 18+</div></div>
+          <div class="tech"><div class="name">React 19</div><div class="use">UI, client components, concurrent-ready</div></div>
+          <div class="tech"><div class="name">TypeScript 5</div><div class="use">End-to-end typing, Zod v4 for validation</div></div>
+          <div class="tech"><div class="name">PostgreSQL</div><div class="use">Primary DB via Prisma 6 ORM &amp; migrations</div></div>
+          <div class="tech"><div class="name">NextAuth</div><div class="use">Sessions + Prisma adapter (owners/admins/brands)</div></div>
+          <div class="tech"><div class="name">Tailwind CSS 3</div><div class="use">Utility styling, design tokens (#FF5200 / #E4002B)</div></div>
+          <div class="tech"><div class="name">Framer Motion</div><div class="use">Listing &amp; marketing motion (e.g. filter/owner)</div></div>
+          <div class="tech"><div class="name">Vercel AI SDK</div><div class="use"><code>ai</code> package for AI routes &amp; streaming patterns</div></div>
+          <div class="tech"><div class="name">Anthropic · Google GenAI</div><div class="use">LLM clients for enrichment &amp; assistants</div></div>
+          <div class="tech"><div class="name">LangChain</div><div class="use">Orchestration with OpenAI-compatible models</div></div>
+          <div class="tech"><div class="name">Google Maps APIs</div><div class="use"><code>@react-google-maps/api</code> + googleapis</div></div>
+          <div class="tech"><div class="name">Three.js · R3F</div><div class="use">3D / immersive visuals where used</div></div>
+          <div class="tech"><div class="name">Recharts</div><div class="use">Dashboard analytics charts</div></div>
+          <div class="tech"><div class="name">Resend</div><div class="use">Transactional email</div></div>
+          <div class="tech"><div class="name">Supabase JS</div><div class="use">Client where integrated (storage/realtime as needed)</div></div>
+          <div class="tech"><div class="name">bcryptjs</div><div class="use">Password hashing</div></div>
+          <div class="tech"><div class="name">Sharp</div><div class="use">Image processing pipeline</div></div>
+          <div class="tech"><div class="name">PhonePe</div><div class="use">Checkout flows (in-app components + APIs)</div></div>
+          <div class="tech"><div class="name">Vercel Analytics</div><div class="use">Web analytics &amp; Speed Insights</div></div>
+          <div class="tech"><div class="name">Playwright</div><div class="use">Dev-only marketing screen capture scripts</div></div>
+        </div>
+        <div class="footer-slide">Also: date-fns, critters, lucide-react, eslint-config-next</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s8">
+      <span class="num">08</span>
+      <div class="slide-inner">
+        <span class="tag">Data &amp; ops</span>
+        <h2>Under the hood</h2>
+        <ul class="feat">
+          <li><strong>Prisma schema</strong> — users, properties, brands, locations, intel, payments-related fields, admin workflows</li>
+          <li><strong>Seed &amp; import scripts</strong> — tsx scripts for featured properties, brands, census, wards, growth patterns</li>
+          <li><strong>API routes</strong> — REST-style handlers for dashboard, intel, payments, auth (brand magic-link style), location intelligence</li>
+          <li><strong>Session &amp; tracking</strong> — client session ids, button funnels, filter analytics</li>
+        </ul>
+        <div class="footer-slide">Deploy: Vercel-friendly build (<code>vercel-build</code> runs Prisma generate + next build)</div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>
