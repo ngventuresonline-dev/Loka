@@ -274,7 +274,6 @@ export default function ForBrandsPage() {
   const [phonepeError, setPhonepeError] = useState<string | null>(null)
   const [categoryTab, setCategoryTab] = useState<string>(BRAND_CATEGORY_GUIDANCE[0]?.id ?? 'fb')
   const categoryTabRowRef = useRef<HTMLDivElement>(null)
-  const skipCategoryTabScrollRef = useRef(true)
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -288,15 +287,21 @@ export default function ForBrandsPage() {
     return () => window.clearInterval(id)
   }, [])
 
+  /** Keep the active pill in view inside the tab row only — never scrollIntoView (that scrolls the page). */
   useEffect(() => {
-    if (skipCategoryTabScrollRef.current) {
-      skipCategoryTabScrollRef.current = false
-      return
-    }
     const row = categoryTabRowRef.current
-    if (!row) return
-    const btn = row.querySelector<HTMLElement>(`[data-category-tab="${categoryTab}"]`)
-    btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    const btn = row?.querySelector<HTMLElement>(`[data-category-tab="${categoryTab}"]`)
+    if (!row || !btn) return
+    if (row.scrollWidth <= row.clientWidth) return
+
+    const rowRect = row.getBoundingClientRect()
+    const btnRect = btn.getBoundingClientRect()
+    const btnCenter = btnRect.left + btnRect.width / 2
+    const rowCenter = rowRect.left + rowRect.width / 2
+    const delta = btnCenter - rowCenter
+    if (Math.abs(delta) < 2) return
+
+    row.scrollBy({ left: delta, behavior: 'smooth' })
   }, [categoryTab])
 
   const startPhonePePayment = async (plan: 'starter' | 'professional' | 'premium') => {
