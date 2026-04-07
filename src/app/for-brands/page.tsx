@@ -170,32 +170,49 @@ const READINESS_CHECKLIST = [
   'Non-negotiables: parking, hours, exhaust, loading, etc.',
 ]
 
-const LEASE_BASICS = [
+const LEASE_BASICS: { title: string; body: string; icon: string }[] = [
   {
     title: 'Security deposit',
     body: 'Often a multiple of monthly rent; negotiate clarity on interest (if any) and refund timeline.',
+    icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
   },
   {
     title: 'Lock-in & exit',
     body: 'Lock-in protects both sides; understand notice period, exit penalties, and fit-out amortisation clauses.',
+    icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
   },
   {
     title: 'Rent escalation',
     body: 'Fixed step-ups vs percentage bumps—model 3–5 years so total occupancy cost is predictable.',
+    icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
   },
   {
     title: 'CAM & charges',
     body: 'Common area maintenance and utilities can surprise—ask what is included vs billed separately.',
+    icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
   },
   {
     title: 'Handover & fit-out',
     body: 'Shell vs warm shell, rent-free fit-out days, and who does MEP/fire baseline work.',
+    icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
   },
   {
     title: 'Permitted use',
     body: 'Ensure the agreement and building NOC align with your category—especially F&B and health.',
+    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
   },
 ]
+
+/** Visitor / category anchors — showcase diversity (logos added when available in /public/logos). */
+const PREMIUM_LIFESTYLE_CELLS: { name: string; segment: string; accent: string }[] = [
+  { name: 'Chumbak', segment: 'Lifestyle & design retail', accent: 'from-rose-500/90 to-orange-600/80' },
+  { name: 'Toni & Guy', segment: 'Premium salon', accent: 'from-slate-700 to-slate-900' },
+  { name: 'Moonlight Spa & Wellness', segment: 'Wellness & spa', accent: 'from-violet-600/90 to-indigo-800/90' },
+  { name: 'Sneaker & streetwear', segment: 'Footwear & limited drops', accent: 'from-zinc-800 to-black' },
+  { name: 'Flagship retail', segment: 'High street & malls', accent: 'from-amber-600/85 to-[#E4002B]/80' },
+]
+
+const BRAND_LOGO_SHOWCASE = ['Truffles', 'Blue Tokai', 'Eleven Bakehouse', 'Burger Seigneur', 'The Flour Girl Cafe', 'Madam Chocolate', 'Sandowitch', 'Biggies Burger'] as const
 
 // Logo slider helpers (match homepage)
 const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri']
@@ -314,21 +331,21 @@ export default function ForBrandsPage() {
             <br className="block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Commercial Space</span>
           </h1>
-          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 mb-6 sm:mb-8 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] px-3 sm:px-4">
-            Full-service property placement with dedicated expert support
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 mb-6 sm:mb-8 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] px-3 sm:px-4 leading-relaxed">
+            Premium retail, F&amp;B, wellness, and lifestyle brands trust Lokazen to shortlist Bengaluru spaces—with data, discretion, and experts on the ground.
           </p>
 
           <div className="mt-2 mb-10 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards] px-2">
             <button
               type="button"
               onClick={scrollToPricing}
-              className="relative inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:shadow-xl hover:shadow-[#FF5200]/40 hover:scale-[1.02] transition-all duration-200 shadow-lg"
+              className="relative min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:shadow-xl hover:shadow-[#FF5200]/40 hover:scale-[1.02] transition-all duration-200 shadow-lg"
             >
               <span className="relative z-10">View Our Plans</span>
             </button>
             <Link
               href="/contact-us"
-              className="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white border-2 border-white/25 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-[#FF5200]/50 transition-all duration-200"
+              className="min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white border-2 border-white/25 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-[#FF5200]/50 transition-all duration-200"
             >
               Talk to placement team
             </Link>
@@ -377,9 +394,91 @@ export default function ForBrandsPage() {
         <TrustedByLeadingBrands />
       </div>
 
+      {/* Premium & lifestyle brand universe — visual bento + logo strip */}
+      <section className="relative z-10 py-14 md:py-20 bg-gradient-to-b from-stone-100 via-white to-white overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FF5200]/30 to-transparent" />
+        <div className="absolute -top-24 right-0 w-[min(100%,28rem)] h-64 bg-gradient-to-bl from-[#FF5200]/8 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white border border-stone-200/80 shadow-sm mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] mr-2" />
+              <span className="text-xs sm:text-sm font-semibold text-stone-700 tracking-wide">On Lokazen right now</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-stone-900 tracking-tight mb-3">
+              Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">premium</span> &amp; lifestyle
+            </h2>
+            <p className="text-base sm:text-lg text-stone-600 leading-relaxed">
+              National lifestyle names, salon &amp; spa groups, sneaker retail, and scaling F&amp;B—all discover and compare spaces here. Same platform: serious intel, human curation when you need it.
+            </p>
+          </div>
+
+          {(() => {
+            const [heroCell, ...restTiles] = PREMIUM_LIFESTYLE_CELLS
+            if (!heroCell) return null
+            const patternBg = 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+            const Tile = ({ cell, large }: { cell: (typeof PREMIUM_LIFESTYLE_CELLS)[0]; large?: boolean }) => (
+              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-stone-200/80 bg-stone-900 shadow-lg group min-h-[7.5rem] sm:min-h-[8rem]">
+                <div className={`absolute inset-0 bg-gradient-to-br ${cell.accent} opacity-95 group-hover:opacity-100 transition-opacity duration-500`} />
+                <div className="absolute inset-0 opacity-40 mix-blend-overlay" style={{ backgroundImage: patternBg }} />
+                <div className="relative h-full min-h-[inherit] flex flex-col justify-end p-4 sm:p-5 md:p-6 text-left">
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/75 mb-1">{cell.segment}</p>
+                  <p className={`font-bold text-white leading-tight ${large ? 'text-2xl sm:text-3xl md:text-4xl' : 'text-base sm:text-lg'}`}>{cell.name}</p>
+                </div>
+              </div>
+            )
+            return (
+              <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 lg:items-stretch">
+                <div className="lg:flex-1 lg:min-h-[20rem]">
+                  <Tile cell={heroCell} large />
+                </div>
+                <div className="lg:flex-1 grid grid-cols-2 gap-3 sm:gap-4">
+                  {restTiles.map((cell) => (
+                    <Tile key={cell.name} cell={cell} />
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
+          <p className="text-center text-xs sm:text-sm text-stone-500 mt-6 mb-8 max-w-xl mx-auto">
+            Illustrative categories of brands browsing and onboarding—names shown represent the calibre of teams we serve alongside our placed partners.
+          </p>
+
+          <div className="rounded-2xl sm:rounded-3xl border border-stone-200 bg-stone-50/80 p-5 sm:p-8 md:p-10">
+            <p className="text-center text-sm font-semibold text-stone-500 uppercase tracking-wider mb-6">Also exploring with us</p>
+            <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8">
+              {BRAND_LOGO_SHOWCASE.map((brandName) => {
+                const src = getBrandLogo(brandName)
+                return (
+                  <div
+                    key={brandName}
+                    className="flex flex-col items-center gap-2 w-[calc(50%-0.5rem)] sm:w-auto sm:min-w-[6.5rem]"
+                  >
+                    <div className="h-14 w-full sm:w-28 flex items-center justify-center rounded-xl bg-white border border-stone-200/80 px-3 py-2 shadow-sm hover:border-[#FF5200]/35 hover:shadow-md transition-all duration-300">
+                      {src ? (
+                        <LogoImage
+                          src={src}
+                          alt={brandName}
+                          brandName={brandName}
+                          style={{ height: '40px', minHeight: '40px', maxHeight: '44px' }}
+                          shouldRemoveBg={needsBackgroundRemoval(brandName)}
+                          hasBlackBackground={hasBlackBackground(brandName)}
+                        />
+                      ) : (
+                        <span className="text-stone-400 text-xs font-semibold text-center leading-tight">{brandName}</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Section 3: What We Do — 3 cards, homepage featured brand cards design */}
       <section className="relative z-10 bg-white py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 md:mb-10">
             <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-gray-50 rounded-full mb-3 sm:mb-4 border border-gray-200">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5" />
@@ -438,7 +537,7 @@ export default function ForBrandsPage() {
               Practical lenses we use when shortlisting—so you compare locations with the right criteria, not generic buzzwords.
             </p>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 md:mb-8 -mx-1 px-1 md:flex-wrap md:justify-center md:overflow-visible">
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 md:mb-8 -mx-1 px-1 md:flex-wrap md:justify-center md:overflow-visible scroll-smooth snap-x snap-mandatory [scrollbar-width:thin] md:[scrollbar-width:auto]">
             {BRAND_CATEGORY_GUIDANCE.map((c) => {
               const active = categoryTab === c.id
               return (
@@ -446,7 +545,7 @@ export default function ForBrandsPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setCategoryTab(c.id)}
-                  className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border ${
+                  className={`snap-start shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border min-h-[44px] ${
                     active
                       ? 'text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] border-transparent shadow-lg shadow-[#FF5200]/25'
                       : 'text-gray-300 bg-white/5 border-white/10 hover:bg-white/10 hover:border-[#FF5200]/30'
@@ -520,15 +619,15 @@ export default function ForBrandsPage() {
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-gray-100 text-gray-800 text-xs font-bold uppercase tracking-wide mb-4">Starter</div>
                 <h3 className="text-lg font-bold text-gray-900 mb-3">You know the market reasonably well</h3>
-                <p className="text-sm text-gray-600 leading-relaxed mb-6">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-6">
                   You want verified inventory, AI-led matching, location reports, and owner contacts—without a heavy field programme. Ideal when you can run visits yourself and mainly need speed and data.
                 </p>
-                <ul className="space-y-2.5 text-sm text-gray-700">
+                <ul className="space-y-2.5 text-sm sm:text-base text-gray-700">
                   <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Tight budget for advisory, strong internal ops</li>
                   <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Single location, clear micro-market shortlist</li>
                   <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Email-led coordination works for you</li>
                 </ul>
-                <button type="button" onClick={scrollToPricing} className="mt-8 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-gray-800 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors">
+                <button type="button" onClick={scrollToPricing} className="mt-8 w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-gray-800 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors">
                   See Starter pricing
                 </button>
               </div>
@@ -539,15 +638,15 @@ export default function ForBrandsPage() {
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#FF5200]/10 text-[#E4002B] text-xs font-bold uppercase tracking-wide mb-4">Professional</div>
                 <h3 className="text-lg font-bold text-gray-900 mb-3">You want experts on the ground</h3>
-                <p className="text-sm text-gray-600 leading-relaxed mb-6">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-6">
                   Dedicated manager, scheduled site visits, negotiation support, and WhatsApp—when the lease outcome matters as much as the shortlist.
                 </p>
-                <ul className="space-y-2.5 text-sm text-gray-700">
+                <ul className="space-y-2.5 text-sm sm:text-base text-gray-700">
                   <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> First flagship or high-stakes spend</li>
                   <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> You value deal support, not just listings</li>
                   <li className="flex gap-2"><span className="text-[#FF5200] font-bold">✓</span> Faster alignment with stakeholders via manager</li>
                 </ul>
-                <button type="button" onClick={scrollToPricing} className="mt-8 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-md transition-opacity">
+                <button type="button" onClick={scrollToPricing} className="mt-8 w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-md transition-opacity">
                   See Professional pricing
                 </button>
               </div>
@@ -579,8 +678,8 @@ export default function ForBrandsPage() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center shadow-lg mb-4 group-hover:scale-105 transition-transform">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} /></svg>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{item.title}</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -597,13 +696,13 @@ export default function ForBrandsPage() {
             </h2>
             <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto mt-2">Same city, different trade-offs—pick what matches how you like to decide.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-6 items-stretch">
+          <div className="grid md:grid-cols-3 gap-5 sm:gap-6 lg:gap-6 items-stretch">
             {COMPARE_PATHS.map((col, idx) => (
               <div
                 key={idx}
-                className={`rounded-2xl p-8 flex flex-col border-2 transition-all duration-300 ${
+                className={`rounded-2xl p-6 sm:p-8 flex flex-col border-2 transition-all duration-300 ${
                   'highlight' in col && col.highlight
-                    ? 'border-[#FF5200] bg-white shadow-2xl shadow-[#FF5200]/15 md:scale-[1.02] z-10'
+                    ? 'order-first border-[#FF5200] bg-white shadow-2xl shadow-[#FF5200]/15 md:order-none md:scale-[1.02] z-10'
                     : 'border-gray-200 bg-white/80 hover:border-gray-300 hover:shadow-md'
                 }`}
               >
@@ -614,7 +713,7 @@ export default function ForBrandsPage() {
                 <p className="text-sm text-gray-500 mb-6">{col.subtitle}</p>
                 <ul className="space-y-3 flex-1">
                   {col.rows.map((row, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-gray-700">
+                    <li key={i} className="flex gap-2 text-sm sm:text-base text-gray-700 leading-snug">
                       <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5 ${'highlight' in col && col.highlight ? 'bg-[#FF5200]' : 'bg-gray-300'}`} />
                       {row}
                     </li>
@@ -626,49 +725,88 @@ export default function ForBrandsPage() {
         </div>
       </section>
 
-      {/* Readiness checklist + Lease basics */}
-      <section className="relative z-10 py-14 md:py-20 bg-slate-900 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-30 pointer-events-none" style={{
-          backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,82,0,0.15) 0%, transparent 45%), radial-gradient(circle at 80% 80%, rgba(228,0,43,0.12) 0%, transparent 40%)',
+      {/* Readiness checklist + Lease basics — aligned headers, equal visual weight */}
+      <section className="relative z-10 py-14 md:py-24 bg-slate-950 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-40 pointer-events-none" style={{
+          backgroundImage: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,82,0,0.2), transparent), radial-gradient(circle at 100% 100%, rgba(228,0,43,0.12), transparent 50%)',
         }} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
-            <div>
-              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/10 mb-4">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF5200] mr-2" />
-                <span className="text-xs font-medium text-gray-200">Before you onboard</span>
+          <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/10 mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF5200] mr-2" />
+              <span className="text-xs font-semibold text-gray-200 tracking-wide">Prepare &amp; understand</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              Two things <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">smart brands</span> lock early
+            </h2>
+            <p className="text-gray-400 text-base sm:text-lg mt-3 leading-relaxed">
+              Your brief, sharpened. Lease vocabulary, demystified—so decisions stay fast and confident.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 xl:gap-12 items-stretch">
+            {/* Column A — checklist */}
+            <div className="flex flex-col rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-md p-6 sm:p-8 lg:p-10 shadow-[0_25px_80px_-20px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF5200] to-[#E4002B] shadow-lg shadow-[#FF5200]/20">
+                  <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#FF6B35] mb-1">Before you onboard</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white leading-tight">Readiness checklist</h3>
+                  <p className="text-gray-400 text-sm sm:text-base mt-2 leading-relaxed">
+                    Sharpening these upfront saves weeks of back-and-forth and keeps shortlists relevant.
+                  </p>
+                </div>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-3">
-                Readiness <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">checklist</span>
-              </h2>
-              <p className="text-gray-400 text-sm sm:text-base mb-8 leading-relaxed">
-                Sharpening these upfront saves weeks of back-and-forth and keeps shortlists relevant.
-              </p>
-              <ul className="space-y-4">
+              <ul className="space-y-4 flex-1">
                 {READINESS_CHECKLIST.map((line, i) => (
                   <li key={i} className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-md bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center mt-0.5">
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-[#FF5200] to-[#E4002B] flex items-center justify-center mt-0.5 shadow-md">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                     </span>
-                    <span className="text-gray-300 text-sm sm:text-base leading-relaxed">{line}</span>
+                    <span className="text-gray-200 text-base leading-relaxed pt-0.5">{line}</span>
                   </li>
                 ))}
               </ul>
-              <Link href="/contact-us" className="inline-flex mt-8 items-center gap-2 px-5 py-3 rounded-xl font-semibold bg-white text-gray-900 hover:bg-gray-100 transition-colors">
+              <Link
+                href="/contact-us"
+                className="mt-8 sm:mt-10 inline-flex w-full sm:w-auto min-h-[52px] items-center justify-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold bg-white text-gray-900 hover:bg-gray-100 shadow-xl shadow-black/20 transition-all active:scale-[0.99]"
+              >
                 Share your brief
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
               </Link>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/[0.06] backdrop-blur-md p-6 sm:p-8">
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Commercial lease basics (Bengaluru)</h3>
-              <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                Orientation only—not legal advice. Have your counsel review the agreement before you sign.
-              </p>
-              <div className="grid gap-4">
+
+            {/* Column B — lease basics */}
+            <div className="flex flex-col rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-md p-6 sm:p-8 lg:p-10 shadow-[0_25px_80px_-20px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/15">
+                  <svg className="h-7 w-7 text-[#FF6B35]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#FF6B35] mb-1">Bengaluru context</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white leading-tight">Commercial lease basics</h3>
+                  <p className="text-gray-400 text-sm sm:text-base mt-2 leading-relaxed">
+                    Orientation only—not legal advice. Have your counsel review the agreement before you sign.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 flex-1">
                 {LEASE_BASICS.map((item, i) => (
-                  <div key={i} className="rounded-xl border border-white/10 bg-black/20 p-4 hover:border-[#FF5200]/30 transition-colors">
-                    <h4 className="font-semibold text-[#FF6B35] text-sm mb-1">{item.title}</h4>
-                    <p className="text-gray-400 text-sm leading-relaxed">{item.body}</p>
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5 hover:border-[#FF5200]/35 hover:bg-black/35 transition-all duration-300 group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5200]/15 text-[#FF6B35] group-hover:bg-[#FF5200]/25 transition-colors">
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} /></svg>
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-white text-sm sm:text-base mb-1.5">{item.title}</h4>
+                        <p className="text-gray-400 text-sm sm:text-[15px] leading-relaxed">{item.body}</p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -679,7 +817,7 @@ export default function ForBrandsPage() {
 
       {/* Section 4: Pricing — premium cards, orange accents */}
       <section id="pricing" ref={pricingRef} className="relative z-10 py-12 md:py-16 bg-gradient-to-b from-gray-50/50 to-white scroll-mt-24">
-        <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 md:mb-12">
             <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-white/80 backdrop-blur-xl border border-[#FF5200]/20 rounded-full mb-3 shadow-[0_0_20px_rgba(255,82,0,0.1)]">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 animate-pulse" />
@@ -1023,7 +1161,7 @@ export default function ForBrandsPage() {
               <div
                 key={idx}
                 onClick={() => setFaqOpen(faqOpen === idx ? null : idx)}
-                className={`group relative bg-gradient-to-br from-gray-50 to-white rounded-xl border p-5 transition-all duration-300 cursor-pointer overflow-hidden ${faqOpen === idx ? 'border-[#FF5200] shadow-lg' : 'border-gray-200 hover:border-[#FF5200]'}`}
+                className={`group relative bg-gradient-to-br from-gray-50 to-white rounded-xl border p-4 sm:p-5 min-h-[56px] transition-all duration-300 cursor-pointer overflow-hidden ${faqOpen === idx ? 'border-[#FF5200] shadow-lg' : 'border-gray-200 hover:border-[#FF5200]'}`}
               >
                 <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/5 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="flex items-start gap-3 relative z-10">
@@ -1054,14 +1192,14 @@ export default function ForBrandsPage() {
           backgroundImage: 'linear-gradient(rgba(255,82,0,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,82,0,0.15) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }} />
-        <div className="max-w-4xl mx-auto px-6 sm:px-8 relative z-10 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to find your perfect commercial space?
+        <div className="max-w-4xl mx-auto px-4 sm:px-8 relative z-10 text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+            Ready to find your next flagship or store?
           </h2>
-          <p className="text-gray-300 mb-10 text-lg">
-            Join brands who secured their ideal locations with Lokazen.
+          <p className="text-gray-300 mb-8 sm:mb-10 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+            Lifestyle, F&amp;B, wellness, or retail—start with a plan or talk to us first. Same team, same data backbone.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center flex-wrap">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center flex-wrap">
             <button
               type="button"
               onClick={() => startPhonePePayment('starter')}
@@ -1081,6 +1219,12 @@ export default function ForBrandsPage() {
             <button type="button" onClick={onPremiumClick} className="w-full sm:w-auto min-w-[180px] inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-gray-800 bg-gray-200 hover:bg-gray-100 border border-gray-300 min-h-[48px] transition-all">
               Premium — ₹19,999
             </button>
+            <Link
+              href="/contact-us"
+              className="w-full sm:w-auto min-w-[180px] inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white border-2 border-white/30 bg-white/5 hover:bg-white/10 min-h-[48px] transition-all"
+            >
+              Book a conversation
+            </Link>
           </div>
           <p className="text-sm text-gray-400 mt-6 max-w-lg mx-auto leading-relaxed">
             Secure payment • No hidden plan fees • {SUCCESS_FEE_NOTE}
