@@ -5,6 +5,9 @@
  *   1. npm run videos:marketing:install   (one-time Chromium for Playwright)
  *   2. npm run dev                        (Next.js on RECORDING_BASE_URL)
  *
+ * If `npm run dev` picked another port (e.g. 3001), set in .env.local:
+ *   RECORDING_BASE_URL=http://localhost:3001
+ *
  * Brand dashboard clip needs a real brand row in your DB:
  *   RECORDING_BRAND_ID=cuid   (same id returned by POST /api/auth/brand)
  *   RECORDING_BRAND_NAME=...  (optional, shown in dashboard header)
@@ -36,6 +39,28 @@ const OWNER_MS = 15_000
 
 async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms))
+}
+
+/** Fail fast with a clear hint if nothing is listening (wrong port / dev not running / lock conflict). */
+async function assertDevServerReachable(base: string) {
+  const url = `${base}/filter/owner`
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), 10_000)
+  try {
+    const res = await fetch(url, { signal: ac.signal, redirect: 'follow' })
+    if (res.status >= 500) throw new Error(`HTTP ${res.status}`)
+  } catch (err) {
+    console.error('\nCannot reach the app. Tried:', url)
+    console.error('Common fixes:')
+    console.error('  • Start dev: npm run dev')
+    console.error('  • If Next says "using port 3001", add to .env.local:')
+    console.error('      RECORDING_BASE_URL=http://localhost:3001')
+    console.error('  • Only one `next dev` at a time. If you see a dev/lock error, stop the other')
+    console.error('    terminal or end the old Node process, then run dev again.\n')
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function recordOnce(
@@ -75,6 +100,8 @@ async function recordOnce(
 async function main() {
   console.log(`Recording against ${BASE}`)
   console.log(`Output: ${OUT_DIR}\n`)
+
+  await assertDevServerReachable(BASE)
 
   const browser = await chromium.launch({ headless: HEADLESS })
 
