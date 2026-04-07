@@ -38,7 +38,9 @@
     "check-timezone": "tsx scripts/check-timezone.ts",
     "debug:clear": "node scripts/remove-debug-logs.js",
     "intel:warm-all": "tsx scripts/warm-all-properties-intel.ts",
-    "intel:warm-all:dry": "tsx scripts/warm-all-properties-intel.ts --dry-run"
+    "intel:warm-all:dry": "tsx scripts/warm-all-properties-intel.ts --dry-run",
+    "videos:marketing": "tsx scripts/record-marketing-videos.ts",
+    "videos:marketing:install": "npx playwright install chromium"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
@@ -86,6 +88,7 @@
     "eslint": "^8",
     "eslint-config-next": "^16.0.8",
     "jsdom": "^24.0.0",
+    "playwright": "^1.59.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.21.0",

@@ -12,3 +12,4 @@ out/
 *~
 next-env.d.ts
 scripts/output/
+marketing-videos/output/*.webm
