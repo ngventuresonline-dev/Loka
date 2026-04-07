@@ -45,7 +45,7 @@ async function sleep(ms: number) {
 async function assertDevServerReachable(base: string) {
   const url = `${base}/filter/owner`
   const ac = new AbortController()
-  const timer = setTimeout(() => ac.abort(), 10_000)
+  const timer = setTimeout(() => ac.abort(), 120_000)
   try {
     const res = await fetch(url, { signal: ac.signal, redirect: 'follow' })
     if (res.status >= 500) throw new Error(`HTTP ${res.status}`)
