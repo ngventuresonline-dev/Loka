@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -270,6 +270,32 @@ export default function ForBrandsPage() {
   const [phonepeLoading, setPhonepeLoading] = useState(false)
   const [phonepeError, setPhonepeError] = useState<string | null>(null)
   const [categoryTab, setCategoryTab] = useState<string>(BRAND_CATEGORY_GUIDANCE[0]?.id ?? 'fb')
+  const categoryTabRowRef = useRef<HTMLDivElement>(null)
+  const skipCategoryTabScrollRef = useRef(true)
+
+  useEffect(() => {
+    const ms = 6500
+    const id = window.setInterval(() => {
+      setCategoryTab((prev) => {
+        const idx = BRAND_CATEGORY_GUIDANCE.findIndex((c) => c.id === prev)
+        const i = idx < 0 ? 0 : idx
+        const next = (i + 1) % BRAND_CATEGORY_GUIDANCE.length
+        return BRAND_CATEGORY_GUIDANCE[next]!.id
+      })
+    }, ms)
+    return () => window.clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    if (skipCategoryTabScrollRef.current) {
+      skipCategoryTabScrollRef.current = false
+      return
+    }
+    const row = categoryTabRowRef.current
+    if (!row) return
+    const btn = row.querySelector<HTMLElement>(`[data-category-tab="${categoryTab}"]`)
+    btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [categoryTab])
 
   const startPhonePePayment = async (plan: 'starter' | 'professional' | 'premium') => {
     setPhonepePlan(plan)
@@ -590,13 +616,17 @@ export default function ForBrandsPage() {
               Practical lenses we use when shortlisting—so you compare locations with the right criteria, not generic buzzwords.
             </p>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 md:mb-8 -mx-1 px-1 md:flex-wrap md:justify-center md:overflow-visible scroll-smooth snap-x snap-mandatory [scrollbar-width:thin] md:[scrollbar-width:auto]">
+          <div
+            ref={categoryTabRowRef}
+            className="flex gap-2 overflow-x-auto pb-2 mb-6 md:mb-8 -mx-1 px-1 md:flex-wrap md:justify-center md:overflow-visible scroll-smooth snap-x snap-mandatory [scrollbar-width:thin] md:[scrollbar-width:auto]"
+          >
             {BRAND_CATEGORY_GUIDANCE.map((c) => {
               const active = categoryTab === c.id
               return (
                 <button
                   key={c.id}
                   type="button"
+                  data-category-tab={c.id}
                   onClick={() => setCategoryTab(c.id)}
                   className={`snap-start shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border min-h-[44px] ${
                     active
