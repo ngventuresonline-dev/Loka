@@ -1,8 +1,41 @@
 # Lokazen — LinkedIn feature series (copy + visuals)
 
-Use these as **copy-paste posts** or **carousel scripts**. Pair each with **screenshots or short screen recordings** from [lokazen.in](https://lokazen.in) (or your staging URL). Recommended image size: **1080 × 1350 px** (portrait) or **1200 × 627** (link preview).
+## How to actually use this as a LinkedIn post
 
-**Brand voice:** confident, clear, founder-friendly; avoid unverifiable superlatives. Prefer “structured brief,” “curated shortlist,” “location intelligence,” “verified inventory.”
+**1. Text-only post**  
+- Open LinkedIn → **Start a post**.  
+- Copy the **Post body** / **Copy** block from any section below into the composer.  
+- Paste your link on its own line (LinkedIn will unfurl it).  
+- Add 3–5 hashtags at the bottom (pick from the list in this doc).  
+- Click **Post**.
+
+**2. Text + one image or graphic**  
+- Same as above, but before posting click **Add media** → **Add image**.  
+- Upload a screenshot (PNG/JPG), exported slide, or Canva graphic (**1080×1350** or **1200×627** works well).  
+- Optional: add **alt text** (describe what’s on screen for accessibility).
+
+**3. Text + video**  
+- **Add media** → **Add a video**.  
+- Use a short clip (e.g. your `.webm` converted to **MP4** in VLC or [cloudconvert.com](https://cloudconvert.com)): under ~60s is ideal for feed.  
+- Paste the post copy above or below the video.
+
+**4. Carousel (swipeable)** — two common ways  
+
+- **Multi-image carousel:** In Canva/Figma export **one PNG per slide** (same aspect ratio, e.g. **1080×1350**). On LinkedIn: **Add media** → select **all images in order** (Shift-click) → LinkedIn stacks them as a carousel. **Up to 9 images.**  
+- **PDF carousel:** Export slides as a **single PDF** (some creators use this for crisp text). **Create post** → **Add document** → upload PDF. Viewers swipe pages.  
+
+**5. Link posts**  
+- Put the URL in the composer; remove it from the middle of a sentence if the preview looks messy — paste link on its own line at the end.
+
+**6. After posting**  
+- **Pin** a useful comment (e.g. link to `/for-brands` and `/filter/owner`).  
+- Reply to early comments in the first hour to help reach.
+
+---
+
+Use the sections below as **copy-paste** text. Pair with **screenshots or clips** from [lokazen.in](https://lokazen.in). Recommended image size: **1080 × 1350 px** (portrait) or **1200 × 627** (link preview).
+
+**Voice:** First person (**I**), but **Lokazen** carries the product facts (features, scoring) so it doesn’t read like “here’s everything I coded.”
 
 **Hashtags (rotate, don’t stack all at once):**  
 `#PropTech` `#RetailRealEstate` `#Bangalore` `#CommercialRealEstate` `#FranchiseIndia` `#QSR` `#CRE` `#LocationIntelligence` `#StartupIndia` `#Lokazen`
@@ -17,9 +50,9 @@ Use these as **copy-paste posts** or **carousel scripts**. Pair each with **scre
 
 Commercial real estate in India is still too much “who do you know?” and too little “here’s the data.”
 
-We built **Lokazen** as a **two-sided platform** for **brands hunting space** and **owners listing commercial property** — with **structured matching**, **location intelligence**, and **human experts** when you need boots on the ground.
+**Lokazen** is a **two-sided platform** for **brands hunting space** and **owners listing commercial property** — **structured matching**, **location intelligence**, and **hands-on support** when someone needs experts on the ground.
 
-If you’re expanding in **Bangalore** (F&B, retail, services, clinics, cloud kitchens), this is the stack we wish existed when we started.
+If you’re expanding in **Bangalore** (F&B, retail, services, clinics, cloud kitchens), it’s the kind of stack **I wish had been normal** when I was living this problem.
 
 → lokazen.in
 
@@ -33,13 +66,13 @@ What’s one feature you’d want in a commercial leasing product? Drop it below
 |------|--------|---------------------|-------------------------------------|
 | 1 | Split screen: `/filter/brand` vs `/filter/owner` | **One platform. Two journeys.** | Brand path vs owner path |
 | 2 | Hero search, brand mode | **Brands:** natural-language brief | “800 sqft cafe, Indiranagar…” → structured filters |
-| 3 | Owner listing UI | **Owners:** list once, get matched** | Property types, areas, size, rent |
+| 3 | Owner listing UI | **Owners: list once, get matched** | Property types, areas, size, rent |
 | 4 | For Brands page mock dashboard | **Shared brain: fit + intel** | Same scoring lens both sides trust |
 | 5 | Logo + URL | **lokazen.in** | List property · Find space |
 
 **Post body:**
 
-Most marketplaces optimize for *clicks*. We optimize for **fit**.
+Most marketplaces optimize for *clicks*. **I care more about fit.**
 
 **Brands** start with a **plain-English brief** (or structured filters) and get **curated commercial matches** with **context** — not a random PDF dump.
 
@@ -58,7 +91,7 @@ Swipe for how the two journeys connect →
 | 1 | Hero search typing animation / screenshot | **Your brief → structured mandate** |
 | 2 | `/filter/brand` with chips filled from query | **Budget, size, catchment — extracted** |
 | 3 | Property cards or match list | **Ranked for operational fit** |
-| 4 | Disclaimer slide (plain background) | **Algorithms + humans. We don’t guarantee rent or footfall — we make tradeoffs visible.** |
+| 4 | Disclaimer slide (plain background) | **Algorithms + humans. No rent or footfall guarantees — tradeoffs stay visible.** |
 
 **Post body:**
 
@@ -66,9 +99,9 @@ Swipe for how the two journeys connect →
 
 On Lokazen, **natural language search** helps turn a messy WhatsApp paragraph into a **searchable brief** — then **matching and intel** do the heavy lifting.
 
-We’re explicit about what we **don’t** claim: no magic rent numbers, no guaranteed outcomes. **Transparency > hype.**
+**I’m explicit about what I won’t claim:** no magic rent numbers, no guaranteed outcomes. **Transparency > hype.**
 
-If you’ve been burned by black-box “AI real estate,” you’ll like the direction we’re taking.
+If you’ve been burned by black-box “AI real estate,” you might like where **I’m** taking this.
 
 #LocationIntelligence #RetailRealEstate
 
@@ -88,11 +121,11 @@ If you’ve been burned by black-box “AI real estate,” you’ll like the dir
 
 A pin on a map is not due diligence.
 
-Lokazen layers **footfall-oriented signals**, **demographics**, **competitive context**, and **accessibility** so brands compare **apples to apples** across shortlisted sites.
+**Lokazen** layers **footfall-oriented signals**, **demographics**, **competitive context**, and **accessibility** so brands compare **apples to apples** across shortlisted sites.
 
 It’s the difference between “nice façade” and “this catchment can carry your ticket size.”
 
-**Bonus:** `/location-intelligence` lets prospects **preview** intel for an area/category (your product-led hook for inbound).
+**Bonus:** `/location-intelligence` lets people **preview** intel for an area/category — handy inbound hook.
 
 #Bangalore #CRE #DataDriven
 
@@ -104,7 +137,7 @@ It’s the difference between “nice façade” and “this catchment can carry
 
 **Copy:**
 
-We score every relationship **from both sides**:
+**Lokazen** scores every relationship **from both sides**:
 
 **BFI — Brand Fit Index** → how well a **property** matches a **brand’s** mandate (size, budget, format, geography).
 
@@ -122,11 +155,11 @@ Same deal, two lenses — fewer wasted site visits.
 
 **Copy:**
 
-After onboarding, brands get a **single dashboard**: **matches**, **requirements**, **fit bars**, **map context**, and **revenue-style scenarios** (gated where appropriate so expectations stay honest).
+After onboarding, brands get a **single dashboard**: **matches**, **requirements**, **fit bars**, **map context**, and **revenue-style scenarios** (gated where it keeps expectations honest).
 
-This is where “we’re looking” becomes “we’re **deciding** with evidence.”
+That’s where “we’re looking” turns into “we’re **deciding** with evidence.”
 
-If you’re a **multi-outlet or franchise** team, ask us about **Premium**-style workflows for parallel mandates.
+Running **multi-outlet or franchise**? **Message me** — **Premium**-style workflows are built for parallel mandates.
 
 #FranchiseIndia #QSR
 
@@ -147,12 +180,12 @@ If you’re a **multi-outlet or franchise** team, ask us about **Premium**-style
 
 **Post body:**
 
-We productized **brand-side placement** so you’re not stuck between a **spreadsheet** and a **broker who ghosts you**.
+**I** structured **brand-side placement** so you’re not stuck between a **spreadsheet** and a **broker who ghosts you**.
 
 **Starter:** data + matching + reports + contacts — you run the field.  
 **Professional / Premium:** **hands-on experts**, visits, negotiation support, tighter SLAs.
 
-**Success fee applies on deal closure** — we say it upfront so there’s no invoice shock.
+**Success fee applies on deal closure** — **I say it upfront** so there’s no invoice shock.
 
 → `/for-brands`
 
@@ -166,7 +199,7 @@ We productized **brand-side placement** so you’re not stuck between a **spread
 
 **Copy:**
 
-Listing commercial space shouldn’t require **10 phone calls** to explain the same specs.
+Listing commercial space shouldn’t take **10 phone calls** to explain the same specs.
 
 Owners walk through **structured listing flows**: **format**, **micro-market**, **size band**, **rent**, **features**, **availability** — so matches arrive **pre-qualified**.
 
@@ -184,7 +217,7 @@ Less noise, more **serious brands**.
 
 F&B isn’t retail. A **clinic** isn’t a **salon**.
 
-Our **category lenses** spell out what we optimize for in **shortlisting** — throughput & compliance for QSR, **day-part** patterns for cafés, **conversion & adjacency** for retail, **privacy & appointments** for wellness.
+The **category lenses** on Lokazen spell out what **I optimize for in shortlisting** — throughput & compliance for QSR, **day-part** patterns for cafés, **conversion & adjacency** for retail, **privacy & appointments** for wellness.
 
 Same platform, **different decision criteria**. That’s how you avoid “great unit, wrong concept.”
 
@@ -198,9 +231,9 @@ Same platform, **different decision criteria**. That’s how you avoid “great 
 
 Operators don’t try new placement channels because of **ads**. They try them because **peers** already did.
 
-We’re proud to work with **dozens of brands** across **F&B and lifestyle** as we scale **Bangalore-first** depth.
+**I’m** lucky to work with **dozens of brands** across **F&B and lifestyle** while **I** push **Bangalore-first** depth.
 
-If your brand is evaluating **2–3 corridors** this quarter, send a **brief** — we’ll show you how we’d **score** them.
+Evaluating **2–3 corridors** this quarter? Send a **brief** — **I’ll** walk you through how **I’d score** them.
 
 ---
 
@@ -210,7 +243,7 @@ If your brand is evaluating **2–3 corridors** this quarter, send a **brief** �
 
 **Copy:**
 
-We’re not “anti-broker.” We’re **pro-clarity**.
+**I’m** not “anti-broker.” **I’m** **pro-clarity**.
 
 **Self-search:** cheap, slow, uneven data.  
 **Traditional:** relationship gold, but opaque inventory and success-fee surprises.  
@@ -235,7 +268,7 @@ Use a **template** (Canva/Figma): dark bg, orange gradient accent `#FF5200` → 
 9. **Tiered plans** + **PhonePe** checkout for onboarding  
 10. **Expert visits & negotiation** on higher tiers  
 
-**Caption:** Save this for your next **expansion** planning session. What would you add as #11?
+**Caption:** Saving this for my next **expansion** planning push. What would you add as #11?
 
 ---
 
