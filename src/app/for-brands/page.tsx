@@ -203,17 +203,6 @@ const LEASE_BASICS: { title: string; body: string; icon: string }[] = [
   },
 ]
 
-/** Visitor / category anchors — showcase diversity (logos added when available in /public/logos). */
-const PREMIUM_LIFESTYLE_CELLS: { name: string; segment: string; accent: string }[] = [
-  { name: 'Chumbak', segment: 'Lifestyle & design retail', accent: 'from-rose-500/90 to-orange-600/80' },
-  { name: 'Toni & Guy', segment: 'Premium salon', accent: 'from-slate-700 to-slate-900' },
-  { name: 'Moonlight Spa & Wellness', segment: 'Wellness & spa', accent: 'from-violet-600/90 to-indigo-800/90' },
-  { name: 'Sneaker & streetwear', segment: 'Footwear & limited drops', accent: 'from-zinc-800 to-black' },
-  { name: 'Flagship retail', segment: 'High street & malls', accent: 'from-amber-600/85 to-[#E4002B]/80' },
-]
-
-const BRAND_LOGO_SHOWCASE = ['Truffles', 'Blue Tokai', 'Eleven Bakehouse', 'Burger Seigneur', 'The Flour Girl Cafe', 'Madam Chocolate', 'Sandowitch', 'Biggies Burger'] as const
-
 // Logo slider helpers (match homepage)
 const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri']
 const LOGOS_BLACK_BG = ['Sandowitch']
@@ -301,51 +290,50 @@ export default function ForBrandsPage() {
       </div>
 
       {/* Section 1: Hero — dark BG (from our platform / about For Brands) */}
-      <div className="relative min-h-screen flex flex-col items-center justify-center pt-20 sm:pt-24 pb-16 sm:pb-20 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden" style={{ zIndex: 10 }}>
-        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+      <div className="relative min-h-screen flex flex-col items-center pt-20 sm:pt-24 pb-16 sm:pb-20 bg-gradient-to-b from-[#0A0A0A] via-black to-[#0A0A0A] overflow-hidden border-b border-white/5" style={{ zIndex: 10 }}>
+        <div className="absolute inset-0 opacity-[0.12] pointer-events-none" style={{
           backgroundImage: 'linear-gradient(#FF5200 1px, transparent 1px), linear-gradient(90deg, #FF5200 1px, transparent 1px)',
           backgroundSize: '50px 50px',
           animation: 'grid 20s linear infinite',
         }} />
-        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-br from-[#FF5200]/30 to-[#E4002B]/30 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite]" />
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-[#E4002B]/30 to-[#FF6B35]/30 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite_5s]" />
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-br from-[#FF5200]/25 to-[#E4002B]/20 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite]" />
+        <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-[#E4002B]/20 to-[#FF5200]/10 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite_5s]" />
+        <div className="absolute inset-0 opacity-15 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#FF5200] to-transparent animate-[scan_4s_ease-in-out_infinite]" />
           <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#E4002B] to-transparent animate-[scan_4s_ease-in-out_infinite_2s]" />
         </div>
-        {/* Floating dots */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-40">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
           {[ { top: '18%', left: '12%' }, { top: '28%', left: '82%' }, { top: '55%', left: '18%' }, { top: '72%', left: '78%' }, { top: '42%', left: '88%' }, { top: '22%', left: '52%' } ].map((dot, i) => (
             <div key={i} className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse" style={{ top: dot.top, left: dot.left, animationDelay: `${i * 0.3}s` }} />
           ))}
         </div>
 
-        <div className="relative text-center max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 w-full py-6 sm:py-8 md:py-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl border border-[#FF5200]/30 rounded-full mb-4 sm:mb-6 shadow-[0_0_20px_rgba(255,82,0,0.2)] opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
+        <div className="relative flex flex-col items-center justify-center flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.07] backdrop-blur-xl border border-[#FF5200]/35 rounded-full mb-4 sm:mb-6 shadow-[0_0_24px_rgba(255,82,0,0.15)] opacity-0 animate-[fadeInUp_0.8s_ease-out_0.1s_forwards]">
             <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] animate-pulse" />
             <span className="text-sm font-medium text-white">For Brands — Premium placement & advisory</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-2.5 md:mb-3 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2 sm:px-4">
+          <h1 className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-2.5 md:mb-3 leading-tight tracking-tight opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] px-2 sm:px-4">
             <span className="text-white">Find & Secure Your Perfect</span>
             <br className="block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] bg-[length:200%_200%] animate-gradientShift">Commercial Space</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-[length:200%_200%] animate-gradientShift">Commercial Space</span>
           </h1>
-          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 mb-6 sm:mb-8 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] px-3 sm:px-4 leading-relaxed">
-            Premium retail, F&amp;B, wellness, and lifestyle brands trust Lokazen to shortlist Bengaluru spaces—with data, discretion, and experts on the ground.
+          <p className="text-center text-sm sm:text-base md:text-lg lg:text-xl text-white/70 mb-6 sm:mb-8 max-w-2xl mx-auto opacity-0 animate-[fadeInUp_0.8s_ease-out_0.25s_forwards] px-3 sm:px-4 leading-relaxed">
+            Full-service property placement with dedicated expert support
           </p>
 
-          <div className="mt-2 mb-10 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards] px-2">
+          <div className="mt-2 mb-10 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center opacity-0 animate-[fadeInUp_0.8s_ease-out_0.3s_forwards] px-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={scrollToPricing}
-              className="relative min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:shadow-xl hover:shadow-[#FF5200]/40 hover:scale-[1.02] transition-all duration-200 shadow-lg"
+              className="relative min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white bg-[#FF5200] hover:bg-[#E4002B] shadow-lg shadow-[#FF5200]/25 hover:shadow-[#FF5200]/40 hover:scale-[1.02] transition-all duration-200"
             >
               <span className="relative z-10">View Our Plans</span>
             </button>
             <Link
               href="/contact-us"
-              className="min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white border-2 border-white/25 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-[#FF5200]/50 transition-all duration-200"
+              className="min-h-[48px] inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-white border-2 border-white/20 bg-white/[0.06] backdrop-blur-md hover:bg-white/10 hover:border-[#FF5200]/50 transition-all duration-200"
             >
               Talk to placement team
             </Link>
@@ -357,36 +345,125 @@ export default function ForBrandsPage() {
               { value: '500+', label: 'Properties' },
               { value: '20+', label: 'Prime Locations' },
             ].map((stat, i) => (
-              <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur border border-white/10">
-                <span className="text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">{stat.value}</span>
-                <span className="text-sm text-gray-400">{stat.label}</span>
+              <div key={i} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.06] backdrop-blur border border-white/10">
+                <span className="text-lg sm:text-xl font-bold text-[#FF5200]">{stat.value}</span>
+                <span className="text-sm text-white/60">{stat.label}</span>
               </div>
             ))}
           </div>
 
-          <div className="mt-10 sm:mt-14 flex flex-wrap justify-center items-center gap-4 sm:gap-6 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 border border-[#FF5200]/30 flex items-center justify-center">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FF5200]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8 4-8-4m0 0l8-4 8 4m0-6v8l-8 4m8-4l8-4m-8 4V3" /></svg>
+          {/* Product Preview — below hero stats, inside dark hero */}
+          <div className="mt-12 w-full max-w-5xl mx-auto px-2 sm:px-4 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.5s_forwards]">
+            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
+              <div className="bg-[#1a1a1a] px-4 py-3 flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                </div>
+                <div className="flex-1 bg-[#2a2a2a] rounded-lg px-4 py-1.5 text-xs text-gray-400 text-center truncate">
+                  lokazen.in/dashboard/brand
+                </div>
+              </div>
+              <div className="bg-white flex flex-col lg:flex-row min-h-[18rem] lg:h-72 overflow-hidden">
+                <div className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-gray-100 bg-white p-4 flex flex-col gap-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#FF5200] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">T</div>
+                    <div>
+                      <p className="text-sm font-bold text-[#0A0A0A]">Ticoo</p>
+                      <p className="text-[10px] text-gray-400">QSR · HSR Layout</p>
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
+                    <p className="text-2xl font-black text-[#FF5200]">15</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">Matched properties</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">Your requirements</p>
+                    {[
+                      ['Size', '100–300 sqft'],
+                      ['Location', 'HSR, Koramangala, Indiranagar'],
+                      ['Budget', '₹50K–₹1.2L/mo'],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex gap-2 text-[10px]">
+                        <span className="text-gray-400 font-medium w-14 flex-shrink-0">{k}</span>
+                        <span className="text-gray-700 font-medium">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 bg-[#F8F7F4] p-4 sm:p-5 flex flex-col sm:flex-row gap-4 overflow-hidden min-h-0">
+                  <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-4 min-w-0">
+                    <div className="flex items-start justify-between mb-3 gap-2">
+                      <div>
+                        <p className="text-xs font-bold text-[#0A0A0A]">Prime Corner QSR Space</p>
+                        <p className="text-[10px] text-gray-400">17th Main, Koramangala · 450 sqft</p>
+                        <p className="text-[10px] font-semibold text-[#FF5200] mt-0.5">₹1,55,000/mo</p>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-[#FF5200] flex items-center justify-center flex-shrink-0">
+                        <p className="text-white text-xs font-black leading-none text-center">81<br /><span className="text-[8px]">BFI</span></p>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      {([['Location Match', 100], ['Budget Fit', 100], ['Size Match', 100], ['Type Match', 95]] as const).map(([label, pct]) => (
+                        <div key={label} className="flex items-center gap-2">
+                          <span className="text-[9px] text-gray-400 w-24 flex-shrink-0">{label}</span>
+                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#FF5200] rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-[9px] font-bold text-gray-700 w-7 text-right">{pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 mt-3">
+                      {([['Conservative', '₹3L'], ['Base Case', '₹5L'], ['Optimistic', '₹9L']] as const).map(([l, v]) => (
+                        <div key={l} className="bg-gray-50 rounded-lg p-2 text-center">
+                          <p className="text-[8px] text-gray-400 uppercase tracking-wide">{l}</p>
+                          <p className="text-sm font-black text-[#0A0A0A]">{v}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-full sm:w-44 h-40 sm:h-auto flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden relative min-h-[10rem] sm:min-h-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300" />
+                    <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 176 288" preserveAspectRatio="none">
+                      {[0, 40, 80, 120, 160, 200, 240, 280].map((y) => (
+                        <line key={`h-${y}`} x1="0" y1={y} x2="176" y2={y} stroke="#666" strokeWidth="0.5" />
+                      ))}
+                      {[0, 40, 80, 120, 160].map((x) => (
+                        <line key={`v-${x}`} x1={x} y1="0" x2={x} y2="288" stroke="#666" strokeWidth="0.5" />
+                      ))}
+                    </svg>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                      <div className="w-8 h-8 bg-[#FF5200] rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white text-[10px] font-black">81</span>
+                      </div>
+                      <div className="w-2 h-2 bg-[#FF5200] mx-auto -mt-0.5" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+                    </div>
+                    {[[30, 60], [120, 100], [60, 180], [140, 200]].map(([x, y], i) => (
+                      <div key={i} className="absolute w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center" style={{ left: x, top: y }}>
+                        <span className="text-white text-[7px] font-bold">{75 - i * 3}</span>
+                      </div>
+                    ))}
+                    <div className="absolute bottom-2 left-2 right-2 bg-white/90 rounded-lg p-1.5 text-center">
+                      <p className="text-[8px] font-semibold text-gray-700">15 matched properties</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-8 h-0.5 bg-gradient-to-r from-[#FF5200]/60 to-[#E4002B]/60 rounded-full" />
-              <span className="w-2 h-2 rounded-full bg-[#FF5200] animate-pulse" />
-              <span className="w-12 h-0.5 bg-gradient-to-r from-[#E4002B]/60 to-[#FF5200]/60 rounded-full" />
-            </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 border border-[#E4002B]/30 flex items-center justify-center">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#E4002B]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2 21v-2a4 4 0 014-4h12a4 4 0 014 4v2M4 7v10h16V7M4 7h16a2 2 0 00-2-2H6a2 2 0 00-2 2v10" /></svg>
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-gray-500 hidden sm:inline">AI-matched</span>
+            <p className="text-center text-xs text-white/50 mt-3">Your personalised brand dashboard — live matches, location intelligence, revenue potential</p>
+          </div>
+
+          <div className="mt-10 flex flex-col items-center gap-2 opacity-70">
+            <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Scroll</span>
+            <button type="button" onClick={scrollToPricing} className="w-8 h-8 rounded-full border-2 border-white/25 flex items-center justify-center hover:border-[#FF5200] text-white/70 hover:text-[#FF5200] transition-colors" aria-label="Scroll to plans">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+            </button>
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-70">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Scroll</span>
-          <button onClick={scrollToPricing} className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center hover:border-[#FF5200] text-white/80 hover:text-[#FF5200] transition-colors" aria-label="Scroll to plans">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-          </button>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200]/60 to-transparent opacity-60" />
       </div>
 
       {/* Section 2: Trusted by Leading Brands — exact copy from homepage */}
@@ -394,120 +471,35 @@ export default function ForBrandsPage() {
         <TrustedByLeadingBrands />
       </div>
 
-      {/* Premium & lifestyle brand universe — visual bento + logo strip */}
-      <section className="relative z-10 py-14 md:py-20 bg-gradient-to-b from-stone-100 via-white to-white overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FF5200]/30 to-transparent" />
-        <div className="absolute -top-24 right-0 w-[min(100%,28rem)] h-64 bg-gradient-to-bl from-[#FF5200]/8 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white border border-stone-200/80 shadow-sm mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] mr-2" />
-              <span className="text-xs sm:text-sm font-semibold text-stone-700 tracking-wide">On Lokazen right now</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-stone-900 tracking-tight mb-3">
-              Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">premium</span> &amp; lifestyle
-            </h2>
-            <p className="text-base sm:text-lg text-stone-600 leading-relaxed">
-              National lifestyle names, salon &amp; spa groups, sneaker retail, and scaling F&amp;B—all discover and compare spaces here. Same platform: serious intel, human curation when you need it.
-            </p>
-          </div>
-
-          {(() => {
-            const [heroCell, ...restTiles] = PREMIUM_LIFESTYLE_CELLS
-            if (!heroCell) return null
-            const patternBg = 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
-            const Tile = ({ cell, large }: { cell: (typeof PREMIUM_LIFESTYLE_CELLS)[0]; large?: boolean }) => (
-              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-stone-200/80 bg-stone-900 shadow-lg group min-h-[7.5rem] sm:min-h-[8rem]">
-                <div className={`absolute inset-0 bg-gradient-to-br ${cell.accent} opacity-95 group-hover:opacity-100 transition-opacity duration-500`} />
-                <div className="absolute inset-0 opacity-40 mix-blend-overlay" style={{ backgroundImage: patternBg }} />
-                <div className="relative h-full min-h-[inherit] flex flex-col justify-end p-4 sm:p-5 md:p-6 text-left">
-                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/75 mb-1">{cell.segment}</p>
-                  <p className={`font-bold text-white leading-tight ${large ? 'text-2xl sm:text-3xl md:text-4xl' : 'text-base sm:text-lg'}`}>{cell.name}</p>
-                </div>
-              </div>
-            )
-            return (
-              <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 lg:items-stretch">
-                <div className="lg:flex-1 lg:min-h-[20rem]">
-                  <Tile cell={heroCell} large />
-                </div>
-                <div className="lg:flex-1 grid grid-cols-2 gap-3 sm:gap-4">
-                  {restTiles.map((cell) => (
-                    <Tile key={cell.name} cell={cell} />
-                  ))}
-                </div>
-              </div>
-            )
-          })()}
-
-          <p className="text-center text-xs sm:text-sm text-stone-500 mt-6 mb-8 max-w-xl mx-auto">
-            Illustrative categories of brands browsing and onboarding—names shown represent the calibre of teams we serve alongside our placed partners.
-          </p>
-
-          <div className="rounded-2xl sm:rounded-3xl border border-stone-200 bg-stone-50/80 p-5 sm:p-8 md:p-10">
-            <p className="text-center text-sm font-semibold text-stone-500 uppercase tracking-wider mb-6">Also exploring with us</p>
-            <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8">
-              {BRAND_LOGO_SHOWCASE.map((brandName) => {
-                const src = getBrandLogo(brandName)
-                return (
-                  <div
-                    key={brandName}
-                    className="flex flex-col items-center gap-2 w-[calc(50%-0.5rem)] sm:w-auto sm:min-w-[6.5rem]"
-                  >
-                    <div className="h-14 w-full sm:w-28 flex items-center justify-center rounded-xl bg-white border border-stone-200/80 px-3 py-2 shadow-sm hover:border-[#FF5200]/35 hover:shadow-md transition-all duration-300">
-                      {src ? (
-                        <LogoImage
-                          src={src}
-                          alt={brandName}
-                          brandName={brandName}
-                          style={{ height: '40px', minHeight: '40px', maxHeight: '44px' }}
-                          shouldRemoveBg={needsBackgroundRemoval(brandName)}
-                          hasBlackBackground={hasBlackBackground(brandName)}
-                        />
-                      ) : (
-                        <span className="text-stone-400 text-xs font-semibold text-center leading-tight">{brandName}</span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Section 3: What We Do — 3 cards, homepage featured brand cards design */}
-      <section className="relative z-10 bg-white py-12 md:py-16">
+      <section className="relative z-10 bg-[#F8F7F4] py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 md:mb-10">
-            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-gray-50 rounded-full mb-3 sm:mb-4 border border-gray-200">
+            <div className="inline-flex items-center px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 bg-white rounded-full mb-3 sm:mb-4 border border-gray-200/80 shadow-sm">
               <span className="w-1.5 h-1.5 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-2 sm:mr-2.5" />
-              <span className="text-xs sm:text-sm font-medium text-gray-700">What We Do</span>
+              <span className="text-xs sm:text-sm font-medium text-[#0A0A0A]">What We Do</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 px-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0A0A0A] mb-2 px-4">
               Full-Service <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Placement</span>
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {[
-              { title: 'AI-Powered Matching', desc: 'Access 500+ verified properties. Get personalized matches and continuous updates.', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-              { title: 'Dedicated Expert Support', desc: 'Assigned account manager, on-ground site visits, and negotiation support.', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
-              { title: 'Market Intelligence', desc: 'Footfall, demographics, competitor mapping, and pricing insights.', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-            ].map((card, idx) => (
-              <div key={idx} className="relative group">
-                <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30 transition-all duration-500">
-                  <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl z-20" style={{ background: 'linear-gradient(to right, #FF5200, #E4002B, #FF6B35)' }} />
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full" />
-                  <div className="relative z-10">
-                    <div className="w-14 h-14 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-105 transition-transform">
-                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.icon} /></svg>
-                    </div>
-                    <h3 className="font-bold text-gray-900 text-lg mb-2">{card.title}</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">{card.desc}</p>
-                  </div>
-                  <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100 group-hover:animate-ping pointer-events-none" />
+            {([
+              { title: 'AI-Powered Matching', desc: 'Access 500+ verified properties. Get personalized matches and continuous updates.', icon: 'M13 10V3L4 14h7v7l9-11h-7z', stat: '500+', statLabel: 'Properties scored' },
+              { title: 'Dedicated Expert Support', desc: 'Assigned account manager, on-ground site visits, and negotiation support.', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', stat: '24hr', statLabel: 'response' },
+              { title: 'Market Intelligence', desc: 'Footfall, demographics, competitor mapping, and pricing insights.', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', stat: '42', statLabel: 'locations enriched' },
+            ] as const).map((card, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-2xl border border-gray-100 border-b-4 border-b-gray-100 p-8 hover:border-[#FF5200]/30 hover:shadow-lg hover:border-b-[#FF5200] transition-all group shadow-sm"
+              >
+                <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-[#FF5200] transition-colors">
+                  <svg className="w-6 h-6 text-[#FF5200] group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.icon} /></svg>
                 </div>
+                <p className="text-3xl font-black text-[#0A0A0A] mb-0.5">{card.stat}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{card.statLabel}</p>
+                <h3 className="text-lg font-bold text-[#0A0A0A] mb-2">{card.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{card.desc}</p>
               </div>
             ))}
           </div>
@@ -515,25 +507,17 @@ export default function ForBrandsPage() {
       </section>
 
       {/* Category-wise guidance */}
-      <section className="relative z-10 py-14 md:py-20 overflow-hidden bg-gradient-to-b from-slate-950 via-gray-900 to-slate-950">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[420px] h-[420px] bg-[#FF5200]/12 rounded-full blur-[100px]" />
-          <div className="absolute bottom-0 right-1/4 w-[380px] h-[380px] bg-[#E4002B]/10 rounded-full blur-[90px]" />
-          <div className="absolute inset-0 opacity-[0.07]" style={{
-            backgroundImage: 'linear-gradient(rgba(255,82,0,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,82,0,0.4) 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
-          }} />
-        </div>
+      <section className="relative z-10 py-14 md:py-20 overflow-hidden bg-[#F8F7F4]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-8 md:mb-10">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/10 backdrop-blur-md mb-4">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white border border-gray-200/80 shadow-sm mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] mr-2 animate-pulse" />
-              <span className="text-xs sm:text-sm font-medium text-gray-200">By category</span>
+              <span className="text-xs sm:text-sm font-medium text-[#0A0A0A]">By category</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">
-              Guidance for <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35]">your segment</span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0A0A0A] mb-2">
+              Guidance for <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">your segment</span>
             </h2>
-            <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
               Practical lenses we use when shortlisting—so you compare locations with the right criteria, not generic buzzwords.
             </p>
           </div>
@@ -547,8 +531,8 @@ export default function ForBrandsPage() {
                   onClick={() => setCategoryTab(c.id)}
                   className={`snap-start shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border min-h-[44px] ${
                     active
-                      ? 'text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] border-transparent shadow-lg shadow-[#FF5200]/25'
-                      : 'text-gray-300 bg-white/5 border-white/10 hover:bg-white/10 hover:border-[#FF5200]/30'
+                      ? 'text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] border-transparent shadow-lg shadow-[#FF5200]/20'
+                      : 'text-[#0A0A0A] bg-white border-gray-200 hover:border-[#FF5200]/40 hover:shadow-md shadow-sm'
                   }`}
                 >
                   {c.label}
@@ -696,31 +680,43 @@ export default function ForBrandsPage() {
             </h2>
             <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto mt-2">Same city, different trade-offs—pick what matches how you like to decide.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-5 sm:gap-6 lg:gap-6 items-stretch">
-            {COMPARE_PATHS.map((col, idx) => (
-              <div
-                key={idx}
-                className={`rounded-2xl p-6 sm:p-8 flex flex-col border-2 transition-all duration-300 ${
-                  'highlight' in col && col.highlight
-                    ? 'order-first border-[#FF5200] bg-white shadow-2xl shadow-[#FF5200]/15 md:order-none md:scale-[1.02] z-10'
-                    : 'border-gray-200 bg-white/80 hover:border-gray-300 hover:shadow-md'
-                }`}
-              >
-                {'highlight' in col && col.highlight && (
-                  <div className="text-xs font-bold uppercase tracking-wide text-[#FF5200] mb-2">Recommended</div>
-                )}
-                <h3 className="text-xl font-bold text-gray-900">{col.title}</h3>
-                <p className="text-sm text-gray-500 mb-6">{col.subtitle}</p>
-                <ul className="space-y-3 flex-1">
-                  {col.rows.map((row, i) => (
-                    <li key={i} className="flex gap-2 text-sm sm:text-base text-gray-700 leading-snug">
-                      <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5 ${'highlight' in col && col.highlight ? 'bg-[#FF5200]' : 'bg-gray-300'}`} />
-                      {row}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <div className="grid md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 items-stretch md:items-center">
+            {COMPARE_PATHS.map((col, idx) => {
+              const win = 'highlight' in col && col.highlight
+              return (
+                <div
+                  key={idx}
+                  className={`rounded-2xl p-6 sm:p-8 flex flex-col border-2 transition-all duration-300 ${
+                    win
+                      ? 'order-first md:order-none bg-[#0A0A0A] border-[#FF5200]/50 text-white md:scale-105 shadow-2xl shadow-black/50 z-10'
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                  }`}
+                >
+                  {win && (
+                    <div className="text-xs font-bold uppercase tracking-wide text-[#FF5200] mb-2">Recommended</div>
+                  )}
+                  <h3 className={`text-xl font-bold ${win ? 'text-white' : 'text-gray-900'}`}>{col.title}</h3>
+                  <p className={`text-sm mb-6 ${win ? 'text-gray-400' : 'text-gray-500'}`}>{col.subtitle}</p>
+                  <ul className="space-y-3 flex-1">
+                    {col.rows.map((row, i) => (
+                      <li key={i} className={`flex gap-2 text-sm sm:text-base leading-snug ${win ? 'text-gray-200' : 'text-gray-700'}`}>
+                        <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5 ${win ? 'bg-[#FF5200]' : 'bg-gray-300'}`} />
+                        {row}
+                      </li>
+                    ))}
+                  </ul>
+                  {win && (
+                    <button
+                      type="button"
+                      onClick={scrollToPricing}
+                      className="mt-8 w-full inline-flex items-center justify-center min-h-[48px] rounded-xl font-semibold text-white bg-[#FF5200] hover:bg-[#E4002B] transition-colors"
+                    >
+                      Get started →
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
@@ -833,9 +829,9 @@ export default function ForBrandsPage() {
 
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
             {/* Starter */}
-            <div className="relative bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-sm flex flex-col">
-              <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-[#FF5200] to-[#E4002B]" />
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Starter</h3>
+            <div className="relative bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-sm flex flex-col overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200" />
+              <h3 className="text-xl font-bold text-gray-900 mb-1 mt-1">Starter</h3>
               <div className="text-4xl font-black text-gray-900 mb-6">₹4,999</div>
               <ul className="space-y-3 flex-1 text-gray-600 text-sm">
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Property database access</li>
@@ -857,8 +853,8 @@ export default function ForBrandsPage() {
             </div>
 
             {/* Professional — highlighted */}
-            <div className="relative bg-white rounded-2xl border-2 border-[#FF5200] p-8 shadow-xl shadow-[#FF5200]/10 flex flex-col lg:-my-2 lg:scale-[1.02] z-10">
-              <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35]" />
+            <div className="relative bg-white rounded-2xl border-2 border-[#FF5200] p-8 shadow-xl shadow-[#FF5200]/10 flex flex-col z-10 ring-2 ring-[#FF5200] ring-offset-2 ring-offset-white overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-[#FF5200]" />
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white text-sm font-semibold">MOST POPULAR</div>
               <h3 className="text-xl font-bold text-gray-900 mb-1 mt-2">Professional</h3>
               <div className="text-4xl font-black text-gray-900 mb-6">₹9,999</div>
@@ -876,16 +872,16 @@ export default function ForBrandsPage() {
                 type="button"
                 onClick={() => startPhonePePayment('professional')}
                 disabled={phonepeLoading}
-                className="mt-8 w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF5200] to-[#E4002B] hover:opacity-95 shadow-lg min-h-[48px] transition-all disabled:opacity-70"
+                className="mt-8 w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white bg-[#FF5200] hover:bg-[#E4002B] shadow-lg min-h-[48px] transition-all disabled:opacity-70"
               >
                 {phonepeLoading && phonepePlan === 'professional' ? 'Loading…' : 'Get Started'}
               </button>
             </div>
 
             {/* Premium */}
-            <div className="relative bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-sm flex flex-col">
-              <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-[#FF5200] to-[#E4002B]" />
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Premium</h3>
+            <div className="relative bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-sm flex flex-col overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-[#0A0A0A]" />
+              <h3 className="text-xl font-bold text-gray-900 mb-1 mt-1">Premium</h3>
               <div className="text-4xl font-black text-gray-900 mb-6">₹19,999</div>
               <ul className="space-y-3 flex-1 text-gray-600 text-sm">
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#FF5200]" /> Everything in Professional</li>
@@ -1194,10 +1190,10 @@ export default function ForBrandsPage() {
         }} />
         <div className="max-w-4xl mx-auto px-4 sm:px-8 relative z-10 text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
-            Ready to find your next flagship or store?
+            Ready to find your perfect commercial space?
           </h2>
           <p className="text-gray-300 mb-8 sm:mb-10 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Lifestyle, F&amp;B, wellness, or retail—start with a plan or talk to us first. Same team, same data backbone.
+            Join brands who secured their ideal locations with Lokazen.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center flex-wrap">
             <button
