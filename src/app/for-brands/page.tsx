@@ -208,7 +208,7 @@ const LEASE_BASICS: { title: string; body: string; icon: string }[] = [
 
 // Logo slider helpers (match homepage)
 const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri']
-const LOGOS_BLACK_BG = ['Sandowitch']
+const LOGOS_BLACK_BG = ['Sandowitch', 'Evil Onigiri']
 function needsBackgroundRemoval(brandName: string) {
   return [...LOGOS_WHITE_BG, ...LOGOS_BLACK_BG].some(
     (name) => brandName.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(brandName.toLowerCase())

@@ -65,7 +65,8 @@ const brandLogoMap: Record<string, string | null> = {
   
   // Other Food Brands
   'Roma Deli': null, // No logo available
-  'Evil Onigiri': null, // No logo available
+  'Evil Onigiri': '/logos/Evil-Onigiri.png',
+  'evil onigiri': '/logos/Evil-Onigiri.png',
   'Sun Kissed Smoothie': '/logos/Sunkiss logo.jpg',
   'Sunkiss': '/logos/Sunkiss logo.jpg',
   
@@ -84,6 +85,10 @@ const brandLogoMap: Record<string, string | null> = {
   // Ice cream & desserts
   'Meltin Desires': '/logos/Meltin-Desires.png',
   'Meltin\' Desires': '/logos/Meltin-Desires.png',
+
+  // Street food & quick bites
+  'Holy Pav': '/logos/Holy-Pav.png',
+  'HOLY PAV': '/logos/Holy-Pav.png',
 }
 
 /**
