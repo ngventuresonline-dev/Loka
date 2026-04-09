@@ -64,7 +64,7 @@ async function importFeaturedBrands() {
               must_have_amenities: {
                 timeline: brandReq.timeline,
                 storeType: brandReq.businessType,
-                targetAudience: '',
+                targetAudience: brandReq.targetAudience || '',
                 additionalRequirements: brandReq.mustHaveFeatures.join(', ')
               }
             }

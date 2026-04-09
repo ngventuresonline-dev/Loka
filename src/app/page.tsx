@@ -688,20 +688,20 @@ export default function Home() {
     'Klutch Klub', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 
     'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 
     'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 
-    'TAN Coffee', 'Block Two Coffee'
+    'TAN Coffee', 'Block Two Coffee', 'Holy Pav', 'Kadam Haat'
   ], [])
 
   // Trusted brands row label arrays (text-only rows) - memoized
   const trustedRow1Brands = useMemo(() => [
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
     'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri',
-    'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub',
+    'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub', 'Holy Pav', 'Kadam Haat',
   ], [])
 
   const trustedRow3Brands = useMemo(() => [
     'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch',
     'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian',
-    'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
+    'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee', 'Holy Pav', 'Kadam Haat',
   ], [])
   
   // Categorize logos by size - larger/wider logos need different sizing - memoized
@@ -742,12 +742,15 @@ export default function Home() {
     'Namaste- South Indian',
     'Dolphins Bar & Kitchen',
     'Samosa Party',
-    'Bawri'
+    'Bawri',
+    'Kadam Haat',
   ]
   
   // Logos with black borders/backgrounds
   const logosWithBlackBackgrounds = [
-    'Sandowitch'
+    'Sandowitch',
+    'Evil Onigiri',
+    'Klutch Klub',
   ]
   
   // Check if logo needs background removal
@@ -1319,7 +1322,7 @@ export default function Home() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B] whitespace-nowrap">Requirements</span>
             </h2>
             <p className="text-base sm:text-lg text-gray-600">
-              F&B brands actively searching for commercial spaces
+              F&amp;B and retail brands actively searching for commercial spaces
             </p>
           </div>
 
@@ -1719,7 +1722,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Brand Card 6 - Namaste- South Indian Restaurant with Platform Colors */}
+            {/* Brand Card 6 - Kadam Haat (luxury retail / home & lifestyle) */}
             <div className="relative group">
               <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
                 {/* Glow Effect - Platform Colors */}
@@ -1733,14 +1736,14 @@ export default function Home() {
                     <div className="flex items-center gap-3">
                       <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
                         <img 
-                          src="/logos/Namaste logo.jpg" 
-                          alt="Namaste- South Indian Restaurant Logo" 
+                          src="/logos/Kadam-Haat.png" 
+                          alt="Kadam Haat logo" 
                           className="w-full h-full object-contain"
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-900 text-lg mb-1">Namaste</h3>
-                        <p className="text-sm text-gray-600">South Indian Restaurant</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">Kadam Haat</h3>
+                        <p className="text-sm text-gray-600">Retail · Luxury home &amp; lifestyle</p>
                       </div>
                     </div>
                     <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">Active</span>
@@ -1753,7 +1756,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Size:</span> 2,000-3,000 sqft</span>
+                      <span><span className="font-semibold text-gray-900">Size:</span> 1,000-1,200 sqft</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
@@ -1762,7 +1765,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Location:</span> Across Bangalore</span>
+                      <span><span className="font-semibold text-gray-900">Location:</span> Indiranagar</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
@@ -1770,7 +1773,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1.5L-2.5L/month</span></span>
+                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1.5L-2L/month</span></span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
@@ -1778,7 +1781,7 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span><span className="font-semibold text-gray-900">Timeline:</span> Within 2 months</span>
+                      <span><span className="font-semibold text-gray-900">Timeline:</span> Immediate</span>
                     </div>
                   </div>
                 </div>

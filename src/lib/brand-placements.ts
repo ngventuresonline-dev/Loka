@@ -53,6 +53,7 @@ export const brandPlacements: BrandPlacement[] = [
   { brand: "Wrapafella", location: "Indiranagar 100ft Road", size: "500 sqft" },
   { brand: "Mumbai Pav Co.", location: "Manyata Tech Park, Hebbal", size: "150 sqft" },
   { brand: "Meltin Desires", location: "Primeco ITPL, Whitefield", size: "400 sqft" },
+  { brand: "Kadam Haat", location: "Indiranagar 100ft", size: "1,000-1,200 sqft" },
 ];
 
 /**

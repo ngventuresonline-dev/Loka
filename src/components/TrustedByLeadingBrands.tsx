@@ -11,19 +11,19 @@ const ALL_BRANDS = [
   'Klutch Klub', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker',
   'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story',
   'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese',
-  'TAN Coffee', 'Block Two Coffee', 'Holy Pav',
+  'TAN Coffee', 'Block Two Coffee', 'Holy Pav', 'Kadam Haat',
 ]
 
 const TRUSTED_ROW_1 = [
   'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
   'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri',
-  'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub', 'Holy Pav',
+  'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub', 'Holy Pav', 'Kadam Haat',
 ]
 
 const TRUSTED_ROW_3 = [
   'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch',
   'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian',
-  'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee',
+  'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee', 'Kadam Haat',
 ]
 
 const LARGER_LOGOS = [
@@ -35,7 +35,7 @@ const LARGER_LOGOS = [
   '/logos/Sandowitch logo.jpg',
 ]
 
-const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri']
+const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri', 'Kadam Haat']
 const LOGOS_BLACK_BG = ['Sandowitch', 'Evil Onigiri', 'Klutch Klub']
 
 function needsBackgroundRemoval(brandName: string) {

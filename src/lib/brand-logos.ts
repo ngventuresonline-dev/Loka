@@ -92,6 +92,10 @@ const brandLogoMap: Record<string, string | null> = {
   // Street food & quick bites
   'Holy Pav': '/logos/Holy-Pav.png',
   'HOLY PAV': '/logos/Holy-Pav.png',
+
+  // Retail & lifestyle
+  'Kadam Haat': '/logos/Kadam-Haat.png',
+  'KADAMHAAT': '/logos/Kadam-Haat.png',
 }
 
 /**

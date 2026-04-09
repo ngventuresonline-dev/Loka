@@ -15,7 +15,7 @@ const brandsPlacedDisplay = [...uniqueBrandNames, "Mini Bay - By Sakare"]
 
 // Brands we are currently placing (emerging)
 const brandsCurrentlyPlacing = [
-  'Truffles', 'Block Two Coffee', 'Namaste', 'Original Burger Co', 'Boba Bhai', 'Kried Burgers',
+  'Truffles', 'Block Two Coffee', 'Kadam Haat', 'Original Burger Co', 'Boba Bhai', 'Kried Burgers',
 ]
 
 export default function InvestorDeckPage() {

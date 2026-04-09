@@ -177,6 +177,19 @@ function ExpandableBrandCard({ brand, colors, colorClasses, brandLogo, badges }:
                 <span><span className="font-semibold text-gray-900">Timeline:</span> {brand.timeline}</span>
               </div>
             )}
+            {brand.targetAudience && (
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center mt-0.5`}>
+                  <svg className={`w-4 h-4 ${colorClasses.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <span className="break-words">
+                  <span className="font-semibold text-gray-900">Target audience:</span>{' '}
+                  {brand.targetAudience}
+                </span>
+              </div>
+            )}
             {brand.mustHaveFeatures && brand.mustHaveFeatures.length > 0 && (
               <div className="flex items-start gap-2 text-sm text-gray-700">
                 <div className={`w-8 h-8 ${colorClasses.iconBg} rounded-lg flex items-center justify-center mt-0.5`}>
@@ -314,6 +327,7 @@ export default function BrandRequirementsModal({ isOpen, onClose }: BrandRequire
           },
           mustHaveFeatures: profile?.additionalRequirements ? [profile.additionalRequirements] : [],
           timeline: (profile?.timeline || 'Flexible') as any,
+          targetAudience: profile?.targetAudience || undefined,
           bfiWeights: {
             location: 30,
             budget: 25,
