@@ -55,6 +55,7 @@ import {
   MapPin as LucideMapPin,
   TrendingUp,
   Activity,
+  type LucideIcon,
 } from 'lucide-react'
 
 const DEFAULT_MAP_CENTER = DEFAULT_BANGALORE_MAP_CENTER
@@ -2389,7 +2390,13 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   setDashboardView('map')
                 },
               },
-            ] as const
+            ] satisfies Array<{
+              label: string
+              icon: LucideIcon
+              active: boolean
+              action: () => void
+              count?: number
+            }>
           ).map(({ label, icon: Icon, count, active, action }) => (
             <button
               key={label}
