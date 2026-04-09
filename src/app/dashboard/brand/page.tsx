@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useId,
   useState,
   useCallback,
   useMemo,
@@ -10,6 +11,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -1134,6 +1136,71 @@ function IconPulseDot({ className = 'w-3.5 h-3.5' }: { className?: string }) {
   )
 }
 
+function IntelInfoPopup({
+  title,
+  ariaLabel,
+  children,
+}: {
+  title: string
+  ariaLabel: string
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const titleId = useId()
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full border border-gray-300/90 bg-gray-100 text-[5px] font-bold leading-none text-gray-600 shadow-sm hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+      >
+        i
+      </button>
+      {open &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[200] flex items-end justify-center bg-black/45 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] backdrop-blur-[3px] sm:items-center sm:pb-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            onClick={() => setOpen(false)}
+          >
+            <div
+              className="max-h-[min(72vh,440px)] w-full max-w-sm overflow-y-auto rounded-2xl border border-white/50 bg-white/90 p-4 shadow-2xl backdrop-blur-md sm:max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p id={titleId} className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {title}
+              </p>
+              <div className="mt-2 text-sm leading-relaxed text-gray-800">{children}</div>
+              <button
+                type="button"
+                className="mt-4 w-full rounded-xl bg-gray-900 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-gray-800"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  )
+}
+
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   if (data.length < 2) return null
   const chartData = data.map((v, i) => ({ i, v: Math.max(0, v) }))
@@ -1162,18 +1229,9 @@ function MetricCell({ label, value, trend, benchmark, tooltip }: { label: string
       <div className="flex items-center gap-1 mb-0.5">
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
         {tooltip && (
-          <div className="relative group">
-            <button
-              type="button"
-              aria-label={`More info about ${label}`}
-              className="text-[9px] w-3.5 h-3.5 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-orange-200"
-            >
-              i
-            </button>
-            <div className="absolute left-0 top-4 w-52 bg-gray-900 text-white text-[10px] rounded-lg p-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
-              {tooltip}
-            </div>
-          </div>
+          <IntelInfoPopup title={label} ariaLabel={`More info about ${label}`}>
+            {tooltip}
+          </IntelInfoPopup>
         )}
       </div>
       <div className="flex items-baseline gap-1 mt-0.5">
@@ -1720,7 +1778,8 @@ export default function BrandDashboardPage() {
   const [brandId, setBrandId] = useState<string | null>(null)
   const [brandName, setBrandName] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'matched' | 'overview' | 'saved' | 'inquiries'>('matched')
-  const [briefExpanded, setBriefExpanded] = useState(true)
+  const [briefExpanded, setBriefExpanded] = useState(false)
+  const [requirementsOpen, setRequirementsOpen] = useState(false)
 
   // Matches
   const [matches, setMatches] = useState<MatchedProperty[]>([])
@@ -2273,6 +2332,20 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
   const stats = data?.stats ?? { totalViews: 0, totalSaved: 0, totalInquiries: 0, pendingInquiries: 0 }
   const showBrief = brandHasBrief(brand, preferredList)
+  const requirementsSummaryLine = useMemo(() => {
+    if (!brand || !showBrief) return ''
+    const parts: string[] = []
+    if (brand.minSize != null && brand.maxSize != null) {
+      parts.push(`${brand.minSize.toLocaleString('en-IN')}–${brand.maxSize.toLocaleString('en-IN')} sqft`)
+    }
+    if (preferredList.length > 0) parts.push(shortenText(preferredList.join(', '), 36))
+    if (brand.budgetMin != null && brand.budgetMax != null) {
+      parts.push(
+        `₹${brand.budgetMin.toLocaleString('en-IN')}–₹${brand.budgetMax.toLocaleString('en-IN')}/mo`
+      )
+    }
+    return parts.join(' · ')
+  }, [brand, showBrief, preferredList])
   const recentViews = data?.recentViews ?? []
   const savedProperties = data?.savedProperties ?? []
   const inquiries = data?.inquiries ?? []
@@ -2304,48 +2377,219 @@ Be specific to ${area} / ${address}. No generic statements.`,
         }`}
       >
 
-        {/* Brand Header */}
-        <div className="p-4 border-b border-gray-100 lg:border-white/10 flex-shrink-0">
-          <div className="flex items-center justify-between mb-4">
-            <div className="block lg:hidden">
-              <Logo size="sm" showPoweredBy={false} href="/" variant="light" />
-            </div>
-            <div className="hidden lg:block">
-              <Logo size="sm" showPoweredBy={false} href="/" variant="dark" />
+        {/* Compact list header: brand + stats + collapsible requirements (mobile + desktop) */}
+        <div className="flex-shrink-0 border-b border-gray-100 lg:border-white/10">
+          <div className="flex items-center gap-2 px-2 py-2 sm:px-3 sm:py-2.5">
+            <div className="min-w-0 flex flex-1 items-center gap-2">
+              <div className="hidden shrink-0 origin-left scale-[0.82] lg:block">
+                <Logo size="sm" showPoweredBy={false} href="/" variant="dark" />
+              </div>
+              <div className="block shrink-0 origin-left scale-[0.82] lg:hidden">
+                <Logo size="sm" showPoweredBy={false} href="/" variant="light" />
+              </div>
+              <div className="h-8 w-8 shrink-0 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-700 flex items-center justify-center text-white text-[10px] font-bold tracking-tight">
+                {companyInitials(brand?.companyName || brandName || brand?.name || 'Brand')}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-gray-900 lg:text-white leading-tight">
+                  {brand?.companyName || brandName || brand?.name || 'Brand'}
+                </p>
+                <p className="truncate text-[9px] text-gray-500 lg:text-gray-400 leading-tight mt-0.5">
+                  {(brand?.industry || brand?.category) && <span>{brand?.industry || brand?.category} · </span>}
+                  <span className="text-green-600 lg:text-green-400">Active · Onboarded</span>
+                  {(brand?.phone || brand?.email) && (
+                    <span className="text-gray-400"> · {brand?.phone || brand?.email}</span>
+                  )}
+                </p>
+              </div>
             </div>
             <button
               type="button"
-              onClick={() => { localStorage.clear(); router.push('/') }}
-              className="text-xs text-gray-500 hover:text-gray-900 lg:text-gray-400 lg:hover:text-white transition-colors inline-flex items-center gap-1"
+              onClick={() => {
+                localStorage.clear()
+                router.push('/')
+              }}
+              className="shrink-0 text-[10px] font-medium text-gray-500 hover:text-gray-900 lg:text-gray-400 lg:hover:text-white transition-colors inline-flex items-center gap-0.5"
             >
-              <IconChevronLeft className="w-3.5 h-3.5" aria-hidden />
+              <IconChevronLeft className="w-3 h-3" aria-hidden />
               Exit
             </button>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-600 to-indigo-700 flex items-center justify-center text-white font-bold text-sm tracking-tight flex-shrink-0">
-              {companyInitials(brand?.companyName || brandName || brand?.name || 'Brand')}
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-gray-900 lg:text-white text-base leading-tight truncate">
-                {brand?.companyName || brandName || brand?.name || 'Brand'}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                {(brand?.industry || brand?.category) && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 lg:bg-white/10 lg:text-gray-300 font-medium">
-                    {brand?.industry || brand?.category}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1 text-green-600 lg:text-green-400 text-[10px] font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-600 lg:bg-green-400 shrink-0" aria-hidden />
-                  Active · Onboarded
-                </span>
+          <div className="flex gap-1 overflow-x-auto px-2 pb-2 scrollbar-hide">
+            {[
+              { label: 'Matches', value: matches.length, color: 'text-[#FF5200]' },
+              { label: 'Viewed', value: stats.totalViews, color: 'text-blue-600 lg:text-blue-400' },
+              { label: 'Saved', value: stats.totalSaved, color: 'text-pink-600 lg:text-pink-400' },
+              { label: 'Inq.', value: stats.totalInquiries, color: 'text-purple-600 lg:text-purple-400' },
+              { label: 'Pend.', value: stats.pendingInquiries, color: 'text-amber-600 lg:text-amber-400' },
+            ].map(({ label, value, color }) => (
+              <div
+                key={label}
+                className="min-w-[3.25rem] shrink-0 rounded-lg bg-gray-50 px-1.5 py-1 text-center lg:bg-white/5"
+              >
+                <p className={`text-sm font-bold leading-none ${color}`}>{value}</p>
+                <p className="text-[7px] font-medium uppercase tracking-tighter text-gray-500">{label}</p>
               </div>
-              {(brand?.phone || brand?.email) && (
-                <p className="text-xs text-gray-500 truncate mt-0.5">{brand?.phone || brand?.email}</p>
-              )}
-            </div>
+            ))}
           </div>
+          {brand && showBrief && (
+            <>
+              <button
+                type="button"
+                onClick={() => setRequirementsOpen((o) => !o)}
+                className="flex w-full items-center justify-between gap-2 border-t border-gray-100 px-2 py-1.5 text-left lg:border-white/10"
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-[#FF5200]">Requirements</span>
+                  {!requirementsOpen && requirementsSummaryLine ? (
+                    <span className="mt-0.5 block truncate text-[10px] text-gray-600 lg:text-gray-300">
+                      {requirementsSummaryLine}
+                    </span>
+                  ) : null}
+                </div>
+                <IconChevronUp
+                  className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${requirementsOpen ? '' : 'rotate-180'}`}
+                  aria-hidden
+                />
+              </button>
+              {requirementsOpen && (
+                <div className="border-t border-gray-100 px-2 pb-2 pt-1.5 lg:border-white/10">
+                  <div className="rounded-xl border border-[#FF5200]/35 bg-gray-50 p-2.5 shadow-sm lg:bg-white/5">
+                    {dashboardBadges.length > 0 && (
+                      <div className="mb-2 flex flex-wrap gap-1">
+                        {dashboardBadges.map((label) => {
+                          const isMatch = label === 'Multiple Properties Matched'
+                          return (
+                            <span
+                              key={label}
+                              className={`rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${
+                                isMatch
+                                  ? 'border-violet-200 bg-violet-50 text-violet-800 lg:border-violet-500/30 lg:bg-violet-500/15 lg:text-violet-200'
+                                  : 'border-sky-200 bg-sky-50 text-sky-800 lg:border-sky-500/30 lg:bg-sky-500/15 lg:text-sky-200'
+                              }`}
+                            >
+                              {label}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#FF5200]">Your Requirements</p>
+                    <ul className="space-y-1.5 text-[10px] text-gray-700 lg:text-gray-200">
+                      {brand.minSize != null && brand.maxSize != null && (
+                        <li className="flex gap-2">
+                          <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                            <IconRulerSquare className="w-3 h-3" />
+                          </span>
+                          <span>
+                            <span className="font-semibold text-gray-500 lg:text-gray-400">Size · </span>
+                            {brand.minSize.toLocaleString('en-IN')}–{brand.maxSize.toLocaleString('en-IN')} sqft
+                          </span>
+                        </li>
+                      )}
+                      {preferredList.length > 0 && (
+                        <li className="flex gap-2">
+                          <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                            <IconMapPin className="w-3 h-3" />
+                          </span>
+                          <span>
+                            <span className="font-semibold text-gray-500 lg:text-gray-400">Location · </span>
+                            {briefExpanded ? preferredList.join(', ') : shortenText(preferredList.join(', '), 42)}
+                          </span>
+                        </li>
+                      )}
+                      {brand.budgetMin != null && brand.budgetMax != null && (
+                        <li className="flex gap-2">
+                          <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                            <IconRupee className="w-3 h-3" />
+                          </span>
+                          <span>
+                            <span className="font-semibold text-gray-500 lg:text-gray-400">Budget · </span>
+                            ₹{brand.budgetMin.toLocaleString('en-IN')}–₹{brand.budgetMax.toLocaleString('en-IN')}/mo
+                          </span>
+                        </li>
+                      )}
+                      {briefExpanded && brand.brandProfile?.timeline && (
+                        <li className="flex gap-2">
+                          <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                            <IconClock className="w-3 h-3" />
+                          </span>
+                          <span>
+                            <span className="font-semibold text-gray-500 lg:text-gray-400">Timeline · </span>
+                            {brand.brandProfile.timeline}
+                          </span>
+                        </li>
+                      )}
+                      {briefExpanded && (brand.brandProfile?.storeType || brand.category) && (
+                        <li className="flex gap-2">
+                          <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                            <BuildingIcon className="w-3 h-3 text-[#FF5200]" />
+                          </span>
+                          <span>
+                            <span className="font-semibold text-gray-500 lg:text-gray-400">Store type · </span>
+                            {brand.brandProfile?.storeType || brand.category}
+                          </span>
+                        </li>
+                      )}
+                      {briefExpanded && brand.brandProfile?.targetAudience && (
+                        <li className="flex gap-2">
+                          <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                            <IconUsers className="w-3 h-3" />
+                          </span>
+                          <span>
+                            <span className="font-semibold text-gray-500 lg:text-gray-400">Audience · </span>
+                            {brand.brandProfile.targetAudience}
+                          </span>
+                        </li>
+                      )}
+                      {briefExpanded &&
+                        brand.brandProfile?.targetAudienceTags &&
+                        brand.brandProfile.targetAudienceTags.length > 0 && (
+                          <li className="flex gap-2">
+                            <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                              <IconTag className="w-3 h-3" />
+                            </span>
+                            <span>
+                              <span className="font-semibold text-gray-500 lg:text-gray-400">Segments · </span>
+                              {brand.brandProfile.targetAudienceTags.join(', ')}
+                            </span>
+                          </li>
+                        )}
+                      {briefExpanded && brand.brandProfile?.additionalRequirements && (
+                        <li className="flex gap-2">
+                          <span className="flex w-4 flex-shrink-0 items-center justify-center text-[#FF5200]">
+                            <IconCheckCircle className="w-3 h-3" />
+                          </span>
+                          <span>
+                            <span className="font-semibold text-gray-500 lg:text-gray-400">Must-haves · </span>
+                            {brand.brandProfile.additionalRequirements}
+                          </span>
+                        </li>
+                      )}
+                    </ul>
+                    {(brand.brandProfile?.timeline ||
+                      brand.brandProfile?.storeType ||
+                      brand.category ||
+                      brand.brandProfile?.targetAudience ||
+                      brand.brandProfile?.additionalRequirements ||
+                      (brand.brandProfile?.targetAudienceTags && brand.brandProfile.targetAudienceTags.length > 0)) && (
+                      <button
+                        type="button"
+                        onClick={() => setBriefExpanded((e) => !e)}
+                        className="mt-2 flex w-full items-center justify-center gap-1 text-[10px] font-semibold text-[#FF5200]/90 hover:text-[#FF5200]"
+                      >
+                        {briefExpanded ? 'Show less' : 'Show more'}
+                        <IconChevronUp
+                          className={`h-3 w-3 transition-transform ${briefExpanded ? 'rotate-180' : ''}`}
+                          aria-hidden
+                        />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Sidebar Nav — desktop only; mobile uses bottom nav */}
@@ -2473,162 +2717,6 @@ Be specific to ${area} / ${address}. No generic statements.`,
               <span className="text-sm font-medium">{label}</span>
             </button>
           ))}
-        </div>
-
-        {/* Brand brief — mirrors onboarding / marketplace card */}
-        {brand && showBrief && (
-          <div className="px-4 py-3 border-b border-gray-100 lg:border-white/10 flex-shrink-0">
-            <div className="rounded-2xl border border-[#FF5200]/35 bg-gray-50 lg:bg-white/5 p-3.5 shadow-sm">
-              {dashboardBadges.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {dashboardBadges.map((label) => {
-                    const isMatch = label === 'Multiple Properties Matched'
-                    return (
-                      <span
-                        key={label}
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                          isMatch
-                            ? 'bg-violet-50 text-violet-800 border-violet-200 lg:bg-violet-500/15 lg:text-violet-200 lg:border-violet-500/30'
-                            : 'bg-sky-50 text-sky-800 border-sky-200 lg:bg-sky-500/15 lg:text-sky-200 lg:border-sky-500/30'
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-              <p className="text-[10px] font-semibold text-[#FF5200] uppercase tracking-wide mb-2">Your Requirements</p>
-              <ul className="space-y-2 text-[11px] text-gray-700 lg:text-gray-200">
-                {brand.minSize != null && brand.maxSize != null && (
-                  <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
-                      <IconRulerSquare className="w-3.5 h-3.5" />
-                    </span>
-                    <span>
-                      <span className="font-semibold text-gray-500 lg:text-gray-400">Size · </span>
-                      {brand.minSize.toLocaleString('en-IN')}–{brand.maxSize.toLocaleString('en-IN')} sqft
-                    </span>
-                  </li>
-                )}
-                {preferredList.length > 0 && (
-                  <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
-                      <IconMapPin className="w-3.5 h-3.5" />
-                    </span>
-                    <span>
-                      <span className="font-semibold text-gray-500 lg:text-gray-400">Location · </span>
-                      {briefExpanded ? preferredList.join(', ') : shortenText(preferredList.join(', '), 42)}
-                    </span>
-                  </li>
-                )}
-                {brand.budgetMin != null && brand.budgetMax != null && (
-                  <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
-                      <IconRupee className="w-3.5 h-3.5" />
-                    </span>
-                    <span>
-                      <span className="font-semibold text-gray-500 lg:text-gray-400">Budget · </span>
-                      ₹{brand.budgetMin.toLocaleString('en-IN')}–₹{brand.budgetMax.toLocaleString('en-IN')}/mo
-                    </span>
-                  </li>
-                )}
-                {briefExpanded && brand.brandProfile?.timeline && (
-                  <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
-                      <IconClock className="w-3.5 h-3.5" />
-                    </span>
-                    <span>
-                      <span className="font-semibold text-gray-500 lg:text-gray-400">Timeline · </span>
-                      {brand.brandProfile.timeline}
-                    </span>
-                  </li>
-                )}
-                {briefExpanded && (brand.brandProfile?.storeType || brand.category) && (
-                  <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 text-center">
-                      <BuildingIcon className="w-3.5 h-3.5 text-[#FF5200]" />
-                    </span>
-                    <span>
-                      <span className="font-semibold text-gray-500 lg:text-gray-400">Store type · </span>
-                      {brand.brandProfile?.storeType || brand.category}
-                    </span>
-                  </li>
-                )}
-                {briefExpanded && brand.brandProfile?.targetAudience && (
-                  <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
-                      <IconUsers className="w-3.5 h-3.5" />
-                    </span>
-                    <span>
-                      <span className="font-semibold text-gray-500 lg:text-gray-400">Audience · </span>
-                      {brand.brandProfile.targetAudience}
-                    </span>
-                  </li>
-                )}
-                {briefExpanded &&
-                  brand.brandProfile?.targetAudienceTags &&
-                  brand.brandProfile.targetAudienceTags.length > 0 && (
-                    <li className="flex gap-2">
-                      <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
-                        <IconTag className="w-3.5 h-3.5" />
-                      </span>
-                      <span>
-                        <span className="font-semibold text-gray-500 lg:text-gray-400">Segments · </span>
-                        {brand.brandProfile.targetAudienceTags.join(', ')}
-                      </span>
-                    </li>
-                  )}
-                {briefExpanded && brand.brandProfile?.additionalRequirements && (
-                  <li className="flex gap-2">
-                    <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
-                      <IconCheckCircle className="w-3.5 h-3.5" />
-                    </span>
-                    <span>
-                      <span className="font-semibold text-gray-500 lg:text-gray-400">Must-haves · </span>
-                      {brand.brandProfile.additionalRequirements}
-                    </span>
-                  </li>
-                )}
-              </ul>
-              {(brand.brandProfile?.timeline ||
-                brand.brandProfile?.storeType ||
-                brand.category ||
-                brand.brandProfile?.targetAudience ||
-                brand.brandProfile?.additionalRequirements ||
-                (brand.brandProfile?.targetAudienceTags && brand.brandProfile.targetAudienceTags.length > 0)) && (
-                <button
-                  type="button"
-                  onClick={() => setBriefExpanded((e) => !e)}
-                  className="mt-2.5 w-full flex items-center justify-center gap-1 text-[10px] font-semibold text-[#FF5200]/90 hover:text-[#FF5200]"
-                >
-                  {briefExpanded ? 'Show less' : 'Show more'}
-                  <IconChevronUp className={`w-3.5 h-3.5 transition-transform ${briefExpanded ? 'rotate-180' : ''}`} aria-hidden />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Stats Row */}
-        <div className="px-3 py-3 border-b border-gray-100 lg:border-white/10 flex-shrink-0">
-          <div className="grid grid-cols-5 gap-1">
-            {[
-              { label: 'Matches', value: matches.length, color: 'text-[#FF5200]' },
-              { label: 'Viewed', value: stats.totalViews, color: 'text-blue-600 lg:text-blue-400' },
-              { label: 'Saved', value: stats.totalSaved, color: 'text-pink-600 lg:text-pink-400' },
-              { label: 'Inquiries', value: stats.totalInquiries, color: 'text-purple-600 lg:text-purple-400' },
-              { label: 'Pending', value: stats.pendingInquiries, color: 'text-amber-600 lg:text-amber-400' },
-            ].map(({ label, value, color }) => (
-              <div
-                key={label}
-                className="rounded-xl bg-gray-50 lg:bg-white/5 p-2 text-center"
-              >
-                <p className={`text-lg font-bold ${color}`}>{value}</p>
-                <p className="text-[9px] text-gray-500">{label}</p>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Tabs */}
@@ -2941,23 +3029,20 @@ Be specific to ${area} / ${address}. No generic statements.`,
       >
         {/* Mobile intel header — list back; only when intel mode on mobile */}
         {selectedMatch && mobileView === 'intel' && (
-          <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="lg:hidden flex items-center gap-2 px-3 py-2 bg-white border-b border-gray-100 flex-shrink-0 pt-[max(0.5rem,env(safe-area-inset-top))]">
             <button
               type="button"
               onClick={goToDashboardHome}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 flex-shrink-0"
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 flex-shrink-0"
               aria-label="Back to dashboard"
             >
-              <IconChevronLeft className="w-4 h-4" />
+              <IconChevronLeft className="w-3.5 h-3.5" />
             </button>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-gray-900 truncate">{selectedMatch.property.title}</p>
-              <p className="text-[10px] text-gray-500 truncate">{selectedMatch.property.address}</p>
-              {intelWardLabel ? (
-                <p className="text-[9px] text-gray-400 truncate mt-0.5">Ward: {intelWardLabel}</p>
-              ) : null}
+              <p className="text-[11px] font-bold text-gray-900 truncate leading-tight">{selectedMatch.property.title}</p>
+              <p className="text-[9px] text-gray-500 truncate leading-tight">{selectedMatch.property.address}</p>
             </div>
-            <span className="text-xs font-black text-white bg-[#FF5200] rounded-full px-2.5 py-1 flex-shrink-0">
+            <span className="text-[10px] font-black text-white bg-[#FF5200] rounded-full px-2 py-0.5 flex-shrink-0 tabular-nums">
               {selectedMatch.bfiScore} BFI
             </span>
           </div>
@@ -2965,33 +3050,33 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
         {/* Intelligence header — only when property selected (desktop / large screens) */}
         {rightMode === 'intelligence' && selectedMatch && (
-          <div className="hidden lg:flex lg:flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
+          <div className="hidden lg:flex lg:flex-nowrap items-center gap-2 px-3 py-2 border-b border-gray-100 bg-white flex-shrink-0 z-10">
             <button
               type="button"
               onClick={goToDashboardHome}
-              className="rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center gap-1.5 flex-shrink-0 text-gray-700 text-xs font-semibold px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+              className="rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center gap-1 flex-shrink-0 text-gray-700 text-[11px] font-semibold px-2.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
               aria-label="Back to dashboard"
             >
-              <IconChevronLeft className="w-4 h-4" />
+              <IconChevronLeft className="w-3.5 h-3.5" />
               <span>Dashboard</span>
             </button>
-            <div className="flex-1 min-w-0 basis-[min(100%,12rem)] sm:basis-auto">
-              <p className="font-bold text-gray-900 text-sm truncate">{selectedMatch.property.title}</p>
-              <p className="text-xs text-gray-500 line-clamp-2 sm:truncate sm:line-clamp-none">{selectedMatch.property.address}, {selectedMatch.property.city}</p>
-              {intelWardLabel ? (
-                <p className="text-[10px] text-gray-400 mt-0.5 truncate">
-                  Ward / planning unit: <span className="font-semibold text-gray-600">{intelWardLabel}</span>
-                </p>
-              ) : null}
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-xs truncate leading-tight">{selectedMatch.property.title}</p>
+              <p className="text-[10px] text-gray-500 truncate">
+                {selectedMatch.property.address}, {selectedMatch.property.city}
+                {intelWardLabel ? (
+                  <span className="text-gray-400"> · {intelWardLabel}</span>
+                ) : null}
+              </p>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-auto w-full sm:w-auto justify-end">
-              <span className="text-xs sm:text-sm font-bold text-white bg-[#FF5200] rounded-full px-2.5 sm:px-3 py-1">{selectedMatch.bfiScore} BFI</span>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[11px] font-bold text-white bg-[#FF5200] rounded-full px-2.5 py-1 tabular-nums">{selectedMatch.bfiScore} BFI</span>
               <Link
                 href={`/properties/${encodePropertyId(selectedMatch.property.id)}`}
-                className="text-xs font-medium text-[#FF5200] border border-[#FF5200] rounded-lg px-2.5 sm:px-3 py-1 hover:bg-orange-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 whitespace-nowrap inline-flex items-center gap-0.5"
+                className="text-[10px] font-medium text-[#FF5200] border border-[#FF5200] rounded-md px-2 py-0.5 hover:bg-orange-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 whitespace-nowrap inline-flex items-center gap-0.5"
               >
                 View
-                <IconChevronRight className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />
+                <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
               </Link>
               {(() => {
                 const mapLink = getMapLinkFromAmenities(selectedMatch.property.amenities)
@@ -3009,9 +3094,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Open in Google Maps"
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-green-50 hover:bg-green-100 text-green-600 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-full bg-green-50 hover:bg-green-100 text-green-600 transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -3036,7 +3121,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   type="button"
                   onClick={() => setRightPanelTab(key)}
                   aria-pressed={rightPanelTab === key}
-                  className={`whitespace-nowrap px-2.5 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs border-b-2 font-medium transition-colors flex-shrink-0 inline-flex items-center min-h-[40px] sm:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${
+                  className={`whitespace-nowrap px-2 sm:px-3 py-1.5 text-[10px] sm:text-[11px] border-b-2 font-medium transition-colors flex-shrink-0 inline-flex items-center min-h-[34px] sm:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 ${
                     rightPanelTab === key ? 'border-[#FF5200] text-[#FF5200]' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -3976,17 +4061,12 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <div className="flex flex-wrap items-center gap-2 mb-3">
                         <h3 className="font-bold text-gray-900 text-sm">Revenue Potential</h3>
                         <span className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 max-w-full">Lokazen estimate · not a guarantee</span>
-                        <div className="relative group ml-auto flex-shrink-0">
-                          <button
-                            type="button"
-                            aria-label="More info about revenue model"
-                            className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold focus:outline-none focus:ring-2 focus:ring-orange-200"
-                          >
-                            i
-                          </button>
-                          <div className="absolute right-0 top-5 w-56 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
-                            Based on format turn model (covers × turns × ticket) + delivery stream + real catchment data (offices, residents, road) + pocket-level multiplier + spending power + competition. Not a guarantee.
-                          </div>
+                        <div className="ml-auto flex-shrink-0">
+                          <IntelInfoPopup title="Revenue model" ariaLabel="More info about revenue model">
+                            Based on format turn model (covers × turns × ticket) + delivery stream + real catchment data
+                            (offices, residents, road) + pocket-level multiplier + spending power + competition. Not a
+                            guarantee.
+                          </IntelInfoPopup>
                         </div>
                       </div>
                       {(() => {
@@ -4401,18 +4481,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
                     <div className="px-4 sm:px-5 py-4 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
                         <h3 className="font-bold text-gray-900 text-sm">Catchment Quality</h3>
-                        <div className="relative group">
-                          <button
-                            type="button"
-                            aria-label="More info about catchment quality"
-                            className="text-[10px] w-4 h-4 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold focus:outline-none focus:ring-2 focus:ring-orange-200"
-                          >
-                            i
-                          </button>
-                          <div className="absolute left-0 top-5 w-60 bg-gray-900 text-white text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
-                            Lokazen catchment quality measures 5 axes: density, affluence, frequency, captive access, and occasion coverage.
-                          </div>
-                        </div>
+                        <IntelInfoPopup title="Catchment quality" ariaLabel="More info about catchment quality">
+                          Lokazen catchment quality measures 5 axes: density, affluence, frequency, captive access, and
+                          occasion coverage.
+                        </IntelInfoPopup>
                       </div>
                       {(() => {
                         const seg = primarySegmentLabel(buildLocationBusinessType(brand))
