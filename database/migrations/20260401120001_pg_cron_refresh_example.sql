@@ -1,0 +1,25 @@
+-- Example only — Step 5 (weekly stale cache refresh)
+--
+-- Lokazen implements refresh logic in application code:
+--   POST /api/internal/refresh-stale-reference-cache  (Bearer ADMIN_SECRET)
+--   or: npx tsx scripts/refresh-stale-reference-cache.ts
+--
+-- If you use Supabase Pro with pg_cron + pg_net, you can schedule an HTTP POST
+-- to your deployed origin (replace placeholders):
+--
+--   select cron.schedule(
+--     'refresh-stale-property-location-cache',
+--     '0 3 * * 0',  -- 03:00 UTC Sunday
+--     $$
+--     select net.http_post(
+--       url := 'https://YOUR_DOMAIN/api/internal/refresh-stale-reference-cache',
+--       headers := jsonb_build_object(
+--         'Content-Type', 'application/json',
+--         'Authorization', 'Bearer YOUR_ADMIN_SECRET'
+--       ),
+--       body := '{"limit": 80}'::jsonb
+--     );
+--     $$
+--   );
+--
+-- Do not run the above blindly: confirm pg_cron and net extensions are enabled for your project.

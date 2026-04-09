@@ -1,6 +1,15 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react'
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  type ReactNode,
+  type Dispatch,
+  type SetStateAction,
+} from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -37,6 +46,16 @@ import {
   extractLatLngFromMapLink,
   mergeCoordsWithMapLink,
 } from '@/lib/property-coordinates'
+import {
+  LayoutGrid,
+  Building2,
+  Heart,
+  Calendar,
+  Bell,
+  MapPin as LucideMapPin,
+  TrendingUp,
+  Activity,
+} from 'lucide-react'
 
 const DEFAULT_MAP_CENTER = DEFAULT_BANGALORE_MAP_CENTER
 
@@ -1315,6 +1334,380 @@ function CatchmentFlow({ catchment }: { catchment: Array<{ pincode: string; name
   )
 }
 
+type BrandHomeOverviewProps = {
+  matches: MatchedProperty[]
+  stats: Stats
+  brand: BrandInfo | null
+  brandName: string | null
+  setActiveTab: (t: 'matched' | 'overview' | 'saved' | 'inquiries') => void
+  selectProperty: (m: MatchedProperty) => void
+  setVisitModal: Dispatch<
+    SetStateAction<{ open: boolean; date: string; time: string; saved: boolean; interested: boolean }>
+  >
+  setDashboardView: (v: 'home' | 'map' | 'intel') => void
+  router: ReturnType<typeof useRouter>
+  setRightPanelTab: (t: IntelTab) => void
+  setMapMode: (m: 'pins' | 'heatmap' | 'satellite') => void
+  setMobileView: (v: 'list' | 'map' | 'intel') => void
+  compact?: boolean
+}
+
+function BrandHomeOverview({
+  matches,
+  stats,
+  brand,
+  brandName,
+  setActiveTab,
+  selectProperty,
+  setVisitModal,
+  setDashboardView,
+  router,
+  setRightPanelTab,
+  setMapMode,
+  setMobileView,
+  compact,
+}: BrandHomeOverviewProps) {
+  const [showActivity, setShowActivity] = useState(false)
+  const highFit = matches.filter((m) => m.bfiScore >= 80).length
+  const highFitTodayLabel = compact ? `${highFit} high-fit match${highFit === 1 ? '' : 'es'}` : `${highFit} new today`
+
+  const statItems = [
+    {
+      label: 'Active Matches',
+      value: matches.length,
+      sub: highFitTodayLabel,
+      icon: Building2,
+      color: '#FF5200',
+    },
+    {
+      label: 'Properties Saved',
+      value: stats.totalSaved,
+      sub: 'Across your zones',
+      icon: Heart,
+      color: '#6366f1',
+    },
+    {
+      label: 'Site Visits',
+      value: stats.totalInquiries,
+      sub: 'Scheduled',
+      icon: Calendar,
+      color: '#22c55e',
+    },
+    {
+      label: 'Unread Alerts',
+      value: matches.filter((m) => m.bfiScore >= 85).length,
+      sub: 'Listings matching brief',
+      icon: Bell,
+      color: '#f59e0b',
+    },
+  ] as const
+
+  const onMatchRowClick = (m: MatchedProperty) => {
+    selectProperty(m)
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setMobileView('intel')
+      setDashboardView('intel')
+    }
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-[#F8F7F4] p-3 lg:p-6">
+      <div className="mb-4 lg:mb-6">
+        <p className="hidden lg:block text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">For Brands — Dashboard</p>
+        <h1 className="text-lg lg:text-2xl font-bold text-gray-900">
+          Welcome back,{' '}
+          <span className="text-[#FF5200]">{brand?.companyName || brandName || 'Brand'}</span>
+        </h1>
+      </div>
+
+      {compact ? (
+        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide mb-4">
+          {statItems.map(({ label, value, sub, icon: Icon, color }) => (
+            <div
+              key={label}
+              className="flex-shrink-0 w-36 bg-white rounded-2xl border border-gray-100 p-3 shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{label}</p>
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color }} aria-hidden />
+              </div>
+              <p className="text-2xl font-black text-gray-900 mb-0.5">{value}</p>
+              <p className="text-xs text-gray-400">{sub}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {statItems.map(({ label, value, sub, icon: Icon, color }) => (
+            <div key={label} className="bg-white rounded-2xl border border-gray-100 p-3 lg:p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{label}</p>
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color }} aria-hidden />
+              </div>
+              <p className="text-2xl lg:text-4xl font-black text-gray-900 mb-0.5">{value}</p>
+              <p className="text-xs text-gray-400">{sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className={`grid grid-cols-1 ${compact ? '' : 'lg:grid-cols-2'} gap-3 ${compact ? 'mb-4' : 'gap-4 mb-4'}`}>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-3 lg:px-4 lg:py-3 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FF5200] animate-pulse" />
+              <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Your AI Matches</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('matched')
+                setDashboardView('map')
+              }}
+              className="text-xs font-semibold text-[#FF5200] hover:underline"
+            >
+              View all
+            </button>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {matches.slice(0, 5).map((m, i) => (
+              <button
+                key={m.property.id}
+                type="button"
+                onClick={() => onMatchRowClick(m)}
+                className="w-full flex items-center gap-3 px-3 py-3 lg:px-4 hover:bg-gray-50 transition-colors text-left"
+              >
+                <span
+                  className={`font-black w-9 flex-shrink-0 text-sm ${
+                    m.bfiScore >= 90 ? 'text-green-500' : m.bfiScore >= 75 ? 'text-[#FF5200]' : 'text-amber-500'
+                  }`}
+                >
+                  {m.bfiScore}%
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{m.property.title}</p>
+                  <p className="text-[11px] text-gray-400 truncate">
+                    {m.property.address} · {formatPrice(m.property.price, m.property.priceType)}
+                  </p>
+                </div>
+                {i === 0 && (
+                  <span className="text-[9px] font-bold bg-[#FF5200] text-white px-2 py-0.5 rounded-full flex-shrink-0">
+                    TOP PICK
+                  </span>
+                )}
+                {m.bfiScore >= 82 && i > 0 && i < 3 && (
+                  <span className="text-[9px] font-bold bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                    NEW
+                  </span>
+                )}
+              </button>
+            ))}
+            {matches.length === 0 && (
+              <div className="px-3 lg:px-4 py-8 text-center text-sm text-gray-400">
+                No matches yet. Update your brief to get matched.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className={`bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden ${
+            compact && !showActivity ? 'hidden' : ''
+          }`}
+        >
+          <div className="flex items-center justify-between px-3 py-3 lg:px-4 lg:py-3 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Recent Activity</span>
+            </div>
+            <button type="button" className="text-xs font-semibold text-[#FF5200] hover:underline">
+              All activity
+            </button>
+          </div>
+          <div className="divide-y divide-gray-50 px-3 lg:px-4">
+            {matches.slice(0, 3).map((m, i) => (
+              <div key={m.property.id} className="py-3 flex items-start gap-3">
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                    i === 0 ? 'bg-orange-50' : i === 1 ? 'bg-blue-50' : 'bg-green-50'
+                  }`}
+                >
+                  {i === 0 ? (
+                    <Activity className="w-3.5 h-3.5 text-[#FF5200]" aria-hidden />
+                  ) : i === 1 ? (
+                    <Building2 className="w-3.5 h-3.5 text-blue-600" aria-hidden />
+                  ) : (
+                    <TrendingUp className="w-3.5 h-3.5 text-green-600" aria-hidden />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-700 leading-relaxed">
+                    {i === 0 ? (
+                      <>
+                        New <span className="font-semibold text-[#FF5200]">{m.bfiScore}% match</span> —{' '}
+                        {m.property.title.split('|')[0]?.trim() || m.property.title}
+                      </>
+                    ) : i === 1 ? (
+                      <>
+                        Property shortlisted:{' '}
+                        <span className="font-semibold text-gray-900">{m.property.address}</span>
+                      </>
+                    ) : (
+                      <>
+                        Location score updated for{' '}
+                        <span className="font-semibold text-gray-900">{m.property.city}</span>
+                      </>
+                    )}
+                  </p>
+                </div>
+                <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
+                  {i === 0 ? '2m ago' : i === 1 ? '1h ago' : '3h ago'}
+                </span>
+              </div>
+            ))}
+            {matches.length === 0 && <div className="py-8 text-center text-sm text-gray-400">No recent activity.</div>}
+          </div>
+        </div>
+      </div>
+
+      {compact && (
+        <button
+          type="button"
+          className="lg:hidden w-full text-center text-xs font-semibold text-[#FF5200] py-2 mb-4"
+          onClick={() => setShowActivity((s) => !s)}
+        >
+          {showActivity ? 'Hide activity' : 'Show recent activity'}
+        </button>
+      )}
+
+      <div className={`grid grid-cols-1 ${compact ? '' : 'lg:grid-cols-2'} gap-3`}>
+        {matches.length > 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-3 lg:px-5 lg:py-4 border-b border-gray-50">
+              <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Location Intelligence</span>
+              <button
+                type="button"
+                onClick={() => {
+                  selectProperty(matches[0])
+                  window.setTimeout(() => {
+                    setRightPanelTab('map')
+                    setMapMode('heatmap')
+                  }, 150)
+                }}
+                className="text-[10px] font-semibold text-[#FF5200] border border-[#FF5200]/30 px-2.5 py-1 rounded-lg hover:bg-orange-50 transition-colors"
+              >
+                Heatmap
+              </button>
+            </div>
+            <div className="p-3 lg:p-5 space-y-3">
+              {[
+                {
+                  label: 'Footfall Score',
+                  pct: Math.min(100, Math.round(matches[0]?.breakdown?.locationFit || 60)),
+                  color: 'bg-[#FF5200]',
+                },
+                {
+                  label: 'Competitor Proximity',
+                  pct: Math.max(20, 100 - (matches[0]?.bfiScore || 70)),
+                  color: 'bg-orange-400',
+                },
+                {
+                  label: 'Catchment Match',
+                  pct: matches[0]?.breakdown?.sizeFit || 75,
+                  color: 'bg-[#FF5200]',
+                },
+                {
+                  label: 'Rent vs Market',
+                  pct: matches[0]?.breakdown?.budgetFit || 80,
+                  color: 'bg-orange-300',
+                },
+              ].map(({ label, pct, color }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500 w-32 flex-shrink-0">{label}</span>
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span
+                    className={`text-xs font-bold w-10 text-right ${pct >= 75 ? 'text-[#FF5200]' : 'text-amber-500'}`}
+                  >
+                    {pct}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-3 lg:px-5 lg:py-4 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Your Next Steps</span>
+            </div>
+            <button
+              type="button"
+              className="text-[10px] font-semibold text-gray-400 border border-gray-200 px-2.5 py-1 rounded-lg hover:border-gray-300 transition-colors"
+            >
+              Mark all done
+            </button>
+          </div>
+          <div className="p-3 lg:p-5 space-y-2">
+            {[
+              {
+                num: 1,
+                label: `Review your Top ${Math.min(matches.length, 5)} match reports`,
+                urgent: true,
+                action: () => {
+                  setActiveTab('matched')
+                  setDashboardView('map')
+                },
+              },
+              {
+                num: 2,
+                label: matches[0]
+                  ? `Schedule site visit for ${matches[0].property.title.split('|')[0]?.trim()}`
+                  : 'Schedule a site visit',
+                urgent: false,
+                action: () => {
+                  if (matches[0]) selectProperty(matches[0])
+                  setVisitModal((v) => ({ ...v, open: true }))
+                },
+              },
+              {
+                num: 3,
+                label: 'Complete your brand brief for better matches',
+                urgent: false,
+                action: () => router.push('/onboarding/brand'),
+              },
+            ].map(({ num, label, urgent, action }) => (
+              <button
+                key={num}
+                type="button"
+                onClick={action}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left"
+              >
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                    urgent ? 'bg-[#FF5200] text-white' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {num}
+                </div>
+                <span className="text-sm text-gray-700 flex-1">{label}</span>
+                {urgent && (
+                  <span className="text-[9px] font-bold text-[#FF5200] border border-[#FF5200]/30 px-2 py-0.5 rounded-full flex-shrink-0">
+                    NOW
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function BrandDashboardPage() {
@@ -1351,6 +1744,7 @@ export default function BrandDashboardPage() {
   const [footfallView, setFootfallView] = useState<'weekday' | 'weekend'>('weekday')
   const [rightPanelTab, setRightPanelTab] = useState<IntelTab>('overview')
   const [mobileView, setMobileView] = useState<'list' | 'map' | 'intel'>('list')
+  const [dashboardView, setDashboardView] = useState<'home' | 'map' | 'intel'>('home')
   const [competitorFallback, setCompetitorFallback] = useState<string | null>(null)
   const [competitorFallbackLoading, setCompetitorFallbackLoading] = useState(false)
   const competitorFallbackInFlight = useRef(false)
@@ -1382,6 +1776,10 @@ export default function BrandDashboardPage() {
     fetchMatches(storedId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
+
+  useEffect(() => {
+    if (selectedMatch) setDashboardView('intel')
+  }, [selectedMatch])
 
   // Auto-fit map to matches
   useEffect(() => {
@@ -1830,6 +2228,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
   const selectProperty = (m: MatchedProperty) => {
     setSelectedMatch(m)
+    setDashboardView('intel')
     setRightPanelTab('overview')
     setActiveInfoWindowId(m.property.id)
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -1846,6 +2245,15 @@ Be specific to ${area} / ${address}. No generic statements.`,
       m
     )
   }
+
+  const goToDashboardHome = useCallback(() => {
+    setSelectedMatch(null)
+    setIntelData(null)
+    setIntelWardLabel(null)
+    setRightMode('map')
+    setDashboardView('home')
+    setMobileView('list')
+  }, [])
 
   const brand = data?.brand ?? null
   const preferredList = useMemo(() => normalizePreferredLocationsList(brand), [brand])
@@ -1868,7 +2276,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
   const savedProperties = data?.savedProperties ?? []
   const inquiries = data?.inquiries ?? []
 
-  const isMapVisible = rightMode === 'map' || (rightMode === 'intelligence' && rightPanelTab === 'map')
+  const showDesktopHomeOverlay =
+    dashboardView === 'home' && !selectedMatch && rightMode === 'map'
+  const isMapVisible =
+    (rightMode === 'map' || (rightMode === 'intelligence' && rightPanelTab === 'map')) && !showDesktopHomeOverlay
 
   const INTEL_TABS: { key: IntelTab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
@@ -1881,48 +2292,186 @@ Be specific to ${area} / ${address}. No generic statements.`,
   ]
 
   return (
-    <div className="flex flex-col lg:flex-row h-[100dvh] bg-[#F7F7F5] overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-[100dvh] bg-[#F8F7F4] overflow-hidden">
 
       {/* ══ LEFT PANEL ══ */}
       <div
-        className={`w-full lg:w-[380px] flex-shrink-0 flex flex-col min-h-0 lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-gray-100 overflow-hidden transition-all duration-200 ${
-          mobileView === 'list' ? 'h-[100dvh]' : 'h-0 lg:h-full overflow-hidden pointer-events-none lg:pointer-events-auto'
+        className={`w-full lg:w-[380px] flex-shrink-0 flex flex-col min-h-0 lg:h-full bg-white lg:bg-[#0F0F0F] border-b border-gray-100 lg:border-b-0 lg:border-r lg:border-white/10 overflow-hidden transition-all duration-200 ${
+          mobileView === 'list'
+            ? 'h-[100dvh]'
+            : 'h-0 lg:h-full overflow-hidden pointer-events-none lg:pointer-events-auto'
         }`}
       >
 
         {/* Brand Header */}
-        <div className="p-4 border-b border-gray-100 flex-shrink-0">
+        <div className="p-4 border-b border-gray-100 lg:border-white/10 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <Logo size="sm" showPoweredBy={false} href="/" />
+            <div className="block lg:hidden">
+              <Logo size="sm" showPoweredBy={false} href="/" variant="light" />
+            </div>
+            <div className="hidden lg:block">
+              <Logo size="sm" showPoweredBy={false} href="/" variant="dark" />
+            </div>
             <button
+              type="button"
               onClick={() => { localStorage.clear(); router.push('/') }}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center gap-1"
+              className="text-xs text-gray-500 hover:text-gray-900 lg:text-gray-400 lg:hover:text-white transition-colors inline-flex items-center gap-1"
             >
               <IconChevronLeft className="w-3.5 h-3.5" aria-hidden />
               Exit
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-700 flex items-center justify-center text-white font-bold text-sm tracking-tight flex-shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-600 to-indigo-700 flex items-center justify-center text-white font-bold text-sm tracking-tight flex-shrink-0">
               {companyInitials(brand?.companyName || brandName || brand?.name || 'Brand')}
             </div>
             <div className="min-w-0">
-              <p className="font-bold text-gray-900 text-base leading-tight truncate">
+              <p className="font-bold text-gray-900 lg:text-white text-base leading-tight truncate">
                 {brand?.companyName || brandName || brand?.name || 'Brand'}
               </p>
-              <p className="text-xs text-gray-500 truncate">
-                {brand?.industry ? `${brand.industry}` : brand?.category || ''}
-                {(brand?.industry || brand?.category) && (brand?.phone || brand?.email) ? ' · ' : ''}
-                {brand?.phone || brand?.email || ''}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                {(brand?.industry || brand?.category) && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 lg:bg-white/10 lg:text-gray-300 font-medium">
+                    {brand?.industry || brand?.category}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1 text-green-600 lg:text-green-400 text-[10px] font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-600 lg:bg-green-400 shrink-0" aria-hidden />
+                  Active · Onboarded
+                </span>
+              </div>
+              {(brand?.phone || brand?.email) && (
+                <p className="text-xs text-gray-500 truncate mt-0.5">{brand?.phone || brand?.email}</p>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Sidebar Nav — desktop only; mobile uses bottom nav */}
+        <div className="hidden lg:block px-3 py-3 border-b border-gray-100 lg:border-white/10 flex-shrink-0">
+          <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest px-2 mb-2">Main</p>
+          {(
+            [
+              {
+                label: 'Dashboard',
+                icon: LayoutGrid,
+                active: dashboardView === 'home' && !selectedMatch,
+                action: goToDashboardHome,
+              },
+              {
+                label: 'My Matches',
+                icon: Building2,
+                count: matches.length,
+                active: false,
+                action: () => {
+                  setActiveTab('matched')
+                  setDashboardView('map')
+                  setMobileView('list')
+                },
+              },
+              {
+                label: 'Saved',
+                icon: Heart,
+                count: stats.totalSaved,
+                active: false,
+                action: () => {
+                  setActiveTab('saved')
+                  setDashboardView('map')
+                },
+              },
+              {
+                label: 'Site Visits',
+                icon: Calendar,
+                count: stats.totalInquiries,
+                active: false,
+                action: () => {
+                  setActiveTab('inquiries')
+                  setDashboardView('map')
+                },
+              },
+            ] as const
+          ).map(({ label, icon: Icon, count, active, action }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={action}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl mb-0.5 transition-colors text-left ${
+                active
+                  ? 'bg-[#FF5200] text-white'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 lg:text-gray-400 lg:hover:bg-white/5 lg:hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon className="w-4 h-4 flex-shrink-0" aria-hidden />
+                <span className="text-sm font-medium">{label}</span>
+              </div>
+              {count != null && count > 0 && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    active ? 'bg-white/20 text-white' : 'bg-[#FF5200]/20 text-[#FF5200]'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+
+          <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest px-2 mt-3 mb-2">Intelligence</p>
+          {(
+            [
+              {
+                label: 'Location Intel',
+                icon: LucideMapPin,
+                action: () => {
+                  if (matches[0]) selectProperty(matches[0])
+                  else {
+                    setActiveTab('matched')
+                    setDashboardView('map')
+                    setMobileView('list')
+                  }
+                },
+              },
+              {
+                label: 'Revenue Model',
+                icon: TrendingUp,
+                action: () => {
+                  setActiveTab('matched')
+                  setDashboardView('map')
+                  setMobileView('list')
+                },
+              },
+              {
+                label: 'Heatmap',
+                icon: Activity,
+                action: () => {
+                  setDashboardView('map')
+                  setMapMode('heatmap')
+                  setMobileView('map')
+                  if (matches[0]) {
+                    selectProperty(matches[0])
+                    window.setTimeout(() => setRightPanelTab('map'), 200)
+                  }
+                },
+              },
+            ] as const
+          ).map(({ label, icon: Icon, action }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={action}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 lg:text-gray-400 lg:hover:bg-white/5 lg:hover:text-white transition-colors text-left"
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" aria-hidden />
+              <span className="text-sm font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
+
         {/* Brand brief — mirrors onboarding / marketplace card */}
         {brand && showBrief && (
-          <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-            <div className="rounded-2xl border border-[#FF5200]/30 bg-gradient-to-br from-orange-50/95 via-white to-amber-50/40 p-3.5 shadow-sm">
+          <div className="px-4 py-3 border-b border-gray-100 lg:border-white/10 flex-shrink-0">
+            <div className="rounded-2xl border border-[#FF5200]/35 bg-gray-50 lg:bg-white/5 p-3.5 shadow-sm">
               {dashboardBadges.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {dashboardBadges.map((label) => {
@@ -1932,8 +2481,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         key={label}
                         className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                           isMatch
-                            ? 'bg-violet-50 text-violet-800 border-violet-200'
-                            : 'bg-sky-50 text-sky-800 border-sky-200'
+                            ? 'bg-violet-50 text-violet-800 border-violet-200 lg:bg-violet-500/15 lg:text-violet-200 lg:border-violet-500/30'
+                            : 'bg-sky-50 text-sky-800 border-sky-200 lg:bg-sky-500/15 lg:text-sky-200 lg:border-sky-500/30'
                         }`}
                       >
                         {label}
@@ -1943,14 +2492,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 </div>
               )}
               <p className="text-[10px] font-semibold text-[#FF5200] uppercase tracking-wide mb-2">Your Requirements</p>
-              <ul className="space-y-2 text-[11px] text-gray-800">
+              <ul className="space-y-2 text-[11px] text-gray-700 lg:text-gray-200">
                 {brand.minSize != null && brand.maxSize != null && (
                   <li className="flex gap-2">
                     <span className="text-[#FF5200] flex-shrink-0 w-4 flex items-center justify-center">
                       <IconRulerSquare className="w-3.5 h-3.5" />
                     </span>
                     <span>
-                      <span className="font-semibold text-gray-600">Size · </span>
+                      <span className="font-semibold text-gray-500 lg:text-gray-400">Size · </span>
                       {brand.minSize.toLocaleString('en-IN')}–{brand.maxSize.toLocaleString('en-IN')} sqft
                     </span>
                   </li>
@@ -1961,7 +2510,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <IconMapPin className="w-3.5 h-3.5" />
                     </span>
                     <span>
-                      <span className="font-semibold text-gray-600">Location · </span>
+                      <span className="font-semibold text-gray-500 lg:text-gray-400">Location · </span>
                       {briefExpanded ? preferredList.join(', ') : shortenText(preferredList.join(', '), 42)}
                     </span>
                   </li>
@@ -1972,7 +2521,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <IconRupee className="w-3.5 h-3.5" />
                     </span>
                     <span>
-                      <span className="font-semibold text-gray-600">Budget · </span>
+                      <span className="font-semibold text-gray-500 lg:text-gray-400">Budget · </span>
                       ₹{brand.budgetMin.toLocaleString('en-IN')}–₹{brand.budgetMax.toLocaleString('en-IN')}/mo
                     </span>
                   </li>
@@ -1983,7 +2532,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <IconClock className="w-3.5 h-3.5" />
                     </span>
                     <span>
-                      <span className="font-semibold text-gray-600">Timeline · </span>
+                      <span className="font-semibold text-gray-500 lg:text-gray-400">Timeline · </span>
                       {brand.brandProfile.timeline}
                     </span>
                   </li>
@@ -1994,7 +2543,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <BuildingIcon className="w-3.5 h-3.5 text-[#FF5200]" />
                     </span>
                     <span>
-                      <span className="font-semibold text-gray-600">Store type · </span>
+                      <span className="font-semibold text-gray-500 lg:text-gray-400">Store type · </span>
                       {brand.brandProfile?.storeType || brand.category}
                     </span>
                   </li>
@@ -2005,7 +2554,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <IconUsers className="w-3.5 h-3.5" />
                     </span>
                     <span>
-                      <span className="font-semibold text-gray-600">Audience · </span>
+                      <span className="font-semibold text-gray-500 lg:text-gray-400">Audience · </span>
                       {brand.brandProfile.targetAudience}
                     </span>
                   </li>
@@ -2018,7 +2567,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         <IconTag className="w-3.5 h-3.5" />
                       </span>
                       <span>
-                        <span className="font-semibold text-gray-600">Segments · </span>
+                        <span className="font-semibold text-gray-500 lg:text-gray-400">Segments · </span>
                         {brand.brandProfile.targetAudienceTags.join(', ')}
                       </span>
                     </li>
@@ -2029,7 +2578,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <IconCheckCircle className="w-3.5 h-3.5" />
                     </span>
                     <span>
-                      <span className="font-semibold text-gray-600">Must-haves · </span>
+                      <span className="font-semibold text-gray-500 lg:text-gray-400">Must-haves · </span>
                       {brand.brandProfile.additionalRequirements}
                     </span>
                   </li>
@@ -2055,25 +2604,28 @@ Be specific to ${area} / ${address}. No generic statements.`,
         )}
 
         {/* Stats Row */}
-        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="px-3 py-3 border-b border-gray-100 lg:border-white/10 flex-shrink-0">
+          <div className="grid grid-cols-5 gap-1">
             {[
               { label: 'Matches', value: matches.length, color: 'text-[#FF5200]' },
-              { label: 'Viewed', value: stats.totalViews, color: 'text-blue-600' },
-              { label: 'Saved', value: stats.totalSaved, color: 'text-pink-600' },
-              { label: 'Inquiries', value: stats.totalInquiries, color: 'text-purple-600' },
-              { label: 'Pending', value: stats.pendingInquiries, color: 'text-amber-600' },
+              { label: 'Viewed', value: stats.totalViews, color: 'text-blue-600 lg:text-blue-400' },
+              { label: 'Saved', value: stats.totalSaved, color: 'text-pink-600 lg:text-pink-400' },
+              { label: 'Inquiries', value: stats.totalInquiries, color: 'text-purple-600 lg:text-purple-400' },
+              { label: 'Pending', value: stats.pendingInquiries, color: 'text-amber-600 lg:text-amber-400' },
             ].map(({ label, value, color }) => (
-              <div key={label} className="min-w-[78px] flex-shrink-0 rounded-xl bg-gray-50 border border-gray-100 p-2.5 text-center">
+              <div
+                key={label}
+                className="rounded-xl bg-gray-50 lg:bg-white/5 p-2 text-center"
+              >
                 <p className={`text-lg font-bold ${color}`}>{value}</p>
-                <p className="text-[10px] text-gray-500">{label}</p>
+                <p className="text-[9px] text-gray-500">{label}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-100 flex-shrink-0">
+        <div className="border-b border-gray-100 lg:border-white/10 flex-shrink-0">
           <nav className="flex text-xs overflow-x-auto">
             {([
               { key: 'matched', label: `Matches (${matches.length})` },
@@ -2083,9 +2635,15 @@ Be specific to ${area} / ${address}. No generic statements.`,
             ] as const).map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setActiveTab(key)}
+                type="button"
+                onClick={() => {
+                  setActiveTab(key)
+                  setDashboardView('map')
+                }}
                 className={`whitespace-nowrap px-3.5 py-2.5 border-b-2 font-medium transition-colors flex-shrink-0 ${
-                  activeTab === key ? 'border-[#FF5200] text-[#FF5200]' : 'border-transparent text-gray-500 hover:text-gray-700'
+                  activeTab === key
+                    ? 'border-[#FF5200] text-[#FF5200]'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 lg:text-gray-400 lg:hover:text-white'
                 }`}
               >
                 {label}
@@ -2094,9 +2652,36 @@ Be specific to ${area} / ${address}. No generic statements.`,
           </nav>
         </div>
 
-        {/* Tab Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0">
+        {/* Tab Content + mobile home + bottom footer */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20 lg:pb-4">
+          {dashboardView === 'home' && !selectedMatch && (
+            <div className="lg:hidden border-b border-gray-100 lg:border-white/10">
+              <BrandHomeOverview
+                compact
+                matches={matches}
+                stats={stats}
+                brand={brand}
+                brandName={brandName}
+                setActiveTab={setActiveTab}
+                selectProperty={selectProperty}
+                setVisitModal={setVisitModal}
+                setDashboardView={setDashboardView}
+                router={router}
+                setRightPanelTab={setRightPanelTab}
+                setMapMode={setMapMode}
+                setMobileView={setMobileView}
+              />
+            </div>
+          )}
 
+          <div
+            className={
+              dashboardView === 'home' && !selectedMatch
+                ? 'max-lg:hidden'
+                : ''
+            }
+          >
           {/* ── Matches Tab ── */}
           {activeTab === 'matched' && (
             <div className="py-2">
@@ -2106,7 +2691,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 </div>
               ) : matches.length === 0 ? (
                 <div className="py-12 text-center px-4">
-                  <p className="text-sm text-gray-500 mb-3">No matches found. Update your preferences to get matched.</p>
+                  <p className="text-sm text-gray-400 mb-3">No matches found. Update your preferences to get matched.</p>
                   <Link href="/onboarding/brand" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
                     Update Preferences
                     <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
@@ -2124,8 +2709,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       onMouseLeave={() => setHoveredPropertyId(null)}
                       className={`mx-3 mb-2.5 rounded-2xl border cursor-pointer transition-all overflow-hidden ${
                         isSelected
-                          ? 'border-[#FF5200] shadow-md ring-1 ring-[#FF5200]/20 bg-white'
-                          : 'border-gray-100 bg-white hover:border-orange-200 hover:shadow-sm'
+                          ? 'border-[#FF5200] shadow-md ring-1 ring-[#FF5200]/20 bg-orange-50/80 lg:bg-white/10 lg:ring-[#FF5200]/30'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm lg:border-white/10 lg:bg-white/5 lg:hover:bg-white/10 lg:hover:border-white/20'
                       }`}
                     >
                       {/* Full-width image banner */}
@@ -2152,14 +2737,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
                       {/* Card body */}
                       <div className="p-3">
-                        <p className="font-semibold text-sm text-gray-900 line-clamp-1 mb-1">{m.property.title}</p>
-                        <p className="text-[11px] text-gray-400 line-clamp-1 mb-2">{m.property.address}</p>
+                        <p className="font-semibold text-sm text-gray-900 lg:text-white line-clamp-1 mb-1">{m.property.title}</p>
+                        <p className="text-[11px] text-gray-500 lg:text-gray-400 line-clamp-1 mb-2">{m.property.address}</p>
 
                         {/* Key specs row */}
                         <div className="flex items-center gap-2 mb-2 text-[11px]">
                           <span className="font-bold text-[#FF5200]">{formatPrice(m.property.price, m.property.priceType)}</span>
-                          <span className="text-gray-300">·</span>
-                          <span className="text-gray-600">{m.property.size.toLocaleString()} sqft</span>
+                          <span className="text-gray-400 lg:text-gray-500">·</span>
+                          <span className="text-gray-600 lg:text-gray-300">{m.property.size.toLocaleString()} sqft</span>
                         </div>
 
                         {/* Fit chips */}
@@ -2192,7 +2777,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           <Link
                             href={`/properties/${encodePropertyId(m.property.id)}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-center text-[11px] text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gray-400 hover:text-gray-700 transition-colors whitespace-nowrap min-h-[40px] flex items-center justify-center min-[380px]:inline-flex"
+                            className="text-center text-[11px] text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gray-400 hover:text-gray-900 lg:text-gray-300 lg:border-white/15 lg:hover:border-white/30 lg:hover:text-white transition-colors whitespace-nowrap min-h-[40px] flex items-center justify-center min-[380px]:inline-flex"
                           >
                             Listing
                           </Link>
@@ -2210,7 +2795,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
             <div className="py-2 px-3">
               {recentViews.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm text-gray-500 mb-3">No views yet.</p>
+                  <p className="text-sm text-gray-400 mb-3">No views yet.</p>
                   <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
                     Browse Spaces
                     <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
@@ -2219,7 +2804,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
               ) : (
                 <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 py-2">
                   {recentViews.map((v) => (
-                    <Link key={v.id} href={`/properties/${encodePropertyId(v.propertyId)}`} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 transition-all">
+                    <Link key={v.id} href={`/properties/${encodePropertyId(v.propertyId)}`} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-orange-200 hover:shadow-sm lg:bg-white/5 lg:border-white/10 lg:hover:bg-white/10 lg:hover:border-white/20 transition-all">
                       <div className="relative h-28 bg-gray-100">
                         {Array.isArray(v.property.images) && v.property.images[0] ? (
                           <Image src={v.property.images[0]} alt={v.property.title} fill className="object-cover" unoptimized />
@@ -2231,10 +2816,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         </span>
                       </div>
                       <div className="p-2">
-                        <p className="font-semibold text-xs text-gray-900 line-clamp-1 mb-0.5">{v.property.title}</p>
-                        <p className="text-[10px] text-gray-500 mb-1">{v.property.city}</p>
+                        <p className="font-semibold text-xs text-gray-900 lg:text-white line-clamp-1 mb-0.5">{v.property.title}</p>
+                        <p className="text-[10px] text-gray-500 lg:text-gray-400 mb-1">{v.property.city}</p>
                         <p className="text-xs font-bold text-[#FF5200]">{formatPrice(v.property.price, v.property.priceType)}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">Viewed {formatDate(v.viewedAt)}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Viewed {formatDate(v.viewedAt)}</p>
                       </div>
                     </Link>
                   ))}
@@ -2248,7 +2833,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
             <div className="py-2 px-3">
               {savedProperties.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm text-gray-500 mb-3">No saved spaces yet.</p>
+                  <p className="text-sm text-gray-400 mb-3">No saved spaces yet.</p>
                   <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
                     Browse Spaces
                     <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
@@ -2257,7 +2842,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
               ) : (
                 <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 py-2">
                   {savedProperties.map((sp) => (
-                    <Link key={sp.id} href={`/properties/${encodePropertyId(sp.property.id)}`} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 transition-all">
+                    <Link key={sp.id} href={`/properties/${encodePropertyId(sp.property.id)}`} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-orange-200 hover:shadow-sm lg:bg-white/5 lg:border-white/10 lg:hover:bg-white/10 lg:hover:border-white/20 transition-all">
                       <div className="relative h-28 bg-gray-100">
                         {Array.isArray(sp.property.images) && (sp.property.images as string[])[0] ? (
                           <Image src={(sp.property.images as string[])[0]} alt={sp.property.title} fill className="object-cover" unoptimized />
@@ -2266,10 +2851,10 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         )}
                       </div>
                       <div className="p-2">
-                        <p className="font-semibold text-xs text-gray-900 line-clamp-1 mb-0.5">{sp.property.title}</p>
-                        <p className="text-[10px] text-gray-500 mb-1">{sp.property.city}</p>
+                        <p className="font-semibold text-xs text-gray-900 lg:text-white line-clamp-1 mb-0.5">{sp.property.title}</p>
+                        <p className="text-[10px] text-gray-500 lg:text-gray-400 mb-1">{sp.property.city}</p>
                         <p className="text-xs font-bold text-[#FF5200]">{formatPrice(Number(sp.property.price), sp.property.priceType)}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">Saved {formatDate(sp.savedAt)}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Saved {formatDate(sp.savedAt)}</p>
                       </div>
                     </Link>
                   ))}
@@ -2283,7 +2868,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
             <div className="py-2 px-3">
               {inquiries.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm text-gray-500 mb-3">No inquiries sent yet.</p>
+                  <p className="text-sm text-gray-400 mb-3">No inquiries sent yet.</p>
                   <Link href="/properties/results" className="text-xs text-[#FF5200] hover:underline inline-flex items-center gap-0.5">
                     Browse Spaces
                     <IconChevronRight className="w-3 h-3 flex-shrink-0" aria-hidden />
@@ -2292,7 +2877,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
               ) : (
                 <div className="space-y-2 py-2">
                   {inquiries.map((inq) => (
-                    <div key={inq.id} className="bg-white rounded-xl border border-gray-100 p-3 hover:border-orange-200 transition-all">
+                    <div key={inq.id} className="bg-white rounded-xl border border-gray-200 p-3 hover:border-orange-200 lg:bg-white/5 lg:border-white/10 lg:hover:bg-white/10 lg:hover:border-white/20 transition-all">
                       <div className="flex gap-2.5">
                         <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           {Array.isArray(inq.property.images) && inq.property.images[0] ? (
@@ -2303,12 +2888,12 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-0.5">
-                            <Link href={`/properties/${encodePropertyId(inq.property.id)}`} className="font-semibold text-xs text-gray-900 hover:text-[#FF5200] truncate">{inq.property.title}</Link>
+                            <Link href={`/properties/${encodePropertyId(inq.property.id)}`} className="font-semibold text-xs text-gray-900 hover:text-[#FF5200] lg:text-white truncate">{inq.property.title}</Link>
                             <span className={`flex-shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-medium border capitalize ${statusBadge(inq.status)}`}>{inq.status}</span>
                           </div>
-                          <p className="text-[11px] text-gray-500 mb-1 truncate">{inq.property.city}</p>
-                          <p className="text-[11px] text-gray-600 line-clamp-2">{inq.message}</p>
-                          <p className="text-[10px] text-gray-400 mt-1">{formatDate(inq.createdAt)}{inq.owner ? ` · ${inq.owner.name}` : ''}</p>
+                          <p className="text-[11px] text-gray-500 lg:text-gray-400 mb-1 truncate">{inq.property.city}</p>
+                          <p className="text-[11px] text-gray-600 lg:text-gray-300 line-clamp-2">{inq.message}</p>
+                          <p className="text-[10px] text-gray-500 mt-1">{formatDate(inq.createdAt)}{inq.owner ? ` · ${inq.owner.name}` : ''}</p>
                         </div>
                       </div>
                     </div>
@@ -2317,14 +2902,27 @@ Be specific to ${area} / ${address}. No generic statements.`,
               )}
             </div>
           )}
+          </div>
 
           {/* Footer */}
-          <div className="px-3 sm:px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-gray-100 mt-2 text-center">
-            <p className="text-xs text-gray-400">
+          <div className="px-3 sm:px-4 py-4 border-t border-gray-100 lg:border-white/10 mt-2 text-center">
+            <p className="text-xs text-gray-500">
               Need help?{' '}
               <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="text-[#FF5200] hover:underline">Chat on WhatsApp</a>
             </p>
           </div>
+        </div>
+        <div className="hidden lg:flex mt-auto p-3 border-t border-white/10 flex-shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-2.5 w-full">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-600 to-indigo-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {companyInitials(brand?.companyName || brandName || 'B')}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-900 lg:text-white truncate">{brand?.companyName || brandName || 'Brand'}</p>
+              <p className="text-[10px] text-gray-500">Brand account</p>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -2339,9 +2937,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
           <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
             <button
               type="button"
-              onClick={() => setMobileView('list')}
+              onClick={goToDashboardHome}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 flex-shrink-0"
-              aria-label="Back to list"
+              aria-label="Back to dashboard"
             >
               <IconChevronLeft className="w-4 h-4" />
             </button>
@@ -2362,16 +2960,13 @@ Be specific to ${area} / ${address}. No generic statements.`,
         {rightMode === 'intelligence' && selectedMatch && (
           <div className="hidden lg:flex lg:flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-100 bg-white flex-shrink-0 z-10">
             <button
-              onClick={() => {
-                setRightMode('map')
-                setSelectedMatch(null)
-                setIntelData(null)
-                setIntelWardLabel(null)
-              }}
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
-              aria-label="Close intelligence"
+              type="button"
+              onClick={goToDashboardHome}
+              className="rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center gap-1.5 flex-shrink-0 text-gray-700 text-xs font-semibold px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+              aria-label="Back to dashboard"
             >
               <IconChevronLeft className="w-4 h-4" />
+              <span>Dashboard</span>
             </button>
             <div className="flex-1 min-w-0 basis-[min(100%,12rem)] sm:basis-auto">
               <p className="font-bold text-gray-900 text-sm truncate">{selectedMatch.property.title}</p>
@@ -2446,6 +3041,24 @@ Be specific to ${area} / ${address}. No generic statements.`,
         )}
 
         <div className="flex-1 min-h-0 relative">
+        {showDesktopHomeOverlay && (
+          <div className="absolute inset-0 z-[25] hidden lg:flex flex-col min-h-0 bg-[#F8F7F4] overflow-hidden">
+            <BrandHomeOverview
+              matches={matches}
+              stats={stats}
+              brand={brand}
+              brandName={brandName}
+              setActiveTab={setActiveTab}
+              selectProperty={selectProperty}
+              setVisitModal={setVisitModal}
+              setDashboardView={setDashboardView}
+              router={router}
+              setRightPanelTab={setRightPanelTab}
+              setMapMode={setMapMode}
+              setMobileView={setMobileView}
+            />
+          </div>
+        )}
         {/* Map layer — always in DOM, z-index controlled; fills area below intel chrome */}
         <div className={`absolute inset-0 transition-opacity duration-200 ${isMapVisible ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
           {isLoaded ? (
@@ -4948,9 +5561,24 @@ Be specific to ${area} / ${address}. No generic statements.`,
         <div className="flex">
           <button
             type="button"
-            onClick={() => setMobileView('list')}
+            onClick={goToDashboardHome}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[10px] font-semibold transition-colors ${
+              mobileView === 'list' && dashboardView === 'home' && !selectedMatch ? 'text-[#FF5200]' : 'text-gray-500'
+            }`}
+          >
+            <LayoutGrid className="w-5 h-5" aria-hidden />
+            <span>Home</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMobileView('list')
+              setDashboardView('map')
+              setActiveTab('matched')
+            }}
             className={`relative flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[10px] font-semibold transition-colors ${
-              mobileView === 'list' ? 'text-[#FF5200]' : 'text-gray-500'
+              mobileView === 'list' && dashboardView !== 'home' ? 'text-[#FF5200]' : 'text-gray-500'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4968,6 +5596,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
             type="button"
             onClick={() => {
               setMobileView('map')
+              setDashboardView('map')
               setRightPanelTab('map')
             }}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[10px] font-semibold transition-colors ${

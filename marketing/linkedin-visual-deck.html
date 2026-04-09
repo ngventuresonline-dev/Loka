@@ -47,18 +47,20 @@
       gap: 28px;
       padding: 0 16px;
     }
+    /* No fixed aspect-ratio: tall slides used to clip screenshots at the bottom. */
     .slide {
       width: 100%;
-      aspect-ratio: 1080 / 1350;
-      max-height: min(92vh, 1350px);
+      max-width: 1080px;
+      margin-left: auto;
+      margin-right: auto;
       background: linear-gradient(160deg, var(--bg1) 0%, #0a0d14 50%, #080a10 100%);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: clamp(28px, 4vw, 48px);
+      padding: clamp(24px, 4vw, 40px);
       display: flex;
       flex-direction: column;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
     }
     .slide::before {
@@ -108,7 +110,7 @@
     }
     ul.feat {
       list-style: none;
-      flex: 1;
+      flex: 0 1 auto;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -194,37 +196,105 @@
       opacity: 0.07;
       line-height: 1;
     }
+    /* Smaller, consistent frames — deck reads cleaner on LinkedIn. */
     .shot {
       display: block;
-      width: 100%;
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: min(46vh, 480px);
+      margin-left: auto;
+      margin-right: auto;
       border-radius: 12px;
-      border: 1px solid var(--border);
-      object-fit: cover;
-      object-position: top center;
-      max-height: min(44vh, 580px);
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
-      margin-bottom: 8px;
-      background: #111;
+      object-fit: contain;
+      object-position: center top;
+      margin-bottom: 10px;
     }
     .shot-mini {
-      max-height: min(22vh, 280px);
+      max-height: min(30vh, 320px);
       margin-bottom: 10px;
     }
     .shot-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
+      gap: 10px;
+      margin-bottom: 12px;
+      align-items: start;
+    }
+    .shot-row > div {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: rgba(5, 7, 12, 0.5);
+      border-radius: 14px;
+      padding: 12px 11px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
     }
     .shot-row img {
       width: 100%;
-      max-height: min(36vh, 460px);
-      object-fit: cover;
-      object-position: top center;
+      height: auto;
+      max-height: min(38vh, 400px);
+      object-fit: contain;
+      object-position: center top;
       border-radius: 10px;
-      border: 1px solid var(--border);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-      background: #111;
+    }
+    /* Framed hero — contain (no cover crop); PNG is tight content column from capture script */
+    .media-frame--hero {
+      width: 100%;
+      min-height: min(36vh, 320px);
+      max-height: min(56vh, 580px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(14px, 2.5vw, 24px);
+      margin-bottom: 12px;
+      border-radius: 18px;
+      background:
+        radial-gradient(ellipse 100% 70% at 50% 0%, rgba(255, 82, 0, 0.11), transparent 55%),
+        linear-gradient(168deg, #121722 0%, #0a0d12 100%);
+      border: 1px solid rgba(255, 82, 0, 0.2);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 16px 48px rgba(0, 0, 0, 0.4);
+    }
+    .media-frame--hero img {
+      width: auto !important;
+      max-width: 100%;
+      max-height: min(50vh, 520px);
+      height: auto;
+      object-fit: contain;
+      object-position: center center;
+      display: block;
+      margin: 0 auto;
+      border-radius: 12px;
+    }
+    /* Single wide stills (map, for-brands, LI fold) */
+    .media-frame--wide {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(12px, 2vw, 20px);
+      margin-bottom: 12px;
+      border-radius: 16px;
+      background: linear-gradient(168deg, rgba(16, 19, 28, 0.95), rgba(7, 9, 14, 0.98));
+      border: 1px solid rgba(255, 82, 0, 0.14);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .media-frame--wide .shot-mini {
+      max-height: min(32vh, 320px) !important;
+    }
+    .media-frame--wide img,
+    .media-frame--wide .li-hero-main {
+      max-width: 100%;
+      max-height: min(46vh, 480px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      object-position: center top;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto;
     }
     .shot-cap {
       font-size: 10px;
@@ -235,11 +305,87 @@
     }
     ul.feat.tight { gap: 6px; }
     ul.feat.tight li { padding: 8px 10px; font-size: 12px; }
+    .slide--impact h2 { margin-bottom: 8px; }
+    .one-liner {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 6px 0 14px;
+      line-height: 1.45;
+      max-width: 58ch;
+    }
+    .loc-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 9px;
+      justify-content: center;
+      padding: 14px 12px;
+      background: rgba(0, 0, 0, 0.38);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-top: 10px;
+      max-height: min(38vh, 420px);
+      overflow-y: auto;
+    }
+    .loc-chip {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: linear-gradient(145deg, rgba(255, 82, 0, 0.22), rgba(228, 0, 43, 0.12));
+      border: 1px solid rgba(255, 82, 0, 0.4);
+      color: #eef0f5;
+      white-space: nowrap;
+    }
+    .shot-mega {
+      max-height: min(48vh, 500px);
+    }
+    .vis-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(5, 7, 12, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .vis-3 img {
+      width: 100%;
+      max-height: min(24vh, 240px);
+      object-fit: contain;
+      object-position: center top;
+      border-radius: 10px;
+    }
+    .li-hero-main {
+      width: auto;
+      max-width: 100%;
+      max-height: min(44vh, 460px);
+      object-fit: contain;
+      object-position: center top;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto;
+    }
+    @media (max-width: 720px) {
+      .vis-3 { grid-template-columns: 1fr; }
+    }
+    /* Warm frame on captures (frames above add mat; keep img edge subtle) */
+    .slide-inner img[src*="screenshots/"] {
+      border: 1px solid rgba(255, 82, 0, 0.16);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      background: #0c0e14;
+    }
+    .media-frame--hero img[src*="screenshots/"],
+    .media-frame--wide img[src*="screenshots/"] {
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    }
   </style>
 </head>
 <body>
   <div class="hint">
-    Real app captures from <strong>lokazen.in</strong> live in <code>screenshots/</code>. Refresh: <code>npm run marketing:screenshots</code>. Open in Chrome/Edge → zoom each slide full screen → <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> for LinkedIn. Aspect <strong>1080×1350</strong>.
+    <strong>What you’re looking at:</strong> real screens from <strong>lokazen.in</strong> — commercial matching and location intelligence for Bangalore. Each slide describes what appears on screen for brands, owners, and partners. <span style="opacity:0.85">Exporting for LinkedIn? Use portrait <strong>1080×1350</strong> per slide. Creators refresh images with <code>npm run marketing:screenshots</code>.</span>
   </div>
 
   <div class="deck">
@@ -248,14 +394,122 @@
       <span class="num">01</span>
       <div class="slide-inner">
         <span class="tag">Commercial real estate · Bangalore-first</span>
-        <h1><span class="grad">Lokazen</span></h1>
-        <p class="sub" style="margin-bottom:10px;">Two-sided platform — matching, location intelligence, dashboards, expert support.</p>
-        <div class="shot-cap">Live · Homepage hero (lokazen.in)</div>
-        <img class="shot" src="screenshots/01-home-hero.png" alt="Lokazen homepage hero with brand and list property search" width="1080" height="1350" />
-        <ul class="feat tight" style="margin-top:4px;">
-          <li>BFI &amp; PFI scoring · Intel layer · Plans + PhonePe</li>
-        </ul>
-        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a> · Screenshots captured from production</div>
+        <h1 style="margin-bottom:10px;"><span class="grad">Lokazen</span></h1>
+        <p class="sub" style="margin-bottom:8px;font-size:clamp(13px,1.4vw,16px);">One platform for brands that need space and owners who want serious tenants — matching, location intelligence, dashboards, and payments.</p>
+        <div class="shot-cap">On screen · Homepage</div>
+        <div class="media-frame--hero">
+          <img src="screenshots/ex-home-hero-panel.png" alt="Lokazen homepage hero with brand and list property search" width="1200" height="900" onerror="this.onerror=null;this.src='screenshots/01-home-hero.png'" />
+        </div>
+        <p class="one-liner" style="margin-top:8px;margin-bottom:0;">You see the main headline, trust strip, and the choice to start as a <strong>brand looking for space</strong> or an <strong>owner listing a property</strong> — the same entry point visitors get on the live site.</p>
+        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a></div>
+      </div>
+    </section>
+
+    <section class="slide slide--impact" id="s1b">
+      <span class="num">◆</span>
+      <div class="slide-inner">
+        <span class="tag">Bangalore</span>
+        <h2>Micro-markets you can actually select</h2>
+        <p class="one-liner">The map shows brand placements across the city. The pills are the same neighbourhood names brands pick in their mandate and owners pick when they list — not generic “Bangalore only.”</p>
+        <div class="shot-cap">On screen · City map &amp; placements</div>
+        <div class="media-frame--wide">
+          <img src="screenshots/10-home-bangalore-map.png" alt="Bangalore map with brand placement pins on Lokazen homepage" width="1440" height="900" />
+        </div>
+        <div class="loc-cloud" aria-label="Bangalore area names in product pickers">
+            <span class="loc-chip">Koramangala</span>
+            <span class="loc-chip">Indiranagar</span>
+            <span class="loc-chip">Whitefield</span>
+            <span class="loc-chip">HSR Layout</span>
+            <span class="loc-chip">Jayanagar</span>
+            <span class="loc-chip">BTM Layout</span>
+            <span class="loc-chip">MG Road</span>
+            <span class="loc-chip">Brigade Road</span>
+            <span class="loc-chip">Marathahalli</span>
+            <span class="loc-chip">Hebbal</span>
+            <span class="loc-chip">Banashankari</span>
+            <span class="loc-chip">Sarjapur Road</span>
+            <span class="loc-chip">Electronic City</span>
+            <span class="loc-chip">Bellandur</span>
+            <span class="loc-chip">Bannerghatta Road</span>
+            <span class="loc-chip">Rajajinagar</span>
+            <span class="loc-chip">Malleshwaram</span>
+            <span class="loc-chip">Basavanagudi</span>
+            <span class="loc-chip">Vijayanagar</span>
+            <span class="loc-chip">Yelahanka</span>
+            <span class="loc-chip">Yeshwanthpur</span>
+            <span class="loc-chip">RT Nagar</span>
+            <span class="loc-chip">Frazer Town</span>
+            <span class="loc-chip">Richmond Town</span>
+            <span class="loc-chip">Ulsoor</span>
+            <span class="loc-chip">Commercial Street</span>
+            <span class="loc-chip">Church Street</span>
+            <span class="loc-chip">UB City</span>
+            <span class="loc-chip">JP Nagar</span>
+            <span class="loc-chip">Manyata Tech Park</span>
+            <span class="loc-chip">Peenya</span>
+            <span class="loc-chip">Magadi Road</span>
+            <span class="loc-chip">Mysore Road</span>
+            <span class="loc-chip">Lavelle Road</span>
+            <span class="loc-chip">Sadashivanagar</span>
+            <span class="loc-chip">RR Nagar</span>
+            <span class="loc-chip">Kengeri</span>
+            <span class="loc-chip">Devanahalli</span>
+            <span class="loc-chip">Old Madras Road</span>
+            <span class="loc-chip">KR Puram</span>
+            <span class="loc-chip">Kanakapura Road</span>
+            <span class="loc-chip">New Bel Road</span>
+            <span class="loc-chip">Kalyan Nagar</span>
+            <span class="loc-chip">Kamanahalli</span>
+            <span class="loc-chip">Sahakar Nagar</span>
+            <span class="loc-chip">Kempegowda Nagar</span>
+            <span class="loc-chip">Kodigehalli</span>
+            <span class="loc-chip">Kumaraswamy Layout</span>
+            <span class="loc-chip">Madivala</span>
+            <span class="loc-chip">Mahadevapura</span>
+            <span class="loc-chip">Mathikere</span>
+            <span class="loc-chip">Nagarbhavi</span>
+            <span class="loc-chip">Rajarajeshwari Nagar</span>
+            <span class="loc-chip">Sanjay Nagar</span>
+            <span class="loc-chip">Seshadripuram</span>
+            <span class="loc-chip">Shivajinagar</span>
+            <span class="loc-chip">T Dasarahalli</span>
+            <span class="loc-chip">Vasanth Nagar</span>
+            <span class="loc-chip">Wilson Garden</span>
+            <span class="loc-chip">Jeevanbheemanagar</span>
+            <span class="loc-chip">Others</span>
+        </div>
+        <p class="one-liner" style="margin-bottom:0;">You can still type a custom address; these chips are the structured catalogue so matches stay comparable.</p>
+        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a></div>
+      </div>
+    </section>
+
+    <section class="slide slide--impact" id="s1c">
+      <span class="num">◆</span>
+      <div class="slide-inner">
+        <span class="tag">Location</span>
+        <h2>How area pickers look in the product</h2>
+        <p class="one-liner"><strong>Top row:</strong> a brand with the “other areas” list open (searchable). <strong>Next to it:</strong> an owner listing with the location dropdown open — same idea, owner styling. <strong>Bottom:</strong> the list scrolled to show more names, and the illustrated map style used on the site.</p>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Brand flow · area list open</div>
+            <img src="screenshots/ex-brand-locations-picker-open.png" alt="Brand filter location dropdown with Bangalore areas" width="600" height="700" />
+          </div>
+          <div>
+            <div class="shot-cap">Owner flow · area list open</div>
+            <img src="screenshots/ex-owner-locations-picker-open.png" alt="Owner list property location dropdown" width="600" height="700" />
+          </div>
+        </div>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Same list · scrolled</div>
+            <img src="screenshots/ex-brand-locations-picker-scrolled.png" alt="Brand location list scrolled to show more areas" width="600" height="700" />
+          </div>
+          <div>
+            <div class="shot-cap">Illustrated Bangalore map</div>
+            <img src="screenshots/11-bangalore-map-lab.png" alt="Bangalore map illustration component page" width="600" height="700" />
+          </div>
+        </div>
+        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a></div>
       </div>
     </section>
 
@@ -263,105 +517,133 @@
       <span class="num">02</span>
       <div class="slide-inner">
         <span class="tag">Product</span>
-        <h2>Two audiences, one stack</h2>
-        <p class="sub" style="margin-bottom:8px;">Same scoring lens for hunt vs list.</p>
+        <h2>Two journeys, one product</h2>
+        <p class="one-liner"><strong>Large images:</strong> the full brand mandate form (left) and the full owner listing form (right) — tall captures so you can scroll and read every step. <strong>Below:</strong> the brand sign-in screen and an example owner step (choosing property type).</p>
         <div class="shot-row">
           <div>
-            <div class="shot-cap">/filter/brand</div>
+            <div class="shot-cap">Brand · full mandate flow</div>
             <img src="screenshots/02-filter-brand.png" alt="Brand filter search UI" width="600" height="750" />
           </div>
           <div>
-            <div class="shot-cap">/filter/owner</div>
+            <div class="shot-cap">Owner · full listing flow</div>
             <img src="screenshots/03-filter-owner.png" alt="Owner list property UI" width="600" height="750" />
           </div>
         </div>
-        <ul class="feat tight">
-          <li>Brands: brief → matches → dashboard · Owners: structured listing → qualified inbound</li>
-        </ul>
-        <div class="footer-slide">+ location-intelligence preview · hero toggles Brand / List</div>
-      </div>
-    </section>
-
-    <section class="slide" id="s3">
-      <span class="num">03</span>
-      <div class="slide-inner">
-        <span class="tag">Brands</span>
-        <h2>What brands get</h2>
-        <div class="shot-cap">Live · Brand search (/filter/brand)</div>
-        <img class="shot shot-mini" src="screenshots/02-filter-brand.png" alt="Brand looking for space filter" width="1080" height="800" />
-        <ul class="feat tight">
-          <li>AI-assisted brief → structured filters &amp; matching</li>
-          <li>Dashboard: matches, fit bars, Google Maps, intel &amp; competitors</li>
-          <li>For-brands plans · PhonePe · category playbooks</li>
-        </ul>
-        <div class="shot-cap" style="margin-top:6px;">Brand access · /dashboard/brand/login</div>
-        <img class="shot shot-mini" src="screenshots/09-brand-login.png" alt="Brand dashboard login screen" width="1080" height="800" />
-        <div class="footer-slide">Success fee on closure called out on for-brands</div>
-      </div>
-    </section>
-
-    <section class="slide" id="s4">
-      <span class="num">04</span>
-      <div class="slide-inner">
-        <span class="tag">Owners</span>
-        <h2>What owners get</h2>
-        <div class="shot-cap">Live · List property flow (/filter/owner)</div>
-        <img class="shot" src="screenshots/03-filter-owner.png" alt="Owner property listing interface" width="1080" height="1200" />
-        <ul class="feat tight">
-          <li>F&amp;B + full type taxonomy · areas · size · rent · features</li>
-          <li>Owner dashboard · PFI / mandate fit matching</li>
-        </ul>
-        <div class="footer-slide">API-backed persistence · admin tooling</div>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Brand · dashboard login</div>
+            <img src="screenshots/09-brand-login.png" alt="Brand dashboard login" width="600" height="400" />
+          </div>
+          <div>
+            <div class="shot-cap">Owner · property type step</div>
+            <img src="screenshots/ex-owner-property-type.png" alt="Owner property type card" width="600" height="400" />
+          </div>
+        </div>
+        <div class="footer-slide">Brands move into matches and dashboards; owners structure inventory for better inbound.</div>
       </div>
     </section>
 
     <section class="slide" id="s5">
-      <span class="num">05</span>
+      <span class="num">03</span>
       <div class="slide-inner">
         <span class="tag">Intelligence</span>
         <h2>Location intelligence</h2>
+        <p class="one-liner"><strong>Top image:</strong> the Location Intelligence page as it loads — promise line, address field, category grid, and the main action button.</p>
+        <p class="one-liner" style="margin-top:4px;"><strong>Then:</strong> the headline and form shown separately for readability. <strong>Bottom row:</strong> the four homepage “pillars,” plus an example of the report panel after a search returns.</p>
+        <div class="shot-cap">On screen · LI page (top of screen)</div>
+        <div class="media-frame--wide">
+          <img class="li-hero-main" src="screenshots/ex-li-above-fold.png" alt="Location intelligence page hero and search form" width="1100" height="700" onerror="this.onerror=null;this.src='screenshots/06-location-intelligence.png'" />
+        </div>
         <div class="shot-row">
           <div>
-            <div class="shot-cap">Homepage · intel grid</div>
-            <img src="screenshots/07-home-intel-grid.png" alt="Footfall demographics competitor accessibility cards" width="540" height="675" />
+            <div class="shot-cap">Hero message · zoomed</div>
+            <img src="screenshots/ex-li-hero-headline.png" alt="Data-driven location decisions headline" width="540" height="360" onerror="this.onerror=null;this.src='screenshots/ex-li-search-form.png'" />
           </div>
           <div>
-            <div class="shot-cap">/location-intelligence</div>
-            <img src="screenshots/06-location-intelligence.png" alt="Location intelligence preview page" width="540" height="675" />
+            <div class="shot-cap">Address · categories · CTA</div>
+            <img src="screenshots/ex-li-search-form.png" alt="Location intelligence address and categories" width="540" height="360" />
           </div>
         </div>
-        <ul class="feat tight">
-          <li>Footfall · demographics · competition · accessibility</li>
-          <li>Postgres + Prisma <code>Location</code> · ward APIs · AI enrichment when Places is thin</li>
-        </ul>
-        <div class="footer-slide">Not just a pin — catchment &amp; ops context</div>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Homepage · four pillars</div>
+            <img src="screenshots/07-home-intel-grid.png" alt="Footfall demographics competitor accessibility" width="540" height="400" />
+          </div>
+          <div>
+            <div class="shot-cap">Example · report preview</div>
+            <img src="screenshots/ex-li-preview-panel.png" alt="Location intelligence report preview" width="540" height="400" />
+          </div>
+        </div>
+        <div class="footer-slide"><a href="https://lokazen.in/location-intelligence">lokazen.in/location-intelligence</a> · Full scrolling page on the site</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s5b">
+      <span class="num">04</span>
+      <div class="slide-inner">
+        <span class="tag">Closer look</span>
+        <h2>Key panels, enlarged</h2>
+        <p class="one-liner">These are tight crops so text and buttons stay legible without zooming a full-page screenshot.</p>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Footfall heatmaps card</div>
+            <img src="screenshots/ex-home-intel-footfall.png" alt="Footfall heatmaps pillar card" width="540" height="400" />
+          </div>
+          <div>
+            <div class="shot-cap">LI form · categories &amp; button</div>
+            <img src="screenshots/ex-li-search-form.png" alt="Location intelligence address category and generate report" width="540" height="400" />
+          </div>
+        </div>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Owner · property type</div>
+            <img src="screenshots/ex-owner-property-type.png" alt="List property property type filter" width="540" height="400" />
+          </div>
+          <div>
+            <div class="shot-cap">Owner · location chips</div>
+            <img src="screenshots/ex-owner-location-areas.png" alt="List property location areas" width="540" height="400" />
+          </div>
+        </div>
+        <div class="shot-cap" style="margin-top:8px;">Report preview · wider view</div>
+        <div class="media-frame--wide">
+          <img class="shot shot-mini" src="screenshots/ex-li-preview-panel.png" alt="Location intelligence preview panel" width="900" height="500" />
+        </div>
+        <p class="one-liner" style="margin-top:8px;margin-bottom:0;">If this preview image is empty in your deck, it means no report was returned when the screenshot was taken — on the live site it fills after a successful intelligence run.</p>
+        <div class="footer-slide"><a href="https://lokazen.in">lokazen.in</a></div>
       </div>
     </section>
 
     <section class="slide" id="s6">
-      <span class="num">06</span>
+      <span class="num">05</span>
       <div class="slide-inner">
         <span class="tag">Scoring</span>
-        <h2>BFI · PFI · charts</h2>
-        <div class="shot-cap">Live · Dual AI scoring (homepage)</div>
-        <img class="shot" src="screenshots/08-home-bfi-pfi.png" alt="BFI and PFI scoring section on website" width="1080" height="900" />
-        <ul class="feat tight">
-          <li>BFI: property ↔ mandate · PFI: brand ↔ asset</li>
-          <li>Recharts in-app · Google Maps + heatmaps · TS revenue calculators</li>
-        </ul>
-        <div class="footer-slide">Match score visual language carries into dashboards</div>
+        <h2>BFI · PFI</h2>
+        <p class="one-liner"><strong>Left:</strong> the homepage section that introduces scoring next to the product story. <strong>Right:</strong> a zoomed panel naming <strong>BFI</strong> (Brand Fit Index) and <strong>PFI</strong> (Property Fit Index) — the same vocabulary users see when reviewing matches in the app.</p>
+        <div class="shot-row">
+          <div>
+            <div class="shot-cap">Homepage · scoring section</div>
+            <img src="screenshots/08-home-bfi-pfi.png" alt="BFI PFI homepage section" width="540" height="700" />
+          </div>
+          <div>
+            <div class="shot-cap">Close-up · BFI &amp; PFI cards</div>
+            <img src="screenshots/ex-home-dual-scoring-block.png" alt="Dual scoring block crop" width="540" height="700" />
+          </div>
+        </div>
+        <div class="footer-slide">Charts and maps in the product build on the same fit idea.</div>
       </div>
     </section>
 
     <section class="slide" id="s7">
-      <span class="num">07</span>
+      <span class="num">06</span>
       <div class="slide-inner">
         <span class="tag">Stack</span>
-        <h2>Tech in the repo</h2>
-        <div class="shot-cap">Live UI · For brands hero + dashboard mock</div>
-        <img class="shot shot-mini" src="screenshots/04-for-brands-hero.png" alt="For brands page with dashboard preview" width="1080" height="500" />
-        <p class="sub" style="margin-bottom:10px;font-size:13px;">From <code>package.json</code> + Prisma — shipped stack.</p>
-        <div class="tech-grid">
+        <h2>What ships behind the UI</h2>
+        <p class="one-liner"><strong>Above:</strong> the public “For brands” page — value prop and a preview of the dashboard experience. <strong>Below:</strong> the main technologies powering the live site (framework, database, maps, AI, payments, analytics, and more).</p>
+        <div class="shot-cap">On screen · For brands page</div>
+        <div class="media-frame--wide">
+          <img src="screenshots/04-for-brands-hero.png" alt="For brands page with dashboard preview" width="1080" height="500" />
+        </div>
+        <div class="tech-grid" style="margin-top:12px;">
           <div class="tech"><div class="name">Next.js 16</div><div class="use">App Router, webpack build, production on Node 18+</div></div>
           <div class="tech"><div class="name">React 19</div><div class="use">UI, client components, concurrent-ready</div></div>
           <div class="tech"><div class="name">TypeScript 5</div><div class="use">End-to-end typing, Zod v4 for validation</div></div>
@@ -381,25 +663,23 @@
           <div class="tech"><div class="name">Sharp</div><div class="use">Image processing pipeline</div></div>
           <div class="tech"><div class="name">PhonePe</div><div class="use">Checkout flows (in-app components + APIs)</div></div>
           <div class="tech"><div class="name">Vercel Analytics</div><div class="use">Web analytics &amp; Speed Insights</div></div>
-          <div class="tech"><div class="name">Playwright</div><div class="use">Dev-only marketing screen capture scripts</div></div>
+          <div class="tech"><div class="name">Playwright</div><div class="use">Quality and marketing capture automation</div></div>
         </div>
-        <div class="footer-slide">Also: date-fns, critters, lucide-react, eslint-config-next</div>
+        <div class="footer-slide">Plus supporting libraries for dates, icons, email, and tooling — all in service of what you see above.</div>
       </div>
     </section>
 
     <section class="slide" id="s8">
-      <span class="num">08</span>
+      <span class="num">07</span>
       <div class="slide-inner">
-        <span class="tag">Data &amp; ops</span>
-        <h2>Under the hood</h2>
-        <div class="shot-cap">Live · Category guidance (/for-brands)</div>
-        <img class="shot shot-mini" src="screenshots/05-for-brands-category.png" alt="For brands category tabs and guidance card" width="1080" height="600" />
-        <ul class="feat tight">
-          <li>Prisma: users, properties, brands, locations, intel, payments, admin</li>
-          <li>Seed/import tsx · API routes · session &amp; funnel tracking</li>
-          <li>Deploy: <code>vercel-build</code> → Prisma generate + Next build</li>
-        </ul>
-        <div class="footer-slide">Screenshots from <a href="https://lokazen.in">lokazen.in</a> · Regenerate anytime locally</div>
+        <span class="tag">For brands</span>
+        <h2>Guidance by category</h2>
+        <p class="one-liner">You’re looking at the For brands page where visitors switch categories (F&amp;B, retail, services, etc.) and read tailored guidance — so the story isn’t only “fill a form.”</p>
+        <div class="shot-cap">On screen · Category tabs &amp; playbook</div>
+        <div class="media-frame--wide">
+          <img src="screenshots/05-for-brands-category.png" alt="For brands category tabs and guidance card" width="1080" height="600" />
+        </div>
+        <div class="footer-slide"><a href="https://lokazen.in/for-brands">lokazen.in/for-brands</a></div>
       </div>
     </section>
 

@@ -4,6 +4,7 @@ import { getPrisma } from '@/lib/get-prisma'
 import { sendPropertyStatusEmail } from '@/lib/lead-email'
 import { triggerLIRGeneration } from '@/lib/intelligence/lir-trigger'
 import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-warm-intel-cache'
+import { runPropertyReferenceEnrichment } from '@/lib/enrichment/property-reference-enrichment'
 
 export async function POST(
   request: NextRequest,
@@ -109,8 +110,12 @@ export async function POST(
     // Fire LIR generation as a background job — do not await
     triggerLIRGeneration(propertyId)
 
-    // Location + Lokazen narrative (Claude) into property_*_cache — brands read from DB only
-    scheduleWarmIntelCacheForProperty(propertyId, { forceRefresh: true })
+    try {
+      await runPropertyReferenceEnrichment(prisma, propertyId, { geocodeIfMissing: false })
+    } catch (e) {
+      console.warn('[Approve Property] reference enrichment:', e)
+    }
+    scheduleWarmIntelCacheForProperty(propertyId, { forceRefresh: false })
 
     // Fire owner status email non-blocking (don't hold up the HTTP response)
     if (existingProperty.owner?.email) {
