@@ -8,7 +8,6 @@ export const getBrandLogo = (brandName: string): string | null => {
     'Blue Tokai': '/logos/Blue Tokai.jpg',
     'Namaste- South Indian': '/logos/Namaste logo.jpg',
     'Namaste': '/logos/Namaste logo.jpg',
-    'Kadam Haat': '/logos/Kadam-Haat.png',
     // Add more mappings as logos become available
   }
   return logoMap[brandName] || null
@@ -71,13 +70,6 @@ export const getBrandColor = (brandName: string, businessType: string): {
       iconColor: 'orange-600',
       shadowColor: 'orange-600/30',
       glowColor: 'orange-600/20'
-    },
-    'Kadam Haat': {
-      borderColor: 'amber-600',
-      iconBg: 'amber-50',
-      iconColor: 'amber-800',
-      shadowColor: 'amber-700/30',
-      glowColor: 'amber-600/20'
     },
     'Dolphins Bar & Kitchen': {
       borderColor: 'green-500',

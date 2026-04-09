@@ -573,7 +573,7 @@ export const PropertyScene5Profile = () => (
 export const PropertyScene6Matches = () => {
   const brands = [
     { name: 'Blue Tokai', logo: '/logos/Blue Tokai.jpg' },
-    { name: 'Kadam Haat', logo: '/logos/Kadam-Haat.png' },
+    { name: 'Eleven Bakehouse', logo: '/logos/Eleven-Bakehouse-Coloured-Logos-01.png' },
     { name: 'Truffles', logo: '/logos/truffles logo.jpg' },
     { name: 'Original Burger Co', logo: '/logos/Original_Burger_Co_Logo.png' },
     { name: 'Blr Brewing Co', logo: '/logos/blr brewing co logo.png' },

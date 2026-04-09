@@ -108,12 +108,12 @@ export const BrandReqScene2BrandList = () => {
       type: 'High-street, F&B-ready'
     },
     { 
-      name: 'Kadam Haat', 
-      logo: '/logos/Kadam-Haat.png',
-      category: 'Retail · Luxury home & lifestyle',
-      size: '1,000-1,200 sqft',
-      location: 'Indiranagar',
-      type: 'Ground floor, high footfall, retail mix'
+      name: 'Eleven Bakehouse',
+      logo: '/logos/Eleven-Bakehouse-Coloured-Logos-01.png',
+      category: 'Bakery & café',
+      size: '1,000 sqft',
+      location: 'Indiranagar 100ft',
+      type: 'High-street, F&B-ready'
     },
     { 
       name: 'Sandowitch', 
@@ -275,7 +275,7 @@ export const BrandReqScene3Requirements = () => {
           transition={{ delay: 1.5, ...smoothTransition }}
           className="mt-6 sm:mt-8 grid grid-cols-5 gap-1.5 sm:gap-2 w-full"
         >
-          {['Mumbai Pav Co.', 'Truffles', 'Original Burger Co.', 'Kadam Haat', 'Sandowitch'].map((name, i) => (
+          {['Mumbai Pav Co.', 'Truffles', 'Original Burger Co.', 'Eleven Bakehouse', 'Sandowitch'].map((name, i) => (
             <div key={i} className="bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-gray-700">
               <div className="text-[10px] sm:text-xs text-gray-500 text-center truncate">{name}</div>
             </div>

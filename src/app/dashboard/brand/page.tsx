@@ -2318,19 +2318,6 @@ Be specific to ${area} / ${address}. No generic statements.`,
   const brand = data?.brand ?? null
   const preferredList = useMemo(() => normalizePreferredLocationsList(brand), [brand])
   const dashboardBadges = useMemo(() => resolveDashboardBadges(brand, matches.length), [brand, matches.length])
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#F7F7F5]">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 text-sm">Loading your dashboard...</p>
-        </div>
-      </div>
-    )
-  }
-
-  const stats = data?.stats ?? { totalViews: 0, totalSaved: 0, totalInquiries: 0, pendingInquiries: 0 }
   const showBrief = brandHasBrief(brand, preferredList)
   const requirementsSummaryLine = useMemo(() => {
     if (!brand || !showBrief) return ''
@@ -2346,6 +2333,19 @@ Be specific to ${area} / ${address}. No generic statements.`,
     }
     return parts.join(' · ')
   }, [brand, showBrief, preferredList])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#F7F7F5]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-[#FF5200] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 text-sm">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const stats = data?.stats ?? { totalViews: 0, totalSaved: 0, totalInquiries: 0, pendingInquiries: 0 }
   const recentViews = data?.recentViews ?? []
   const savedProperties = data?.savedProperties ?? []
   const inquiries = data?.inquiries ?? []

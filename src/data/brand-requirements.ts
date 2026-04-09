@@ -74,39 +74,6 @@ export const brandRequirements: BrandRequirement[] = [
   },
   
   {
-    brandName: 'Kadam Haat',
-    businessType: 'Retail',
-    sizeRequirement: {
-      category: 'Large',
-      range: '1,000-1,200 sqft',
-      sqft: { min: 1000, max: 1200 }
-    },
-    budgetRange: {
-      category: 'High-end',
-      range: '₹1.5L-2L/month',
-      monthly: { min: 150000, max: 200000 }
-    },
-    preferredLocations: {
-      primary: ['Indiranagar']
-    },
-    mustHaveFeatures: [
-      'Ground floor',
-      'Retail mix',
-      'High footfall',
-      'Bi-lanes acceptable',
-    ],
-    timeline: 'Immediate',
-    targetAudience:
-      'Design-led shoppers, eco-conscious households, and interior-design clients seeking premium artisanal home and lifestyle products with natural materials.',
-    bfiWeights: {
-      location: 40,
-      budget: 25,
-      size: 20,
-      features: 15
-    }
-  },
-  
-  {
     brandName: 'Roma Deli',
     businessType: 'Casual Dining',
     sizeRequirement: {

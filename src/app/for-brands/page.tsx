@@ -207,7 +207,7 @@ const LEASE_BASICS: { title: string; body: string; icon: string }[] = [
 ]
 
 // Logo slider helpers (match homepage)
-const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri', 'Kadam Haat']
+const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri']
 const LOGOS_BLACK_BG = ['Sandowitch', 'Evil Onigiri', 'Klutch Klub']
 function needsBackgroundRemoval(brandName: string) {
   return [...LOGOS_WHITE_BG, ...LOGOS_BLACK_BG].some(
@@ -1203,7 +1203,7 @@ export default function ForBrandsPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-5">
             {[
               'Truffles',
-              'Kadam Haat',
+              'Madam Chocolate',
               'Boba Bhai',
               'Original Burger Co',
               'Mumbai Pav Co.',

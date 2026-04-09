@@ -9,7 +9,7 @@ const BRANDS = [
   'Klutch Klub', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker',
   'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story',
   'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese',
-  'TAN Coffee', 'Block Two Coffee', 'Holy Pav', 'Kadam Haat'
+  'TAN Coffee', 'Block Two Coffee', 'Holy Pav'
 ]
 
 export default function TrustedBrandsRow() {

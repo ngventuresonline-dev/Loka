@@ -688,20 +688,20 @@ export default function Home() {
     'Klutch Klub', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 
     'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 
     'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 
-    'TAN Coffee', 'Block Two Coffee', 'Holy Pav', 'Kadam Haat'
+    'TAN Coffee', 'Block Two Coffee', 'Holy Pav'
   ], [])
 
   // Trusted brands row label arrays (text-only rows) - memoized
   const trustedRow1Brands = useMemo(() => [
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
     'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri',
-    'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub', 'Holy Pav', 'Kadam Haat',
+    'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub', 'Holy Pav',
   ], [])
 
   const trustedRow3Brands = useMemo(() => [
     'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 'Blue Tokai', 'Sandowitch',
     'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 'Namaste- South Indian',
-    'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee', 'Holy Pav', 'Kadam Haat',
+    'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 'TAN Coffee', 'Block Two Coffee', 'Holy Pav',
   ], [])
   
   // Categorize logos by size - larger/wider logos need different sizing - memoized
@@ -743,7 +743,6 @@ export default function Home() {
     'Dolphins Bar & Kitchen',
     'Samosa Party',
     'Bawri',
-    'Kadam Haat',
   ]
   
   // Logos with black borders/backgrounds
@@ -1712,76 +1711,6 @@ export default function Home() {
                         </svg>
                       </div>
                       <span><span className="font-semibold text-gray-900">Timeline:</span> Within 1 month</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pulse Ring - Platform Colors */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-[#FF5200] opacity-0 group-hover:opacity-100"></div>
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FF5200]/50 opacity-0 group-hover:opacity-100 blur-sm"></div>
-              </div>
-            </div>
-
-            {/* Brand Card 6 - Kadam Haat (luxury retail / home & lifestyle) */}
-            <div className="relative group">
-              <div className="relative bg-white backdrop-blur-xl rounded-2xl p-6 border-2 border-gray-200 hover:border-[#FF5200] overflow-hidden shadow-lg hover:shadow-[#FF5200]/30">
-                {/* Glow Effect - Platform Colors */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100"></div>
-                
-                {/* Corner Accent - Platform Colors */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FF5200]/40 to-transparent rounded-bl-full"></div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF5200]/50 overflow-hidden bg-white p-1.5">
-                        <img 
-                          src="/logos/Kadam-Haat.png" 
-                          alt="Kadam Haat logo" 
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 text-lg mb-1">Kadam Haat</h3>
-                        <p className="text-sm text-gray-600">Retail · Luxury home &amp; lifestyle</p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">Active</span>
-                  </div>
-              
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                        </svg>
-                      </div>
-                      <span><span className="font-semibold text-gray-900">Size:</span> 1,000-1,200 sqft</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </div>
-                      <span><span className="font-semibold text-gray-900">Location:</span> Indiranagar</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <span><span className="font-semibold text-gray-900">Budget:</span> <span className="blur-sm select-none">₹1.5L-2L/month</span></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className="w-8 h-8 bg-[#FF5200]/10 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#FF5200]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <span><span className="font-semibold text-gray-900">Timeline:</span> Immediate</span>
                     </div>
                   </div>
                 </div>
