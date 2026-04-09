@@ -22,7 +22,7 @@ export default function AnimatedLogoPlaceholder({
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 
     'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 
     'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 
-    'Klutch- Sports', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 
+    'Klutch Klub', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 
     'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 
     'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 
     'TAN Coffee', 'Block Two Coffee'

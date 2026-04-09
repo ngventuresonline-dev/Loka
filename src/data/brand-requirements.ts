@@ -680,7 +680,7 @@ export const brandRequirements: BrandRequirement[] = [
     }
   },
   {
-    brandName: 'Klutch- Sports',
+    brandName: 'Klutch Klub',
     businessType: 'Sports Facility',
     sizeRequirement: {
       category: 'Mega',

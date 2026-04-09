@@ -48,7 +48,7 @@ export const brandPlacements: BrandPlacement[] = [
   { brand: "The Flour Girl Cafe", location: "Koramangala 80 Ft Road", size: "1,000 sqft" },
   { brand: "Holy Pav", location: "Koramangala, Hosur Road (Near Christ College)", size: "950 sqft" },
   { brand: "GoRally", location: "HAL Indiranagar", size: "15,000 sqft" },
-  { brand: "Klutch Sports", location: "Arekere, Bannerghatta Road", size: "15,000 sqft" },
+  { brand: "Klutch Klub", location: "Arekere, Bannerghatta Road", size: "15,000 sqft" },
   { brand: "Minibe", location: "Indiranagar 80ft Road", size: "1,000 sqft" },
   { brand: "Wrapafella", location: "Indiranagar 100ft Road", size: "500 sqft" },
   { brand: "Mumbai Pav Co.", location: "Manyata Tech Park, Hebbal", size: "150 sqft" },

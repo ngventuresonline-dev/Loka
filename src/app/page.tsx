@@ -685,7 +685,7 @@ export default function Home() {
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli', 
     'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 
     'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 
-    'Klutch- Sports', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 
+    'Klutch Klub', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker', 
     'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story', 
     'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese', 
     'TAN Coffee', 'Block Two Coffee'
@@ -695,7 +695,7 @@ export default function Home() {
   const trustedRow1Brands = useMemo(() => [
     'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
     'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri',
-    'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports',
+    'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub',
   ], [])
 
   const trustedRow3Brands = useMemo(() => [

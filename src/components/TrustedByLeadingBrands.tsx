@@ -8,7 +8,7 @@ const ALL_BRANDS = [
   'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
   'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger',
   'The Flour Girl Cafe', 'Bawri', 'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen',
-  'Klutch- Sports', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker',
+  'Klutch Klub', 'Sun Kissed Smoothie', 'Qirfa', 'Zed The Baker',
   'Blue Tokai', 'Sandowitch', 'Madam Chocolate', 'Eleven Bakehouse', 'Kunafa Story',
   'Namaste- South Indian', 'Kried Ko- Burger', 'Samosa Party', 'Melts- Cruncheese',
   'TAN Coffee', 'Block Two Coffee', 'Holy Pav',
@@ -17,7 +17,7 @@ const ALL_BRANDS = [
 const TRUSTED_ROW_1 = [
   'Truffles', 'Original Burger Co.', 'Mumbai Pav Co.', 'Evil Onigiri', 'Roma Deli',
   'Blr Brewing Co.', 'Burger Seigneur', 'Biggies Burger', 'The Flour Girl Cafe', 'Bawri',
-  'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch- Sports', 'Holy Pav',
+  'Boba Bhai', 'GoRally- Sports', 'Dolphins Bar & Kitchen', 'Klutch Klub', 'Holy Pav',
 ]
 
 const TRUSTED_ROW_3 = [
@@ -36,7 +36,7 @@ const LARGER_LOGOS = [
 ]
 
 const LOGOS_WHITE_BG = ['Sun Kissed Smoothie', 'Biggies Burger', 'Truffles', 'Namaste- South Indian', 'Dolphins Bar & Kitchen', 'Samosa Party', 'Bawri']
-const LOGOS_BLACK_BG = ['Sandowitch', 'Evil Onigiri']
+const LOGOS_BLACK_BG = ['Sandowitch', 'Evil Onigiri', 'Klutch Klub']
 
 function needsBackgroundRemoval(brandName: string) {
   return [...LOGOS_WHITE_BG, ...LOGOS_BLACK_BG].some(
