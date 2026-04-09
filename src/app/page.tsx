@@ -772,7 +772,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [heroMode, setHeroMode] = useState<HeroMode>('brand')
-  const [barHeights, setBarHeights] = useState<number[]>([])
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false)
   
   // Featured brands state - fetched from database
@@ -847,11 +846,6 @@ export default function Home() {
       setIsInitialized(true)
     }
     setIsMounted(true)
-  }, [])
-
-  // Generate bar heights for data visualization
-  useEffect(() => {
-    setBarHeights([1, 2, 3, 4, 5].map(() => Math.random() * 60 + 40))
   }, [])
 
   // Handle scroll to show/hide mobile bottom nav after hero section
@@ -2590,59 +2584,42 @@ export default function Home() {
               <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-3xl overflow-hidden shadow-2xl border-4 border-gray-800">
                 {/* Video Illustration */}
                 <div className="aspect-video bg-gradient-to-br from-gray-800 via-gray-900 to-black relative overflow-hidden">
-                  {/* Animated Background Pattern */}
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0" style={{
-                      backgroundImage: 'linear-gradient(#FF5200 1px, transparent 1px), linear-gradient(90deg, #FF5200 1px, transparent 1px)',
-                      backgroundSize: '50px 50px',
-                      animation: 'grid 20s linear infinite'
-                    }}></div>
-                  </div>
+                  <video
+                    className="absolute inset-0 z-0 h-full w-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    src="/videos/brand-overview.mp4"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
 
-                  {/* Floating Icons */}
-                  <div className="absolute top-8 left-8 w-16 h-16 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-2xl flex items-center justify-center animate-[float_3s_ease-in-out_infinite] opacity-80">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-
-                  <div className="absolute top-8 right-8 w-16 h-16 bg-gradient-to-br from-[#E4002B] to-[#FF6B35] rounded-2xl flex items-center justify-center animate-[float_3s_ease-in-out_infinite_1s] opacity-80">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-
-                  {/* Data Flow Animation */}
-                  <div className="absolute bottom-8 left-8 right-8">
-                    <div className="flex items-center justify-between">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="w-12 h-32 bg-gradient-to-t from-[#FF5200] to-transparent rounded-t-lg opacity-50 animate-pulse" style={{animationDelay: (i * 0.2) + 's', height: barHeights[i - 1] ? `${barHeights[i - 1]}px` : '40px'}}></div>
-                      ))}
+                  <div className="pointer-events-none absolute inset-0 z-10">
+                    {/* Animated Background Pattern */}
+                    <div className="absolute inset-0 opacity-[0.12]">
+                      <div className="absolute inset-0" style={{
+                        backgroundImage: 'linear-gradient(#FF5200 1px, transparent 1px), linear-gradient(90deg, #FF5200 1px, transparent 1px)',
+                        backgroundSize: '50px 50px',
+                        animation: 'grid 20s linear infinite'
+                      }}></div>
                     </div>
-                  </div>
 
-                  {/* Central Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <button className="group/play relative">
-                      {/* Pulsing Rings */}
-                      <div className="absolute inset-0 bg-white/20 rounded-full animate-ping"></div>
-                      <div className="absolute inset-0 bg-white/10 rounded-full animate-pulse"></div>
-                      
-                      {/* Play Button */}
-                      <div className="relative w-24 h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full flex items-center justify-center shadow-2xl group-hover/play:scale-110 transition-transform duration-300 cursor-pointer">
-                        <svg className="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </div>
-                      
-                      {/* Glow Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full blur-2xl opacity-50 group-hover/play:opacity-75 transition-opacity"></div>
-                    </button>
-                  </div>
+                    {/* Floating Icons */}
+                    <div className="absolute top-8 left-8 w-16 h-16 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-2xl flex items-center justify-center animate-[float_3s_ease-in-out_infinite] opacity-80">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
 
-                  {/* Stats Overlay */}
-                  <div className="absolute top-1/2 left-8 transform -translate-y-1/2 space-y-3">
+                    <div className="absolute top-8 right-8 w-16 h-16 bg-gradient-to-br from-[#E4002B] to-[#FF6B35] rounded-2xl flex items-center justify-center animate-[float_3s_ease-in-out_infinite_1s] opacity-80">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+
+                    {/* Stats Overlay */}
+                    <div className="absolute top-1/2 left-8 transform -translate-y-1/2 space-y-3">
                     <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 animate-[fadeInUp_0.8s_ease-out_forwards]">
                       <div className="text-2xl font-bold text-white">95%</div>
                       <div className="text-xs text-gray-300">Match Success</div>
@@ -2663,6 +2640,7 @@ export default function Home() {
                       <div className="text-xs text-gray-300">Areas</div>
                     </div>
                   </div>
+                  </div>
                 </div>
 
                 {/* Communication Bar */}
@@ -2681,7 +2659,7 @@ export default function Home() {
               {/* Video Description */}
               <div className="mt-8 text-center">
                 <p className="text-gray-600 mb-4">
-                  <span className="font-semibold text-gray-900">Coming Soon:</span> Interactive video walkthrough showing the complete journey from sign-up to successful deal closure
+                  <span className="font-semibold text-gray-900">Product walkthrough:</span> How brands and owners move from brief to shortlisted spaces with Lokazen
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
                   <div className="inline-flex items-center px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-700">
