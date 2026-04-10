@@ -510,7 +510,7 @@ function OverviewTab({
   data: IntelligenceData
   ward: any | null
   hideBreakEven?: boolean
-  /** View-match / brand teaser: show low bound clearly; blur upper range + CTA to onboard. */
+  /** View-match: Base case = sharp low; Optimistic case = blurred high + onboard CTA. */
   gateRevenueTeaser?: boolean
 }) {
   const lowL = (data.monthlyRevenueLow / 100000).toFixed(1)
@@ -526,35 +526,50 @@ function OverviewTab({
             Peak hours: {data.peakHours} · +{data.weekendBoost}% weekends
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
+        <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-2">
           <div className="text-xs text-slate-600">Revenue Potential</div>
-          <div className="text-2xl font-bold text-[#FF5200] leading-tight">
-            <span className="whitespace-nowrap">₹{lowL}L</span>
-            {gateRevenueTeaser ? (
-              <>
-                <span
-                  className="whitespace-nowrap blur-[6px] select-none opacity-75 inline-block align-baseline"
+          {gateRevenueTeaser ? (
+            <>
+              <div>
+                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Base case
+                </div>
+                <div className="text-2xl font-bold text-[#FF5200] whitespace-nowrap">₹{lowL}L</div>
+              </div>
+              <div className="pt-1 border-t border-slate-100">
+                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-slate-500 mb-0.5">
+                  Optimistic case
+                </div>
+                <div
+                  className="text-2xl font-bold text-[#FF5200] whitespace-nowrap blur-[6px] select-none opacity-75"
                   aria-hidden
                 >
+                  ₹{highL}L
+                </div>
+              </div>
+              <Link
+                href={INTEL_FOR_BRANDS_HREF}
+                className="inline-block text-[11px] sm:text-xs font-semibold text-[#FF5200] hover:text-[#E44A00] underline underline-offset-2 decoration-[#FF5200]/40"
+              >
+                On board for full intel
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="text-2xl font-bold text-[#FF5200] leading-tight">
+                <span className="whitespace-nowrap">₹{lowL}L</span>
+                <span className="whitespace-nowrap">
                   {' '}
                   – ₹{highL}L
                 </span>
-                <Link
-                  href={INTEL_FOR_BRANDS_HREF}
-                  className="mt-2 block text-[11px] sm:text-xs font-semibold text-[#FF5200] hover:text-[#E44A00] underline underline-offset-2 decoration-[#FF5200]/40"
-                >
-                  On board for full intel
-                </Link>
-              </>
-            ) : (
-              <span className="whitespace-nowrap">
-                {' '}
-                – ₹{highL}L
-              </span>
-            )}
-          </div>
-          {!hideBreakEven && (
-            <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
+              </div>
+              {!hideBreakEven && (
+                <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
+              )}
+            </>
+          )}
+          {gateRevenueTeaser && !hideBreakEven && (
+            <div className="text-xs text-slate-500 pt-0.5">Break-even in ~{data.breakEvenMonths || '–'} months</div>
           )}
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
