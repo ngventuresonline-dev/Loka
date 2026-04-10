@@ -403,7 +403,12 @@ export default function LocationIntelligenceDashboard({
       </div>
 
       {activeTab === 'overview' && (
-        <OverviewTab data={data} ward={ward} hideBreakEven={gateExtendedIntel} />
+        <OverviewTab
+          data={data}
+          ward={ward}
+          hideBreakEven={gateExtendedIntel}
+          gateRevenueTeaser={gateExtendedIntel}
+        />
       )}
       {activeTab === 'revenue' && (
         <RevenueTab
@@ -500,11 +505,17 @@ function OverviewTab({
   data,
   ward,
   hideBreakEven = false,
+  gateRevenueTeaser = false,
 }: {
   data: IntelligenceData
   ward: any | null
   hideBreakEven?: boolean
+  /** View-match / brand teaser: show low bound clearly; blur upper range + CTA to onboard. */
+  gateRevenueTeaser?: boolean
 }) {
+  const lowL = (data.monthlyRevenueLow / 100000).toFixed(1)
+  const highL = (data.monthlyRevenueHigh / 100000).toFixed(1)
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -517,8 +528,30 @@ function OverviewTab({
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-100 space-y-1">
           <div className="text-xs text-slate-600">Revenue Potential</div>
-          <div className="text-2xl font-bold text-[#FF5200]">
-            ₹{(data.monthlyRevenueLow / 100000).toFixed(1)}L – ₹{(data.monthlyRevenueHigh / 100000).toFixed(1)}L
+          <div className="text-2xl font-bold text-[#FF5200] leading-tight">
+            <span className="whitespace-nowrap">₹{lowL}L</span>
+            {gateRevenueTeaser ? (
+              <>
+                <span
+                  className="whitespace-nowrap blur-[6px] select-none opacity-75 inline-block align-baseline"
+                  aria-hidden
+                >
+                  {' '}
+                  – ₹{highL}L
+                </span>
+                <Link
+                  href={INTEL_FOR_BRANDS_HREF}
+                  className="mt-2 block text-[11px] sm:text-xs font-semibold text-[#FF5200] hover:text-[#E44A00] underline underline-offset-2 decoration-[#FF5200]/40"
+                >
+                  On board for full intel
+                </Link>
+              </>
+            ) : (
+              <span className="whitespace-nowrap">
+                {' '}
+                – ₹{highL}L
+              </span>
+            )}
           </div>
           {!hideBreakEven && (
             <div className="text-xs text-slate-500">Break-even in ~{data.breakEvenMonths || '–'} months</div>
