@@ -19,7 +19,7 @@ const OnboardingBrandCard = dynamic(
   () => import('@/components/OnboardingBrandCard'),
   { ssr: false }
 )
-import { uploadPropertyImages } from '@/lib/supabase/storage'
+import { imageFilesToDataUrls, OWNER_IMAGE_MAX_BYTES } from '@/lib/image-base64'
 
 /* TODO: Re-enable auth when owner login is implemented
 import { supabase } from '@/lib/supabase/client'
@@ -67,7 +67,6 @@ function OwnerOnboardingContent() {
   const [loadingBrands, setLoadingBrands] = useState(false)
   const [generatingDescription, setGeneratingDescription] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [uploadingImages, setUploadingImages] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const isSubmittingRef = useRef(false) // Ref for immediate double-submit prevention
   const [formData, setFormData] = useState({
@@ -709,11 +708,10 @@ function OwnerOnboardingContent() {
     setSubmitError(null)
     
     // STRONG double submit prevention - check ref immediately (before state updates)
-    if (isSubmittingRef.current || isSubmitting || uploadingImages) {
+    if (isSubmittingRef.current || isSubmitting) {
       console.warn('[LOKAZEN] ⚠️ Duplicate submission prevented:', {
         ref: isSubmittingRef.current,
         state: isSubmitting,
-        uploading: uploadingImages
       })
       return
     }
@@ -769,10 +767,16 @@ function OwnerOnboardingContent() {
     }
 
     try {
-
-      // Images will be uploaded after property creation (we need property ID)
-      // Start with empty array, will be updated after upload
-      const mediaUrls: string[] = []
+      let mediaUrls: string[] = []
+      if (formData.photos.length > 0) {
+        const { dataUrls, oversizeNames } = await imageFilesToDataUrls(formData.photos)
+        if (oversizeNames.length > 0) {
+          alert(
+            `Some files exceed the ${OWNER_IMAGE_MAX_BYTES / 1024 / 1024}MB limit and were skipped: ${oversizeNames.join(', ')}`
+          )
+        }
+        mediaUrls = dataUrls
+      }
 
       const sizeNum = parseInt(formData.size?.replace(/[^0-9]/g, '') || '0')
       const rentNum = parseInt(formData.rent?.replace(/[^0-9]/g, '') || '0')
@@ -875,120 +879,7 @@ function OwnerOnboardingContent() {
       // Get property ID and owner ID from result
       const finalPropertyId = result.propertyId || result.property?.id || editPropertyId
       const finalOwnerId = result.ownerId || existingOwnerId
-      
-      // Upload images AFTER property creation/update (we now have property ID)
-      let uploadedImageUrls: string[] = []
-      
-      if (formData.photos.length > 0 && finalPropertyId && finalOwnerId) {
-        console.log('[LOKAZEN] Starting image upload process', {
-          propertyId: finalPropertyId,
-          ownerId: finalOwnerId,
-          fileCount: formData.photos.length,
-          files: formData.photos.map(f => ({ name: f.name, size: f.size, type: f.type }))
-        })
-        
-        try {
-          setUploadingImages(true)
-          
-          console.log('[LOKAZEN] Calling uploadPropertyImages function...')
-          const uploadResult = await uploadPropertyImages(
-            formData.photos,
-            finalPropertyId
-          )
-          
-          console.log('[LOKAZEN] uploadPropertyImages returned:', {
-            success: uploadResult.success,
-            urlCount: uploadResult.urls?.length || 0,
-            errorCount: uploadResult.errors?.length || 0,
-            urls: uploadResult.urls,
-            errors: uploadResult.errors
-          })
-          
-          if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
-            uploadedImageUrls = uploadResult.urls
-            console.log('[LOKAZEN] ✅ Images uploaded successfully:', uploadedImageUrls.length, 'images')
-            console.log('[LOKAZEN] Image URLs:', uploadedImageUrls)
-            
-            // Update property with image URLs
-            console.log('[LOKAZEN] Updating property with image URLs...')
-            const updateResponse = await fetch(`/api/owner/property/${finalPropertyId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ownerId: finalOwnerId,
-                images: uploadedImageUrls
-              })
-            })
-            
-            if (updateResponse.ok) {
-              const updateResult = await updateResponse.json().catch(() => ({}))
-              console.log('[LOKAZEN] ✅ Property updated with image URLs:', updateResult)
-            } else {
-              const updateError = await updateResponse.json().catch(() => ({}))
-              console.error('[LOKAZEN] ❌ Failed to update property with images:', {
-                status: updateResponse.status,
-                statusText: updateResponse.statusText,
-                error: updateError
-              })
-              setSubmitError(`Property created, but failed to save image URLs. Error: ${updateError?.error || 'Unknown error'}`)
-            }
-          } else {
-            const errorMsg = uploadResult.errors?.join(', ') || 'Unknown upload error'
-            console.error('[LOKAZEN] ❌ Image upload failed:', {
-              success: uploadResult.success,
-              errors: uploadResult.errors,
-              partialUrls: uploadResult.urls
-            })
-            
-            // Some images may have failed, but continue anyway
-            if (uploadResult.urls && uploadResult.urls.length > 0) {
-              uploadedImageUrls = uploadResult.urls
-              console.log('[LOKAZEN] ⚠️ Partial success: updating with', uploadedImageUrls.length, 'images')
-              
-              // Still try to update with partial images
-              try {
-                const partialUpdateResponse = await fetch(`/api/owner/property/${finalPropertyId}`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    ownerId: finalOwnerId,
-                    images: uploadedImageUrls
-                  })
-                })
-                
-                if (partialUpdateResponse.ok) {
-                  console.log('[LOKAZEN] ✅ Property updated with partial images')
-                } else {
-                  const partialError = await partialUpdateResponse.json().catch(() => ({}))
-                  console.error('[LOKAZEN] ❌ Failed to update with partial images:', partialError)
-                }
-              } catch (e: any) {
-                console.error('[LOKAZEN] ❌ Exception updating with partial images:', e)
-              }
-            } else {
-              // No images uploaded at all
-              console.error('[LOKAZEN] ❌ No images were uploaded. Errors:', errorMsg)
-              setSubmitError(`Property created, but image upload failed: ${errorMsg}. You can add images later by editing the property.`)
-            }
-          }
-        } catch (uploadError: any) {
-          console.error('[LOKAZEN] ❌ Image upload exception:', {
-            message: uploadError?.message,
-            stack: uploadError?.stack,
-            error: uploadError
-          })
-          setSubmitError(`Property created successfully, but image upload failed: ${uploadError?.message || 'Unknown error'}. You can add images later by editing the property.`)
-        } finally {
-          setUploadingImages(false)
-          console.log('[LOKAZEN] Image upload process completed')
-        }
-      } else {
-        console.log('[LOKAZEN] Skipping image upload:', {
-          hasPhotos: formData.photos.length > 0,
-          hasPropertyId: !!finalPropertyId,
-          hasOwnerId: !!finalOwnerId
-        })
-      }
+      const uploadedImageUrls = mediaUrls
     
       // Track form completion and conversion events
       trackFormComplete('owner', formData)
@@ -1549,6 +1440,12 @@ function OwnerOnboardingContent() {
                             const files = Array.from(e.target.files)
                             const images = files.filter(f => f.type.startsWith('image/'))
                             const videos = files.filter(f => f.type.startsWith('video/'))
+                            const large = images.filter((f) => f.size > OWNER_IMAGE_MAX_BYTES)
+                            if (large.length > 0) {
+                              alert(
+                                `${large.length} image(s) exceed ${OWNER_IMAGE_MAX_BYTES / 1024 / 1024}MB and will be skipped on submit: ${large.map((f) => f.name).join(', ')}`
+                              )
+                            }
                             
                             setFormData(prev => {
                               const maxPhotoSlots = Math.max(0, 10 - prev.photos.length)
@@ -1592,7 +1489,7 @@ function OwnerOnboardingContent() {
                         </div>
                         <div className="text-center">
                           <p className="text-sm font-semibold text-gray-700">Click to upload Photos or Videos</p>
-                          <p className="text-xs text-gray-500 mt-1">JPG, PNG (Max 10 photos) • MP4, MOV (Max 3 videos, 50MB each)</p>
+                          <p className="text-xs text-gray-500 mt-1">JPG, PNG (max 10 photos, 1MB each — stored inline) • MP4, MOV (max 3 videos, 50MB each)</p>
                         </div>
                       </label>
                     </div>
@@ -1696,12 +1593,10 @@ function OwnerOnboardingContent() {
                 ) : (
                   <button
                     type="submit"
-                    disabled={isSubmitting || uploadingImages || loadingProperty}
+                    disabled={isSubmitting || loadingProperty}
                     className="w-full sm:flex-1 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#FF5200] to-[#E4002B] text-white rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-[1.02] text-base disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {uploadingImages
-                      ? `Uploading Images... (${formData.photos.length} files)`
-                      : isSubmitting 
+                    {isSubmitting 
                         ? (isEditMode ? 'Updating Property...' : 'Creating Property...')
                         : (isEditMode ? 'Update Property' : 'List Property & Get Matches')
                     }

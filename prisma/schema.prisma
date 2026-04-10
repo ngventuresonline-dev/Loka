@@ -172,6 +172,7 @@ model Inquiry {
   owner                           User?                @relation("inquiries_owner_idTousers", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   property                        Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   responses                       inquiry_responses[]
+  siteVisits                      SiteVisit[]
 
   @@map("inquiries")
   @@index([brandId], map: "idx_inquiries_brand_id")
@@ -323,6 +324,7 @@ model Property {
   inquiries            Inquiry[]
   owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   propertyViews        property_views[]
+  siteVisits           SiteVisit[]
   savedBy              SavedProperty[]
   expertRequests       ExpertRequest[]
   propertyIntelligence PropertyIntelligence?
@@ -396,6 +398,8 @@ model User {
   brandProfiles                       brand_profiles?
   inquiriesAsBrand                    Inquiry[]           @relation("inquiries_brand_idTousers")
   inquiriesAsOwner                    Inquiry[]           @relation("inquiries_owner_idTousers")
+  siteVisitsAsOwner                   SiteVisit[]         @relation("site_visits_owner_idTousers")
+  siteVisitsAsBrand                   SiteVisit[]         @relation("site_visits_brand_idTousers")
   inquiryResponses                    inquiry_responses[]
   locationReports                     location_reports[]
   ownerProfiles                       owner_profiles?
@@ -414,6 +418,43 @@ enum inquiry_status_enum {
   pending
   responded
   closed
+  contacted
+  scheduled
+  completed
+  cancelled
+}
+
+enum site_visit_status_enum {
+  scheduled
+  completed
+  cancelled
+  no_show
+}
+
+model SiteVisit {
+  id           String                 @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  ownerId      String                 @map("owner_id") @db.VarChar(36)
+  brandId      String                 @map("brand_id") @db.VarChar(36)
+  propertyId   String                 @map("property_id") @db.VarChar(36)
+  inquiryId    String?                @map("inquiry_id") @db.VarChar(36)
+  scheduledAt  DateTime               @map("scheduled_at") @db.Timestamp(6)
+  status       site_visit_status_enum @default(scheduled)
+  outcome      String?                @db.VarChar(80)
+  notes        String?                @db.Text
+  createdAt    DateTime?              @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime?              @map("updated_at") @default(now()) @db.Timestamp(6)
+
+  owner    User     @relation("site_visits_owner_idTousers", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  brand    User     @relation("site_visits_brand_idTousers", fields: [brandId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  inquiry  Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([ownerId], map: "idx_site_visits_owner_id")
+  @@index([brandId], map: "idx_site_visits_brand_id")
+  @@index([propertyId], map: "idx_site_visits_property_id")
+  @@index([scheduledAt], map: "idx_site_visits_scheduled_at")
+  @@index([status], map: "idx_site_visits_status")
+  @@map("site_visits")
 }
 
 enum price_type_enum {
