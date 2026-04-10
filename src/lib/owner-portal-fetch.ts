@@ -1,8 +1,16 @@
-import type { User } from '@/lib/auth'
+/**
+ * Query string for owner API routes. `getAuthenticatedUser` accepts `userId`
+ * alone (no email) so phone-lookup sessions from /profile/owner?userId= work.
+ */
+export type OwnerSession = {
+  userId: string
+  userEmail?: string | null
+}
 
-export function ownerApiQuery(user: Pick<User, 'id' | 'email'>): string {
+export function ownerApiQuery(session: OwnerSession): string {
   const q = new URLSearchParams()
-  q.set('userId', user.id)
-  q.set('userEmail', user.email)
+  q.set('userId', session.userId)
+  const em = typeof session.userEmail === 'string' ? session.userEmail.trim() : ''
+  if (em) q.set('userEmail', em)
   return q.toString()
 }

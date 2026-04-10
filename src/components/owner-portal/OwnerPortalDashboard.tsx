@@ -9,9 +9,9 @@ import {
   useState,
 } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { ownerApiQuery } from '@/lib/owner-portal-fetch'
+import { ownerApiQuery, type OwnerSession } from '@/lib/owner-portal-fetch'
 import { encodePropertyId } from '@/lib/property-slug'
 import {
   LayoutDashboard,
@@ -172,7 +172,28 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard }[] = [
 
 export default function OwnerPortalDashboard() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading, isLoggedIn, logout } = useAuth()
+
+  const lookupOwnerId = searchParams.get('userId')
+  const authOwner =
+    isLoggedIn && user && user.userType === 'owner' ? user : null
+
+  const sessionForApi = useMemo((): OwnerSession | null => {
+    if (authOwner) {
+      return { userId: authOwner.id, userEmail: authOwner.email }
+    }
+    if (lookupOwnerId) {
+      return { userId: lookupOwnerId, userEmail: null }
+    }
+    return null
+  }, [authOwner, lookupOwnerId])
+
+  const waitingForAuth = authLoading && !lookupOwnerId
+
+  const [ownerCard, setOwnerCard] = useState<{ name: string; email: string } | null>(
+    null
+  )
 
   const [section, setSection] = useState<Section>('overview')
   const [toast, setToast] = useState<string | null>(null)
@@ -227,7 +248,38 @@ export default function OwnerPortalDashboard() {
     licenseNumber: '',
   })
 
-  const q = user ? ownerApiQuery(user) : ''
+  const q = sessionForApi ? ownerApiQuery(sessionForApi) : ''
+
+  const displayName = ownerCard?.name ?? authOwner?.name ?? 'Owner'
+  const displayEmail = ownerCard?.email ?? authOwner?.email ?? ''
+
+  useEffect(() => {
+    if (!sessionForApi) return
+    let cancelled = false
+    const qs = ownerApiQuery(sessionForApi)
+    fetch(`/api/owner/profile?${qs}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return
+        setOwnerCard({
+          name: d.name || 'Owner',
+          email: d.email || '',
+        })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [lookupOwnerId, authOwner?.id, authOwner?.email])
+
+  useEffect(() => {
+    if (!lookupOwnerId || typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem('ownerId', lookupOwnerId)
+    } catch {
+      /* ignore */
+    }
+  }, [lookupOwnerId])
 
   useEffect(() => {
     if (!mobileMenuOpen) return
@@ -251,11 +303,11 @@ export default function OwnerPortalDashboard() {
   }, [mobileMenuOpen])
 
   useEffect(() => {
-    if (!scheduleModal || !user || user.userType !== 'owner') return
+    if (!scheduleModal || !sessionForApi) return
     if (allListings.length > 0) return
     let cancelled = false
     ;(async () => {
-      const res = await fetch(`/api/owner/listings?${ownerApiQuery(user)}`)
+      const res = await fetch(`/api/owner/listings?${ownerApiQuery(sessionForApi)}`)
       if (!res.ok) return
       const j = await res.json()
       if (!cancelled) setAllListings(j.listings || [])
@@ -263,22 +315,20 @@ export default function OwnerPortalDashboard() {
     return () => {
       cancelled = true
     }
-  }, [scheduleModal, user, allListings.length])
+  }, [scheduleModal, sessionForApi, allListings.length])
 
   useEffect(() => {
-    if (authLoading) return
-    if (!isLoggedIn || !user) {
-      router.replace('/auth/login')
-      return
-    }
-    if (user.userType !== 'owner') {
+    if (waitingForAuth) return
+    if (sessionForApi) return
+    if (isLoggedIn && user && user.userType !== 'owner') {
       router.replace('/')
       return
     }
-  }, [authLoading, isLoggedIn, user, router])
+    router.replace('/profile')
+  }, [waitingForAuth, sessionForApi, router, isLoggedIn, user])
 
   useEffect(() => {
-    if (!user || user.userType !== 'owner') return
+    if (!sessionForApi) return
     let cancelled = false
     ;(async () => {
       try {
@@ -302,10 +352,10 @@ export default function OwnerPortalDashboard() {
     return () => {
       cancelled = true
     }
-  }, [user, q, tick])
+  }, [sessionForApi, q, tick])
 
   useEffect(() => {
-    if (!user || user.userType !== 'owner') return
+    if (!sessionForApi) return
     if (section !== 'listings') return
     let cancelled = false
     ;(async () => {
@@ -317,10 +367,10 @@ export default function OwnerPortalDashboard() {
     return () => {
       cancelled = true
     }
-  }, [user, q, section, tick])
+  }, [sessionForApi, q, section, tick])
 
   useEffect(() => {
-    if (!user || user.userType !== 'owner') return
+    if (!sessionForApi) return
     if (section !== 'leads') return
     let cancelled = false
     ;(async () => {
@@ -332,10 +382,10 @@ export default function OwnerPortalDashboard() {
     return () => {
       cancelled = true
     }
-  }, [user, q, section, leadFilter, tick])
+  }, [sessionForApi, q, section, leadFilter, tick])
 
   useEffect(() => {
-    if (!user || user.userType !== 'owner') return
+    if (!sessionForApi) return
     if (section !== 'visits') return
     let cancelled = false
     ;(async () => {
@@ -347,10 +397,10 @@ export default function OwnerPortalDashboard() {
     return () => {
       cancelled = true
     }
-  }, [user, q, section, tick])
+  }, [sessionForApi, q, section, tick])
 
   useEffect(() => {
-    if (!user || user.userType !== 'owner') return
+    if (!sessionForApi) return
     if (section !== 'profile') return
     let cancelled = false
     ;(async () => {
@@ -369,7 +419,7 @@ export default function OwnerPortalDashboard() {
     return () => {
       cancelled = true
     }
-  }, [user, q, section, tick])
+  }, [sessionForApi, q, section, tick])
 
   const filteredListings = useMemo(() => {
     if (listFilter === 'active') return allListings.filter((l) => l.isAvailable)
@@ -491,7 +541,7 @@ export default function OwnerPortalDashboard() {
     refresh()
   }
 
-  if (authLoading || !user || user.userType !== 'owner') {
+  if (waitingForAuth || !sessionForApi) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-600">
         Loading…
@@ -578,11 +628,11 @@ export default function OwnerPortalDashboard() {
           </nav>
           <div className="p-3 border-t border-gray-100 flex items-center gap-2">
             <div className="w-9 h-9 rounded-full bg-[#FF5200]/15 text-[#FF5200] flex items-center justify-center text-xs font-semibold flex-shrink-0">
-              {initials(user.name)}
+              {initials(displayName)}
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-gray-900 truncate">{user.name}</div>
-              <div className="text-[10px] text-gray-500 truncate">{user.email}</div>
+              <div className="text-xs font-medium text-gray-900 truncate">{displayName}</div>
+              <div className="text-[10px] text-gray-500 truncate">{displayEmail || '—'}</div>
             </div>
           </div>
         </aside>
@@ -629,8 +679,8 @@ export default function OwnerPortalDashboard() {
                     className="absolute right-0 top-full mt-1.5 w-[min(17rem,calc(100vw-2rem))] py-1.5 bg-white rounded-xl border border-gray-100 shadow-lg shadow-gray-200/80 z-50 overflow-hidden"
                   >
                     <div className="px-3 py-2 border-b border-gray-100 mb-1">
-                      <p className="text-xs font-medium text-gray-900 truncate">{user.name}</p>
-                      <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
+                      <p className="text-xs font-medium text-gray-900 truncate">{displayName}</p>
+                      <p className="text-[10px] text-gray-500 truncate">{displayEmail || '—'}</p>
                     </div>
                     <Link
                       href="/onboarding/owner"
@@ -663,19 +713,19 @@ export default function OwnerPortalDashboard() {
                       role="menuitem"
                       onClick={() => {
                         setMobileMenuOpen(false)
-                        logout()
+                        if (authOwner) logout()
                         router.push('/')
                       }}
                       className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                     >
                       <LogOut className="w-4 h-4 flex-shrink-0 text-gray-500" strokeWidth={1.75} />
-                      Sign out
+                      {authOwner ? 'Sign out' : 'Back to home'}
                     </button>
                   </div>
                 )}
               </div>
               <div className="hidden md:flex w-9 h-9 rounded-full bg-[#FF5200]/15 text-[#FF5200] items-center justify-center text-xs font-semibold">
-                {initials(user.name)}
+                {initials(displayName)}
               </div>
             </div>
           </header>
