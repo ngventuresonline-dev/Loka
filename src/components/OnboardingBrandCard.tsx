@@ -7,7 +7,13 @@ import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
 export default function OnboardingBrandCard({ brand }: { brand: any }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const matchScore = brand.matchScore || Math.floor(Math.random() * 30) + 70
+  const pfi =
+    typeof brand.pfi === 'number'
+      ? brand.pfi
+      : typeof brand.matchScore === 'number'
+        ? brand.matchScore
+        : null
+  const bfi = typeof brand.bfi === 'number' ? brand.bfi : null
   const logoPath = getBrandLogo(brand.name)
   const brandInitial = getBrandInitial(brand.name)
 
@@ -43,15 +49,46 @@ export default function OnboardingBrandCard({ brand }: { brand: any }) {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <h3 className="text-xs font-semibold text-gray-900 truncate">{brand.name || 'Brand Name'}</h3>
-            <div className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
-              matchScore >= 90 ? 'bg-green-100 text-green-700' :
-              matchScore >= 80 ? 'bg-blue-100 text-blue-700' :
-              'bg-yellow-100 text-yellow-700'
-            }`}>
-              {matchScore}%
-            </div>
+            {bfi != null && pfi != null ? (
+              <>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
+                    bfi >= 90
+                      ? 'bg-green-100 text-green-700'
+                      : bfi >= 70
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                  }`}
+                >
+                  BFI {bfi}%
+                </span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
+                    pfi >= 90
+                      ? 'bg-emerald-50 text-emerald-800'
+                      : pfi >= 80
+                        ? 'bg-sky-50 text-sky-800'
+                        : 'bg-amber-50 text-amber-800'
+                  }`}
+                >
+                  PFI {pfi}%
+                </span>
+              </>
+            ) : pfi != null ? (
+              <div
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
+                  pfi >= 90
+                    ? 'bg-green-100 text-green-700'
+                    : pfi >= 80
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                }`}
+              >
+                {pfi}%
+              </div>
+            ) : null}
           </div>
         </div>
         <svg

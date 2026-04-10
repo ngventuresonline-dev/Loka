@@ -8,45 +8,18 @@ import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
 import { trackFilterApply } from '@/lib/tracking'
 import { useSessionTracking } from '@/hooks/useSessionTracking'
+import {
+  fnbPropertyTypes,
+  otherPropertyTypes,
+  ownerFilterPropertyTypes as propertyTypes,
+  ownerFilterLocations as locations,
+  ownerFilterFeaturesCategories as featuresCategories,
+  ownerFilterAvailabilities as availabilities,
+} from '@/data/owner-filter-options'
 
 const fraunces = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--font-fraunces' })
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-plusjakarta' })
 
-// FnB property types (shown in quick options)
-const fnbPropertyTypes = [
-  'Restaurant',
-  'Food Court',
-  'Café / Coffee Shop',
-  'QSR (Quick Service Restaurant)',
-  'Dessert / Bakery'
-]
-
-// Other property types (in dropdown only)
-const otherPropertyTypes = [
-  'Office',
-  'Retail Space',
-  'Warehouse',
-  'Mall Space',
-  'Standalone Building',
-  'Bungalow',
-  'Villa',
-  'Commercial Complex',
-  'Business Park',
-  'IT Park',
-  'Co-working Space',
-  'Service Apartment',
-  'Hotel / Hospitality',
-  'Land',
-  'Industrial Space',
-  'Showroom',
-  'Kiosk',
-  'Other'
-]
-
-// Combined list for backward compatibility
-const propertyTypes = [...fnbPropertyTypes, ...otherPropertyTypes]
-
-// Prime areas (6–8) shown as capsules on the card
 const primeAreas = [
   'Koramangala',
   'Indiranagar',
@@ -55,41 +28,11 @@ const primeAreas = [
   'Jayanagar',
   'BTM Layout',
   'MG Road',
-  'Marathahalli'
+  'Marathahalli',
 ]
-
-// All Bangalore areas (comprehensive list for type-ahead)
-const allBangaloreLocations = [
-  'Koramangala', 'Indiranagar', 'Whitefield', 'HSR Layout', 'Jayanagar', 'BTM Layout',
-  'MG Road', 'Brigade Road', 'Marathahalli', 'Hebbal', 'Banashankari', 'Sarjapur Road',
-  'Electronic City', 'Bellandur', 'Bannerghatta Road', 'Rajajinagar', 'Malleshwaram',
-  'Basavanagudi', 'Vijayanagar', 'Yelahanka', 'Yeshwanthpur', 'RT Nagar', 'Frazer Town',
-  'Richmond Town', 'Ulsoor', 'Kanakapura Road', 'New Bel Road', 'Kalyan Nagar',
-  'Kamanahalli', 'Sahakar Nagar', 'JP Nagar', 'Jeevanbheemanagar', 'Kempegowda Nagar',
-  'Kengeri', 'Kodigehalli', 'Kumaraswamy Layout', 'Madivala', 'Mahadevapura', 'Mathikere',
-  'Nagarbhavi', 'Peenya', 'Rajarajeshwari Nagar', 'Sadashivanagar', 'Sanjay Nagar',
-  'Seshadripuram', 'Shivajinagar', 'T Dasarahalli', 'Vasanth Nagar', 'Wilson Garden', 'Other'
-]
-
-// Dedupe and sort (prime first, then rest alphabetically, Other last)
-const uniqueLocations = Array.from(new Set(allBangaloreLocations))
-const otherLocationsSorted = uniqueLocations
-  .filter(loc => !primeAreas.includes(loc) && loc !== 'Other')
-  .sort((a, b) => a.localeCompare(b))
-const locations = [...primeAreas, ...otherLocationsSorted, 'Other']
-const featuresCategories = {
-  'Floor': ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor+', 'Basement', 'Mezzanine'],
-  'Location & Visibility': ['Corner Unit', 'Main Road', 'Street Facing', 'High Visibility'],
-  'Parking & Access': ['Parking', 'Valet Parking', 'Elevator', 'Wheelchair Accessible'],
-  'Infrastructure': ['AC', 'Power Backup', 'Water Supply', 'WiFi', 'Fire Safety', 'CCTV'],
-  'Setup & Facilities': ['Kitchen Setup', 'Restroom', 'Storage', 'Warehouse Space'],
-  'Security & Services': ['Security', '24/7 Security', 'Signage Allowed', 'Loading Dock'],
-  'Other': ['Other']
-}
 
 // Flatten for backward compatibility (avoid Array.prototype.flat compatibility issues)
 const features = Object.values(featuresCategories).reduce<string[]>((acc, items) => acc.concat(items), [])
-const availabilities = ['Immediate', '1 month', '1-2 months', '3+ months']
 
 function SizeSlider({ index = 0, required = false, onSizeChange, error }: { index?: number; required?: boolean; onSizeChange?: (size: number) => void; error?: boolean }) {
   const [size, setSize] = useState(1000)

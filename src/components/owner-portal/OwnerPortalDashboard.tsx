@@ -13,20 +13,35 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { ownerApiQuery, type OwnerSession } from '@/lib/owner-portal-fetch'
 import { encodePropertyId } from '@/lib/property-slug'
+import Logo from '@/components/Logo'
 import {
   LayoutDashboard,
   Building2,
   Users,
   Calendar,
   UserCircle,
-  Bell,
   Plus,
-  EllipsisVertical,
   LogOut,
+  ChevronDown,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import OnboardingBrandCard from '@/components/OnboardingBrandCard'
+import OwnerNewListingModal from '@/components/owner-portal/OwnerNewListingModal'
 
 type Section = 'overview' | 'listings' | 'leads' | 'visits' | 'profile'
+
+type BrandMatchPreview = {
+  id: string
+  name: string
+  businessType?: string
+  matchScore?: number
+  bfi?: number
+  pfi?: number
+  sizeRange?: string
+  budgetRange?: string
+  propertyTypes?: string[]
+  locations?: string[]
+}
 
 type Summary = {
   totalListings: number
@@ -54,6 +69,7 @@ type ListingRow = {
   title: string
   locality: string
   city: string
+  propertyType?: string
   size: number
   price: string
   priceType: string
@@ -126,6 +142,21 @@ function amenityTags(amenities: unknown): string[] {
 function imageList(images: unknown): string[] {
   if (!Array.isArray(images)) return []
   return images.filter((u): u is string => typeof u === 'string' && u.length > 0)
+}
+
+function brandMatchRequestBody(row: ListingRow) {
+  const rent = parseInt(String(row.price).replace(/[^0-9]/g, ''), 10) || 0
+  const priceType =
+    row.priceType === 'yearly' || row.priceType === 'sqft' ? row.priceType : 'monthly'
+  return {
+    propertyType: row.propertyType || 'other',
+    location: row.city || row.locality || '',
+    address: row.locality || row.city || '',
+    size: row.size,
+    rent,
+    priceType,
+    amenities: row.amenities,
+  }
 }
 
 function inquiryStatusLabel(s: string | null) {
@@ -219,6 +250,46 @@ export default function OwnerPortalDashboard() {
   const [listFilter, setListFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [leadFilter, setLeadFilter] = useState<string>('all')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [overviewBrandMatches, setOverviewBrandMatches] = useState<BrandMatchPreview[]>([])
+  const [overviewBrandMatchesLoading, setOverviewBrandMatchesLoading] = useState(false)
+  const [brandMatchesByListingId, setBrandMatchesByListingId] = useState<
+    Record<string, BrandMatchPreview[] | undefined>
+  >({})
+  const [listingBrandMatchLoading, setListingBrandMatchLoading] = useState<
+    Record<string, boolean>
+  >({})
+
+  const loadListingBrandMatches = useCallback((row: ListingRow) => {
+    const rent = parseInt(String(row.price).replace(/[^0-9]/g, ''), 10) || 0
+    if (!row.size || !rent) {
+      setBrandMatchesByListingId((prev) => ({ ...prev, [row.id]: [] }))
+      return
+    }
+    setListingBrandMatchLoading((prev) => ({ ...prev, [row.id]: true }))
+    fetch('/api/brands/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(brandMatchRequestBody(row)),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        setBrandMatchesByListingId((prev) => ({
+          ...prev,
+          [row.id]: d?.matches ?? [],
+        }))
+      })
+      .catch(() => {
+        setBrandMatchesByListingId((prev) => ({ ...prev, [row.id]: [] }))
+      })
+      .finally(() => {
+        setListingBrandMatchLoading((prev) => {
+          const next = { ...prev }
+          delete next[row.id]
+          return next
+        })
+      })
+  }, [])
+
   const [scheduleInquiry, setScheduleInquiry] = useState<{
     id: string
     dt: string
@@ -228,11 +299,12 @@ export default function OwnerPortalDashboard() {
     outcome: string
   } | null>(null)
   const [scheduleModal, setScheduleModal] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const [newListingModalOpen, setNewListingModalOpen] = useState(false)
 
   useEffect(() => {
-    setMobileMenuOpen(false)
+    setUserMenuOpen(false)
   }, [section])
   const [modalForm, setModalForm] = useState({
     propertyId: '',
@@ -282,17 +354,17 @@ export default function OwnerPortalDashboard() {
   }, [lookupOwnerId])
 
   useEffect(() => {
-    if (!mobileMenuOpen) return
+    if (!userMenuOpen) return
     const onDoc = (e: MouseEvent) => {
       if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(e.target as Node)
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
       ) {
-        setMobileMenuOpen(false)
+        setUserMenuOpen(false)
       }
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false)
+      if (e.key === 'Escape') setUserMenuOpen(false)
     }
     document.addEventListener('mousedown', onDoc)
     window.addEventListener('keydown', onKey)
@@ -300,7 +372,7 @@ export default function OwnerPortalDashboard() {
       document.removeEventListener('mousedown', onDoc)
       window.removeEventListener('keydown', onKey)
     }
-  }, [mobileMenuOpen])
+  }, [userMenuOpen])
 
   useEffect(() => {
     if (!scheduleModal || !sessionForApi) return
@@ -353,6 +425,42 @@ export default function OwnerPortalDashboard() {
       cancelled = true
     }
   }, [sessionForApi, q, tick])
+
+  useEffect(() => {
+    if (!sessionForApi) return
+    const top = overviewListings[0]
+    if (!top?.size || !top.price) {
+      setOverviewBrandMatches([])
+      setOverviewBrandMatchesLoading(false)
+      return
+    }
+    const rent = parseInt(String(top.price).replace(/[^0-9]/g, ''), 10) || 0
+    if (!rent) {
+      setOverviewBrandMatches([])
+      setOverviewBrandMatchesLoading(false)
+      return
+    }
+    let cancelled = false
+    setOverviewBrandMatchesLoading(true)
+    fetch('/api/brands/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(brandMatchRequestBody(top)),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled) setOverviewBrandMatches(d?.matches ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setOverviewBrandMatches([])
+      })
+      .finally(() => {
+        if (!cancelled) setOverviewBrandMatchesLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [sessionForApi, overviewListings, tick])
 
   useEffect(() => {
     if (!sessionForApi) return
@@ -567,16 +675,24 @@ export default function OwnerPortalDashboard() {
       ? 'bg-[#FF5200]/10 text-[#FF5200] border-r-2 border-[#FF5200] pr-3 py-2.5 pl-3 -mr-px'
       : 'text-gray-600 hover:bg-gray-50 py-2.5 px-3'
     const mob = active
-      ? 'flex-1 flex flex-col items-center gap-0.5 py-2 text-[#FF5200]'
-      : 'flex-1 flex flex-col items-center gap-0.5 py-2 text-gray-500'
+      ? 'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[3.25rem] py-1.5 text-[#FF5200]'
+      : 'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[3.25rem] py-1.5 text-gray-500'
     return (
       <button
         type="button"
         onClick={() => setSection(id)}
         className={mobile ? mob : `${base} ${desktop} w-full text-left`}
       >
-        <Icon className={mobile ? 'w-5 h-5' : 'w-4 h-4 flex-shrink-0'} strokeWidth={1.75} />
-        <span className={mobile ? 'text-[10px] font-medium' : ''}>{label}</span>
+        <Icon className={mobile ? 'w-[22px] h-[22px]' : 'w-4 h-4 flex-shrink-0'} strokeWidth={1.75} />
+        <span
+          className={
+            mobile
+              ? 'text-[9px] font-semibold leading-tight text-center max-w-[4.25rem] truncate'
+              : ''
+          }
+        >
+          {label}
+        </span>
       </button>
     )
   }
@@ -586,26 +702,25 @@ export default function OwnerPortalDashboard() {
     value: number | string,
     delta: string
   ) => (
-    <div
-      key={label}
-      className="relative bg-white rounded-xl border border-gray-100 p-4 overflow-hidden"
-    >
+    <div className="relative bg-white rounded-xl border border-gray-100 p-3 sm:p-4 overflow-hidden min-w-0">
       <div
         className="absolute top-0 left-0 right-0 h-0.5 bg-[#FF5200]"
         aria-hidden
       />
-      <div className="text-[10px] uppercase tracking-wide text-gray-500 font-medium">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-gray-500 font-medium leading-tight">
         {label}
       </div>
-      <div className="text-[28px] font-medium text-gray-900 mt-1 tabular-nums">{value}</div>
-      <div className="text-xs text-gray-500 mt-1">{delta}</div>
+      <div className="text-xl sm:text-2xl lg:text-[28px] font-medium text-gray-900 mt-1 tabular-nums leading-none">
+        {value}
+      </div>
+      <div className="text-[11px] sm:text-xs text-gray-500 mt-1 leading-snug">{delta}</div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 pb-20 md:pb-0">
+    <div className="min-h-screen bg-gray-50 text-gray-900 md:pb-0">
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] rounded-lg bg-gray-900 text-white text-sm px-4 py-2 shadow-lg">
+        <div className="fixed top-[max(1rem,env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-[60] max-w-[calc(100vw-2rem)] rounded-lg bg-gray-900 text-white text-sm px-4 py-2 shadow-lg text-center">
           {toast}
         </div>
       )}
@@ -613,137 +728,134 @@ export default function OwnerPortalDashboard() {
       <div className="flex min-h-screen">
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:flex-col w-[220px] flex-shrink-0 border-r border-gray-200 bg-white fixed inset-y-0 z-20">
-          <div className="p-4 border-b border-gray-100">
-            <Link href="/" className="block text-lg font-bold text-[#FF5200] tracking-tight">
-              Lokazen
-            </Link>
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 mt-2">
-              Owner Portal
-            </p>
+          <div className="p-3 border-b border-gray-100 flex items-center min-h-[3.5rem]">
+            <Logo size="sm" href="/" showPoweredBy={false} />
           </div>
-          <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto min-h-0">
             {NAV.map((item) => (
               <NavButton key={item.id} {...item} />
             ))}
           </nav>
-          <div className="p-3 border-t border-gray-100 flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-[#FF5200]/15 text-[#FF5200] flex items-center justify-center text-xs font-semibold flex-shrink-0">
-              {initials(displayName)}
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-medium text-gray-900 truncate">{displayName}</div>
-              <div className="text-[10px] text-gray-500 truncate">{displayEmail || '—'}</div>
-            </div>
+          <div className="p-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => setNewListingModalOpen(true)}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#FF5200] text-white text-sm font-medium px-3 py-2.5 hover:bg-[#e64a00] transition-colors"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2} />
+              New listing
+            </button>
           </div>
         </aside>
 
         <div className="flex-1 md:ml-[220px] flex flex-col min-w-0">
-          <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center justify-between gap-3">
-            <h1 className="text-lg font-semibold text-gray-900 truncate">{sectionTitle}</h1>
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-              <Link
-                href="/onboarding/owner"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-[#FF5200] text-white text-sm font-medium px-3 py-2 hover:bg-[#e64a00] transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Listing
-              </Link>
+          <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between md:justify-end gap-2 min-h-[3.25rem] sm:min-h-[3.5rem] pt-[max(0.5rem,env(safe-area-inset-top))]">
+            <div className="min-w-0 flex-1 pr-2 overflow-hidden md:hidden [&_a]:min-w-0">
+              <Logo size="sm" href="/" showPoweredBy={false} />
+            </div>
+
+            <div ref={userMenuRef} className="relative flex-shrink-0 md:ml-0">
               <button
                 type="button"
-                className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                aria-label="Notifications"
+                aria-expanded={userMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Account menu"
+                onClick={() => setUserMenuOpen((o) => !o)}
+                className={`flex items-center gap-2 rounded-xl border bg-white pl-1.5 pr-2 py-1.5 max-w-[min(16rem,calc(100vw-9rem))] transition-colors ${
+                  userMenuOpen
+                    ? 'border-[#FF5200]/40 ring-1 ring-[#FF5200]/20'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
               >
-                <Bell className="w-5 h-5" />
-              </button>
-              <div
-                ref={mobileMenuRef}
-                className="relative md:hidden"
-              >
-                <button
-                  type="button"
-                  aria-expanded={mobileMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label="More options"
-                  onClick={() => setMobileMenuOpen((o) => !o)}
-                  className={`p-2 rounded-lg border transition-colors ${
-                    mobileMenuOpen
-                      ? 'border-[#FF5200]/40 bg-[#FF5200]/10 text-[#FF5200]'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <EllipsisVertical className="w-5 h-5" strokeWidth={1.75} />
-                </button>
-                {mobileMenuOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-full mt-1.5 w-[min(17rem,calc(100vw-2rem))] py-1.5 bg-white rounded-xl border border-gray-100 shadow-lg shadow-gray-200/80 z-50 overflow-hidden"
-                  >
-                    <div className="px-3 py-2 border-b border-gray-100 mb-1">
-                      <p className="text-xs font-medium text-gray-900 truncate">{displayName}</p>
-                      <p className="text-[10px] text-gray-500 truncate">{displayEmail || '—'}</p>
-                    </div>
-                    <Link
-                      href="/onboarding/owner"
-                      role="menuitem"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="sm:hidden flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-                    >
-                      <Plus className="w-4 h-4 text-[#FF5200]" strokeWidth={1.75} />
-                      Add Listing
-                    </Link>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setSection('profile')
-                        setMobileMenuOpen(false)
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
-                        section === 'profile'
-                          ? 'bg-[#FF5200]/10 text-[#FF5200] font-medium'
-                          : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
-                      }`}
-                    >
-                      <UserCircle className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
-                      Profile
-                    </button>
-                    <div className="my-1 border-t border-gray-100" />
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMobileMenuOpen(false)
-                        if (authOwner) logout()
-                        router.push('/')
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-                    >
-                      <LogOut className="w-4 h-4 flex-shrink-0 text-gray-500" strokeWidth={1.75} />
-                      {authOwner ? 'Sign out' : 'Back to home'}
-                    </button>
+                <div className="w-8 h-8 rounded-full bg-[#FF5200]/15 text-[#FF5200] flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                  {initials(displayName)}
+                </div>
+                <div className="min-w-0 text-left hidden sm:block">
+                  <div className="text-xs font-semibold text-gray-900 truncate leading-tight">
+                    {displayName}
                   </div>
-                )}
-              </div>
-              <div className="hidden md:flex w-9 h-9 rounded-full bg-[#FF5200]/15 text-[#FF5200] items-center justify-center text-xs font-semibold">
-                {initials(displayName)}
-              </div>
+                  <div className="text-[10px] text-gray-500 truncate leading-tight max-w-[10rem]">
+                    {displayEmail || '—'}
+                  </div>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-gray-500 flex-shrink-0 transition-transform ${
+                    userMenuOpen ? 'rotate-180' : ''
+                  }`}
+                  strokeWidth={2}
+                />
+              </button>
+              {userMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1.5 w-[min(18rem,calc(100vw-1.5rem))] py-1 bg-white rounded-xl border border-gray-100 shadow-lg z-50 overflow-hidden"
+                >
+                  <div className="px-3 py-2 border-b border-gray-100 sm:hidden">
+                    <p className="text-xs font-semibold text-gray-900 truncate">{displayName}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{displayEmail || '—'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setNewListingModalOpen(true)
+                      setUserMenuOpen(false)
+                    }}
+                    className="md:hidden w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                  >
+                    <Plus className="w-4 h-4 text-[#FF5200]" strokeWidth={2} />
+                    New listing
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setSection('profile')
+                      setUserMenuOpen(false)
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left text-gray-700 hover:bg-gray-50"
+                  >
+                    <UserCircle className="w-4 h-4 flex-shrink-0 text-gray-500" strokeWidth={2} />
+                    Profile
+                  </button>
+                  <div className="my-1 border-t border-gray-100" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setUserMenuOpen(false)
+                      if (authOwner) logout()
+                      router.push('/')
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left text-gray-700 hover:bg-gray-50"
+                  >
+                    <LogOut className="w-4 h-4 flex-shrink-0 text-gray-500" strokeWidth={2} />
+                    {authOwner ? 'Sign out' : 'Back to home'}
+                  </button>
+                </div>
+              )}
             </div>
           </header>
 
-          <main className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl w-full mx-auto">
+          <main className="flex-1 px-3 sm:px-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-6 overflow-y-auto max-w-7xl w-full mx-auto min-w-0">
+            <div className="mb-3 sm:mb-5 md:mb-6">
+              <h1 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 tracking-tight">
+                {sectionTitle}
+              </h1>
+            </div>
             {section === 'overview' && summary && (
               <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
                   {statCard('Total Listings', summary.totalListings, 'Live & draft properties')}
                   {statCard('Views (30d)', summary.views30d, 'Property detail views')}
                   {statCard('Qualified Leads', summary.qualifiedLeads, 'Contacted · Scheduled · Won')}
                   {statCard('Site Visits Done', summary.siteVisitsDone, 'Completed walkthroughs')}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="bg-white rounded-xl border border-gray-100 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="font-semibold text-gray-900">My Listings</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-4 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h2 className="font-semibold text-gray-900 text-sm sm:text-base">My Listings</h2>
                       <button
                         type="button"
                         className="text-sm font-medium text-[#FF5200]"
@@ -757,7 +869,7 @@ export default function OwnerPortalDashboard() {
                         No listings yet. Add your first property.
                       </p>
                     ) : (
-                      <div className="overflow-x-auto -mx-4 px-4">
+                      <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 touch-pan-x">
                         <table className="w-full text-sm min-w-[520px]">
                           <thead>
                             <tr className="text-left text-[10px] uppercase text-gray-500 border-b border-gray-100">
@@ -821,9 +933,9 @@ export default function OwnerPortalDashboard() {
                     )}
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-xl border border-gray-100 p-4">
-                      <h2 className="font-semibold text-gray-900 mb-3">Lead Pipeline</h2>
+                  <div className="space-y-3 sm:space-y-4 min-w-0">
+                    <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-4">
+                      <h2 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Lead Pipeline</h2>
                       <div className="space-y-3">
                         {[
                           {
@@ -873,8 +985,10 @@ export default function OwnerPortalDashboard() {
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-gray-100 p-4">
-                      <h2 className="font-semibold text-gray-900 mb-3">Upcoming Site Visits</h2>
+                    <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-4">
+                      <h2 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">
+                        Upcoming Site Visits
+                      </h2>
                       {summary.upcomingVisits.length === 0 ? (
                         <p className="text-sm text-gray-500">No visits scheduled.</p>
                       ) : (
@@ -898,6 +1012,42 @@ export default function OwnerPortalDashboard() {
                     </div>
                   </div>
                 </div>
+
+                {overviewListings[0] && (
+                  <div className="mt-3 sm:mt-4 bg-white rounded-xl border border-gray-100 p-3 sm:p-4 min-w-0">
+                    <h2 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">
+                      Brands that may be interested
+                    </h2>
+                    <p className="text-xs text-gray-500 mb-3">
+                      Brand Fit (BFI) and Property Fit (PFI) vs featured brands on Loka — based on{' '}
+                      <span className="font-medium text-gray-700">{overviewListings[0].title}</span>
+                      .
+                    </p>
+                    {overviewBrandMatchesLoading ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            className="h-14 rounded-full bg-gray-100 animate-pulse border border-gray-200"
+                          />
+                        ))}
+                      </div>
+                    ) : overviewBrandMatches.length > 0 ? (
+                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                        {overviewBrandMatches.slice(0, 8).map((brand) => (
+                          <div key={brand.id} className="flex-shrink-0 min-w-[200px]">
+                            <OnboardingBrandCard brand={brand} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No featured brand matches above the threshold for this listing yet. Try
+                        refining size, rent, or location on the listing.
+                      </p>
+                    )}
+                  </div>
+                )}
               </>
             )}
 
@@ -924,13 +1074,14 @@ export default function OwnerPortalDashboard() {
                       </button>
                     ))}
                   </div>
-                  <Link
-                    href="/onboarding/owner"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FF5200] text-white text-sm font-medium px-3 py-2 hover:bg-[#e64a00]"
+                  <button
+                    type="button"
+                    onClick={() => setNewListingModalOpen(true)}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FF5200] text-white text-sm font-medium px-3 py-2.5 hover:bg-[#e64a00]"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Listing
-                  </Link>
+                    New listing
+                  </button>
                 </div>
 
                 <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -960,8 +1111,14 @@ export default function OwnerPortalDashboard() {
                                     className="text-left font-medium text-[#FF5200] hover:underline"
                                     onClick={() => {
                                       const n = new Set(expandedIds)
-                                      if (n.has(row.id)) n.delete(row.id)
-                                      else n.add(row.id)
+                                      if (n.has(row.id)) {
+                                        n.delete(row.id)
+                                      } else {
+                                        n.add(row.id)
+                                        if (brandMatchesByListingId[row.id] === undefined) {
+                                          loadListingBrandMatches(row)
+                                        }
+                                      }
                                       setExpandedIds(n)
                                     }}
                                   >
@@ -1057,6 +1214,39 @@ export default function OwnerPortalDashboard() {
                                         Open map
                                       </a>
                                     )}
+                                    <div className="mt-4 pt-3 border-t border-gray-200">
+                                      <h3 className="text-xs font-semibold text-gray-800 uppercase tracking-wide mb-2">
+                                        Brands that may be interested (BFI / PFI)
+                                      </h3>
+                                      {listingBrandMatchLoading[row.id] ? (
+                                        <div className="flex gap-2">
+                                          {[0, 1, 2].map((i) => (
+                                            <div
+                                              key={i}
+                                              className="h-12 flex-1 max-w-[180px] rounded-full bg-gray-100 animate-pulse border border-gray-200"
+                                            />
+                                          ))}
+                                        </div>
+                                      ) : (brandMatchesByListingId[row.id] ?? []).length > 0 ? (
+                                        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+                                          {(brandMatchesByListingId[row.id] ?? [])
+                                            .slice(0, 8)
+                                            .map((brand) => (
+                                              <div
+                                                key={brand.id}
+                                                className="flex-shrink-0 min-w-[200px]"
+                                              >
+                                                <OnboardingBrandCard brand={brand} />
+                                              </div>
+                                            ))}
+                                        </div>
+                                      ) : brandMatchesByListingId[row.id] !== undefined ? (
+                                        <p className="text-xs text-gray-500">
+                                          No featured brand matches above the threshold for this
+                                          property.
+                                        </p>
+                                      ) : null}
+                                    </div>
                                   </td>
                                 </tr>
                               )}
@@ -1389,7 +1579,7 @@ export default function OwnerPortalDashboard() {
       </div>
 
       {/* Mobile bottom tabs */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 flex safe-area-pb">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 flex shadow-[0_-6px_24px_rgba(0,0,0,0.06)] pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-0.5">
         <NavButton id="overview" label="Overview" icon={LayoutDashboard} mobile />
         <NavButton id="listings" label="Listings" icon={Building2} mobile />
         <NavButton id="leads" label="Leads" icon={Users} mobile />
@@ -1465,6 +1655,11 @@ export default function OwnerPortalDashboard() {
           </div>
         </div>
       )}
+
+      <OwnerNewListingModal
+        open={newListingModalOpen}
+        onClose={() => setNewListingModalOpen(false)}
+      />
     </div>
   )
 }

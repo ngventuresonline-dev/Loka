@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ visits: payload })
   } catch (e: any) {
     console.error('[owner/visits GET]', e)
+    const msg = e?.message || String(e)
+    if (/site_visits/i.test(msg) || e?.code === '42P01' || /does not exist/i.test(msg)) {
+      return NextResponse.json({ visits: [] })
+    }
     return NextResponse.json(
       { error: e?.message || 'Failed to load visits' },
       { status: 500 }

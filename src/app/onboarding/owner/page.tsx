@@ -923,10 +923,9 @@ function OwnerOnboardingContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             propertyType: formData.propertyType,
+            location: formData.location,
             size: sizeNum,
             rent: rentNum,
-            locations: [formData.location],
-            businessType: '',
           }),
         })
 
@@ -1188,7 +1187,9 @@ function OwnerOnboardingContent() {
                   {hasExistingOwner && (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                       <p className="text-sm text-blue-800">
-                        Welcome back! Your contact information is already saved. Just add your Google Maps link below.
+                        {formData.propertyType && formData.size && formData.rent
+                          ? 'Your property basics (type, size, rent, and features) are saved. Pin the exact location below with a Google Maps link or map tap, then continue to description and photos for approval.'
+                          : 'Welcome back! Your contact information is already saved. Just add your Google Maps link below.'}
                       </p>
                     </div>
                   )}

@@ -2,6 +2,80 @@ import { NextRequest, NextResponse } from 'next/server'
 import { brandProfileDisplayName } from '@/lib/brand-display-name'
 import { getPrisma } from '@/lib/get-prisma'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
+import { calculateBFI } from '@/lib/matching-engine'
+import type { Property } from '@/types/workflow'
+
+function toWorkflowPropertyType(raw: string): Property['propertyType'] {
+  const r = (raw || '').toLowerCase().trim()
+  const allowed: Property['propertyType'][] = [
+    'office',
+    'retail',
+    'warehouse',
+    'restaurant',
+    'other',
+  ]
+  if (allowed.includes(r as Property['propertyType'])) {
+    return r as Property['propertyType']
+  }
+  if (
+    r.includes('restaurant') ||
+    r.includes('f&b') ||
+    r.includes('cafe') ||
+    r.includes('food')
+  ) {
+    return 'restaurant'
+  }
+  if (r.includes('retail') || r.includes('shop') || r.includes('showroom')) {
+    return 'retail'
+  }
+  if (r.includes('office')) return 'office'
+  if (r.includes('warehouse') || r.includes('industrial')) return 'warehouse'
+  return 'other'
+}
+
+function amenitiesFromUnknown(a: unknown): string[] {
+  if (!a) return []
+  if (Array.isArray(a)) {
+    return a.filter((x): x is string => typeof x === 'string')
+  }
+  if (typeof a === 'object' && a !== null && 'features' in a) {
+    const f = (a as { features?: unknown }).features
+    if (Array.isArray(f)) {
+      return f.filter((x): x is string => typeof x === 'string')
+    }
+  }
+  return []
+}
+
+function buildPropertyStub(params: {
+  city: string
+  address?: string
+  size: number
+  rent: number
+  priceType: 'monthly' | 'yearly' | 'sqft'
+  propertyType: string
+  amenities?: unknown
+}): Property {
+  const now = new Date()
+  return {
+    id: 'match-preview',
+    title: '',
+    description: '',
+    address: params.address || params.city || '',
+    city: params.city || '',
+    state: '',
+    zipCode: '',
+    price: params.rent,
+    priceType: params.priceType,
+    size: params.size,
+    propertyType: toWorkflowPropertyType(params.propertyType),
+    amenities: amenitiesFromUnknown(params.amenities),
+    ownerId: '',
+    createdAt: now,
+    updatedAt: now,
+    isAvailable: true,
+  }
+}
 
 /**
  * Calculate Property Fit Index (PFI) - reverse of BFI
@@ -19,7 +93,7 @@ function calculatePFI(
   property: {
     size: number
     price: number
-    priceType: 'monthly' | 'yearly'
+    priceType: 'monthly' | 'yearly' | 'sqft'
     city: string
     propertyType: string
   }
@@ -36,7 +110,12 @@ function calculatePFI(
     totalScore += sizeScore * 0.3
     
     // Budget match (30% weight)
-    const monthlyPrice = property.priceType === 'yearly' ? property.price / 12 : property.price
+    const monthlyPrice =
+      property.priceType === 'yearly'
+        ? property.price / 12
+        : property.priceType === 'sqft'
+          ? property.price * property.size
+          : property.price
     const budgetScore = calculateBudgetMatch(monthlyPrice, brandRequirements.budgetMin, brandRequirements.budgetMax)
     totalScore += budgetScore * 0.3
     
@@ -251,7 +330,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const { propertyType, location, size, rent } = body
+    const { propertyType, location, size, rent, priceType: rawPriceType, address, amenities } =
+      body
+
+    const priceType: 'monthly' | 'yearly' | 'sqft' =
+      rawPriceType === 'yearly' || rawPriceType === 'sqft' ? rawPriceType : 'monthly'
 
     if (!propertyType || !size || !rent) {
       console.warn('[Brand Match API] Missing required fields:', { propertyType, size, rent })
@@ -282,13 +365,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch brands from database
+    // Featured brands only (displayOrder set), same rule as GET /api/brands
     const dbBrands = await prisma.brand_profiles.findMany({
-      take: 50, // limit
+      where: {
+        user: {
+          userType: 'brand',
+          isActive: true,
+          displayOrder: { not: null },
+        },
+      },
       include: {
-        user: { select: { name: true, email: true } },
+        user: { select: { name: true, email: true, displayOrder: true } },
       },
     })
+
+    dbBrands.sort(
+      (a, b) => (a.user?.displayOrder ?? 999) - (b.user?.displayOrder ?? 999)
+    )
 
     if (dbBrands.length === 0) {
       console.warn('[Brand Match API] No brands found in database')
@@ -298,23 +391,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const propertyStub = buildPropertyStub({
+      city: typeof location === 'string' ? location : '',
+      address: typeof address === 'string' ? address : undefined,
+      size: propertySize,
+      rent: propertyRent,
+      priceType,
+      propertyType,
+      amenities,
+    })
+
     const matches = dbBrands
-      .map(brand => {
+      .map((brand) => {
         try {
           const sizeMin = brand.min_size ?? 0
           const sizeMax = brand.max_size ?? Number.MAX_SAFE_INTEGER
           const budgetMin = brand.budget_min ? Number(brand.budget_min) : 0
           const budgetMax = brand.budget_max ? Number(brand.budget_max) : Number.MAX_SAFE_INTEGER
-          const locations = Array.isArray(brand.preferred_locations) 
-            ? brand.preferred_locations as string[] 
-            : (typeof brand.preferred_locations === 'string' 
-                ? [brand.preferred_locations] 
-                : [])
-          const propertyTypes = Array.isArray(brand.preferred_property_types) 
-            ? brand.preferred_property_types as string[] 
-            : (typeof brand.preferred_property_types === 'string'
-                ? [brand.preferred_property_types]
-                : [])
+          const locations = Array.isArray(brand.preferred_locations)
+            ? (brand.preferred_locations as string[])
+            : typeof brand.preferred_locations === 'string'
+              ? [brand.preferred_locations]
+              : []
+          const propertyTypes = Array.isArray(brand.preferred_property_types)
+            ? (brand.preferred_property_types as string[])
+            : typeof brand.preferred_property_types === 'string'
+              ? [brand.preferred_property_types]
+              : []
 
           const pfiScore = calculatePFI(
             {
@@ -323,68 +426,65 @@ export async function POST(request: NextRequest) {
               budgetMin,
               budgetMax,
               locations,
-              businessType: brand.industry || ''
+              businessType: brand.industry || '',
             },
             {
               size: propertySize,
               price: propertyRent,
-              priceType: 'monthly',
+              priceType,
               city: location || '',
-              propertyType: propertyType
+              propertyType: propertyType,
             }
           )
+
+          const bfiScore = calculateBFI(propertyStub, {
+            locations,
+            sizeMin,
+            sizeMax,
+            budgetMin,
+            budgetMax,
+            businessType: brand.industry || '',
+          }).score
 
           return {
             id: brand.id,
             name: brandProfileDisplayName(brand, brand.user),
             businessType: brand.industry || 'Brand',
             matchScore: pfiScore,
-            sizeRange: sizeMin > 0 && sizeMax !== Number.MAX_SAFE_INTEGER 
-              ? `${sizeMin.toLocaleString()} - ${sizeMax.toLocaleString()} sqft` 
-              : sizeMin > 0 
-                ? `Min ${sizeMin.toLocaleString()} sqft`
-                : sizeMax !== Number.MAX_SAFE_INTEGER
-                  ? `Up to ${sizeMax.toLocaleString()} sqft`
-                  : 'Size flexible',
-            budgetRange: budgetMin > 0 && budgetMax !== Number.MAX_SAFE_INTEGER
-              ? `₹${(budgetMin / 1000).toFixed(0)}K - ₹${(budgetMax / 1000).toFixed(0)}K/month`
-              : budgetMin > 0
-                ? `Min ₹${(budgetMin / 1000).toFixed(0)}K/month`
-                : budgetMax !== Number.MAX_SAFE_INTEGER
-                  ? `Up to ₹${(budgetMax / 1000).toFixed(0)}K/month`
-                  : 'Budget flexible',
+            pfi: pfiScore,
+            bfi: bfiScore,
+            sizeRange:
+              sizeMin > 0 && sizeMax !== Number.MAX_SAFE_INTEGER
+                ? `${sizeMin.toLocaleString()} - ${sizeMax.toLocaleString()} sqft`
+                : sizeMin > 0
+                  ? `Min ${sizeMin.toLocaleString()} sqft`
+                  : sizeMax !== Number.MAX_SAFE_INTEGER
+                    ? `Up to ${sizeMax.toLocaleString()} sqft`
+                    : 'Size flexible',
+            budgetRange:
+              budgetMin > 0 && budgetMax !== Number.MAX_SAFE_INTEGER
+                ? `₹${(budgetMin / 1000).toFixed(0)}K - ₹${(budgetMax / 1000).toFixed(0)}K/month`
+                : budgetMin > 0
+                  ? `Min ₹${(budgetMin / 1000).toFixed(0)}K/month`
+                  : budgetMax !== Number.MAX_SAFE_INTEGER
+                    ? `Up to ₹${(budgetMax / 1000).toFixed(0)}K/month`
+                    : 'Budget flexible',
             propertyTypes: propertyTypes.length > 0 ? propertyTypes : ['Any'],
-            locations: locations.length > 0 ? locations : ['Any location']
+            locations: locations.length > 0 ? locations : ['Any location'],
           }
         } catch (error) {
           console.error('[Brand Match API] Error processing brand:', brand.id, error)
           return null
         }
       })
-      .filter((match): match is NonNullable<typeof match> => match !== null && match.matchScore >= 20) // Filter nulls and lower threshold
-      .sort((a, b) => b.matchScore - a.matchScore) // Sort by score
+      .filter(
+        (match): match is NonNullable<typeof match> =>
+          match !== null && match.matchScore >= 20
+      )
+      .sort((a, b) => b.matchScore - a.matchScore)
 
-    // If no matches above threshold, return top 3 brands anyway (for demo/fallback)
     const responseData = {
-      matches: matches.length > 0 
-        ? matches.slice(0, 5) // Return top 5 matches
-        : dbBrands.slice(0, 3).map(brand => {
-            try {
-              return {
-                id: brand.id || 'unknown',
-                name: brandProfileDisplayName(brand, brand.user),
-                businessType: brand.industry || 'Brand',
-                matchScore: 25, // Default score for fallback
-                sizeRange: 'Size flexible',
-                budgetRange: 'Budget flexible',
-                propertyTypes: ['Any'],
-                locations: ['Any location']
-              }
-            } catch (error) {
-              console.error('[Brand Match API] Error creating fallback brand:', error)
-              return null
-            }
-          }).filter((brand): brand is NonNullable<typeof brand> => brand !== null)
+      matches: matches.slice(0, 5),
     }
     
     // Log query size for monitoring

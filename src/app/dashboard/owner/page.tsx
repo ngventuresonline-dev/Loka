@@ -25,6 +25,8 @@ type BrandMatch = {
   name: string
   businessType?: string
   matchScore?: number
+  bfi?: number
+  pfi?: number
   sizeRange?: string
   budgetRange?: string
   locations?: string[]
@@ -55,8 +57,9 @@ function getMatchLabel(score: number | undefined) {
 }
 
 function BrandMatchCard({ match }: { match: BrandMatch }) {
-  const score = match.matchScore ?? 0
-  const label = getMatchLabel(score)
+  const pfi = match.pfi ?? match.matchScore ?? 0
+  const bfi = match.bfi
+  const label = getMatchLabel(pfi)
   const logoPath = getBrandLogo(match.name)
   const brandInitial = getBrandInitial(match.name)
 
@@ -103,15 +106,26 @@ function BrandMatchCard({ match }: { match: BrandMatch }) {
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
-            score >= 85 ? 'bg-green-50 text-green-700 border border-green-200' :
-            score >= 70 ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+            pfi >= 85 ? 'bg-green-50 text-green-700 border border-green-200' :
+            pfi >= 70 ? 'bg-blue-50 text-blue-700 border border-blue-200' :
             'bg-yellow-50 text-yellow-700 border border-yellow-200'
           }`}>
             {label}
           </div>
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white text-xs font-bold shadow-md">
-            {score || 0}%
-          </div>
+          {bfi != null ? (
+            <div className="flex flex-col items-end gap-0.5 text-[10px] font-bold text-gray-800">
+              <span className="inline-flex items-center justify-center min-w-[2.5rem] px-1.5 py-0.5 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white shadow-sm">
+                BFI {bfi}%
+              </span>
+              <span className="inline-flex items-center justify-center min-w-[2.5rem] px-1.5 py-0.5 rounded-full bg-gray-800 text-white shadow-sm">
+                PFI {pfi}%
+              </span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#FF5200] to-[#E4002B] text-white text-xs font-bold shadow-md">
+              {pfi || 0}%
+            </div>
+          )}
         </div>
       </div>
 

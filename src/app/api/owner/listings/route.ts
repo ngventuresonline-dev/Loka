@@ -8,6 +8,7 @@ type ListingRow = {
   locality: string | null
   city: string
   address: string
+  property_type: string
   size: number
   price: unknown
   price_type: string
@@ -20,6 +21,154 @@ type ListingRow = {
   views_30d: number
   lead_count: number
   visit_count: number
+}
+
+function isSiteVisitsMissingError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e)
+  const code = (e as { code?: string })?.code
+  return (
+    code === '42P01' ||
+    /site_visits/i.test(msg) ||
+    /does not exist/i.test(msg)
+  )
+}
+
+async function queryListings(
+  prisma: NonNullable<Awaited<ReturnType<typeof getPrisma>>>,
+  ownerId: string,
+  since: Date,
+  topN: number | null,
+  includeSiteVisits: boolean
+): Promise<ListingRow[]> {
+  if (!includeSiteVisits) {
+    if (topN) {
+      return prisma.$queryRaw<ListingRow[]>`
+        SELECT
+          p.id,
+          p.title,
+          p.locality,
+          p.city,
+          p.address,
+          p.property_type::text AS property_type,
+          p.size,
+          p.price,
+          p.price_type::text AS price_type,
+          COALESCE(p.is_available, true) AS is_available,
+          p.description,
+          p.amenities,
+          p.images,
+          p.map_link,
+          p.status::text AS approval_status,
+          (
+            SELECT COUNT(*)::int
+            FROM property_views pv
+            WHERE pv.property_id = p.id
+              AND pv.viewed_at IS NOT NULL
+              AND pv.viewed_at >= ${since}
+          ) AS views_30d,
+          (SELECT COUNT(*)::int FROM inquiries i WHERE i.property_id = p.id) AS lead_count,
+          0::int AS visit_count
+        FROM properties p
+        WHERE p.owner_id = ${ownerId}
+        ORDER BY views_30d DESC, p.updated_at DESC NULLS LAST
+        LIMIT ${topN}
+      `
+    }
+    return prisma.$queryRaw<ListingRow[]>`
+      SELECT
+        p.id,
+        p.title,
+        p.locality,
+        p.city,
+        p.address,
+        p.property_type::text AS property_type,
+        p.size,
+        p.price,
+        p.price_type::text AS price_type,
+        COALESCE(p.is_available, true) AS is_available,
+        p.description,
+        p.amenities,
+        p.images,
+        p.map_link,
+        p.status::text AS approval_status,
+        (
+          SELECT COUNT(*)::int
+          FROM property_views pv
+          WHERE pv.property_id = p.id
+            AND pv.viewed_at IS NOT NULL
+            AND pv.viewed_at >= ${since}
+        ) AS views_30d,
+        (SELECT COUNT(*)::int FROM inquiries i WHERE i.property_id = p.id) AS lead_count,
+        0::int AS visit_count
+      FROM properties p
+      WHERE p.owner_id = ${ownerId}
+      ORDER BY views_30d DESC, p.updated_at DESC NULLS LAST
+    `
+  }
+
+  if (topN) {
+    return prisma.$queryRaw<ListingRow[]>`
+      SELECT
+        p.id,
+        p.title,
+        p.locality,
+        p.city,
+        p.address,
+        p.property_type::text AS property_type,
+        p.size,
+        p.price,
+        p.price_type::text AS price_type,
+        COALESCE(p.is_available, true) AS is_available,
+        p.description,
+        p.amenities,
+        p.images,
+        p.map_link,
+        p.status::text AS approval_status,
+        (
+          SELECT COUNT(*)::int
+          FROM property_views pv
+          WHERE pv.property_id = p.id
+            AND pv.viewed_at IS NOT NULL
+            AND pv.viewed_at >= ${since}
+        ) AS views_30d,
+        (SELECT COUNT(*)::int FROM inquiries i WHERE i.property_id = p.id) AS lead_count,
+        (SELECT COUNT(*)::int FROM site_visits sv WHERE sv.property_id = p.id) AS visit_count
+      FROM properties p
+      WHERE p.owner_id = ${ownerId}
+      ORDER BY views_30d DESC, p.updated_at DESC NULLS LAST
+      LIMIT ${topN}
+    `
+  }
+  return prisma.$queryRaw<ListingRow[]>`
+    SELECT
+      p.id,
+      p.title,
+      p.locality,
+      p.city,
+      p.address,
+      p.property_type::text AS property_type,
+      p.size,
+      p.price,
+      p.price_type::text AS price_type,
+      COALESCE(p.is_available, true) AS is_available,
+      p.description,
+      p.amenities,
+      p.images,
+      p.map_link,
+      p.status::text AS approval_status,
+      (
+        SELECT COUNT(*)::int
+        FROM property_views pv
+        WHERE pv.property_id = p.id
+          AND pv.viewed_at IS NOT NULL
+          AND pv.viewed_at >= ${since}
+      ) AS views_30d,
+      (SELECT COUNT(*)::int FROM inquiries i WHERE i.property_id = p.id) AS lead_count,
+      (SELECT COUNT(*)::int FROM site_visits sv WHERE sv.property_id = p.id) AS visit_count
+    FROM properties p
+    WHERE p.owner_id = ${ownerId}
+    ORDER BY views_30d DESC, p.updated_at DESC NULLS LAST
+  `
 }
 
 export async function GET(request: NextRequest) {
@@ -38,66 +187,16 @@ export async function GET(request: NextRequest) {
   since.setDate(since.getDate() - 30)
 
   try {
-    const safeRows = topN
-      ? await prisma.$queryRaw<ListingRow[]>`
-        SELECT
-          p.id,
-          p.title,
-          p.locality,
-          p.city,
-          p.address,
-          p.size,
-          p.price,
-          p.price_type::text AS price_type,
-          COALESCE(p.is_available, true) AS is_available,
-          p.description,
-          p.amenities,
-          p.images,
-          p.map_link,
-          p.status::text AS approval_status,
-          (
-            SELECT COUNT(*)::int
-            FROM property_views pv
-            WHERE pv.property_id = p.id
-              AND pv.viewed_at IS NOT NULL
-              AND pv.viewed_at >= ${since}
-          ) AS views_30d,
-          (SELECT COUNT(*)::int FROM inquiries i WHERE i.property_id = p.id) AS lead_count,
-          (SELECT COUNT(*)::int FROM site_visits sv WHERE sv.property_id = p.id) AS visit_count
-        FROM properties p
-        WHERE p.owner_id = ${user.id}
-        ORDER BY views_30d DESC, p.updated_at DESC NULLS LAST
-        LIMIT ${topN}
-      `
-      : await prisma.$queryRaw<ListingRow[]>`
-        SELECT
-          p.id,
-          p.title,
-          p.locality,
-          p.city,
-          p.address,
-          p.size,
-          p.price,
-          p.price_type::text AS price_type,
-          COALESCE(p.is_available, true) AS is_available,
-          p.description,
-          p.amenities,
-          p.images,
-          p.map_link,
-          p.status::text AS approval_status,
-          (
-            SELECT COUNT(*)::int
-            FROM property_views pv
-            WHERE pv.property_id = p.id
-              AND pv.viewed_at IS NOT NULL
-              AND pv.viewed_at >= ${since}
-          ) AS views_30d,
-          (SELECT COUNT(*)::int FROM inquiries i WHERE i.property_id = p.id) AS lead_count,
-          (SELECT COUNT(*)::int FROM site_visits sv WHERE sv.property_id = p.id) AS visit_count
-        FROM properties p
-        WHERE p.owner_id = ${user.id}
-        ORDER BY views_30d DESC, p.updated_at DESC NULLS LAST
-      `
+    let safeRows: ListingRow[]
+    try {
+      safeRows = await queryListings(prisma, user.id, since, topN, true)
+    } catch (e) {
+      if (isSiteVisitsMissingError(e)) {
+        safeRows = await queryListings(prisma, user.id, since, topN, false)
+      } else {
+        throw e
+      }
+    }
 
     const maxViews = safeRows.reduce((m, r) => Math.max(m, r.views_30d || 0), 0)
 
@@ -107,6 +206,7 @@ export async function GET(request: NextRequest) {
       locality: r.locality || r.city,
       city: r.city,
       address: r.address,
+      propertyType: r.property_type,
       size: r.size,
       price: String(r.price),
       priceType: r.price_type,
