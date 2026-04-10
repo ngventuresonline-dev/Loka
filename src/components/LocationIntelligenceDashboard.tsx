@@ -631,7 +631,7 @@ function RevenueTab({
             <div className="flex items-center gap-2">
               <input
                 type="range"
-                min={8}
+                min={2}
                 max={15}
                 value={captureRate}
                 onChange={(e) => setCaptureRate(Number(e.target.value))}
@@ -647,7 +647,7 @@ function RevenueTab({
             <div className="flex items-center gap-2">
               <input
                 type="range"
-                min={300}
+                min={100}
                 max={600}
                 step={10}
                 value={avgTicket}
