@@ -259,6 +259,17 @@ export function getPincodeForBangaloreArea (areaName: string | null | undefined)
   return found ? found.pincode : null
 }
 
+/** Best-effort area label when the owner only typed a free-text address (e.g. includes "Koramangala"). */
+export function guessBangaloreLocalityLabel (text: string | null | undefined): string | null {
+  if (!text || typeof text !== 'string') return null
+  const q = text.trim().toLowerCase()
+  if (!q) return null
+  let found = BANGALORE_AREAS_ADMIN.find(
+    (a) => q.includes(a.label.toLowerCase()) || q.includes(a.value.toLowerCase())
+  )
+  return found ? found.label : null
+}
+
 /** Get nearest Bangalore pincode from coordinates (for map link / lat-lng). */
 export function getNearestPincodeFromCoords (lat: number, lng: number): string {
   let nearest = BANGALORE_PINCODES[0]

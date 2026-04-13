@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { guessBangaloreLocalityLabel } from '@/lib/location-intelligence/bangalore-areas'
+import { OWNER_VIDEO_MAX_COUNT } from '@/lib/image-base64'
+import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-compat'
 
 /**
  * PUT /api/owner/property/[id]
@@ -40,6 +43,8 @@ export async function PUT(
         { status: 503 }
       )
     }
+
+    await ensurePropertiesOptionalColumns(prisma)
 
     // Check if property exists and verify ownership
     const existingProperty = await prisma.property.findUnique({
@@ -101,34 +106,87 @@ export async function PUT(
 
       updateData.propertyType = normalizedType
     }
-    // Note: latitude/longitude are not stored in the Property model currently
-    // They are validated during creation but not persisted to the database
-    if (body.amenities !== undefined) {
-      // Handle amenities - could be array (legacy) or object with features and map_link
-      if (Array.isArray(body.amenities)) {
-        // Legacy format: just array of features
-        updateData.amenities = { features: body.amenities }
-      } else if (typeof body.amenities === 'object' && body.amenities !== null) {
-        // New format: object with features and map_link
-        updateData.amenities = body.amenities
-      } else {
-        updateData.amenities = { features: [] }
-      }
+    if (body.latitude !== undefined) {
+      const n = typeof body.latitude === 'number' ? body.latitude : parseFloat(String(body.latitude))
+      updateData.latitude = Number.isFinite(n) ? n : null
     }
-    // Handle map_link separately - merge into amenities if provided
+    if (body.longitude !== undefined) {
+      const n = typeof body.longitude === 'number' ? body.longitude : parseFloat(String(body.longitude))
+      updateData.longitude = Number.isFinite(n) ? n : null
+    }
     if (body.mapLink !== undefined) {
-      const currentAmenities = updateData.amenities || body.amenities || {}
-      const amenitiesObj = typeof currentAmenities === 'object' && !Array.isArray(currentAmenities) 
-        ? currentAmenities 
-        : { features: Array.isArray(currentAmenities) ? currentAmenities : [] }
-      
-      if (body.mapLink && body.mapLink.trim()) {
-        amenitiesObj.map_link = body.mapLink.trim()
-      } else {
-        delete amenitiesObj.map_link
+      updateData.mapLink = body.mapLink != null && String(body.mapLink).trim() ? String(body.mapLink).trim() : null
+    }
+    if (body.locality !== undefined) {
+      updateData.locality =
+        body.locality != null && String(body.locality).trim() ? String(body.locality).trim() : null
+    } else if (body.address !== undefined && typeof body.address === 'string') {
+      const g = guessBangaloreLocalityLabel(body.address)
+      if (g) updateData.locality = g
+    }
+
+    const existingRow = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { amenities: true },
+    })
+    const existingAmenities = existingRow?.amenities
+
+    if (body.amenities !== undefined) {
+      let features: string[] = []
+      if (Array.isArray(body.amenities)) {
+        features = body.amenities.map(String)
+      } else if (
+        typeof body.amenities === 'object' &&
+        body.amenities !== null &&
+        Array.isArray((body.amenities as { features?: unknown }).features)
+      ) {
+        features = ((body.amenities as { features: string[] }).features || []).map(String)
       }
+
+      const merged: Record<string, unknown> = { features }
+      if (
+        existingAmenities &&
+        typeof existingAmenities === 'object' &&
+        !Array.isArray(existingAmenities)
+      ) {
+        const ex = existingAmenities as Record<string, unknown>
+        if (typeof ex.map_link === 'string') merged.map_link = ex.map_link
+        if (Array.isArray(ex.videos)) merged.videos = ex.videos
+      }
+      if (body.mapLink !== undefined) {
+        if (body.mapLink && String(body.mapLink).trim()) merged.map_link = String(body.mapLink).trim()
+        else delete merged.map_link
+      }
+      updateData.amenities = merged
+    }
+
+    if (body.mapLink !== undefined && updateData.amenities === undefined) {
+      const amenitiesObj: Record<string, unknown> =
+        existingAmenities && typeof existingAmenities === 'object' && !Array.isArray(existingAmenities)
+          ? { ...(existingAmenities as Record<string, unknown>) }
+          : { features: [] as string[] }
+      if (!Array.isArray(amenitiesObj.features)) amenitiesObj.features = []
+      if (body.mapLink && String(body.mapLink).trim()) amenitiesObj.map_link = String(body.mapLink).trim()
+      else delete amenitiesObj.map_link
       updateData.amenities = amenitiesObj
     }
+
+    if (body.videos !== undefined) {
+      const base: Record<string, unknown> =
+        updateData.amenities && typeof updateData.amenities === 'object' && !Array.isArray(updateData.amenities)
+          ? { ...(updateData.amenities as Record<string, unknown>) }
+          : existingAmenities &&
+              typeof existingAmenities === 'object' &&
+              !Array.isArray(existingAmenities)
+            ? { ...(existingAmenities as Record<string, unknown>) }
+            : { features: [] as string[] }
+      if (!Array.isArray(base.features)) base.features = []
+      const vids = Array.isArray(body.videos) ? body.videos.slice(0, OWNER_VIDEO_MAX_COUNT) : []
+      if (vids.length > 0) base.videos = vids
+      else delete base.videos
+      updateData.amenities = base
+    }
+
     if (body.images !== undefined) {
       updateData.images = Array.isArray(body.images) ? body.images : []
     }
@@ -137,7 +195,24 @@ export async function PUT(
     const updatedProperty = await prisma.property.update({
       where: { id: propertyId },
       data: updateData,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        address: true,
+        city: true,
+        size: true,
+        price: true,
+        securityDeposit: true,
+        propertyType: true,
+        amenities: true,
+        images: true,
+        mapLink: true,
+        latitude: true,
+        longitude: true,
+        locality: true,
+        ownerId: true,
+        status: true,
         owner: {
           select: {
             id: true,

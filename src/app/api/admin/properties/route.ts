@@ -9,6 +9,7 @@ import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-warm-intel-cache'
 import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
 import { getMapLinkFromAmenities } from '@/lib/property-coordinates'
+import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-compat'
 
 function parseBodyInt(v: unknown): number | null {
   if (v === undefined || v === null || v === '') return null
@@ -840,6 +841,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    await ensurePropertiesOptionalColumns(prisma)
+
     // Prepare update data
     const data: any = {}
     let siteVisitPatch = false
@@ -851,9 +854,31 @@ export async function PATCH(request: NextRequest) {
     if (updateData.city !== undefined) data.city = updateData.city
     if (updateData.state !== undefined) data.state = updateData.state
     if (updateData.zipCode !== undefined) data.zipCode = updateData.zipCode
+
+    if (updateData.locality !== undefined) {
+      const v = updateData.locality
+      data.locality = v != null && String(v).trim() ? String(v).trim() : null
+    }
+
+    if (updateData.latitude !== undefined) {
+      const n = typeof updateData.latitude === 'number' ? updateData.latitude : parseFloat(String(updateData.latitude))
+      data.latitude = Number.isFinite(n) ? n : null
+    }
+    if (updateData.longitude !== undefined) {
+      const n = typeof updateData.longitude === 'number' ? updateData.longitude : parseFloat(String(updateData.longitude))
+      data.longitude = Number.isFinite(n) ? n : null
+    }
+    if (updateData.mapLink !== undefined) {
+      const raw = updateData.mapLink
+      data.mapLink = raw != null && String(raw).trim() ? String(raw).trim() : null
+    }
     
-    // Amenities + map_link: always merge so PATCH never overwrites map_link with a bare features array.
-    if (updateData.amenities !== undefined || updateData.mapLink !== undefined) {
+    // Amenities + map_link + inline videos: merge so PATCH never drops map_link or owner videos.
+    if (
+      updateData.amenities !== undefined ||
+      updateData.mapLink !== undefined ||
+      updateData.videos !== undefined
+    ) {
       const current = await prisma.property.findUnique({
         where: { id: propertyId },
         select: { amenities: true },
@@ -878,7 +903,21 @@ export async function PATCH(request: NextRequest) {
         mapLinkVal = getMapLinkFromAmenities(existing)
       }
 
-      data.amenities = { features, map_link: mapLinkVal }
+      let videos: unknown[] | undefined
+      if (updateData.videos !== undefined) {
+        videos = Array.isArray(updateData.videos) ? updateData.videos : []
+      } else if (
+        existing &&
+        typeof existing === 'object' &&
+        !Array.isArray(existing) &&
+        Array.isArray((existing as Record<string, unknown>).videos)
+      ) {
+        videos = [...((existing as { videos: unknown[] }).videos)]
+      }
+
+      const nextAmenities: Record<string, unknown> = { features, map_link: mapLinkVal }
+      if (videos !== undefined && videos.length > 0) nextAmenities.videos = videos
+      data.amenities = nextAmenities
     }
     
     // Pricing - ensure proper number conversion
@@ -941,7 +980,7 @@ export async function PATCH(request: NextRequest) {
     if (updateData.powerBackup !== undefined) data.powerBackup = updateData.powerBackup
     if (updateData.waterFacility !== undefined) data.waterFacility = updateData.waterFacility
     
-    // Features (amenities array + map_link handled above when either field is present)
+    // Features / map_link / videos handled above when any of those fields are present
     if (updateData.images !== undefined) data.images = updateData.images
     
     // Status (for approval workflow: pending | approved | rejected)
@@ -1031,7 +1070,33 @@ export async function PATCH(request: NextRequest) {
     // a hard 5-second Prisma-level timeout that cannot be overridden by SET statement_timeout.
     // Direct updates respect only the PostgreSQL statement timeout (default 8s on Supabase,
     // extended here to 60s for large JSON payloads like the images array).
-    let property: { id: string; title: string; address: string; city: string; size: number; price: unknown; priceType: string; availability: boolean | null; createdAt: Date | null; isFeatured: boolean | null; owner: { id: string; name: string | null; email: string } }
+    const adminUpdateSelect = {
+      id: true,
+      title: true,
+      address: true,
+      city: true,
+      size: true,
+      price: true,
+      priceType: true,
+      availability: true,
+      createdAt: true,
+      isFeatured: true,
+      owner: { select: { id: true, name: true, email: true } },
+    } as const
+
+    let property: {
+      id: string
+      title: string
+      address: string
+      city: string
+      size: number
+      price: unknown
+      priceType: string
+      availability: boolean | null
+      createdAt: Date | null
+      isFeatured: boolean | null
+      owner: { id: string; name: string | null; email: string }
+    }
 
     // Bump statement timeout for this connection before the heavy update
     try {
@@ -1040,13 +1105,11 @@ export async function PATCH(request: NextRequest) {
       // Non-fatal — continue even if the SET fails
     }
 
-    // Perform a single update with all changed fields
+    // Narrow RETURNING columns so older DBs without optional columns still succeed.
     property = await prisma.property.update({
       where: { id: propertyId },
       data: data as any,
-      include: {
-        owner: { select: { id: true, name: true, email: true } },
-      },
+      select: adminUpdateSelect,
     })
 
     // Trigger intelligence refresh AFTER returning (non-blocking).
@@ -1056,6 +1119,9 @@ export async function PATCH(request: NextRequest) {
       updateData.city !== undefined ||
       updateData.state !== undefined ||
       updateData.zipCode !== undefined ||
+      updateData.locality !== undefined ||
+      updateData.latitude !== undefined ||
+      updateData.longitude !== undefined ||
       updateData.size !== undefined ||
       updateData.price !== undefined ||
       updateData.propertyType !== undefined ||

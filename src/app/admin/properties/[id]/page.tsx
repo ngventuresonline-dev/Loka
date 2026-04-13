@@ -318,6 +318,17 @@ export default function EditPropertyPage() {
     ],
     'Other': []
   }
+
+  const inferAreaFromAddress = (address: string, city: string) => {
+    if (!address?.trim() || city !== 'Bangalore') return ''
+    const lower = address.toLowerCase()
+    for (const a of cityAreas['Bangalore'] || []) {
+      if (a === 'Other') continue
+      if (lower.includes(a.toLowerCase())) return a
+    }
+    return ''
+  }
+
   const availableAmenities = [
     'Ground Floor', 'Corner Unit', 'Main Road', 'Parking', 'Kitchen Setup', 
     'AC', 'Security', 'Storage', 'WiFi', 'Restroom', 'Elevator', 'Other'
@@ -385,7 +396,7 @@ export default function EditPropertyPage() {
         description: prop.description || '',
         address: prop.address || '',
         city: prop.city || '',
-        area: prop.area || '',
+        area: prop.locality || inferAreaFromAddress(prop.address || '', prop.city || ''),
         state: prop.state || '',
         zipCode: prop.zipCode || '',
         latitude: prop.latitude?.toString() || '',
@@ -452,7 +463,10 @@ export default function EditPropertyPage() {
     }
     if (lat != null && lng != null) {
       const pincode = getNearestPincodeFromCoords(lat, lng)
-      setFormData((prev) => ({ ...prev, zipCode: pincode }))
+      setFormData((prev) => {
+        if (prev.zipCode?.trim()) return prev
+        return { ...prev, zipCode: pincode }
+      })
     }
   }, [formData.city, formData.mapLink, formData.latitude, formData.longitude])
 
@@ -489,12 +503,6 @@ export default function EditPropertyPage() {
     setSaveSuccess(false)
 
     try {
-      // Combine address with area if area is selected
-      const fullAddress = formData.address
-      const addressWithArea = formData.area
-        ? `${fullAddress}${fullAddress ? ', ' : ''}${formData.area}`
-        : fullAddress
-
       // Convert display property type value to database enum value
       const selectedType = propertyTypes.find(pt => pt.value === formData.propertyType)
       const dbPropertyType = selectedType ? selectedType.dbValue : formData.propertyType
@@ -508,8 +516,9 @@ export default function EditPropertyPage() {
             propertyId,
             title: formData.title,
             description: formData.description,
-            address: addressWithArea,
+            address: formData.address.trim(),
             city: formData.city,
+            locality: formData.area?.trim() || null,
             state: formData.state,
             zipCode: formData.zipCode,
             latitude: formData.latitude ? parseFloat(formData.latitude) : null,
@@ -1167,6 +1176,8 @@ export default function EditPropertyPage() {
               label="Property Images"
               accept="image/*"
               multiple
+              maxSize={5}
+              maxFiles={10}
               value={images}
               onChange={setImages}
             />

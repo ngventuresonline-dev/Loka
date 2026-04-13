@@ -3,7 +3,12 @@ import { getPrisma, executePrismaQuery } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 import bcrypt from 'bcryptjs'
 import { generateSecurePassword, sendOwnerWelcomeEmail } from '@/lib/email-service'
-import { getPincodeForBangaloreArea } from '@/lib/location-intelligence/bangalore-areas'
+import {
+  getPincodeForBangaloreArea,
+  guessBangaloreLocalityLabel,
+} from '@/lib/location-intelligence/bangalore-areas'
+import { OWNER_VIDEO_MAX_COUNT } from '@/lib/image-base64'
+import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-compat'
 import { appendToSheet, istTimestamp } from '@/lib/sheets'
 
 /* TODO: Add auth when owner registration enabled
@@ -51,6 +56,7 @@ export async function POST(request: NextRequest) {
         amenities?: string[]
         description?: string
         images?: string[]
+        videos?: string[]
       }
     } = body
 
@@ -118,6 +124,9 @@ export async function POST(request: NextRequest) {
     }
 
     const prisma = await getPrisma()
+    if (prisma) {
+      await ensurePropertiesOptionalColumns(prisma)
+    }
     if (!prisma) {
       return NextResponse.json(
         { success: false, error: 'Database not available' },
@@ -390,6 +399,10 @@ export async function POST(request: NextRequest) {
       amenitiesData.map_link = property.mapLink.trim()
     }
 
+    if (property.videos && property.videos.length > 0) {
+      amenitiesData.videos = property.videos.slice(0, OWNER_VIDEO_MAX_COUNT)
+    }
+
     const images = property.images && property.images.length > 0
       ? property.images
       : []
@@ -460,6 +473,8 @@ export async function POST(request: NextRequest) {
     const zipCode = zipFromArea || '560001'
 
     // Prepare property data
+    const localityGuess = guessBangaloreLocalityLabel(property.location || '')
+
     const propertyData: any = {
       id: propertyId,
       title,
@@ -477,8 +492,12 @@ export async function POST(request: NextRequest) {
       storePowerCapacity: null,
       powerBackup: false,
       waterFacility: false,
-      amenities: amenitiesData, // Contains both features array and map_link
+      amenities: amenitiesData,
       images,
+      mapLink: property.mapLink?.trim() || amenitiesData.map_link || null,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
+      locality: localityGuess,
       ownerId,
       status: 'pending', // New properties start as pending
       availability: false, // Set to false for pending approval - admin will approve and set to true
@@ -486,10 +505,6 @@ export async function POST(request: NextRequest) {
       views: 0,
       displayOrder: null,
     }
-
-    // Note: latitude and longitude are not stored in the Property model
-    // They are validated during creation but not persisted to the database
-    // The mapLink is stored in amenities.map_link JSONB field (workaround for column timeout)
 
     // Use executePrismaQuery to handle connection pool timeouts with retry
     const propertyRow = await executePrismaQuery(async (p) =>

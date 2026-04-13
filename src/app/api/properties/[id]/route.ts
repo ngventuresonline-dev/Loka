@@ -15,6 +15,7 @@ import {
   getMapLinkFromAmenities,
   geocodeAddress,
 } from '@/lib/property-coordinates'
+import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-compat'
 
 /**
  * GET /api/properties/[id]
@@ -41,6 +42,8 @@ export async function GET(
         { status: 503 }
       )
     }
+
+    await ensurePropertiesOptionalColumns(prisma)
 
     // IMPORTANT:
     // - This endpoint is used by both public property pages AND the admin edit page.

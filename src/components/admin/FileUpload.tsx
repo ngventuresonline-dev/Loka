@@ -8,6 +8,8 @@ interface FileUploadProps {
   accept?: string
   multiple?: boolean
   maxSize?: number // in MB
+  /** When set with multiple, caps how many files can be added in total. */
+  maxFiles?: number
   value?: string[]
   onChange?: (files: string[]) => void
   onFileSelect?: (files: File[]) => Promise<string[]>
@@ -18,6 +20,7 @@ export default function FileUpload({
   accept = 'image/*',
   multiple = false,
   maxSize = 5,
+  maxFiles,
   value = [],
   onChange,
   onFileSelect
@@ -27,9 +30,22 @@ export default function FileUpload({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
+    let files = Array.from(e.target.files || [])
     
     if (files.length === 0) return
+
+    if (multiple && maxFiles != null) {
+      const room = maxFiles - previews.length
+      if (room <= 0) {
+        alert(`Maximum ${maxFiles} files allowed`)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return
+      }
+      if (files.length > room) {
+        alert(`Only ${room} more file(s) allowed (max ${maxFiles} total)`)
+        files = files.slice(0, room)
+      }
+    }
 
     // Validate file sizes
     const oversized = files.filter(f => f.size > maxSize * 1024 * 1024)

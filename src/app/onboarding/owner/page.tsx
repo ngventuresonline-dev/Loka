@@ -19,7 +19,15 @@ const OnboardingBrandCard = dynamic(
   () => import('@/components/OnboardingBrandCard'),
   { ssr: false }
 )
-import { imageFilesToDataUrls, OWNER_IMAGE_MAX_BYTES } from '@/lib/image-base64'
+import {
+  imageFilesToDataUrls,
+  videoFilesToDataUrls,
+  OWNER_IMAGE_MAX_BYTES,
+  OWNER_IMAGE_MAX_COUNT,
+  OWNER_IMAGE_TOTAL_MAX_BYTES,
+  OWNER_VIDEO_MAX_BYTES,
+  OWNER_VIDEO_MAX_COUNT,
+} from '@/lib/image-base64'
 
 /* TODO: Re-enable auth when owner login is implemented
 import { supabase } from '@/lib/supabase/client'
@@ -768,6 +776,22 @@ function OwnerOnboardingContent() {
 
     try {
       let mediaUrls: string[] = []
+      let videoUrls: string[] = []
+      if (formData.photos.length > OWNER_IMAGE_MAX_COUNT) {
+        isSubmittingRef.current = false
+        setIsSubmitting(false)
+        alert(`You can upload at most ${OWNER_IMAGE_MAX_COUNT} photos.`)
+        return
+      }
+      const photoBytes = formData.photos.reduce((sum, f) => sum + f.size, 0)
+      if (photoBytes > OWNER_IMAGE_TOTAL_MAX_BYTES) {
+        isSubmittingRef.current = false
+        setIsSubmitting(false)
+        alert(
+          `Total photo size exceeds ${OWNER_IMAGE_TOTAL_MAX_BYTES / 1024 / 1024}MB. Remove some images or use smaller files.`
+        )
+        return
+      }
       if (formData.photos.length > 0) {
         const { dataUrls, oversizeNames } = await imageFilesToDataUrls(formData.photos)
         if (oversizeNames.length > 0) {
@@ -776,6 +800,15 @@ function OwnerOnboardingContent() {
           )
         }
         mediaUrls = dataUrls
+      }
+      if (formData.videos.length > 0) {
+        const { dataUrls, oversizeNames } = await videoFilesToDataUrls(formData.videos)
+        if (oversizeNames.length > 0) {
+          alert(
+            `Some videos exceed the ${OWNER_VIDEO_MAX_BYTES / 1024 / 1024}MB limit and were skipped: ${oversizeNames.join(', ')}`
+          )
+        }
+        videoUrls = dataUrls
       }
 
       const sizeNum = parseInt(formData.size?.replace(/[^0-9]/g, '') || '0')
@@ -830,6 +863,7 @@ function OwnerOnboardingContent() {
             longitude: longitude,
             amenities: amenitiesArray,
             images: mediaUrls,
+            videos: videoUrls,
             mapLink: finalMapLink,
           }
         : {
@@ -853,6 +887,7 @@ function OwnerOnboardingContent() {
             amenities: amenitiesArray,
             description: formData.description,
             images: mediaUrls,
+            videos: videoUrls,
           },
           }
 
@@ -1447,18 +1482,24 @@ function OwnerOnboardingContent() {
                                 `${large.length} image(s) exceed ${OWNER_IMAGE_MAX_BYTES / 1024 / 1024}MB and will be skipped on submit: ${large.map((f) => f.name).join(', ')}`
                               )
                             }
-                            
-                            setFormData(prev => {
-                              const maxPhotoSlots = Math.max(0, 10 - prev.photos.length)
-                              const photosToAdd = images.slice(0, maxPhotoSlots)
-                              if (images.length > photosToAdd.length) {
-                              alert('Maximum 10 photos allowed')
+                            const largeVideos = videos.filter((f) => f.size > OWNER_VIDEO_MAX_BYTES)
+                            if (largeVideos.length > 0) {
+                              alert(
+                                `${largeVideos.length} video(s) exceed ${OWNER_VIDEO_MAX_BYTES / 1024 / 1024}MB and will be skipped on submit: ${largeVideos.map((f) => f.name).join(', ')}`
+                              )
                             }
                             
-                              const maxVideoSlots = Math.max(0, 3 - prev.videos.length)
+                            setFormData(prev => {
+                              const maxPhotoSlots = Math.max(0, OWNER_IMAGE_MAX_COUNT - prev.photos.length)
+                              const photosToAdd = images.slice(0, maxPhotoSlots)
+                              if (images.length > photosToAdd.length) {
+                              alert(`Maximum ${OWNER_IMAGE_MAX_COUNT} photos allowed`)
+                            }
+                            
+                              const maxVideoSlots = Math.max(0, OWNER_VIDEO_MAX_COUNT - prev.videos.length)
                               const videosToAdd = videos.slice(0, maxVideoSlots)
                               if (videos.length > videosToAdd.length) {
-                              alert('Maximum 3 videos allowed')
+                              alert(`Maximum ${OWNER_VIDEO_MAX_COUNT} videos allowed`)
                             }
 
                               return {
@@ -1490,7 +1531,11 @@ function OwnerOnboardingContent() {
                         </div>
                         <div className="text-center">
                           <p className="text-sm font-semibold text-gray-700">Click to upload Photos or Videos</p>
-                          <p className="text-xs text-gray-500 mt-1">JPG, PNG (max 10 photos, 1MB each — stored inline) • MP4, MOV (max 3 videos, 50MB each)</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            JPG, PNG — up to {OWNER_IMAGE_MAX_COUNT} photos, {OWNER_IMAGE_MAX_BYTES / 1024 / 1024}MB each (max{' '}
+                            {OWNER_IMAGE_TOTAL_MAX_BYTES / 1024 / 1024}MB total) • MP4, MOV — up to {OWNER_VIDEO_MAX_COUNT}{' '}
+                            videos, {OWNER_VIDEO_MAX_BYTES / 1024 / 1024}MB each
+                          </p>
                         </div>
                       </label>
                     </div>

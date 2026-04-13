@@ -100,22 +100,32 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
   const handleExactSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, '')
     setExactSize(value)
-    if (value) {
-      const numValue = parseInt(value)
-      const bounded = Math.min(Math.max(numValue, 0), 50000)
-      const rounded = Math.round(bounded / SIZE_STEP) * SIZE_STEP
-      setSize(rounded)
-      setExactSize(rounded.toString())
-      if (onSizeChange) {
-        onSizeChange(rounded)
-      }
-    } else {
-      // Allow empty input for typing
+    if (value === '') {
       setSize(0)
-      if (onSizeChange) {
-        onSizeChange(0)
-      }
+      onSizeChange?.(0)
+      return
     }
+    const numValue = parseInt(value, 10)
+    if (Number.isNaN(numValue)) return
+    const bounded = Math.min(Math.max(numValue, 0), 50000)
+    // Do not snap to SIZE_STEP while typing — rounding to 50 turned "6" into 0 and blocked values like 650.
+    setSize(bounded)
+    onSizeChange?.(bounded)
+  }
+
+  const handleExactSizeBlur = () => {
+    if (exactSize === '') {
+      setExactSize('0')
+      setSize(0)
+      onSizeChange?.(0)
+      return
+    }
+    const n = parseInt(exactSize, 10)
+    if (Number.isNaN(n)) return
+    const bounded = Math.min(Math.max(n, 0), 50000)
+    setSize(bounded)
+    setExactSize(String(bounded))
+    onSizeChange?.(bounded)
   }
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -231,9 +241,11 @@ function SizeSlider({ index = 0, required = false, onSizeChange, error }: { inde
               </label>
               <input
                 type="text"
+                inputMode="numeric"
                 value={exactSize}
                 onChange={handleExactSizeChange}
-                placeholder="e.g., 1150"
+                onBlur={handleExactSizeBlur}
+                placeholder="e.g., 650 or 1150"
                 className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
                 style={{ fontFamily: plusJakarta.style.fontFamily }}
               />
@@ -480,19 +492,35 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
               </label>
               <input
                 type="text"
+                inputMode="numeric"
                 value={rentText}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '')
                   setRentText(value)
-                  if (value) {
-                    const numValue = parseInt(value)
-                    if (numValue >= 50000 && numValue <= 2000000) {
-                      setRent(numValue)
-                      if (onRentChange) {
-                        onRentChange(numValue)
-                      }
-                    }
+                  if (value === '') {
+                    setRent(0)
+                    onRentChange?.(0)
+                    return
                   }
+                  const numValue = parseInt(value, 10)
+                  if (Number.isNaN(numValue)) return
+                  const bounded = Math.min(Math.max(numValue, 0), 2000000)
+                  setRent(bounded)
+                  onRentChange?.(bounded)
+                }}
+                onBlur={() => {
+                  if (rentText === '') {
+                    setRentText('0')
+                    setRent(0)
+                    onRentChange?.(0)
+                    return
+                  }
+                  const n = parseInt(rentText, 10)
+                  if (Number.isNaN(n)) return
+                  const bounded = Math.min(Math.max(n, 0), 2000000)
+                  setRent(bounded)
+                  setRentText(String(bounded))
+                  onRentChange?.(bounded)
                 }}
                 placeholder="e.g., 150000"
                 className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-[#E4002B] focus:ring-2 focus:ring-[#E4002B]/20 outline-none transition-all duration-200"
