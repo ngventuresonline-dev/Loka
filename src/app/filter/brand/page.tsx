@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef, Suspense, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { LOKAZEN_SEARCH_FILTERS_KEY } from '@/lib/property-search-handoff'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import { logSessionEvent, getClientSessionUserId } from '@/lib/session-logger'
@@ -1109,6 +1110,7 @@ function getSizeRangeLabel(sizeMin: number, sizeMax: number): string | null {
 
 function BrandFilterPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [showApplyButton, setShowApplyButton] = useState(false)
   const [aiInsight, setAiInsight] = useState<string>('')
   const [showAiInsight, setShowAiInsight] = useState(false)
@@ -1423,6 +1425,33 @@ function BrandFilterPageContent() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Pre-warm server match cache (debounced) so submit often hits in-memory cache
+  useEffect(() => {
+    const biz = Array.from(businessTypeSelected)[0]
+    const locs = Array.from(locationSelected)
+    if (!biz || locs.length === 0) return
+
+    const timer = window.setTimeout(() => {
+      const fd = buildFilterStepPayload()
+      const sizeRange =
+        fd.sizeRange.min > 0 || fd.sizeRange.max < 100000
+          ? { min: fd.sizeRange.min, max: fd.sizeRange.max }
+          : undefined
+      void fetch('/api/properties/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessType: fd.businessType[0] || biz,
+          sizeRange,
+          locations: fd.locations,
+          budgetRange: fd.budgetRange,
+        }),
+      }).catch(() => {})
+    }, 500)
+
+    return () => window.clearTimeout(timer)
+  }, [businessTypeSelected, locationSelected, sizeRangeSelected, budgetRange])
+
   return (
     <div className={`${fraunces.variable} ${plusJakarta.variable} min-h-screen relative overflow-hidden`}>
       {/* Dark Background with Gradient */}
@@ -1651,20 +1680,26 @@ function BrandFilterPageContent() {
                 if (sizeMin === Number.MAX_SAFE_INTEGER) sizeMin = 0
                 if (sizeMax === 0) sizeMax = 100000
 
-                // Build query params
-                const params = new URLSearchParams()
-                params.set('businessType', Array.from(businessTypeSelected)[0] || '')
-                params.set('sizeMin', sizeMin.toString())
-                params.set('sizeMax', sizeMax.toString())
-                params.set('locations', Array.from(locationSelected).join(','))
-                params.set('budgetMin', budgetRange.min.toString())
-                params.set('budgetMax', budgetRange.max.toString())
-                if (Array.from(timelineSelected).length > 0) {
-                  params.set('timeline', Array.from(timelineSelected)[0] || '')
+                try {
+                  sessionStorage.setItem(
+                    LOKAZEN_SEARCH_FILTERS_KEY,
+                    JSON.stringify({
+                      businessType: Array.from(businessTypeSelected)[0] || '',
+                      sizeMin,
+                      sizeMax,
+                      locations: Array.from(locationSelected),
+                      budgetMin: budgetRange.min,
+                      budgetMax: budgetRange.max,
+                      timeline: Array.from(timelineSelected)[0] || '',
+                      propertyType: '',
+                      timestamp: Date.now(),
+                    })
+                  )
+                } catch {
+                  /* ignore quota / private mode */
                 }
 
-                // Navigate directly to property results page
-                window.location.href = `/properties/results?${params.toString()}`
+                router.push('/properties/results')
               }}
             >
               {isFormValid && (
