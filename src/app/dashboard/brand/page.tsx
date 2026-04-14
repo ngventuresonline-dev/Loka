@@ -2772,7 +2772,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
           <div
             className={
-              dashboardView === 'home' && !selectedMatch
+              dashboardView === 'home' && !selectedMatch && activeTab !== 'matched'
                 ? 'max-lg:hidden'
                 : ''
             }
