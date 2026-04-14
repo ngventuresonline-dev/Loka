@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useLayoutEffect, useRef, useMemo, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -10,14 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import LokazenNodesLoader from '@/components/LokazenNodesLoader'
 import { trackInquiry, trackFormComplete } from '@/lib/tracking'
 import { encodePropertyId } from '@/lib/property-slug'
-import {
-  LOKAZEN_SEARCH_FILTERS_KEY,
-  resolveResultFilters,
-  filtersToQueryString,
-  resultsCacheKeyFromQueryString,
-  readResultsCacheForFilters,
-  type ResultFilters,
-} from '@/lib/property-search-handoff'
 
 interface MatchResult {
   property: Property
@@ -36,10 +28,9 @@ type SortOption = 'best-match' | 'price-low' | 'price-high' | 'newest'
 function PropertiesResultsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const paramsKey = searchParams.toString()
-  const hasFetchedRef = useRef(false)
-
   const [loading, setLoading] = useState(true)
+  const [aiMatching, setAiMatching] = useState(true)
+  const [matchingStep, setMatchingStep] = useState(0)
   const [matches, setMatches] = useState<MatchResult[]>([])
   const [totalMatches, setTotalMatches] = useState(0)
   const [sortBy, setSortBy] = useState<SortOption>('best-match')
@@ -63,49 +54,98 @@ function PropertiesResultsContent() {
 
   const itemsPerPage = 12
 
-  const filters: ResultFilters = useMemo(
-    () => resolveResultFilters(searchParams),
-    [searchParams, paramsKey]
-  )
-
-  const matchPageQueryString = useMemo(() => filtersToQueryString(filters), [filters])
-
+  // Ensure component is mounted before accessing searchParams
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Apply results cache before paint; reset handoff when search context changes
-  useLayoutEffect(() => {
-    hasFetchedRef.current = false
-    const f = resolveResultFilters(searchParams)
-    const cached = readResultsCacheForFilters(f)
-    if (cached) {
-      setMatches(cached.matches as MatchResult[])
-      setTotalMatches(cached.totalMatches)
-      setLoading(false)
-      hasFetchedRef.current = true
-    } else {
-      setMatches([])
-      setTotalMatches(0)
-      setLoading(true)
+  // Extract filters from URL with error handling
+  const getFilters = () => {
+    if (!mounted || !searchParams) {
+      return {
+        businessType: '',
+        sizeMin: 0,
+        sizeMax: 100000,
+        locations: [],
+        budgetMin: 0,
+        budgetMax: 10000000,
+        timeline: '',
+        propertyType: ''
+      }
     }
-  }, [paramsKey, searchParams])
 
-  useEffect(() => {
-    if (!mounted) return
-    if (hasFetchedRef.current) return
-    hasFetchedRef.current = true
     try {
-      void fetchMatches()
+      const businessType = searchParams.get('businessType') || ''
+      const locations = searchParams.get('locations') || ''
+      const timeline = searchParams.get('timeline') || ''
+      const propertyType = searchParams.get('propertyType') || ''
+      
+      return {
+        businessType: businessType ? decodeURIComponent(businessType) : '',
+        sizeMin: parseInt(searchParams.get('sizeMin') || '0') || 0,
+        sizeMax: parseInt(searchParams.get('sizeMax') || '100000') || 100000,
+        locations: locations ? locations.split(',').filter(l => l.trim()).map(l => decodeURIComponent(l.trim())) : [],
+        budgetMin: parseInt(searchParams.get('budgetMin') || '0') || 0,
+        budgetMax: parseInt(searchParams.get('budgetMax') || '10000000') || 10000000,
+        timeline: timeline ? decodeURIComponent(timeline) : '',
+        propertyType: propertyType ? decodeURIComponent(propertyType) : ''
+      }
+    } catch (error) {
+      console.error('[Results Page] Error parsing filters:', error)
+      // Fallback to default filters
+      return {
+        businessType: '',
+        sizeMin: 0,
+        sizeMax: 100000,
+        locations: [],
+        budgetMin: 0,
+        budgetMax: 10000000,
+        timeline: '',
+        propertyType: ''
+      }
+    }
+  }
+
+  const filters = getFilters()
+  
+  useEffect(() => {
+    // Only fetch if component is mounted
+    if (!mounted) return
+    
+    // Check cache first (use same key as write: hash of search params)
+    const paramsHash = btoa(searchParams.toString()).replace(/[/+=]/g, '_').substring(0, 48)
+    const cacheKey = `results_${paramsHash}`
+    const cached = sessionStorage.getItem(cacheKey)
+    
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached)
+        // Use cached data if it's less than 2 minutes old and has actual matches
+        const cacheAge = Date.now() - (cachedData.timestamp || 0)
+        const cachedMatches = cachedData.matches || []
+        if (cacheAge < 2 * 60 * 1000 && cachedMatches.length > 0 && cachedMatches[0]?.property) {
+          setMatches(cachedMatches)
+          setTotalMatches(cachedData.totalMatches || cachedMatches.length)
+          setLoading(false)
+          setAiMatching(false)
+          return
+        }
+      } catch (e) {
+        // If cache is invalid, fetch fresh data
+      }
+    }
+    
+    // Only fetch if we have valid search params or if component is mounted
+    try {
+      fetchMatches()
     } catch (error) {
       console.error('[Results Page] Error in fetchMatches:', error)
       setLoading(false)
+      setAiMatching(false)
       setMatches([])
       setTotalMatches(0)
     }
-    // fetchMatches reads latest searchParams; listing paramsKey remounts the fetch path when the search context changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-  }, [mounted, paramsKey])
+  }, [mounted, searchParams])
 
   // Prefill requirements from filters
   useEffect(() => {
@@ -163,12 +203,14 @@ function PropertiesResultsContent() {
   }
 
   const fetchMatches = async () => {
-    const filters = resolveResultFilters(searchParams)
-    const cacheKey = resultsCacheKeyFromQueryString(filtersToQueryString(filters))
-
     try {
       setLoading(true)
-
+      setAiMatching(true)
+      setMatchingStep(0)
+      
+      setMatchingStep(1) // "Scanning property database..."
+      setMatchingStep(2) // "Calculating Brand Fit Index (BFI)..."
+      
       // Check if user is logged in as a brand - if yes, use brand profile automatically
       let response
       try {
@@ -205,6 +247,9 @@ function PropertiesResultsContent() {
                 setTotalMatches(formattedMatches.length)
                 // Cache the results (with quota protection)
                 try {
+                  const paramsHash = btoa(searchParams.toString()).replace(/[/+=]/g, '_').substring(0, 48)
+                  const cacheKey = `results_${paramsHash}`
+                  
                   // Limit stored matches to prevent quota exceeded
                   const matchesToStore = formattedMatches
                     .slice(0, 20)
@@ -241,6 +286,7 @@ function PropertiesResultsContent() {
                     console.warn('[Results] Storage quota exceeded, skipping cache')
                   }
                 }
+                setAiMatching(false)
                 setLoading(false)
                 return
               }
@@ -252,6 +298,8 @@ function PropertiesResultsContent() {
       }
       
       // Fallback: Use manual search with query params (for non-logged-in users or if brand profile fails)
+      setMatchingStep(3) // "Ranking matches by AI score..."
+      
       // Parse size range from URL or use defaults
       const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
         ? { min: filters.sizeMin, max: filters.sizeMax }
@@ -307,6 +355,7 @@ function PropertiesResultsContent() {
         // Gracefully degrade: show empty state instead of crashing
         setMatches([])
         setTotalMatches(0)
+        setAiMatching(false)
         setLoading(false)
         return
       }
@@ -318,6 +367,7 @@ function PropertiesResultsContent() {
           console.error('[Results] Match API returned empty response')
           setMatches([])
           setTotalMatches(0)
+          setAiMatching(false)
           setLoading(false)
           return
         }
@@ -326,6 +376,7 @@ function PropertiesResultsContent() {
         console.error('[Results] Failed to parse Match API response:', parseError.message)
         setMatches([])
         setTotalMatches(0)
+        setAiMatching(false)
         setLoading(false)
         return
       }
@@ -335,6 +386,7 @@ function PropertiesResultsContent() {
         console.error('[Results] Match API returned error:', data.error || data.message || 'Unknown error')
         setMatches([])
         setTotalMatches(0)
+        setAiMatching(false)
         setLoading(false)
         return
       }
@@ -347,6 +399,9 @@ function PropertiesResultsContent() {
       
       // Cache the results (with quota protection)
       try {
+        const paramsHash = btoa(searchParams.toString()).replace(/[/+=]/g, '_').substring(0, 48)
+        const cacheKey = `results_${paramsHash}`
+        
         // Limit stored matches to prevent quota exceeded (store max 20 matches)
         const matchesToStore = matches.slice(0, 20).map((match: MatchResult) => ({
           id: match.property?.id,
@@ -430,11 +485,15 @@ function PropertiesResultsContent() {
       if (!matches || matches.length === 0) {
         console.warn('[Results] No matches found. Filters:', filters)
       }
+      
+      setMatchingStep(4) // "Finalizing results..."
+      setAiMatching(false)
     } catch (error: any) {
       console.error('Error fetching matches:', error)
       // Don't show alerts - just show empty state gracefully
       setMatches([])
       setTotalMatches(0)
+      setAiMatching(false)
     } finally {
       setLoading(false)
     }
@@ -463,32 +522,13 @@ function PropertiesResultsContent() {
 
   // Remove filter
   const removeFilter = (filterType: string) => {
-    try {
-      sessionStorage.removeItem(LOKAZEN_SEARCH_FILTERS_KEY)
-    } catch {
-      /* ignore */
-    }
     const params = new URLSearchParams(searchParams.toString())
-    if (filterType === 'sizeRange') {
-      params.delete('sizeMin')
-      params.delete('sizeMax')
-    } else if (filterType === 'budgetRange') {
-      params.delete('budgetMin')
-      params.delete('budgetMax')
-    } else {
-      params.delete(filterType)
-    }
-    const qs = params.toString()
-    router.push(qs ? `/properties/results?${qs}` : '/properties/results')
+    params.delete(filterType)
+    router.push(`/properties/results?${params.toString()}`)
   }
 
   // Clear all filters
   const clearAllFilters = () => {
-    try {
-      sessionStorage.removeItem(LOKAZEN_SEARCH_FILTERS_KEY)
-    } catch {
-      /* ignore */
-    }
     router.push('/properties/results')
   }
 
@@ -613,6 +653,45 @@ function PropertiesResultsContent() {
       <Navbar />
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-12">
+        {/* AI Matching State */}
+        {aiMatching && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl p-8 sm:p-12 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+                  Matching Space with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5200] to-[#E4002B]">Our AI</span>
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  {matchingStep < 5 ? [
+                    'Analyzing your requirements...',
+                    'Scanning property database...',
+                    'Calculating Brand Fit Index (BFI)...',
+                    'Ranking matches by AI score...',
+                    'Finalizing results...'
+                  ][matchingStep] : 'Almost done...'}
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-[#FF5200] to-[#E4002B]"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${((matchingStep + 1) / 5) * 100}%` }}
+                    transition={{ duration: 0.6 }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-4 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-1 sm:mb-2">
@@ -682,9 +761,17 @@ function PropertiesResultsContent() {
 
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-20" suppressHydrationWarning>
-            <div className="w-8 h-8 border-[3px] border-[#FF5200] border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm text-gray-500">Finding your matches...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden animate-pulse">
+                <div className="h-56 bg-gray-200"></div>
+                <div className="p-6 space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -807,11 +894,7 @@ function PropertiesResultsContent() {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ delay: index * 0.05 }}
                     className="cursor-pointer"
-                    onClick={() =>
-                      router.push(
-                        `/properties/${encodePropertyId(match.property.id)}/match${matchPageQueryString ? `?${matchPageQueryString}` : ''}`
-                      )
-                    }
+                    onClick={() => router.push(`/properties/${encodePropertyId(match.property.id)}/match?${searchParams.toString()}`)}
                   >
                     <PropertyCard
                       property={match.property}
