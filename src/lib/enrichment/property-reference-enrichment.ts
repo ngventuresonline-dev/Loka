@@ -7,6 +7,7 @@
 import { randomUUID } from 'crypto'
 import type { PrismaClient } from '@prisma/client'
 import { areUsablePinCoords, geocodeAddress, getPropertyCoordinatesFromRow } from '@/lib/property-coordinates'
+import { enrichFromBrandDirectory, industryKeyToBrandContext } from '@/lib/intelligence/brand-directory-enrichment'
 
 const CACHE_TTL_DAYS = 30
 
@@ -372,6 +373,21 @@ export async function runPropertyReferenceEnrichment(
   const comps = competitorsFromBrands(brands)
   const dailyFoot = li ? Math.round(num(li.avg_daily_footfall, footfall)) : footfall
 
+  // Enrich from brand directory: real complementary brands + retail mix for this locality
+  const { brandIndustry, brandCategory } = industryKeyToBrandContext('restaurant')
+  const brandDirEnrichment = await enrichFromBrandDirectory({
+    prisma,
+    locality: pocketLocality || pocketName,
+    industryKey: 'restaurant',
+    brandIndustry,
+    brandCategory,
+  }).catch(() => ({
+    complementaryBrands: [],
+    retailMix: [],
+    competitorBrands: [],
+    localityRetailProfile: null,
+  }))
+
   const marketSummary =
     li && pocketName
       ? `${pocketName} — ${str(li.locality, pocketLocality)}. Footfall ~${dailyFoot}/day; spending index ${spi}.`
@@ -409,8 +425,8 @@ export async function runPropertyReferenceEnrichment(
       ${20},
       ${JSON.stringify(comps)}::jsonb,
       ${comps.length},
-      '[]'::jsonb,
-      '[]'::jsonb,
+      ${JSON.stringify(brandDirEnrichment.complementaryBrands)}::jsonb,
+      ${JSON.stringify(brandDirEnrichment.retailMix)}::jsonb,
       '[]'::jsonb,
       '[]'::jsonb,
       ${saturationFromIntel(li)},

@@ -13,6 +13,7 @@ import type {
   PropertyContextForIntel,
 } from '@/lib/intelligence/brand-intel-enrichment.types'
 import type { IndustryKey } from '@/lib/intelligence/industry-key'
+import { enrichFromBrandDirectory, industryKeyToBrandContext } from '@/lib/intelligence/brand-directory-enrichment'
 import { INTEL_SYNTHESIS_MODEL } from '@/lib/claude'
 import type { PrismaClient } from '@prisma/client'
 
@@ -197,6 +198,52 @@ export async function runPropertySynthesisForIndustry(
   }
 
   const rawIntel = rawIntelFromLocationCacheRow(lc)
+
+  // Enrich with industry-specific brand directory data before Claude synthesis
+  // This gives Claude real competitor/complementary brand names for this locality + industry
+  const localityKey = String(lc.nearest_area_key || lc.nearest_commercial_area_key || '')
+  if (localityKey) {
+    const { brandIndustry, brandCategory } = industryKeyToBrandContext(industryKey)
+    const brandDir = await enrichFromBrandDirectory({
+      prisma,
+      locality: localityKey,
+      industryKey,
+      brandIndustry,
+      brandCategory,
+    }).catch(() => null)
+
+    if (brandDir) {
+      if (brandDir.complementaryBrands.length > 0) {
+        rawIntel.complementaryBrands = brandDir.complementaryBrands
+      }
+      if (brandDir.retailMix.length > 0) {
+        rawIntel.retailMix = brandDir.retailMix
+      }
+      if (brandDir.competitorBrands.length > 0 && Array.isArray(rawIntel.competitors)) {
+        // Merge directory competitors with Google Places competitors (directory names are more reliable)
+        const directoryNames = new Set(brandDir.competitorBrands.map((b) => b.name.toLowerCase()))
+        const existingNames = new Set(
+          (rawIntel.competitors as Array<{ name: string }>).map((c) => c.name.toLowerCase())
+        )
+        const directoryComps = brandDir.competitorBrands
+          .filter((b) => !existingNames.has(b.name.toLowerCase()))
+          .map((b) => ({
+            name: b.name,
+            category: b.category,
+            distance: 0,
+            branded: true,
+            source: 'brand_directory',
+          }))
+        rawIntel.competitors = [
+          ...(rawIntel.competitors as Array<Record<string, unknown>>),
+          ...directoryComps,
+        ].slice(0, 20)
+      }
+      if (brandDir.localityRetailProfile) {
+        rawIntel.localityRetailProfile = brandDir.localityRetailProfile
+      }
+    }
+  }
 
   const brand: BrandContextForIntel = {
     name: `${industryKey.charAt(0).toUpperCase()}${industryKey.slice(1)} Brand`,
