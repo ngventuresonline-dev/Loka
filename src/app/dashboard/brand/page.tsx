@@ -848,7 +848,13 @@ function transformLiveIntelligence(
     })
   )
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const retailMix: IntelligenceData['retailMix'] = (data.retailMix || []).map((r: any) => ({
+  const rawRetailMixData = data.retailMix
+  const retailMixDataArr: any[] = Array.isArray(rawRetailMixData)
+    ? rawRetailMixData
+    : Array.isArray(rawRetailMixData?.categories)
+      ? rawRetailMixData.categories
+      : []
+  const retailMix: IntelligenceData['retailMix'] = retailMixDataArr.map((r: any) => ({
     category: String(r.category || ''),
     branded: Number(r.branded ?? r.count ?? 0) || 0,
     nonBranded: Number(r.nonBranded ?? 0) || 0,
@@ -2122,9 +2128,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
               ? dirCompBrands
               : compBrands
 
-          const retailMix: IntelligenceData['retailMix'] = (intel.retailMix || []).map((r: any) => ({
+          // retail_mix from DB is now an object { fnbPct, retailPct, categories: [...] }
+          // Fall back to treating it as an array for old synthesis shape
+          const rawRetailMix = intel.retailMix
+          const retailMixArr: any[] = Array.isArray(rawRetailMix)
+            ? rawRetailMix
+            : Array.isArray(rawRetailMix?.categories)
+              ? rawRetailMix.categories
+              : []
+          const retailMix: IntelligenceData['retailMix'] = retailMixArr.map((r: any) => ({
             category: String(r.category || ''),
-            // Support both old shape { branded, nonBranded } and new brand-directory shape { count, saturation }
             branded: Number(r.branded ?? r.count ?? 0) || 0,
             nonBranded: Number(r.nonBranded ?? 0) || 0,
           }))
@@ -2294,7 +2307,19 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   reviewCount: undefined,
                 }))
             : []
-          const retailMixOrdered = sortRetailMixForBrand(intelGeo.retailMix, brand?.industry)
+          const rawIntelGeoRetailMix = intelGeo.retailMix
+          const normIntelGeoRetailMix: IntelligenceData['retailMix'] = (
+            Array.isArray(rawIntelGeoRetailMix)
+              ? rawIntelGeoRetailMix
+              : Array.isArray(rawIntelGeoRetailMix?.categories)
+                ? rawIntelGeoRetailMix.categories
+                : []
+          ).map((r: any) => ({
+            category: String(r.category || ''),
+            branded: Number(r.branded ?? r.count ?? 0) || 0,
+            nonBranded: Number(r.nonBranded ?? 0) || 0,
+          }))
+          const retailMixOrdered = sortRetailMixForBrand(normIntelGeoRetailMix, brand?.industry)
           setIntelData({
             ...intelGeo,
             competitors: sameCat,
