@@ -850,8 +850,8 @@ function transformLiveIntelligence(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const retailMix: IntelligenceData['retailMix'] = (data.retailMix || []).map((r: any) => ({
     category: String(r.category || ''),
-    branded: Number(r.branded) || 0,
-    nonBranded: Number(r.nonBranded) || 0,
+    branded: Number(r.branded ?? r.count ?? 0) || 0,
+    nonBranded: Number(r.nonBranded ?? 0) || 0,
   }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const similarMarkets: IntelligenceData['similarMarkets'] = (data.similarMarkets || []).map((m: any) => {
@@ -2104,10 +2104,29 @@ Be specific to ${area} / ${address}. No generic statements.`,
             brand?.industry
           )
 
+          // Merge brand directory complementary brands (from property_location_cache) with
+          // Google Places derived ones — brand directory data is more reliable for named brands
+          const dirCompBrands: IntelligenceData['complementaryBrands'] = Array.isArray(intel.complementaryBrands)
+            ? (intel.complementaryBrands as any[])
+                .filter((b: any) => b?.name)
+                .slice(0, 12)
+                .map((b: any) => ({
+                  name: String(b.name || ''),
+                  category: String(b.category || b.type || ''),
+                  distance: 0,
+                  reviewCount: undefined,
+                }))
+            : []
+          const mergedCompBrands: IntelligenceData['complementaryBrands'] =
+            dirCompBrands.length > 0
+              ? dirCompBrands
+              : compBrands
+
           const retailMix: IntelligenceData['retailMix'] = (intel.retailMix || []).map((r: any) => ({
             category: String(r.category || ''),
-            branded: Number(r.branded) || 0,
-            nonBranded: Number(r.nonBranded) || 0,
+            // Support both old shape { branded, nonBranded } and new brand-directory shape { count, saturation }
+            branded: Number(r.branded ?? r.count ?? 0) || 0,
+            nonBranded: Number(r.nonBranded ?? 0) || 0,
           }))
 
           const catchment: IntelligenceData['catchment'] = (intel.catchment || []).map((c: any) => ({
@@ -2190,7 +2209,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
             catchment: geo.catchment,
             catchmentLandmarks: geo.catchmentLandmarks,
             competitors: sameCat,
-            complementaryBrands: compBrands,
+            complementaryBrands: mergedCompBrands,
             crowdPullers,
             retailMix,
             cannibalisationRisk,
@@ -2264,11 +2283,22 @@ Be specific to ${area} / ${address}. No generic statements.`,
             intelGeo.competitors,
             brand?.industry
           )
+          const dirCompBrandsFallback: IntelligenceData['complementaryBrands'] = Array.isArray(intel.complementaryBrands)
+            ? (intel.complementaryBrands as any[])
+                .filter((b: any) => b?.name)
+                .slice(0, 12)
+                .map((b: any) => ({
+                  name: String(b.name || ''),
+                  category: String(b.category || b.type || ''),
+                  distance: 0,
+                  reviewCount: undefined,
+                }))
+            : []
           const retailMixOrdered = sortRetailMixForBrand(intelGeo.retailMix, brand?.industry)
           setIntelData({
             ...intelGeo,
             competitors: sameCat,
-            complementaryBrands: compBrands,
+            complementaryBrands: dirCompBrandsFallback.length > 0 ? dirCompBrandsFallback : compBrands,
             retailMix: retailMixOrdered,
             storeClosureRisk: deriveStoreClosureRisk(retailMixOrdered),
             locationSynthesis: null,
