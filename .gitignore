@@ -4,6 +4,7 @@ out/
 .env
 .env.local
 *.log
+warm-all-intel-log.txt
 *.tsbuildinfo
 .DS_Store
 .vscode/
