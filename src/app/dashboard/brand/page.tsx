@@ -2307,14 +2307,18 @@ Be specific to ${area} / ${address}. No generic statements.`,
                   reviewCount: undefined,
                 }))
             : []
-          const rawIntelGeoRetailMix = intelGeo.retailMix
-          const normIntelGeoRetailMix: IntelligenceData['retailMix'] = (
-            Array.isArray(rawIntelGeoRetailMix)
-              ? rawIntelGeoRetailMix
-              : Array.isArray(rawIntelGeoRetailMix?.categories)
-                ? rawIntelGeoRetailMix.categories
-                : []
-          ).map((r: any) => ({
+          // retailMix may be an array or { categories: [...] }; intelGeo merge narrows retailMix to
+          // only the array branch so optional chaining on .categories becomes `never` — normalize via unknown.
+          const rawIntelGeoRetailMix = intelGeo.retailMix as unknown
+          const intelGeoRetailMixRows: unknown[] = Array.isArray(rawIntelGeoRetailMix)
+            ? rawIntelGeoRetailMix
+            : rawIntelGeoRetailMix &&
+                typeof rawIntelGeoRetailMix === 'object' &&
+                rawIntelGeoRetailMix !== null &&
+                Array.isArray((rawIntelGeoRetailMix as { categories?: unknown }).categories)
+              ? (rawIntelGeoRetailMix as { categories: unknown[] }).categories
+              : []
+          const normIntelGeoRetailMix: IntelligenceData['retailMix'] = intelGeoRetailMixRows.map((r: any) => ({
             category: String(r.category || ''),
             branded: Number(r.branded ?? r.count ?? 0) || 0,
             nonBranded: Number(r.nonBranded ?? 0) || 0,
