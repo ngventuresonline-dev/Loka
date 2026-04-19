@@ -8,6 +8,20 @@ import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-wa
 
 export const revalidate = 0
 
+function isCompetitorsJsonEmpty(raw: unknown): boolean {
+  if (raw == null) return true
+  if (Array.isArray(raw)) return raw.length === 0
+  if (typeof raw === 'string') {
+    try {
+      const p = JSON.parse(raw) as unknown
+      return !Array.isArray(p) || p.length === 0
+    } catch {
+      return true
+    }
+  }
+  return true
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ propertyId: string }> }
@@ -110,6 +124,32 @@ export async function GET(
     }
   }
 
+  let competitorsPayload: unknown = location.competitors
+  let competitorCountPayload = location.competitor_count
+  if (isCompetitorsJsonEmpty(competitorsPayload)) {
+    const pois = await prisma.competitor.findMany({
+      where: { propertyId },
+      orderBy: { distance: 'asc' },
+      take: 25,
+    })
+    if (pois.length > 0) {
+      competitorsPayload = pois.map((c) => ({
+        name: c.name,
+        category: c.category,
+        placeCategory: c.category,
+        distance: c.distance,
+        distanceMeters: c.distance,
+        rating: c.rating != null ? Number(c.rating) : undefined,
+        reviewCount: c.reviewCount != null ? Number(c.reviewCount) : undefined,
+        userRatingsTotal: c.reviewCount != null ? Number(c.reviewCount) : undefined,
+        lat: Number(c.latitude),
+        lng: Number(c.longitude),
+        branded: true,
+      }))
+      competitorCountPayload = await prisma.competitor.count({ where: { propertyId } })
+    }
+  }
+
   return NextResponse.json(
     {
       cached: true,
@@ -126,12 +166,12 @@ export async function GET(
         totalFootfall: location.daily_footfall,
         peakHours: location.peak_hours,
         weekendBoost: location.weekend_boost,
-        competitors: location.competitors,
+        competitors: competitorsPayload,
         complementaryBrands: location.complementary_brands,
         retailMix: location.retail_mix,
         catchment: location.catchment,
         catchmentLandmarks: location.catchment_landmarks,
-        numberOfStores: location.competitor_count,
+        numberOfStores: competitorCountPayload,
         marketSaturation: location.saturation_level,
         growthTrend: location.whitespace_score,
         spendingCapacity: location.demand_gap_score,

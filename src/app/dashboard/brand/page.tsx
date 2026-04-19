@@ -810,6 +810,37 @@ function pickIntelIncomePercent(
   return null
 }
 
+/** Catchment rows may be pincode census nodes or society nodes (units, type, distanceM). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCatchmentFromIntelRaw(c: any): IntelligenceData['catchment'][number] {
+  const units = c.units != null ? Number(c.units) : NaN
+  const shareFromUnits = Number.isFinite(units) && units > 0 ? Math.min(25, Math.round(units / 100)) : 0
+  const sharePct = Number(c.sharePct) || shareFromUnits
+  const areaTypeRaw = c.areaType ?? c.type ?? (Number.isFinite(units) && units > 0 ? 'residential' : undefined)
+  return {
+    pincode: String(c.pincode || ''),
+    name: String(c.name || ''),
+    sharePct,
+    distanceM: Number(c.distanceM || c.distanceMeters) || 0,
+    areaType: areaTypeRaw != null ? String(areaTypeRaw) : undefined,
+  }
+}
+
+/** Crowd pullers may be tech parks with total_employees + distanceM (haversine cache). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCrowdPullerFromIntelRaw(p: any): IntelligenceData['crowdPullers'][number] {
+  const emp = p.total_employees != null ? Number(p.total_employees) : NaN
+  const category =
+    Number.isFinite(emp) && emp > 0
+      ? `${String(p.type || 'Tech Park')} | ${emp.toLocaleString('en-IN')} employees`
+      : String(p.category || p.type || '')
+  return {
+    name: String(p.name || ''),
+    category,
+    distance: Number(p.distanceM || p.distanceMeters || p.distance) || 0,
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transformLiveIntelligence(
   data: any,
@@ -828,8 +859,8 @@ function transformLiveIntelligence(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (c: any) => ({
       name: String(c.name || ''),
-      category: String(c.placeCategory || 'other'),
-      distance: Number(c.distanceMeters) || 0,
+      category: String(c.placeCategory || c.category || 'other'),
+      distance: Number(c.distanceMeters ?? c.distance) || 0,
       rating: c.rating != null ? Number(c.rating) : undefined,
       branded: c.brandType === 'popular',
       ...mapCompetitorLatLngFromApi(c),
@@ -872,20 +903,12 @@ function transformLiveIntelligence(
       score: Number(m.score) || 50,
     }
   })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const crowdPullers: IntelligenceData['crowdPullers'] = (data.crowdPullers || []).map((p: any) => ({
-    name: String(p.name || ''),
-    category: String(p.category || ''),
-    distance: Number(p.distanceMeters) || 0,
-  }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const catchment: IntelligenceData['catchment'] = (data.catchment || []).map((c: any) => ({
-    pincode: String(c.pincode || ''),
-    name: String(c.name || ''),
-    sharePct: Number(c.sharePct) || 0,
-    distanceM: Number(c.distanceM) || 0,
-    areaType: String(c.areaType || 'mixed'),
-  }))
+  const crowdPullers: IntelligenceData['crowdPullers'] = (data.crowdPullers || []).map((p: any) =>
+    mapCrowdPullerFromIntelRaw(p)
+  )
+  const catchment: IntelligenceData['catchment'] = (data.catchment || []).map((c: any) =>
+    mapCatchmentFromIntelRaw(c)
+  )
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const catchmentLandmarks: IntelligenceData['catchmentLandmarks'] = (data.catchmentLandmarks || [])
     .map((l: any) => ({
@@ -2142,13 +2165,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
             nonBranded: Number(r.nonBranded ?? 0) || 0,
           }))
 
-          const catchment: IntelligenceData['catchment'] = (intel.catchment || []).map((c: any) => ({
-            pincode: String(c.pincode || ''),
-            name: String(c.name || ''),
-            sharePct: Number(c.sharePct) || 0,
-            distanceM: Number(c.distanceM || c.distanceMeters) || 0,
-            areaType: c.areaType ? String(c.areaType) : undefined,
-          }))
+          const catchment: IntelligenceData['catchment'] = (intel.catchment || []).map((c: any) =>
+            mapCatchmentFromIntelRaw(c)
+          )
 
           const catchmentLandmarks: IntelligenceData['catchmentLandmarks'] = (intel.catchmentLandmarks || [])
             .map((l: any) => ({
@@ -2159,11 +2178,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
               lng: Number(l.lng) || resolvedCoords.lng,
             }))
 
-          const crowdPullers: IntelligenceData['crowdPullers'] = (intel.crowdPullers || []).map((p: any) => ({
-            name: String(p.name || ''),
-            category: String(p.category || ''),
-            distance: Number(p.distanceMeters || p.distance) || 0,
-          }))
+          const crowdPullers: IntelligenceData['crowdPullers'] = (intel.crowdPullers || []).map((p: any) =>
+            mapCrowdPullerFromIntelRaw(p)
+          )
 
           const cannibalisationRisk: IntelligenceData['cannibalisationRisk'] = (intel.cannibalisationRisk || []).map((r: any) => ({
             name: String(r.brand || r.name || ''),

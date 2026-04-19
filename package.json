@@ -39,6 +39,7 @@
     "debug:clear": "node scripts/remove-debug-logs.js",
     "intel:warm-all": "tsx scripts/warm-all-properties-intel.ts",
     "intel:warm-all:dry": "tsx scripts/warm-all-properties-intel.ts --dry-run",
+    "intel:sync-competitors": "tsx scripts/sync-google-competitors-to-caches.ts",
     "videos:marketing": "tsx scripts/record-marketing-videos.ts",
     "videos:marketing:install": "npx playwright install chromium",
     "marketing:screenshots": "tsx scripts/capture-marketing-screenshots.ts"
