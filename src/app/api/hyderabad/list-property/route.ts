@@ -3,47 +3,23 @@ import { getAdminClient } from '@/lib/supabase/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
 
-type NormalizedPropertyType = 'office' | 'retail' | 'warehouse' | 'restaurant' | 'other'
+/** Cafe-only listings use the restaurant enum value in the database. */
+const CAFE_PROPERTY_TYPE = 'restaurant' as const
 
-function normalizePropertyType(raw: string): NormalizedPropertyType {
-  const t = (raw || '').toLowerCase()
-  const validTypes = ['office', 'retail', 'warehouse', 'restaurant', 'other'] as const
-
-  if (t === 'office' || t.includes('business-park') || t.includes('it-park') || t.includes('co-working-space')) {
-    return 'office'
+function isValidGoogleMapsUrl(raw: string): boolean {
+  const u = raw.trim().toLowerCase()
+  if (!u.startsWith('http://') && !u.startsWith('https://')) return false
+  try {
+    const { hostname } = new URL(u)
+    const h = hostname.replace(/^www\./, '')
+    return (
+      h === 'maps.app.goo.gl' ||
+      h === 'goo.gl' ||
+      (h.includes('google.') && (u.includes('/maps') || h.startsWith('maps.google')))
+    )
+  } catch {
+    return false
   }
-  if (t === 'retail' || t.includes('mall-space') || t.includes('showroom') || t.includes('kiosk')) {
-    return 'retail'
-  }
-  if (t === 'warehouse' || t.includes('industrial-space')) {
-    return 'warehouse'
-  }
-  if (
-    t === 'restaurant' ||
-    t.includes('food-court') ||
-    t.includes('cafe-coffee-shop') ||
-    t.includes('qsr') ||
-    t.includes('dessert-bakery') ||
-    t.includes('food')
-  ) {
-    return 'restaurant'
-  }
-  if (
-    t.includes('bungalow') ||
-    t.includes('villa') ||
-    t.includes('standalone-building') ||
-    t.includes('commercial-complex') ||
-    t.includes('service-apartment') ||
-    t.includes('hotel-hospitality') ||
-    t.includes('land') ||
-    t === 'other'
-  ) {
-    return 'other'
-  }
-  if (validTypes.includes(t as NormalizedPropertyType)) {
-    return t as NormalizedPropertyType
-  }
-  return 'other'
 }
 
 /** Returns E.164 +91XXXXXXXXXX or null if invalid */
@@ -76,7 +52,9 @@ export async function POST(request: NextRequest) {
 
     const ownerName = String(body.ownerName ?? '').trim()
     const whatsappRaw = String(body.whatsapp ?? '').trim()
-    const propertyType = String(body.propertyType ?? '').trim()
+    const cafeFormat = String(body.cafeFormat ?? '').trim()
+    const kitchenSetup = String(body.kitchenSetup ?? '').trim()
+    const mapLink = String(body.mapLink ?? '').trim()
     const locality = String(body.locality ?? '').trim()
     const size = Number(body.size)
     const rent = Number(body.rent)
@@ -90,8 +68,14 @@ export async function POST(request: NextRequest) {
     if (!whatsapp) {
       return NextResponse.json({ success: false, error: 'Valid Indian WhatsApp number is required' }, { status: 400 })
     }
-    if (!propertyType || !locality) {
+    if (!cafeFormat || !kitchenSetup || !locality) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 })
+    }
+    if (!mapLink || !isValidGoogleMapsUrl(mapLink)) {
+      return NextResponse.json(
+        { success: false, error: 'A valid Google Maps link is required (maps.google.com or goo.gl/maps)' },
+        { status: 400 }
+      )
     }
     if (!Number.isFinite(size) || size <= 0) {
       return NextResponse.json({ success: false, error: 'Invalid size' }, { status: 400 })
@@ -119,13 +103,15 @@ export async function POST(request: NextRequest) {
     }
 
     const propertyId = await generatePropertyId()
-    const normalizedType = normalizePropertyType(propertyType)
 
-    const title = `Hyderabad — ${locality} — ${propertyType}`.slice(0, 255)
+    const title = `Hyderabad Cafe — ${locality}`.slice(0, 255)
     const description = [
-      'Lead: Hyderabad list-property form.',
+      'Lead: Hyderabad cafe list-property form.',
+      `Cafe format: ${cafeFormat}.`,
+      `Kitchen / setup: ${kitchenSetup}.`,
       `Owner/Broker: ${ownerName}.`,
       `WhatsApp: ${whatsapp}.`,
+      `Maps: ${mapLink}.`,
       `Availability: ${availability}.`,
     ].join(' ')
 
@@ -134,8 +120,11 @@ export async function POST(request: NextRequest) {
       availability,
       owner_name: ownerName,
       whatsapp,
-      source: 'hyderabad_list_property',
-      property_type_label: propertyType,
+      map_link: mapLink,
+      source: 'hyderabad_list_property_cafe',
+      listing_kind: 'cafe',
+      cafe_format: cafeFormat,
+      kitchen_setup: kitchenSetup,
     }
 
     const { error } = await supabase.from('properties').insert({
@@ -150,7 +139,8 @@ export async function POST(request: NextRequest) {
       price_type: 'monthly',
       security_deposit: null,
       size: Math.round(size),
-      property_type: normalizedType,
+      property_type: CAFE_PROPERTY_TYPE,
+      map_link: mapLink,
       amenities,
       images: [],
       owner_id: ownerId,
