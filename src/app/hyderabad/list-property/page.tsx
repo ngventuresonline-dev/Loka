@@ -227,7 +227,7 @@ export default function HyderabadListPropertyPage() {
                   Thank you
                 </h2>
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-                  We&apos;ve received your cafe details. Our team will reach out within 24 hours.
+                  We&apos;ve received your property details. Our team will reach out within 24 hours.
                 </p>
                 <p className="mt-4 text-xs sm:text-sm text-gray-600/90">Taking you to Lokazen…</p>
               </div>
@@ -268,13 +268,14 @@ export default function HyderabadListPropertyPage() {
                 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-3"
                 style={{ fontFamily: fraunces.style.fontFamily }}
               >
-                List Your Hyderabad Cafe
+                List Hyderabad Property
               </h1>
               <p
                 className="text-xs sm:text-sm text-gray-600 leading-relaxed max-w-xl mx-auto sm:mx-0"
                 style={{ fontFamily: plusJakarta.style.fontFamily }}
               >
-                An established Bangalore brand is actively looking for cafe space in Jubilee Hills. Submit your details and we&apos;ll be in touch within 24 hours.
+                An established Bangalore brand is actively looking for premium commercial space in Jubilee Hills.
+                Submit your property details and we&apos;ll be in touch within 24 hours.
               </p>
             </div>
           </div>
@@ -294,7 +295,7 @@ export default function HyderabadListPropertyPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: 0 }}
-            className="relative group overflow-visible z-20"
+            className="relative group overflow-visible"
           >
             <div className="relative bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 border-[#E4002B]/30 hover:border-[#E4002B] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#E4002B]/50 group-hover:-translate-y-2">
               <div className="absolute inset-0 bg-gradient-to-br from-[#E4002B]/20 via-[#FF5200]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
@@ -356,7 +357,7 @@ export default function HyderabadListPropertyPage() {
             </div>
           </motion.section>
 
-          <div data-field="cafeFormat" className="overflow-visible relative z-20">
+          <div data-field="cafeFormat" className="overflow-visible relative">
             <FilterCard
               title="What best describes your cafe space?"
               items={CAFE_FORMAT_OPTIONS}
@@ -370,7 +371,7 @@ export default function HyderabadListPropertyPage() {
             />
           </div>
 
-          <div data-field="kitchenSetup" className="overflow-visible relative z-20">
+          <div data-field="kitchenSetup" className="overflow-visible relative">
             <FilterCard
               title="Kitchen & fit-out"
               items={KITCHEN_SETUP_OPTIONS}
@@ -393,7 +394,7 @@ export default function HyderabadListPropertyPage() {
             />
           </div>
 
-          <div data-field="location" className="overflow-visible relative z-20">
+          <div data-field="location" className="overflow-visible relative">
             <FilterCard
               title="Property Location — Hyderabad."
               items={HYDERABAD_LOCALITIES}
@@ -411,7 +412,7 @@ export default function HyderabadListPropertyPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.05 }}
-            className="relative group overflow-visible z-20"
+            className="relative group overflow-visible"
           >
             <div data-field="mapLink" className="relative bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-2 border-[#FF5200]/30 hover:border-[#FF5200] transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-[#FF5200]/50 group-hover:-translate-y-2">
               <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/20 via-[#E4002B]/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
@@ -450,7 +451,7 @@ export default function HyderabadListPropertyPage() {
             />
           </div>
 
-          <div data-field="features" className="overflow-visible relative z-20">
+          <div data-field="features" className="overflow-visible relative">
             <FilterCard
               title="Features"
               items={features}

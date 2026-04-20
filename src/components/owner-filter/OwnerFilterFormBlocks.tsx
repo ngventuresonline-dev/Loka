@@ -355,10 +355,11 @@ function RentSlider({ index = 0, required = false, onRentChange, error }: { inde
   }
   
   const formatCurrency = (value: number) => {
+    const rupee = '\u20B9' // Indian rupee — escape avoids UTF-8/latin1 mojibake in source
     if (value >= 100000) {
-      return `â‚¹${(value / 100000).toFixed(1)}L`
+      return `${rupee}${(value / 100000).toFixed(1)}L`
     }
-    return `â‚¹${(value / 1000).toFixed(0)}K`
+    return `${rupee}${(value / 1000).toFixed(0)}K`
   }
 
   const borderColors = [
@@ -817,16 +818,16 @@ function FilterCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: index * 0.1 }}
-      className={`relative group ${useDropdown ? 'overflow-visible' : ''}`}
-      style={{ zIndex: useDropdown && isDropdownOpen ? 50 : 'auto' }}
+      className={`relative group ${useDropdown ? 'overflow-visible' : ''} ${useDropdown && isDropdownOpen ? 'z-[9999]' : ''}`}
+      style={{ zIndex: useDropdown && isDropdownOpen ? 9999 : undefined }}
     >
       <div
         className={`relative bg-white/90 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border-2 ${
           borderColors[colorIndex]
         } transition-all duration-500 ${!useDropdown ? 'overflow-hidden' : 'overflow-visible'} shadow-2xl ${
           shadowColors[colorIndex]
-        } group-hover:-translate-y-2`}
-        style={{ position: 'relative', zIndex: useDropdown && isDropdownOpen ? 50 : 'auto' }}
+        } group-hover:-translate-y-2 ${useDropdown && isDropdownOpen ? 'z-[9999]' : ''}`}
+        style={{ position: 'relative', zIndex: useDropdown && isDropdownOpen ? 9999 : undefined }}
       >
         {/* Animated Glow Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradientColors[colorIndex]} to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>

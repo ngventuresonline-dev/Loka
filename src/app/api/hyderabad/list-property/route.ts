@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase/server'
 import { getPrisma } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
+import { buildLeadNotificationHtml, getFrom, getResend, NG_EMAIL } from '@/lib/lead-email'
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
 
 /** Cafe-only listings use the restaurant enum value in the database. */
 const CAFE_PROPERTY_TYPE = 'restaurant' as const
@@ -104,9 +113,9 @@ export async function POST(request: NextRequest) {
 
     const propertyId = await generatePropertyId()
 
-    const title = `Hyderabad Cafe — ${locality}`.slice(0, 255)
+    const title = `Hyderabad Property — ${locality}`.slice(0, 255)
     const description = [
-      'Lead: Hyderabad cafe list-property form.',
+      'Lead: Hyderabad list-property form.',
       `Cafe format: ${cafeFormat}.`,
       `Kitchen / setup: ${kitchenSetup}.`,
       `Owner/Broker: ${ownerName}.`,
@@ -153,6 +162,52 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[hyderabad/list-property]', error)
       return NextResponse.json({ success: false, error: error.message || 'Insert failed' }, { status: 500 })
+    }
+
+    const rupee = '\u20B9'
+    const rentLabel =
+      rent >= 100000
+        ? `${rupee}${(rent / 100000).toFixed(2).replace(/\.?0+$/, '')} L / month`
+        : `${rupee}${rent.toLocaleString('en-IN')} / month`
+
+    const resend = getResend()
+    if (resend) {
+      try {
+        const teamHtml = buildLeadNotificationHtml({
+          subject: escapeHtml(`New Hyderabad property — ${locality}`),
+          actionType: 'Hyderabad property listing',
+          fields: [
+            ['Property ID', escapeHtml(propertyId)],
+            ['Listing type', 'Commercial F&B (restaurant type in DB)'],
+            ['Owner / Broker', escapeHtml(ownerName)],
+            ['WhatsApp', escapeHtml(whatsapp)],
+            ['Cafe format', escapeHtml(cafeFormat)],
+            ['Kitchen & fit-out', escapeHtml(kitchenSetup)],
+            ['Locality', escapeHtml(locality)],
+            ['City', 'Hyderabad'],
+            ['Google Maps link', escapeHtml(mapLink)],
+            ['Size', `${Math.round(size).toLocaleString('en-IN')} sqft`],
+            ['Expected rent (monthly)', escapeHtml(rentLabel)],
+            ['Features', escapeHtml(features.join(', '))],
+            ['Availability', escapeHtml(availability)],
+          ],
+          nextStep:
+            'Follow up on WhatsApp, open the Maps link to verify the pin, and review the listing in admin.',
+        })
+        const { error: emailErr } = await resend.emails.send({
+          from: getFrom(),
+          to: NG_EMAIL,
+          subject: `[Lokazen] Hyderabad property lead — ${locality} · ${propertyId}`,
+          html: teamHtml,
+        })
+        if (emailErr) {
+          console.error('[hyderabad/list-property] Team email failed:', emailErr)
+        }
+      } catch (emailEx) {
+        console.error('[hyderabad/list-property] Team email threw:', emailEx)
+      }
+    } else {
+      console.warn('[hyderabad/list-property] RESEND_API_KEY not set — team email skipped')
     }
 
     return NextResponse.json({ success: true, id: propertyId })
