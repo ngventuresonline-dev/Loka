@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
-const title = 'How Lokazen Works — Hyderabad Expansion'
+const title = 'The Kind Roastery × Lokazen — Hyderabad Owner Journey'
 const description =
-  'End-to-end commercial property sourcing and matchmaking for F&B brands expanding to Hyderabad.'
+  'Confidential walkthrough: the Meta creative, owner funnel, and Lokazen stages from ad impression to signed lease for The Kind’s Jubilee Hills expansion.'
 
 export const metadata: Metadata = {
   title,
