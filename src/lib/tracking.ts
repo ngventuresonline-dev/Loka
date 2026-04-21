@@ -1,6 +1,6 @@
 /**
  * Tracking utility for Google Tag Manager and Google Analytics.
- * Meta Pixel is not embedded in the app shell (strict CSP); use GTM or Conversions API for Meta.
+ * Meta Pixel: `trackMeta` queues briefly until `fbq` exists (layout may load Pixel from NEXT_PUBLIC_META_PIXEL_ID or GTM).
  */
 
 declare global {
@@ -8,6 +8,34 @@ declare global {
     dataLayer?: any[]
     gtag?: (...args: any[]) => void
     fbq?: (...args: any[]) => void
+    __metaTrackQueue?: Array<{
+      eventName: string
+      eventData?: Record<string, any>
+      fbqOptions?: { eventID?: string }
+    }>
+    __metaTrackFlushTimer?: ReturnType<typeof setInterval>
+  }
+}
+
+const META_QUEUE_MAX = 100
+const META_FLUSH_MS = 10_000
+const META_POLL_MS = 80
+
+function flushMetaEventQueue() {
+  if (typeof window === 'undefined') return
+  const q = window.__metaTrackQueue
+  if (!q?.length || typeof window.fbq !== 'function') return
+  const pending = q.splice(0, q.length)
+  for (const { eventName, eventData, fbqOptions } of pending) {
+    try {
+      if (fbqOptions?.eventID) {
+        window.fbq('track', eventName, eventData || {}, { eventID: fbqOptions.eventID })
+      } else {
+        window.fbq('track', eventName, eventData)
+      }
+    } catch {
+      // ignore — pixel can throw if misconfigured
+    }
   }
 }
 
@@ -33,12 +61,48 @@ export function trackGA(eventName: string, eventParams?: Record<string, any>) {
 }
 
 /**
- * Track events to Meta Pixel
+ * Track events to Meta Pixel.
+ * If the base snippet is not on the page yet (e.g. Pixel loaded via GTM), events are queued briefly and flushed when `fbq` appears.
  */
-export function trackMeta(eventName: string, eventData?: Record<string, any>) {
-  if (typeof window === 'undefined' || !window.fbq) return
-  
-  window.fbq('track', eventName, eventData)
+export function trackMeta(
+  eventName: string,
+  eventData?: Record<string, any>,
+  fbqOptions?: { eventID?: string }
+) {
+  if (typeof window === 'undefined') return
+
+  if (typeof window.fbq === 'function') {
+    try {
+      if (fbqOptions?.eventID) {
+        window.fbq('track', eventName, eventData || {}, { eventID: fbqOptions.eventID })
+      } else {
+        window.fbq('track', eventName, eventData)
+      }
+    } catch {
+      // ignore
+    }
+    return
+  }
+
+  window.__metaTrackQueue = window.__metaTrackQueue || []
+  if (window.__metaTrackQueue.length >= META_QUEUE_MAX) {
+    window.__metaTrackQueue.shift()
+  }
+  window.__metaTrackQueue.push({ eventName, eventData, fbqOptions })
+
+  if (window.__metaTrackFlushTimer) return
+
+  const started = Date.now()
+  window.__metaTrackFlushTimer = setInterval(() => {
+    if (typeof window.fbq === 'function') {
+      clearInterval(window.__metaTrackFlushTimer)
+      window.__metaTrackFlushTimer = undefined
+      flushMetaEventQueue()
+    } else if (Date.now() - started > META_FLUSH_MS) {
+      clearInterval(window.__metaTrackFlushTimer)
+      window.__metaTrackFlushTimer = undefined
+    }
+  }, META_POLL_MS)
 }
 
 /**
@@ -193,19 +257,75 @@ export function trackFilterApply(filters: Record<string, any>, mode: 'brand' | '
 }
 
 // Conversion Events
-export function trackConversion(conversionType: 'property_listed' | 'match_found' | 'inquiry_sent' | 'viewing_scheduled', value?: number, currency?: string) {
+export function trackConversion(
+  conversionType:
+    | 'property_listed'
+    | 'property_listing_updated'
+    | 'match_found'
+    | 'inquiry_sent'
+    | 'viewing_scheduled',
+  value?: number,
+  currency?: string,
+  opts?: { eventId?: string }
+) {
+  const cur = currency || 'INR'
+  const fbMeta = opts?.eventId ? { eventID: opts.eventId } : undefined
   trackEvent('conversion', {
     conversion_type: conversionType,
     value: value,
-    currency: currency || 'INR',
+    currency: cur,
   })
-  
-  // Meta Pixel purchase event for high-value conversions
-  if (conversionType === 'property_listed' && value) {
-    trackMeta('Purchase', {
-      value: value,
-      currency: currency || 'INR',
-    })
+
+  switch (conversionType) {
+    case 'property_listed':
+      if (value != null && value > 0) {
+        trackMeta(
+          'Purchase',
+          {
+            value,
+            currency: cur,
+            content_type: 'product',
+          },
+          fbMeta
+        )
+      } else {
+        trackMeta(
+          'Lead',
+          {
+            content_name: 'property_listed',
+            content_category: 'listing',
+          },
+          fbMeta
+        )
+      }
+      break
+    case 'property_listing_updated':
+      trackMeta(
+        'Lead',
+        {
+          content_name: 'property_listing_updated',
+          content_category: 'listing',
+          content_type: 'product',
+        },
+        fbMeta
+      )
+      break
+    case 'match_found':
+      trackMeta('Lead', {
+        content_name: 'match_found',
+        content_category: 'matching',
+      })
+      break
+    case 'inquiry_sent':
+      trackMeta('Lead', {
+        content_name: 'inquiry_sent',
+      })
+      break
+    case 'viewing_scheduled':
+      trackMeta('Schedule', {
+        content_type: 'product',
+      })
+      break
   }
 }
 

@@ -3,6 +3,7 @@ import { getPrisma } from '@/lib/get-prisma'
 import { guessBangaloreLocalityLabel } from '@/lib/location-intelligence/bangalore-areas'
 import { OWNER_VIDEO_MAX_COUNT } from '@/lib/image-base64'
 import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-compat'
+import { fireOwnerPropertyMetaConversion, monthlyPriceToNumber } from '@/lib/meta-capi'
 
 /**
  * PUT /api/owner/property/[id]
@@ -224,10 +225,23 @@ export async function PUT(
       },
     })
 
+    const rent = monthlyPriceToNumber(updatedProperty.price)
+    const metaEventId = fireOwnerPropertyMetaConversion(request, {
+      kind: 'update',
+      propertyId: updatedProperty.id,
+      ownerUserId: updatedProperty.ownerId,
+      priceMonthly: rent,
+      ownerEmail: updatedProperty.owner?.email,
+      ownerPhone: updatedProperty.owner?.phone,
+      metaFbp: typeof body.metaFbp === 'string' ? body.metaFbp : undefined,
+      metaFbc: typeof body.metaFbc === 'string' ? body.metaFbc : undefined,
+    })
+
     return NextResponse.json({
       success: true,
       property: updatedProperty,
       message: 'Property updated successfully',
+      metaEventId,
     })
   } catch (error: any) {
     console.error('[Owner Property Update API] Error:', error)

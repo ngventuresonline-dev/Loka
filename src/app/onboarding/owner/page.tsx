@@ -36,6 +36,14 @@ import { getCurrentUser } from '@/lib/supabase/auth'
 
 const BANGALORE_CENTER = { lat: 12.9716, lng: 77.5946 }
 
+/** Meta browser cookies for CAPI + Pixel attribution (set when Pixel runs). */
+function readBrowserCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined
+  const safe = name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1')
+  const match = document.cookie.match(new RegExp(`(?:^|; )${safe}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : undefined
+}
+
 const areaCoordinates: Record<string, { lat: number; lng: number }> = {
   koramangala: { lat: 12.9352, lng: 77.6245 },
   indiranagar: { lat: 12.9784, lng: 77.6408 },
@@ -846,6 +854,9 @@ function OwnerOnboardingContent() {
       // Get sessionId for tracking
       const sessionId = getOrCreateSessionId()
       
+      const metaFbp = readBrowserCookie('_fbp')
+      const metaFbc = readBrowserCookie('_fbc')
+
       const requestBody = isUpdate
         ? {
             // Update format - include ownerId for verification
@@ -865,6 +876,8 @@ function OwnerOnboardingContent() {
             images: mediaUrls,
             videos: videoUrls,
             mapLink: finalMapLink,
+            metaFbp,
+            metaFbc,
           }
         : {
             // Create format - original structure
@@ -889,6 +902,8 @@ function OwnerOnboardingContent() {
             images: mediaUrls,
             videos: videoUrls,
           },
+            metaFbp,
+            metaFbc,
           }
 
       const response = await fetch(url, {
@@ -926,6 +941,12 @@ function OwnerOnboardingContent() {
           propertyId: editPropertyId,
           imagesUploaded: uploadedImageUrls.length
         })
+        trackConversion(
+          'property_listing_updated',
+          rentNum > 0 ? rentNum : undefined,
+          'INR',
+          result.metaEventId ? { eventId: result.metaEventId } : undefined
+        )
         router.push('/dashboard/owner')
       } else {
         // Create mode - original flow
@@ -936,10 +957,13 @@ function OwnerOnboardingContent() {
           imagesUploaded: uploadedImageUrls.length
         })
         
-        // Track property listing as Purchase event (high-value conversion)
-        if (rentNum > 0) {
-          trackConversion('property_listed', rentNum, 'INR')
-        }
+        // Meta Pixel (deduped with server CAPI via metaEventId when present)
+        trackConversion(
+          'property_listed',
+          rentNum > 0 ? rentNum : undefined,
+          'INR',
+          result.metaEventId ? { eventId: result.metaEventId } : undefined
+        )
         
         // Persist owner name for dashboard greeting
         if (typeof window !== 'undefined' && formData.ownerName) {

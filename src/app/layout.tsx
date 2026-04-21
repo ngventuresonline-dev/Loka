@@ -133,8 +133,29 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           }}
         />
 
-        {/* Meta Pixel: not loaded here — fbevents.js uses beacon endpoints that break strict CSP.
-            Add Pixel via GTM (already loaded above) and/or Meta Conversions API server-side if needed. */}
+        {/* Meta Pixel: loads when NEXT_PUBLIC_META_PIXEL_ID is set.
+            If GTM already defines window.fbq, the stock snippet's `if(f.fbq)return` would skip init entirely — we init + PageView in that case too.
+            If the same Pixel is also fully installed in GTM, remove one side to avoid duplicate PageView. */}
+        {process.env.NEXT_PUBLIC_META_PIXEL_ID ? (
+          <>
+            <Script
+              id="meta-pixel"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `(function(){var p=${JSON.stringify(process.env.NEXT_PUBLIC_META_PIXEL_ID)};if(typeof window.fbq==='function'){try{window.fbq('init',p);window.fbq('track','PageView');}catch(e){}}else{!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');window.fbq('init',p);window.fbq('track','PageView')}})();`,
+              }}
+            />
+            <noscript>
+              <img
+                height={1}
+                width={1}
+                style={{ display: 'none' }}
+                alt=""
+                src={`https://www.facebook.com/tr?id=${encodeURIComponent(process.env.NEXT_PUBLIC_META_PIXEL_ID)}&ev=PageView&noscript=1`}
+              />
+            </noscript>
+          </>
+        ) : null}
 
         <GoogleMapsErrorHandler />
         <SupabaseInitializer />

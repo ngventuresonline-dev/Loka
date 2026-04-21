@@ -10,6 +10,7 @@ import {
 import { OWNER_VIDEO_MAX_COUNT } from '@/lib/image-base64'
 import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-compat'
 import { appendToSheet, istTimestamp } from '@/lib/sheets'
+import { fireOwnerPropertyMetaConversion } from '@/lib/meta-capi'
 
 /* TODO: Add auth when owner registration enabled
 import { getAuthenticatedUser } from '@/lib/api-auth'
@@ -631,11 +632,31 @@ export async function POST(request: NextRequest) {
       ownerPhone: owner?.phone,
     }).catch(err => console.warn('[Owner Property API] Failed to send webhook:', err))
 
+    let ownerForMeta: { email: string; phone: string | null } | null = null
+    if (ownerId) {
+      ownerForMeta = await prisma.user.findUnique({
+        where: { id: ownerId },
+        select: { email: true, phone: true },
+      })
+    }
+
+    const metaEventId = fireOwnerPropertyMetaConversion(request, {
+      kind: 'create',
+      propertyId: propertyRow.id,
+      ownerUserId: ownerId!,
+      priceMonthly: rent,
+      ownerEmail: ownerForMeta?.email,
+      ownerPhone: ownerForMeta?.phone,
+      metaFbp: typeof body.metaFbp === 'string' ? body.metaFbp : undefined,
+      metaFbc: typeof body.metaFbc === 'string' ? body.metaFbc : undefined,
+    })
+
     return NextResponse.json(
       {
         success: true,
         ownerId,
         propertyId: propertyRow.id,
+        metaEventId,
       },
       { status: 201 }
     )
