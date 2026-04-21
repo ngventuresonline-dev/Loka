@@ -82,7 +82,7 @@ export default function InvestorDeckPage() {
                 </div>
                 <div>
                   <h3 className="text-[#FF5200] font-semibold mb-2">Brands</h3>
-                  <p className="text-gray-300 text-sm sm:text-base">Months to find space. Broker fees. No fit guarantee.</p>
+                  <p className="text-gray-300 text-sm sm:text-base">Months to find space. Opaque fees. No fit guarantee.</p>
                 </div>
               </div>
               <div className="rounded-2xl bg-white/5 border-l-4 border-[#E4002B] p-4 sm:p-6 flex gap-3 sm:gap-4">
@@ -455,11 +455,11 @@ export default function InvestorDeckPage() {
               </div>
               <div className="rounded-xl border border-white/15 p-3 sm:p-4">
                 <p className="text-[#FF5200] font-bold text-xs sm:text-sm uppercase tracking-widest mb-2">Marketing</p>
-                <p className="text-gray-200 text-sm sm:text-base">Performance + partnerships (brands) · Direct + broker channel (owners)</p>
+                <p className="text-gray-200 text-sm sm:text-base">Performance + partnerships (brands) · Direct owner acquisition (owners)</p>
               </div>
               <div className="rounded-xl border border-white/15 p-3 sm:p-4">
                 <p className="text-[#FF5200] font-bold text-xs sm:text-sm uppercase tracking-widest mb-2">Risks we watch</p>
-                <p className="text-gray-200 text-sm sm:text-base">Broker pushback → lead-gen partner · Chicken-egg → dual onboarding · City dependency → prove then expand</p>
+                <p className="text-gray-200 text-sm sm:text-base">Incumbent pushback → lead-gen partner · Chicken-egg → dual onboarding · City dependency → prove then expand</p>
               </div>
             </div>
           </div>

@@ -250,7 +250,7 @@ function synthesisFromObject(
     nextSteps: asStrArr(o.nextSteps, 4),
     disclaimer: String(
       o.disclaimer ||
-        'Uses modelled POI and census-proxy data plus Lokazen synthesis—not a substitute for brokers, comps, or legal advice.'
+        'Uses modelled POI and census-proxy data plus Lokazen synthesis—not a substitute for on-site checks, market comps, or legal advice.'
     ).slice(0, 400),
     liveEconomics: parseLiveEconomics(o.liveEconomics, platformRent),
     catchmentForBrand: String(o.catchmentForBrand || '').slice(0, 500),
@@ -338,11 +338,11 @@ export function buildFallbackLocationSynthesis(
       affluence === 'High' ? 'High affluence proxy in the catchment layer.' : 'Affluence and demand signals are in the scorecard and tabs.',
     ].slice(0, 4),
     risks: [
-      'Short automated brief only — use on-site visits, broker comps, and legal diligence before signing.',
+      'Short automated brief only — use on-site visits, recent market comps, and legal diligence before signing.',
       'Modelled footfall and demographics are directional, not audited census data.',
     ],
     opportunities: [
-      'Cross-check rents with brokers for this micro-street.',
+      'Cross-check rents against recent deals on this micro-street.',
       'Compare segment peers in the Competitors tab.',
     ].slice(0, 3),
     competitorTakeaway: topComp.length
@@ -357,9 +357,9 @@ export function buildFallbackLocationSynthesis(
         ? `Model estimates ~${footfall.toLocaleString('en-IN')} average daily footfall near this pin; peaks vary by weekday.`
         : 'Footfall proxy unavailable — use Market tab charts when data exists.',
     nextSteps: [
-      'Validate rent and terms with a broker.',
+      'Validate rent and terms with the landlord and your own counsel.',
       'Walk the catchment at lunch and evening peaks.',
-      'Confirm competitor list on the ground and with local brokers.',
+      'Confirm the competitor list on site and against other listings in the area.',
     ].slice(0, 3),
     disclaimer:
       'Structured Lokazen fallback from modelled POI and census-proxy inputs — not investment or legal advice. Prose engine may return on the next load.',

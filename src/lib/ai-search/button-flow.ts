@@ -98,7 +98,7 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
       {
         id: 'owner',
         label: 'I have space available',
-        sublabel: 'Property owner/broker',
+        sublabel: 'Property owner or listing contact',
         icon: 'building',
         value: 'owner',
         next: 'owner_flow_start'

@@ -152,9 +152,9 @@ const COMPARE_PATHS = [
     rows: ['You source listings', 'Intel varies by listing', 'Time cost on your team', 'Negotiation on you'],
   },
   {
-    title: 'Traditional broker',
-    subtitle: 'Relationship-led',
-    rows: ['Inventory depends on broker', 'Insights vary widely', 'Often success-fee heavy', 'Less productised data'],
+    title: 'Network-led search',
+    subtitle: 'Who you know',
+    rows: ['Inventory depends on relationships', 'Insights vary by contact', 'Often success-fee heavy', 'Less productised data'],
   },
   {
     title: 'Lokazen',

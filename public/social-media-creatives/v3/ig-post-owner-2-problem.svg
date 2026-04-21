@@ -67,7 +67,7 @@
     <!-- Pain 3 -->
     <g transform="translate(0, 220)">
       <rect x="-400" y="-30" width="800" height="80" rx="16" fill="#EF4444" opacity="0.1" stroke="#EF4444" stroke-width="1" opacity="0.3"/>
-      <text x="-360" y="15" font-family="Arial, sans-serif" font-size="26" font-weight="600" fill="#FFFFFF">Endless broker negotiations?</text>
+      <text x="-360" y="15" font-family="Arial, sans-serif" font-size="26" font-weight="600" fill="#FFFFFF">Endless back-and-forth?</text>
     </g>
   </g>
   

@@ -244,7 +244,7 @@ Running **multi-outlet or franchise**? **Message me** — **Premium**-style work
 
 **Post body:**
 
-**I** structured **brand-side placement** so you’re not stuck between a **spreadsheet** and a **broker who ghosts you**.
+**I** structured **brand-side placement** so you’re not stuck between a **spreadsheet** and **endless follow-ups that go nowhere**.
 
 **Starter:** data + matching + reports + contacts — you run the field.  
 **Professional / Premium:** **hands-on experts**, visits, negotiation support, tighter SLAs.
@@ -303,14 +303,14 @@ Evaluating **2–3 corridors** this quarter? Send a **brief** — **I’ll** wal
 
 ## Post 10 — Compare paths (for-brands “compare” section if present, or write as text graphic)
 
-**Visual:** Simple 3-column graphic: Self-search vs Traditional broker vs Lokazen (pull copy from your compare section on `/for-brands`).
+**Visual:** Simple 3-column graphic: Self-search vs network-led search vs Lokazen (pull copy from your compare section on `/for-brands`).
 
 **Copy:**
 
-**I’m** not “anti-broker.” **I’m** **pro-clarity**.
+**I’m** **pro-clarity** — the goal is a straight path from brief to lease.
 
 **Self-search:** cheap, slow, uneven data.  
-**Traditional:** relationship gold, but opaque inventory and success-fee surprises.  
+**Network-led:** strong relationships, but opaque inventory and success-fee surprises.  
 **Lokazen:** **product + people** — verified inventory lens, **location reports**, **clear plans**, curation on **Pro/Premium**.
 
 Pick the path that matches your **risk and timeline**.

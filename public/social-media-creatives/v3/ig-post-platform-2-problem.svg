@@ -68,7 +68,7 @@
   <!-- Crossed out old way items -->
   <g transform="translate(540, 550)">
     <line x1="-200" y1="0" x2="200" y2="0" stroke="#64748B" stroke-width="2" opacity="0.3"/>
-    <text x="0" y="40" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#64748B" text-anchor="middle" text-decoration="line-through">Endless broker calls</text>
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#64748B" text-anchor="middle" text-decoration="line-through">Endless cold calls</text>
     <text x="0" y="80" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#64748B" text-anchor="middle" text-decoration="line-through">Site visits that go nowhere</text>
     <text x="0" y="120" font-family="Arial, sans-serif" font-size="20" font-weight="400" fill="#64748B" text-anchor="middle" text-decoration="line-through">Mismatched requirements</text>
   </g>

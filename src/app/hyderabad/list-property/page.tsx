@@ -314,7 +314,7 @@ export default function HyderabadListPropertyPage() {
                     className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
                     style={{ fontFamily: plusJakarta.style.fontFamily }}
                   >
-                    Owner/Broker Name <span className="text-red-500">*</span>
+                    Contact name (owner or listing) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"

@@ -2579,7 +2579,7 @@ export default function Home() {
                 <div className="bg-black/60 backdrop-blur-md px-6 py-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                     <p className="text-xs sm:text-sm text-gray-200 max-w-xl">
-                      From first brief to shortlisted spaces in a single guided flow – no spreadsheets, no broker spam, just signal from brands and locations that actually fit.
+                      From first brief to shortlisted spaces in a single guided flow — no spreadsheets, no random cold outreach, just matches from brands and locations that actually fit.
                     </p>
                     <span className="text-[11px] sm:text-xs text-gray-400">
                       Built for brands expanding across Bangalore&apos;s 20+ high-intent micro-markets.

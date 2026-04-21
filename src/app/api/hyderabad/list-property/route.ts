@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       'Lead: Hyderabad list-property form.',
       `Cafe format: ${cafeFormat}.`,
       `Kitchen / setup: ${kitchenSetup}.`,
-      `Owner/Broker: ${ownerName}.`,
+      `Listing contact: ${ownerName}.`,
       `WhatsApp: ${whatsapp}.`,
       `Maps: ${mapLink}.`,
       `Availability: ${availability}.`,
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
           fields: [
             ['Property ID', escapeHtml(propertyId)],
             ['Listing type', 'Commercial F&B (restaurant type in DB)'],
-            ['Owner / Broker', escapeHtml(ownerName)],
+            ['Listing contact', escapeHtml(ownerName)],
             ['WhatsApp', escapeHtml(whatsapp)],
             ['Cafe format', escapeHtml(cafeFormat)],
             ['Kitchen & fit-out', escapeHtml(kitchenSetup)],

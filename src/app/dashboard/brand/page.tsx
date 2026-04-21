@@ -4797,7 +4797,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           })()}
                           tooltip={(() => {
                             const le = intelData.locationSynthesis?.liveEconomics
-                            if (le) return `${le.rationale} Not a quote—validate with brokers/comps.`
+                            if (le) return `${le.rationale} Not a quote—validate with on-market comps and your own diligence.`
                             return 'Typical commercial ₹/sqft/month band for the nearest mapped Bengaluru sub-market, adjusted for property type. Pass listing rent + size for listing-implied ₹/sqft.'
                           })()}
                         />

@@ -171,18 +171,18 @@ const FLOW_STAGES: FlowStageData[] = [
     label: 'Stage 02 · Owner action',
     title: 'Owner clicks and lists in under 2 minutes.',
     lead:
-      'They land on lokazen.in/hyderabad/list-property — the page mirrors this creative so there is zero disconnect. A tight form captures everything we need.',
+      'They open lokazen.in/hyderabad/list-property. The page matches the ad, and the form only asks what we need to move fast.',
     steps: [
       {
-        title: 'Landing page confirms the mandate is live and Jubilee-specific.',
-        hint: 'Name · WhatsApp · Size · Rent · Floor · Frontage · Availability',
+        title: 'They see the same Jubilee Hills brief as in the ad.',
+        hint: 'Name, WhatsApp, size, rent, floor, frontage, availability',
       },
       {
-        title: 'Owner submits — property details hit Lokazen in real time.',
-        hint: 'Platform ingestion + lead ID instantly',
+        title: 'They submit — we get the listing details immediately.',
+        hint: 'Structured in our system, not lost in a chat thread',
       },
       {
-        title: 'Inline success state.',
+        title: 'They see a clear confirmation on screen.',
         hint: '"We\'ve received your property. Our team will reach out within 24 hours."',
       },
     ],
@@ -198,19 +198,19 @@ const FLOW_STAGES: FlowStageData[] = [
     num: '03',
     label: 'Stage 03 · Lokazen internal',
     title: 'Lokazen team is notified instantly.',
-    lead: 'The moment the form fires, ops sees the full payload — contact, specs, and fit against The Kind brief.',
+    lead: 'As soon as the form is sent, our team has name, WhatsApp, size, rent, and address — and we check it against The Kind brief.',
     steps: [
       {
-        title: 'Lokazen receives owner name, WhatsApp, size, rent, and address.',
-        hint: 'No CSV handoffs — structured lead in-product',
+        title: 'Details land in our ops queue in real time.',
+        hint: 'Everything in one place for the team that follows up',
       },
       {
-        title: 'Hyderabad ground network activated for verification.',
-        hint: 'Local presence = faster truth on the ground',
+        title: 'Our Hyderabad people start phone and visit checks.',
+        hint: 'Local feet on the ground, not guesses from a map',
       },
       {
-        title: 'Lead tracked end-to-end in Lokazen.',
-        hint: 'Submission → qualification → LIR → brand decision → closure',
+        title: 'The lead stays in Lokazen until the deal is done or closed out.',
+        hint: 'You can see status from submission through to decision',
       },
     ],
     chips: [
@@ -226,7 +226,7 @@ const FLOW_STAGES: FlowStageData[] = [
     label: 'Stage 04 · Qualification',
     title: 'Property verified against The Kind brief.',
     lead:
-      'We call the owner, validate the five non-negotiables for this mandate, and only then burn calendar on a site visit.',
+      'We call the owner, run through the five must-haves for this mandate, and only then book a site visit.',
     steps: [
       {
         title: 'Lokazen contacts owner within 24 hours.',
@@ -252,9 +252,9 @@ const FLOW_STAGES: FlowStageData[] = [
   {
     num: '05',
     label: 'Stage 05 · Intelligence',
-    title: 'Location Intelligence Report — built for the expansion desk.',
+    title: 'Location Intelligence Report for each shortlisted site.',
     lead:
-      'Every survivor property gets a Lokazen LIR: BFI, 500m competition, catchment, rent bench — delivered straight to The Kind\'s decision-makers.',
+      'If a property clears checks, we build a Lokazen LIR: fit score, competition nearby, who lives and spends around it, and how the rent compares — then we send it to The Kind\'s team.',
     steps: [
       {
         title: 'LIR generated on the qualified Jubilee Hills asset.',
@@ -262,11 +262,11 @@ const FLOW_STAGES: FlowStageData[] = [
       },
       {
         title: 'Lokazen-branded pack shared with The Kind.',
-        hint: 'One narrative, one file — not a broker screenshot thread',
+        hint: 'One PDF-style pack — maps, scores, and rent context together',
       },
       {
-        title: 'Brand signals go / no-go; Lokazen choreographs next steps.',
-        hint: 'Introduction only when you are ready',
+        title: 'The Kind says yes or no; we line up the next step.',
+        hint: 'Introductions only when you want them',
       },
     ],
     chips: [
@@ -278,7 +278,7 @@ const FLOW_STAGES: FlowStageData[] = [
     lineTone: 'neutral',
     alert: {
       tone: 'blue',
-      body: 'This is the separation from a traditional broker: The Kind receives intelligence — not just an address and a rent figure.',
+      body: 'The Kind gets a full picture of the site — not just a pin on a map and a rent number.',
     },
   },
   {
@@ -286,7 +286,7 @@ const FLOW_STAGES: FlowStageData[] = [
     label: 'Stage 06 · Closure',
     title: 'Brand approves. Lokazen closes the loop.',
     lead:
-      'Once The Kind confirms, we facilitate the brand–owner introduction and stay through execution. Success fee fires only on a signed lease.',
+      'When The Kind says yes, we set up the introduction with the owner and stay involved through paperwork and handover. Our success fee is only on a signed lease.',
     steps: [
       {
         title: 'Approval driven by LIR + verified site experience.',
@@ -353,19 +353,19 @@ const LIR_FEATURES = [
 
 const SOURCING_PILLARS = [
   {
-    title: 'Paid social + WhatsApp',
+    title: 'Paid ads and WhatsApp',
     body:
-      'This V5 square runs as the hero unit across Instagram, Facebook, and WhatsApp Status / click-to-WhatsApp — geo-fenced and interest-layered so Jubilee Hills owners and serious brokers see The Kind-sized requirements, not generic “space available” noise.',
+      "We run this square creative on Instagram, Facebook, and WhatsApp so people with commercial space in and around Jubilee Hills are likely to see The Kind's clear requirements — size, frontage, floors, parking — instead of a vague \"space available\" post.",
   },
   {
-    title: 'Hyderabad ground cell',
+    title: 'Hyderabad team on the ground',
     body:
-      'Parallel to the ad, the Lokazen Hyderabad network is briefed on the exact Kind mandate — frontage, floor plate, parking count — so consultants can ping owners who will never scroll Meta but will take a WhatsApp call.',
+      'At the same time as the ads, our Hyderabad people work the same brief by phone and WhatsApp: frontage, floor plate, parking count — reaching owners who may never see the ad but will take a call.',
   },
   {
-    title: 'Direct owner + broker lane',
+    title: 'Direct owner outreach',
     body:
-      'Curated outreach to known commercial owners and corridor brokers with the same brief deck. No daisy chains: conversations are anchored on the published requirement and the list funnel.',
+      'We also speak to owners and listing contacts we already know on the corridor, with the same written brief everyone else sees. Same facts, same list link — no conflicting stories.',
   },
 ] as const
 
@@ -420,9 +420,9 @@ export default function HyderabadHowItWorksPage() {
           </h1>
 
           <p className="mt-8 text-base sm:text-lg text-white/65 max-w-2xl leading-relaxed">
-            This page is the exact playbook Lokazen is running to surface, qualify, and close a Jubilee Hills asset for{' '}
-            <strong className="text-white/90">The Kind Roastery</strong> — premium Bangalore F&amp;B expanding with a
-            flagship-format space in Hyderabad. One creative. One list URL. One accountable chain to lease execution.
+            Here is how Lokazen is handling <strong className="text-white/90">The Kind Roastery</strong>&apos;s Hyderabad
+            search: the ad, the list link, checks on the ground, a location report for each serious option, and support
+            through to signing. One creative, one URL, one team on the thread.
           </p>
 
           <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 border-t border-white/10 -mx-4 sm:mx-0 sm:rounded-t-lg overflow-hidden">
@@ -449,14 +449,13 @@ export default function HyderabadHowItWorksPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <MonoEyebrow>Why this page exists</MonoEyebrow>
           <h2 className={`${fraunces.className} text-2xl sm:text-3xl font-extrabold text-[#1A1A14] mb-4`}>
-            Built for The Kind Roastery — not “any F&amp;B”
+            For The Kind Roastery — not a generic listing blast
           </h2>
           <p className="text-stone-600 leading-relaxed text-sm sm:text-base">
-            The Kind already operates multiple flagship-grade outlets in Bangalore. The Hyderabad move needs a{' '}
-            <strong className="text-stone-800">Jubilee Hills</strong> box with real frontage, parking that matches
-            evening service, and a floor plate that fits a roastery-led experience. Lokazen is not blasting a generic
-            vacancy — we are running a <strong className="text-stone-800">named mandate</strong> with creative,
-            data, and ground truth aligned to that brief.
+            The Kind already runs strong stores in Bangalore. For Hyderabad they need a real{' '}
+            <strong className="text-stone-800">Jubilee Hills</strong> unit: frontage, parking for busy evenings, and a
+            floor layout that fits a roastery-led format. We publish that exact brief in the ad and on the list page,
+            and our Hyderabad team works the same numbers on calls and visits.
           </p>
         </div>
       </section>
@@ -466,12 +465,12 @@ export default function HyderabadHowItWorksPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <MonoEyebrow>Stage 01 · Feed</MonoEyebrow>
           <h2 className={`${fraunces.className} text-3xl sm:text-4xl font-extrabold text-[#1A1A14] mb-4 max-w-3xl`}>
-            The Meta ad owners see — before they ever talk to a broker.
+            The Meta ad people see first
           </h2>
           <p className="text-stone-600 text-base sm:text-lg max-w-3xl leading-relaxed mb-12">
-            A Jubilee Hills owner or broker scrolls Instagram, Facebook, or WhatsApp. The Lokazen requirement creative
-            interrupts the feed: specific numbers, credible Lokazen branding, and a single CTA into the list funnel.
-            <strong className="text-stone-800"> No vague “call for details” — the brief is the hook.</strong>
+            Property owners and listing contacts in Jubilee Hills use Instagram, Facebook, and WhatsApp like everyone
+            else. The ad shows the rent band, size, and layout in plain numbers, under Lokazen, with one button to the
+            list page. <strong className="text-stone-800">No “message us for details” — the ask is on the face of the creative.</strong>
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
@@ -529,13 +528,13 @@ export default function HyderabadHowItWorksPage() {
           {/* Micro flow strip */}
           <div className="mt-14 sm:mt-16 rounded-2xl border border-[#E8E1D3] bg-white/80 p-6 sm:p-8 shadow-sm">
             <p className={`${jetbrains.className} text-[10px] font-semibold tracking-[0.2em] uppercase text-stone-500 mb-6`}>
-              Click path · zero ambiguity
+              When someone taps the ad
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
               {[
-                ['1 · Impression', 'Owner sees the square creative in-feed or in-channel.'],
-                ['2 · Click', 'CTA routes to the Hyderabad list experience — same numbers as the ad.'],
-                ['3 · List', 'Sub-two-minute form → instant confirmation → Lokazen ops alert.'],
+                ['1 · See ad', 'They see the square creative in the feed or in WhatsApp.'],
+                ['2 · Tap through', 'They land on the Hyderabad list page with the same numbers as the ad.'],
+                ['3 · List', 'They fill a short form; we confirm on screen and alert our team.'],
               ].map(([t, d]) => (
                 <div key={t} className="relative md:pr-6 md:border-r md:border-[#E8E1D3] last:border-0 last:pr-0">
                   <div className={`${fraunces.className} text-lg font-bold text-[#1A1A14] mb-2`}>{t}</div>
@@ -550,13 +549,13 @@ export default function HyderabadHowItWorksPage() {
       {/* Sourcing */}
       <section id="sourcing" className="border-b border-[#E8E1D3] py-14 sm:py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <MonoEyebrow>Parallel demand gen</MonoEyebrow>
+          <MonoEyebrow>Beyond the ad</MonoEyebrow>
           <h2 className={`${fraunces.className} text-3xl sm:text-4xl font-extrabold text-[#1A1A14] mb-4 max-w-3xl`}>
-            The ad is the tip of the spear — not the whole army.
+            We do not rely on the ad alone
           </h2>
           <p className="text-stone-600 max-w-3xl mb-12 leading-relaxed">
-            For The Kind&apos;s Hyderabad entry we run the creative above <em>alongside</em> consultant-led outreach
-            so we do not depend on a single channel for inventory.
+            For The Kind&apos;s Hyderabad entry the creative pulls inbound leads, and at the same time our Hyderabad team
+            works the phones and WhatsApp so we are not waiting on a single channel to surface space.
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {SOURCING_PILLARS.map((p) => (
@@ -577,10 +576,10 @@ export default function HyderabadHowItWorksPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <MonoEyebrow>Stages 02 — 06</MonoEyebrow>
           <h2 className={`${fraunces.className} text-3xl sm:text-4xl font-extrabold text-[#1A1A14] mb-4 max-w-3xl`}>
-            What happens after the click.
+            What happens after they list
           </h2>
           <p className="text-stone-600 text-base sm:text-lg max-w-3xl leading-relaxed mb-14 sm:mb-16">
-            From list submission to The Kind&apos;s lease signature — the Lokazen operating system for this mandate.
+            From the form hitting our inbox to The Kind signing — handled in Lokazen with clear owners and next steps.
           </p>
 
           <div className="space-y-0">
@@ -652,10 +651,10 @@ export default function HyderabadHowItWorksPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <MonoEyebrow>Inside the LIR</MonoEyebrow>
           <h2 className={`${fraunces.className} text-3xl sm:text-4xl font-extrabold text-[#1A1A14] mb-4 max-w-3xl`}>
-            What The Kind&apos;s expansion desk actually receives.
+            What The Kind team gets in each report
           </h2>
           <p className="text-stone-600 max-w-3xl mb-10 leading-relaxed">
-            Six tiles, one narrative — so your team compares sites on intelligence, not vibes.
+            Six blocks summarise each site the same way so your team can compare apples to apples.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {LIR_FEATURES.map((f) => (
@@ -719,9 +718,8 @@ export default function HyderabadHowItWorksPage() {
             <span className="text-[#C9A96E] italic font-bold">One signed lease.</span>
           </h2>
           <p className="text-white/60 leading-relaxed text-base sm:text-lg mb-10">
-            Lokazen owns the chain from the moment a Jubilee Hills owner sees The Kind-sized creative to the day your
-            team walks the shortlisted box. Brokers optional —{' '}
-            <strong className="text-white/85">accountability isn&apos;t.</strong>
+            Lokazen stays on the thread from the first ad view through shortlisting and signing — one team, clear
+            owners, same brief end to end.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button href="/contact-us" size="lg" className="min-w-[220px]">
