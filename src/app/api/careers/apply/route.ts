@@ -5,7 +5,7 @@ import type { Database } from '@/lib/supabase/client'
 
 const MAX_BYTES = 5 * 1024 * 1024
 
-function extFromFilename(name: string): string | null {
+function extFromFilename(name: string): 'pdf' | 'doc' | null {
   const lower = name.toLowerCase()
   if (lower.endsWith('.pdf')) return 'pdf'
   if (lower.endsWith('.doc')) return 'doc'
@@ -78,7 +78,13 @@ export async function POST(request: Request) {
     }
 
     const ext = extFromFilename(resume.name)
-    if (!ext || !isAllowedResume(ext, resume.type)) {
+    if (!ext) {
+      return NextResponse.json(
+        { success: false, error: 'Resume must be a PDF or DOC file' },
+        { status: 400 }
+      )
+    }
+    if (!isAllowedResume(ext, resume.type)) {
       return NextResponse.json(
         { success: false, error: 'Resume must be a PDF or DOC file' },
         { status: 400 }
