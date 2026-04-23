@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
   const base = getSiteBaseUrl()
   const canonical = `${base}/blog/${id}`
-  const ogPath = post.ogImage || '/lokazen-logo-text.svg'
+  const ogPath = post.coverImage || post.ogImage || '/lokazen-logo-text.svg'
   const ogUrl = ogPath.startsWith('http') ? ogPath : `${base}${ogPath}`
 
   return {
@@ -48,7 +48,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 function buildJsonLd(post: BlogPost, base: string) {
   const canonical = `${base}/blog/${post.id}`
-  const imageUrl = post.ogImage ? (post.ogImage.startsWith('http') ? post.ogImage : `${base}${post.ogImage}`) : `${base}/lokazen-logo-text.svg`
+  const imageUrl = post.coverImage
+    ? `${base}${post.coverImage}`
+    : post.ogImage
+      ? (post.ogImage.startsWith('http') ? post.ogImage : `${base}${post.ogImage}`)
+      : `${base}/lokazen-logo-text.svg`
 
   const graph: Record<string, unknown>[] = [
     {

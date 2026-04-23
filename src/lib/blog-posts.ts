@@ -21,6 +21,8 @@ export interface BlogPost {
   tags: string[]
   metaTitle: string
   metaDescription: string
+  /** AI-generated cover art for listing cards; path under /public */
+  coverImage: string
   ogImage?: string
   content: string
   variant?: BlogPostVariant
@@ -37,7 +39,7 @@ function article(html: string): string {
   return html.trim() + CTA_BLOCK
 }
 
-const posts: BlogPost[] = [
+const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
   {
     id: 'union-budget-2026-retail-fnb-india',
     title: 'Union Budget 2026: What Retail and F&B Operators Should Watch in Lease Economics',
@@ -448,6 +450,11 @@ const posts: BlogPost[] = [
     `),
   },
 ]
+
+const posts: BlogPost[] = postsRaw.map((p) => ({
+  ...p,
+  coverImage: `/blog/covers/${p.id}.png`,
+}))
 
 const byId: Record<string, BlogPost> = Object.fromEntries(posts.map((p) => [p.id, p]))
 

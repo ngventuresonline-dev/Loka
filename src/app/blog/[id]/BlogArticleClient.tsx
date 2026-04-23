@@ -7,20 +7,8 @@ import Footer from '@/components/Footer'
 import type { BlogPost } from '@/lib/blog-posts'
 import { brandPlacements } from '@/lib/brand-placements'
 import { getBrandLogo } from '@/lib/brand-logos'
-
-/** Encode path segments for next/image (e.g. filenames with spaces). */
-function publicSrc(path: string): string {
-  if (!path.startsWith('/')) return path
-  const [base, ...rest] = path.split('?')
-  const encoded =
-    '/' +
-    base
-      .split('/')
-      .filter(Boolean)
-      .map((seg) => encodeURIComponent(seg))
-      .join('/')
-  return rest.length ? `${encoded}?${rest.join('?')}` : encoded
-}
+import { getHeroBrandLogos } from '@/lib/blog-hero-brands'
+import { publicSrc } from '@/lib/public-image-src'
 
 function formatArticleHtml(html: string): string {
   return html
@@ -107,47 +95,41 @@ export default function BlogArticleClient({ post }: BlogArticleClientProps) {
             ))}
           </div>
 
-          {post.variant === 'placements' ? (
-            <div className="relative w-full rounded-2xl mb-12 overflow-hidden border border-gray-800 bg-gradient-to-br from-gray-950 via-gray-900 to-black min-h-[280px] md:min-h-[320px]">
-              <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_20%_20%,rgba(255,82,0,0.35),transparent_45%),radial-gradient(circle_at_80%_60%,rgba(228,0,43,0.25),transparent_40%)]" />
-              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 p-8 md:p-12">
-                <div className="text-center md:text-left space-y-4 max-w-xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/50">Lokazen placements</p>
-                  <p className="text-2xl md:text-3xl font-bold text-white leading-snug">
-                    Real brands. Real corridors. Data-backed matching.
-                  </p>
-                  <p className="text-sm md:text-base text-white/70">
-                    A live slice of the Bangalore placement map—sizes and micro-locations as we support operators on
-                    the ground.
-                  </p>
-                </div>
-                <div className="shrink-0 flex flex-col items-center gap-3">
-                  <Image
-                    src="/lokazen-logo-text.svg"
-                    alt="Lokazen — location intelligence for commercial space"
-                    width={240}
-                    height={72}
-                    className="h-12 md:h-14 w-auto drop-shadow-lg"
-                    priority
-                  />
-                  <span className="text-[11px] text-white/40 tracking-widest uppercase">lokazen.in</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="relative w-full h-64 md:h-96 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl mb-12 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#FF5200]/10 via-[#E4002B]/10 to-transparent" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-24 h-24 bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-2xl flex items-center justify-center shadow-lg">
-                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-                    />
-                  </svg>
-                </div>
+          <div className="relative w-full aspect-[2/1] max-h-[420px] min-h-[200px] rounded-2xl mb-8 overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm">
+            <Image
+              src={post.coverImage}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 896px) 100vw, 896px"
+              priority
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          </div>
+
+          {post.variant === 'placements' && (
+            <div className="mb-12 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/80 px-4 py-4">
+              <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 shrink-0">Featured brands</span>
+              <div className="flex flex-wrap justify-center gap-2">
+                {getHeroBrandLogos(10).map(({ brand, logoSrc }) => (
+                  <div
+                    key={brand}
+                    title={brand}
+                    className="flex h-11 w-11 items-center justify-center rounded-lg border border-white bg-white shadow-sm"
+                  >
+                    {logoSrc ? (
+                      <Image
+                        src={publicSrc(logoSrc)}
+                        alt={`${brand} logo`}
+                        width={40}
+                        height={40}
+                        className="max-h-8 w-auto max-w-[2.25rem] object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs font-bold text-[#FF5200]">{brand.charAt(0)}</span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
