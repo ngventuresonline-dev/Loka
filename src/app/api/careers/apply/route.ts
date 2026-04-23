@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { sendPamCareersApplicationEmails } from '@/lib/careers-application-email'
+import {
+  canonicalResumeContentType,
+  deleteResumeIfExists,
+  resumeDeclaredMimeOk,
+  resumeExtFromFilename,
+  resumesPublicUrl,
+  uploadResumeToPamFolder,
+} from '@/lib/careers-resume-storage'
 import { supabaseAdmin } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase/client'
 
 const MAX_BYTES = 5 * 1024 * 1024
-
-function extFromFilename(name: string): 'pdf' | 'doc' | null {
-  const lower = name.toLowerCase()
-  if (lower.endsWith('.pdf')) return 'pdf'
-  if (lower.endsWith('.doc')) return 'doc'
-  return null
-}
-
-function isAllowedResume(ext: 'pdf' | 'doc', mime: string): boolean {
-  const m = mime.toLowerCase()
-  if (m === 'application/octet-stream' || m === '') return true
-  if (ext === 'pdf') return m === 'application/pdf'
-  return m === 'application/msword'
-}
 
 export async function POST(request: Request) {
   try {
@@ -90,16 +84,16 @@ export async function POST(request: Request) {
       )
     }
 
-    const ext = extFromFilename(resume.name)
+    const ext = resumeExtFromFilename(resume.name)
     if (!ext) {
       return NextResponse.json(
-        { success: false, error: 'Resume must be a PDF or DOC file' },
+        { success: false, error: 'Resume must be a PDF, DOC, or DOCX file' },
         { status: 400 }
       )
     }
-    if (!isAllowedResume(ext, resume.type)) {
+    if (!resumeDeclaredMimeOk(ext, resume.type)) {
       return NextResponse.json(
-        { success: false, error: 'Resume must be a PDF or DOC file' },
+        { success: false, error: 'Resume must be a PDF, DOC, or DOCX file' },
         { status: 400 }
       )
     }
@@ -107,13 +101,14 @@ export async function POST(request: Request) {
     const supabase = supabaseAdmin()
     const filePath = `pam/${randomUUID()}.${ext}`
     const buffer = Buffer.from(await resume.arrayBuffer())
+    const uploadContentType = canonicalResumeContentType(ext)
 
-    const uploadContentType =
-      ext === 'pdf' ? 'application/pdf' : resume.type === 'application/msword' ? resume.type : 'application/msword'
-
-    const { error: uploadError } = await supabase.storage.from('resumes').upload(filePath, buffer, {
-      contentType: uploadContentType,
-      upsert: false,
+    const { error: uploadError } = await uploadResumeToPamFolder(supabase, {
+      filePath,
+      buffer,
+      originalName: resume.name,
+      ext,
+      maxBytes: MAX_BYTES,
     })
 
     if (uploadError) {
@@ -124,9 +119,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const {
-      data: { publicUrl: resume_url },
-    } = supabase.storage.from('resumes').getPublicUrl(filePath)
+    const resume_url = resumesPublicUrl(supabase, filePath)
 
     const row: Database['public']['Tables']['job_applications']['Insert'] = {
       full_name,
@@ -147,7 +140,7 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error('[careers/apply] DB insert failed:', insertError.message)
-      await supabase.storage.from('resumes').remove([filePath]).catch(() => {})
+      await deleteResumeIfExists(supabase, filePath)
       return NextResponse.json(
         { success: false, error: 'Could not save application. Please try again.' },
         { status: 500 }

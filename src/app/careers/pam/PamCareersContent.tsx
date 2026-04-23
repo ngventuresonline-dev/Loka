@@ -54,14 +54,17 @@ export default function PamCareersContent() {
     if (!file) return 'Resume is required'
     if (file.size > 5 * 1024 * 1024) return 'Resume must be 5MB or smaller'
     const lower = file.name.toLowerCase()
-    const okExt = lower.endsWith('.pdf') || lower.endsWith('.doc')
+    const okExt = lower.endsWith('.pdf') || lower.endsWith('.doc') || lower.endsWith('.docx')
     const m = file.type.toLowerCase()
     const okMime =
       m === 'application/pdf' ||
       m === 'application/msword' ||
+      m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      m === 'application/zip' ||
+      m === 'application/x-zip-compressed' ||
       m === 'application/octet-stream' ||
       m === ''
-    if (!okExt || !okMime) return 'Please upload a PDF or DOC file only'
+    if (!okExt || !okMime) return 'Please upload a PDF, DOC, or DOCX file only'
     return null
   }, [])
 
@@ -563,7 +566,7 @@ export default function PamCareersContent() {
                     ref={fileInputRef}
                     type="file"
                     name="resume"
-                    accept=".pdf,.doc,application/pdf,application/msword"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     className="sr-only"
                     onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
                   />
@@ -588,7 +591,7 @@ export default function PamCareersContent() {
                     }}
                   >
                     <span className="font-medium text-white/90">Drop your resume or click to upload</span>
-                    <span className="mt-2 text-xs text-white/45">PDF or DOC · max 5MB</span>
+                    <span className="mt-2 text-xs text-white/45">PDF, DOC, or DOCX · max 5MB</span>
                     {resumeFile && (
                       <span className="mt-3 text-xs font-semibold text-[#FF5200]">{resumeFile.name}</span>
                     )}

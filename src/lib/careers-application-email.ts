@@ -31,8 +31,11 @@ export type PamApplicationEmailPayload = {
 function safeAttachmentFilename(name: string, contentType: string): string {
   const base =
     name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').slice(0, 120) || 'resume'
-  if (base.toLowerCase().endsWith('.pdf') || base.toLowerCase().endsWith('.doc')) return base
-  return contentType.includes('pdf') ? `${base}.pdf` : `${base}.doc`
+  const lower = base.toLowerCase()
+  if (lower.endsWith('.pdf') || lower.endsWith('.doc') || lower.endsWith('.docx')) return base
+  if (contentType.includes('pdf')) return `${base}.pdf`
+  if (contentType.includes('wordprocessingml') || contentType.includes('officedocument')) return `${base}.docx`
+  return `${base}.doc`
 }
 
 /**
