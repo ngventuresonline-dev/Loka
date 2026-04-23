@@ -1,8 +1,28 @@
 import { MetadataRoute } from 'next'
+import { getAllBlogSlugs, getBlogPostById } from '@/lib/blog-posts'
+import { getSiteBaseUrl } from '@/lib/site-url'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://lokazen.in'
-  
+  const baseUrl = getSiteBaseUrl()
+
+  const blogEntries: MetadataRoute.Sitemap = [
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.75,
+    },
+    ...getAllBlogSlugs().map((slug) => {
+      const post = getBlogPostById(slug)
+      return {
+        url: `${baseUrl}/blog/${slug}`,
+        lastModified: post ? new Date(post.date) : new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: post?.variant === 'placements' ? 0.85 : 0.65,
+      }
+    }),
+  ]
+
   return [
     {
       url: baseUrl,
@@ -34,5 +54,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
+    ...blogEntries,
   ]
 }

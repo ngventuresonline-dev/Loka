@@ -4,6 +4,7 @@ Allow: /filter/brand
 Allow: /filter/owner
 Allow: /about
 Allow: /location-intelligence
+Allow: /blog
 
 Disallow: /admin
 Disallow: /dashboard
@@ -15,6 +16,6 @@ Disallow: /static
 Disallow: /properties
 Disallow: /onboarding
 
-Sitemap: https://lokazen.in/sitemap.xml
+Sitemap: https://www.lokazen.in/sitemap.xml
 
 

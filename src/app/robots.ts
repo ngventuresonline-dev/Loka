@@ -1,12 +1,12 @@
 import type { MetadataRoute } from 'next'
-
-const BASE_URL = 'https://lokazen.in'
+import { getSiteBaseUrl } from '@/lib/site-url'
 
 export default function robots(): MetadataRoute.Robots {
+  const BASE_URL = getSiteBaseUrl()
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/filter/brand', '/filter/owner', '/about', '/location-intelligence'],
+      allow: ['/', '/blog', '/filter/brand', '/filter/owner', '/about', '/location-intelligence'],
       disallow: ['/admin', '/dashboard', '/auth', '/api', '/onboarding', '/_next', '/static'],
     },
     sitemap: `${BASE_URL}/sitemap.xml`,
