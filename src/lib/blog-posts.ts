@@ -48,26 +48,64 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Market Analysis',
     author: 'Lokazen Team',
     date: '2026-02-05',
-    readTime: '7 min read',
+    readTime: '16 min read',
     tags: ['India retail', 'F&B', 'lease economics', 'Union Budget'],
     metaTitle: 'Budget 2026: Retail & F&B Lease Economics | Lokazen',
     metaDescription:
       'Policy and macro signals Indian retail and F&B teams should fold into capex, rent, and rollout planning—plus how to validate locations with data before you sign.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Every February, leadership teams reset assumptions on GST, duties, credit, and infrastructure spend. For <strong>retail and F&amp;B operators</strong>, the question is not only what changed in law—but how it flows into <strong>lease economics</strong>, fitout timelines, and store rollout cadence.</p>
+      <p>India’s Union Budget is rarely “about retail” in headline terms—yet the downstream effects on <strong>credit availability</strong>, <strong>input costs</strong>, <strong>discretionary consumption</strong>, and <strong>infrastructure spend</strong> reshape the assumptions that sit underneath every lease model. For <strong>retail and F&amp;B operators</strong>, February is less about politics and more about recalibrating: what rent-to-sales band is still sane, how many months of fitout payback the balance sheet can absorb, and whether the rollout plan you sold to investors still closes under stress.</p>
+      <p>This guide walks through how disciplined teams translate budget signals into <strong>lease economics</strong>, how to run parallel <strong>location stress-tests</strong> so macro does not drown micro, and what to put back on the table with landlords before you sign the next LOI.</p>
+
+      <h2>Why budget season should trigger a lease-model refresh</h2>
+      <p>Most operators update P&amp;L forecasts annually; fewer rebuild the <strong>unit economics stack</strong> that justifies each new store. A useful refresh always revisits the same chain of dependencies:</p>
+      <ul>
+        <li><strong>Top-line sensitivity:</strong> If consumption shifts (fuel, travel, EMI burdens), ticket and frequency move first—especially in discretionary F&amp;B and premium retail.</li>
+        <li><strong>COGS and utilities:</strong> Power, packaging, and protein costs feed straight into contribution margin; small moves compound under high rent loads.</li>
+        <li><strong>Capex and working capital:</strong> Fitout credit, deposit structures, and landlord contributions interact with how aggressively you can open the next two sites.</li>
+        <li><strong>Risk appetite:</strong> Boards often tighten hurdle rates after budget commentary even when headline policy is neutral—anticipate the conversation before real estate does.</li>
+      </ul>
+      <p>The goal is not perfect forecasting; it is <strong>explicit scenarios</strong> (base, upside, downside) that your real estate lead and CFO can defend in the same room.</p>
 
       <h2>Translate headlines into lease assumptions</h2>
-      <p>Use the budget as a prompt to revisit three numbers: <strong>rent as a percent of sales</strong>, <strong>fitout payback months</strong>, and <strong>working capital per outlet</strong>. If policy shifts consumption or input costs, the same high-street corner may swing from attractive to marginal.</p>
+      <p>Use the budget as a forcing function to revisit three headline ratios—then tie each ratio to a <strong>negotiation lever</strong> you can actually pull in a lease.</p>
+      <h3>Rent as a percent of sales</h3>
+      <p>Benchmarks vary wildly by format, but the discipline is consistent: model rent-to-sales at <strong>85%, 100%, and 115%</strong> of your sales plan, not only at plan. If downside crosses your internal guardrail, the answer may be rent abatement, revenue share instead of pure fixed rent, or a smaller shell—not “hope for marketing.”</p>
+      <h3>Fitout payback in months</h3>
+      <p>Rebuild payback using refreshed capex quotes and any change in expected ramp (footfall, competition, delivery mix). Payback is where landlords meet reality: if payback extends, push for <strong>longer rent-free</strong>, <strong>phased CAM</strong>, or <strong>landlord-funded MEP</strong> to the front plane of the store.</p>
+      <h3>Working capital per outlet</h3>
+      <p>Inventory, deposits, and pre-opening payroll consume cash before day one. Stress-test WC if credit tightens or if supplier terms shorten—two common post-budget knock-ons for mid-market brands.</p>
 
-      <h2>Location stress-tests that still matter</h2>
-      <p>Macro moves do not replace micro proof. Pair policy review with <strong>catchment income bands</strong>, <strong>competitive intensity</strong>, and <strong>daypart footfall</strong> for each shortlisted micro-market—especially in Bangalore corridors where premium rents demand precision.</p>
+      <h2>Location stress-tests that still matter (macro cannot replace micro)</h2>
+      <p>Policy moves clouds; <strong>catchment data</strong> clears the fog around a specific pin. For each shortlisted micro-market—especially in premium Bangalore corridors—run a consistent micro-suite:</p>
+      <ul>
+        <li><strong>Income and employment mix:</strong> Who actually lives and works within your true drive-time or walk-time polygon—not only the ward average?</li>
+        <li><strong>Competitive intensity:</strong> Same-category doors within 300–800 metres, replacement risk from cloud formats, and anchor churn in malls.</li>
+        <li><strong>Daypart footfall:</strong> Lunch-led vs evening-social vs weekend-family shapes staffing, menu, and bar throughput differently.</li>
+        <li><strong>Access and parking elasticity:</strong> Small friction changes can swing conversion when budgets tighten.</li>
+      </ul>
+      <p>Where possible, triangulate operator estimates with <strong>independent signals</strong>—traffic patterns, event calendars, metro milestones, and comparable store performance in adjacent catchments.</p>
 
-      <h2>What to ask landlords this quarter</h2>
-      <p>Clarify CAM escalations, revenue-share breakpoints, and fitout contribution timing in writing. Budget season is a natural window to align internal finance, ops, and real estate on a single set of scenarios before LOI.</p>
+      <h2>What to ask landlords and mall operators this quarter</h2>
+      <p>Budget season is a natural window to align finance, ops, and real estate on one scenario set <em>before</em> LOI. Bring written questions, not vibes:</p>
+      <ul>
+        <li><strong>CAM:</strong> Definition, inclusions, caps, audit rights, and historical variance—not only the rupee number.</li>
+        <li><strong>Marketing and promotion levies:</strong> What is mandatory vs elective; how is spend reported?</li>
+        <li><strong>Revenue share:</strong> Breakpoints, exclusions, and how delivery sales are treated if you run omnichannel.</li>
+        <li><strong>Fitout contributions and landlord works:</strong> Milestones, specs, and delay remedies tied to rent commencement.</li>
+        <li><strong>Assignment and refit rights:</strong> What happens if the model pivots in year three?</li>
+      </ul>
+
+      <h2>Key takeaways</h2>
+      <ul>
+        <li>Rebuild <strong>three-scenario unit economics</strong> after every material policy cycle—even if headline rates look unchanged.</li>
+        <li>Separate <strong>hard location risks</strong> (access, competition, compliance path) from <strong>soft narrative</strong> (brand buzz, broker stories).</li>
+        <li>Negotiate leases with <strong>documented assumptions</strong> so rent reviews and CAM audits do not become surprises.</li>
+      </ul>
 
       <h2>Conclusion</h2>
-      <p>Policy sets the frame; <strong>your location thesis</strong> wins the store. Ground decisions in structured checklists and independent location intelligence so every new signing stays defensible to the board.</p>
+      <p>Policy sets the macro frame; <strong>your location thesis</strong> still wins or loses the store. Ground every signing in structured checklists, scenarioed unit economics, and independent location intelligence so the board sees judgment—not hope.</p>
     `),
   },
   {
@@ -78,26 +116,55 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Location Intelligence',
     author: 'Lokazen Team',
     date: '2026-02-12',
-    readTime: '8 min read',
+    readTime: '17 min read',
     tags: ['Bangalore', 'high street', 'mall retail', 'site selection'],
     metaTitle: 'High-Street vs Mall Retail Bangalore | Lokazen',
     metaDescription:
       'Score visibility, compliance, CAM, parking, and dayparts when choosing mall vs high-street space in Bangalore. Practical checklist for F&B and retail.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Rent per square foot is easy to compare; <strong>economic rent</strong> is harder. Use a single scorecard so high-street charm and mall discipline are judged on the same drivers.</p>
+      <p>Comparing “₹120 on 100ft vs ₹140 in a Grade-A mall” is arithmetic, not strategy. <strong>Economic rent</strong> bundles visibility, conversion risk, operating constraints, CAM and marketing loads, compliance path, and the <strong>calendar</strong> to cash—none of which appear in a two-line broker WhatsApp.</p>
+      <p>This article gives a practical <strong>scorecard</strong> you can reuse across Bangalore micro-markets—Indiranagar, Koramangala, Whitefield corridors, and major mall programmes—so you pick the <em>format</em> before you fall in love with a façade.</p>
 
-      <h2>Visibility and capture</h2>
-      <p>High-street relies on façade, set-back, and parking friction. Malls bundle discovery but compete with interior anchors. Rate each option on <strong>30-metre read</strong>, <strong>approach comfort</strong>, and <strong>night economy fit</strong> for your format.</p>
+      <h2>Step one: define what “good” means for your format</h2>
+      <p>Before scoring sites, define non-negotiables for your concept: kitchen exhaust path, liquor service if applicable, seating mix, queueing geometry, delivery rider access, parking sensitivity, and night-hour economics. A premium dessert brand, a full-bar format, and a cloud-kitchen-forward QSR will weight the same corridor completely differently.</p>
 
-      <h2>Operating rules and compliance</h2>
-      <p>Malls centralise fire, extraction, and signage rules; high-street shifts burden to the tenant. Weight <strong>time-to-open</strong> and <strong>ongoing inspections</strong> explicitly—especially for kitchens and bars.</p>
+      <h2>Visibility, capture, and conversion</h2>
+      <h3>High-street and main-road retail</h3>
+      <p>Strength is literal <strong>street read</strong>: façade legibility, approach sightlines, set-back, and conflict with parking or footpath choke points. Score:</p>
+      <ul>
+        <li><strong>30-metre read:</strong> Can a moving vehicle or walking customer parse what you sell?</li>
+        <li><strong>Approach comfort:</strong> U-turn pain, median barriers, and evening traffic noise.</li>
+        <li><strong>Night economy fit:</strong> Local enforcement patterns and neighbour tolerance for late hours.</li>
+      </ul>
+      <h3>Mall and lifestyle centre retail</h3>
+      <p>Strength is <strong>bundled discovery</strong> and controlled environment—but you compete with anchors, F&amp;B courts, and interior visibility games. Score adjacency to lifts/escalators, sightlines from anchor flows, and whether your category is “destination” enough to pull against interior gravity.</p>
 
-      <h2>Economics beyond base rent</h2>
-      <p>Model CAM, marketing levies, revenue share triggers, and fitout amortisation together. A lower base rent with aggressive CAM can exceed a cleaner mall quote once sales ramp slowly.</p>
+      <h2>Operating rules, compliance, and time-to-open</h2>
+      <p>Malls centralise fire, extraction, signage, and façade control; high-street pushes statutory and neighbour interface burden to the tenant. Build a <strong>parallel timeline</strong> for:</p>
+      <ul>
+        <li>BBMP / local body requirements, façade sanctions, and outdoor seating permissions where relevant.</li>
+        <li>FSSAI, fire NOC pathway, and liquor if applicable—often slower on high-street than teams expect.</li>
+        <li>Mall design-review cycles: each round-trip week is margin you will not get back.</li>
+      </ul>
+      <p>Weight <strong>time-to-open</strong> explicitly in rupees: every month of delay is rent + interest + lost contribution.</p>
+
+      <h2>Economics beyond base rent (normalise to an all-in line)</h2>
+      <p>Model CAM, marketing levies, revenue-share triggers, fitout amortisation, and utility loads on a single <strong>occupancy line</strong>. A lower base rent with aggressive CAM and high marketing minima can exceed a “expensive” mall once sales ramp slowly or seasonality bites.</p>
+      <p>Also capture <strong>revenue leakage</strong> categories: delivery aggregator mix, packaging surcharges, and parking validation expectations—small items that show up in net operating income.</p>
+
+      <h2>A simple weighted scorecard (example framework)</h2>
+      <p>Assign weights that sum to 100 across buckets that matter to <em>your</em> format—then score each shortlisted asset 1–5 with evidence, not instinct:</p>
+      <ul>
+        <li><strong>Demand &amp; dayparts (25):</strong> catchment income, office vs residential balance, weekend lift.</li>
+        <li><strong>Competition &amp; substitution (20):</strong> same-category proximity, cloud-kitchen overlap, mall anchor risk.</li>
+        <li><strong>Access &amp; friction (15):</strong> parking, approach, weather exposure.</li>
+        <li><strong>Compliance &amp; speed (15):</strong> sanctioned use, extraction path, mall design control.</li>
+        <li><strong>Unit economics (25):</strong> all-in rent, CAM, marketing, realistic rent-to-sales at ramp.</li>
+      </ul>
 
       <h2>Conclusion</h2>
-      <p>Pick the <strong>format</strong> first, then negotiate the asset. Lokazen compares comparable corridors with footfall and competitive context so teams avoid apples-to-oranges calls.</p>
+      <p>Pick the <strong>format</strong> first, then negotiate the asset. When teams score consistently, “expensive” becomes explainable—and “cheap” becomes accountable. Lokazen helps compare corridors with comparable evidence so you avoid apples-to-oranges decisions.</p>
     `),
   },
   {
@@ -108,26 +175,48 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Location Intelligence',
     author: 'Lokazen Team',
     date: '2026-02-19',
-    readTime: '7 min read',
+    readTime: '16 min read',
     tags: ['LIR', 'decision memo', 'commercial real estate'],
     metaTitle: 'Location Intelligence Report Framework | Lokazen',
     metaDescription:
       'How to use a Location Intelligence Report (LIR) to align founders, finance, and ops on go/no-go for retail and F&B space—with clear evidence and next steps.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Great spaces lose internally because the case file is weak. A <strong>Location Intelligence Report</strong> should answer who shops, when they arrive, what they already spend on, and what breaks the model if sales trail by ten percent.</p>
+      <p>Most “location debates” fail because they are really <strong>opinion tournaments</strong>: the founder loves the corner, finance hates the rent, ops worries about extraction, and marketing wants Instagramability. A <strong>Location Intelligence Report (LIR)</strong> is not a prettier map—it is a decision instrument that forces alignment on evidence, trade-offs, and what must go true for the store to work.</p>
+      <p>This guide explains how to structure LIR findings so founders, finance, landlords, and your own GMs can move faster—without buying false precision.</p>
 
-      <h2>Executive one-pager</h2>
-      <p>Lead with recommendation, addressable catchment, competitive overlap, and rental guardrails. Attach maps and charts; keep commentary blunt—<strong>what has to be true</strong> for this site to work.</p>
+      <h2>What a serious LIR must answer (minimum bar)</h2>
+      <p>Before charts, answer in plain language:</p>
+      <ul>
+        <li><strong>Who</strong> is the addressable customer in realistic drive/walk time—and who is <em>not</em> included?</li>
+        <li><strong>When</strong> do they show up (weekday lunch vs weekend family vs late night)—and how stable is that calendar through the year?</li>
+        <li><strong>What</strong> are they already buying nearby (substitutes and complements)—and where will you steal share vs grow category?</li>
+        <li><strong>What breaks the model</strong> if sales trail plan by 5–15%—rent step-ups, CAM shocks, or labour assumptions?</li>
+      </ul>
+      <p>If those four answers are not explicit, you still have a brochure—not a memo.</p>
 
-      <h2>Finance-ready sensitivities</h2>
-      <p>Translate footfall and ticket into simple tables: break-even sales, rent-to-sales at 85%, 100%, and 115% of plan, and payback on fitout. Finance should recognise the document without a second model rebuild.</p>
+      <h2>Executive one-pager: how to lead so the meeting ends early</h2>
+      <p>Page one should be brutally short: <strong>recommendation</strong> (go / go with conditions / no-go), <strong>top three reasons</strong>, <strong>top three risks</strong>, and <strong>next actions</strong> with owners and dates. Attach maps and charts as appendix—busy executives should be able to decide from page one plus a single sensitivity table.</p>
+      <p>Write conditions as <strong>testable</strong> statements: “Proceed if landlord confirms 400A upgrade by date X,” not “ensure power is okay.”</p>
 
-      <h2>Landlord conversations</h2>
-      <p>Use the same evidence to request rent-free months, capex contributions, or revised exclusivities. Data-backed asks land better than aspirational narratives.</p>
+      <h2>Finance-ready sensitivities (make the model portable)</h2>
+      <p>Translate location signals into the language finance already speaks:</p>
+      <ul>
+        <li><strong>Break-even sales</strong> at stated rent, CAM, and marketing loads.</li>
+        <li><strong>Rent-to-sales</strong> at 85%, 100%, and 115% of base forecast—and where internal guardrails trip.</li>
+        <li><strong>Payback months</strong> on fitout including landlord contributions and rent-free.</li>
+        <li><strong>Working capital</strong> through ramp: inventory, deposits, and pre-opening payroll.</li>
+      </ul>
+      <p>Finance should not need to rebuild a second model to sanity-check your work—export assumptions as a small table they can paste.</p>
+
+      <h2>Landlord and mall conversations: evidence as leverage</h2>
+      <p>The same LIR that convinces your board also supports <strong>negotiation</strong>: rent-free tied to identified risks (visibility, anchor churn, access), CAM caps tied to historical variance, exclusivity contours tied to competitive overlap maps. Data-backed asks are harder to dismiss than “we need a better deal.”</p>
+
+      <h2>Quality control: how to avoid fake precision</h2>
+      <p>Good intelligence labels uncertainty. Separate <strong>directionally true</strong> signals (relative footfall intensity, competitive clustering) from <strong>exact claims</strong> you cannot defend. Document data vintage, radius definition, and known blind spots (seasonality, roadworks, upcoming supply).</p>
 
       <h2>Conclusion</h2>
-      <p>Speed and discipline are friends when the memo is structured. Lokazen generates LIR-style synthesis so teams spend meeting time on decisions—not slide builds.</p>
+      <p>Speed and discipline are friends when the memo is structured. Lokazen helps teams produce LIR-grade synthesis—so internal meetings spend time on decisions, not slide rebuilds, and external negotiations stay anchored in facts.</p>
     `),
   },
   {
@@ -138,26 +227,44 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Industry Insights',
     author: 'Lokazen Team',
     date: '2026-02-26',
-    readTime: '6 min read',
+    readTime: '15 min read',
     tags: ['F&B Bangalore', 'footfall', 'dayparts', 'seasonality'],
     metaTitle: 'Pre-Summer F&B Footfall Bangalore | Lokazen',
     metaDescription:
       'Seasonal F&B planning for Bangalore: dayparts, outdoor seating demand, kitchen load, and staffing—aligned to premium corridor footfall patterns.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Summer reshapes <strong>dayparts</strong>: late evenings compress, lunch delivery rises, and outdoor seating economics swing with comfort. Premium corridors still win—if operations match reality.</p>
+      <p>Bangalore’s summer does not only change weather—it changes <strong>dayparts</strong>, <strong>channel mix</strong>, and <strong>throughput physics</strong> in kitchens. Late-evening social peaks compress when heat and early workdays bite; corporate lunch can strengthen in office corridors; delivery share rises where rider density and packaging economics work.</p>
+      <p>This playbook is for premium-corridor F&amp;B operators preparing for March–June: how to read footfall and dayparts honestly, how to treat outdoor seating as a <strong>managed SKU</strong>, and how to align menu, labour, and capex before you lock the next lease.</p>
 
-      <h2>Engineer the menu to heat</h2>
-      <p>Shift prep to low-heat execution during peak kitchen hours, pre-batch where quality holds, and protect margin on beverages that carry the afternoon.</p>
+      <h2>Read the corridor: four archetypes (and what summer does to each)</h2>
+      <ul>
+        <li><strong>Evening-social high streets</strong> (examples: parts of Indiranagar, Koramangala): night peaks may shorten; outdoor comfort matters; valet and approach friction become conversion drivers.</li>
+        <li><strong>Office-adjacent lunch nodes:</strong> weekday lunch can compress into tighter windows—queue design and prep mise-en-place matter more than “vibe.”</li>
+        <li><strong>Family-weekend anchors:</strong> afternoon stretch can grow; kids’ throughput and AC comfort dominate.</li>
+        <li><strong>Delivery-forward micro-markets:</strong> rider wait zones, packaging melt, and handoff geometry matter as much as façade.</li>
+      </ul>
 
-      <h2>Outdoor seating as a managed SKU</h2>
-      <p>Outdoor covers should have a <strong>revenue and labour line</strong>, not only a vibe line. If evenings shorten, redeploy covers to lunch corporate flows with clear promos.</p>
+      <h2>Engineer the menu and kitchen for heat and volatility</h2>
+      <p>Shift prep toward <strong>lower-heat execution</strong> during peak kitchen hours; pre-batch where quality holds; protect margin on beverages and cold categories that carry the afternoon. Build a <strong>heat contingency menu</strong>—fewer SKUs, faster plate times—so the line does not collapse when demand spikes on the hottest Thursdays.</p>
+      <p>Align procurement with spoilage risk: summer raises cold-chain sensitivity, especially for dairy-forward formats and dessert concepts.</p>
 
-      <h2>Location fit</h2>
-      <p>Corridors with strong evening social traffic need different backup plans than office-adjacent lunch nodes. Match <strong>seasonal elasticity</strong> to catchment composition—not only last summer’s sales file.</p>
+      <h2>Outdoor seating as a managed SKU—not a decoration</h2>
+      <p>Outdoor covers need a <strong>revenue line, a labour line, and a capital line</strong>: extra FTE for service loops, cleaning cadence, misting fans or shades, and municipal permissions where relevant. If evenings shorten, redeploy outdoor capacity into <strong>lunch corporate flows</strong> with explicit promos rather than hoping covers fill magically.</p>
+
+      <h2>Labour, training, and guest experience under stress</h2>
+      <p>Summer increases sick-day volatility and rider delays. Update training on:</p>
+      <ul>
+        <li><strong>Guest messaging</strong> when ticket times slip—consistent scripts reduce negative reviews.</li>
+        <li><strong>Comp</strong> plans for peak heat shifts—cheap retention beats rehiring mid-season.</li>
+        <li><strong>Delivery handoff</strong> rules when kerbside crowding spikes.</li>
+      </ul>
+
+      <h2>Location intelligence: what to refresh before you sign the next outlet</h2>
+      <p>Do not rely only on last year’s sales file—refresh <strong>catchment composition</strong> (new offices, metro milestones, competitor openings), <strong>roadworks</strong>, and <strong>event calendars</strong> that shift weekend peaks. A corridor that was “evening-led” in January can behave “lunch-led” by May if a new office tower fills.</p>
 
       <h2>Conclusion</h2>
-      <p>Winning summers are operational, not only culinary. Pair seasonal playbooks with current <strong>catchment and competition signals</strong> before you lock next expansions.</p>
+      <p>Winning summers are operational, not only culinary. Pair seasonal playbooks with updated <strong>catchment and competition signals</strong> so expansion decisions stay honest when the mercury rises.</p>
     `),
   },
   {
@@ -168,26 +275,55 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Industry Insights',
     author: 'Lokazen Team',
     date: '2026-03-05',
-    readTime: '8 min read',
+    readTime: '18 min read',
     tags: ['fitout', 'LOI', 'retail India', 'rollout'],
     metaTitle: 'Retail Rollout Fitout & LOI Checklist | Lokazen',
     metaDescription:
       'First-time retail rollout checklist for India: LOI discipline, MEP handover, landlord deliverables, and timeline buffers that prevent costly opening slips.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Most delays are predictable: incomplete MEP clarity, ambiguous handover scopes, and soft LOIs that balloon negotiation cycles. A <strong>shared checklist</strong> keeps everyone honest.</p>
+      <p>India’s retail and F&amp;B rollouts rarely die from “bad design intent.” They slip from <strong>handover ambiguity</strong>, <strong>sequencing mistakes</strong>, and <strong>soft LOIs</strong> that let everyone pretend alignment exists when engineering reality does not. First-time operators are especially exposed because architects, landlords, and brokers optimise for different clocks.</p>
+      <p>This is a practical, India-grounded checklist—from <strong>pre-LOI technical gates</strong> through <strong>post-LOI parallel tracks</strong>—so opening day stays a plan instead of a prayer.</p>
 
-      <h2>Before LOI</h2>
-      <p>Confirm sanctioned drawings path, extraction feasibility, floor loading for kitchen equipment, and service entry windows. If any item is “to be confirmed,” attach a dated owner.</p>
+      <h2>Before LOI: technical gates you should refuse to skip</h2>
+      <p>LOI without technical clarity is a liability factory. Minimum gates:</p>
+      <ul>
+        <li><strong>Sanctioned use and plan history:</strong> retail vs F&amp;B vs mixed-use permissions; change-of-use risk.</li>
+        <li><strong>MEP reality:</strong> available power (KVA), upgrade path, DG policy, HVAC tonnage, grease trap location, and kitchen exhaust riser feasibility.</li>
+        <li><strong>Structural and floor loading:</strong> especially for open kitchens, stone counters, and rooftop additions.</li>
+        <li><strong>Service logistics:</strong> delivery rider access, garbage pull-out windows, goods lift proximity in malls.</li>
+        <li><strong>Landlord works vs tenant works:</strong> written scope split with dates—no “TBD” on landlord-delivered slabs, shafts, or fire barriers.</li>
+      </ul>
+      <p>Rule: if an item is “to be confirmed,” it must have a <strong>named owner and a dated answer</strong> before LOI—not after.</p>
 
-      <h2>Inside LOI</h2>
-      <p>Capture rent-free logic, CAM definitions, marketing funds, exclusivity contours, and assignment rights. Prefer explicit <strong>drop-dead</strong> dates for lease execution over polite aspirations.</p>
+      <h2>Inside the LOI: clauses that save you in month seven</h2>
+      <p>LOI is not a lease, but weak LOIs become weak leases. Capture:</p>
+      <ul>
+        <li><strong>Rent-free and rent commencement triggers</strong> tied to measurable landlord completion (power, handover cleanliness, shaft readiness).</li>
+        <li><strong>CAM definitions</strong> at least at category level (what is fixed vs variable) and audit posture.</li>
+        <li><strong>Marketing funds</strong> (mall contexts): mandatory vs elective, reporting expectations.</li>
+        <li><strong>Exclusivity</strong> contours: category definitions narrow enough to be enforceable.</li>
+        <li><strong>Assignment and refit rights</strong> if format pivots; <strong>force majeure</strong> clarity for construction delays.</li>
+        <li><strong>Drop-dead</strong> for definitive agreement execution—politeness is not a project management tool.</li>
+      </ul>
 
-      <h2>After LOI</h2>
-      <p>Parallel-track architect sign-offs, vendor deposits, and utility applications. Mall programmes especially punish sequential slack.</p>
+      <h2>After LOI: parallel tracks that prevent sequential slack</h2>
+      <p>Once LOI is signed, run parallel—not serial—workstreams:</p>
+      <ul>
+        <li><strong>Architect + MEP + kitchen consultant</strong> locked on a single BIM or drawing set with revision control.</li>
+        <li><strong>Vendor long-lead items</strong> (hood, walk-in, stone, façade glass) with deposits aligned to landlord access windows.</li>
+        <li><strong>Utilities and statutory pre-work</strong> started early: power application, water, fire consultant engagement, mall design-review submissions.</li>
+        <li><strong>Weekly risk register</strong> with owner, date, and mitigation—especially for mall programmes where design-review loops dominate.</li>
+      </ul>
+
+      <h2>Mall vs high-street: where rollouts usually break</h2>
+      <p><strong>Malls</strong> punish sequential thinking: design review, mock-ups, signage rules, and coordinated service entries can consume weeks each cycle. <strong>High-street</strong> punishes ambiguity with neighbours and municipalities: façade sanctions, outdoor seating, and extraction conflicts surface late. Build the checklist per format, not generic “retail.”</p>
+
+      <h2>Handover day: a one-page acceptance script</h2>
+      <p>Define acceptance criteria in advance: slab levelness tolerances, shaft readiness, power available at panel, water pressure test, and fire barrier completion photos. Handover disputes are cheaper to prevent than to litigate.</p>
 
       <h2>Conclusion</h2>
-      <p>Discipline is a moat. Use independent verification on location quality while internal teams execute the checklist—Lokazen supports both tracks.</p>
+      <p>Discipline is a moat. Pair internal execution rigour with independent <strong>location verification</strong> so the space you are fitting out is the space you underwrote—Lokazen supports teams on both tracks.</p>
     `),
   },
   {
@@ -198,26 +334,48 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Industry Insights',
     author: 'Lokazen Team',
     date: '2026-03-12',
-    readTime: '7 min read',
+    readTime: '16 min read',
     tags: ['landlords', 'listings', 'tenant experience'],
     metaTitle: 'Commercial Listing Specs Brands Want | Lokazen',
     metaDescription:
       'Property owners: publish ceiling height, power KVA, handover state, and compliance path to win faster yes from retail and F&B tenants on Lokazen.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Brands ghost listings that hide basics. Transparency shortens cycles for everyone—especially in competitive Bangalore micro-markets.</p>
+      <p>High-intent retail and F&amp;B tenants do not disappear because your rent is “high.” They disappear because your listing forces them to guess on <strong>physics</strong> (power, slab, exhaust), <strong>time</strong> (handover, approvals), and <strong>commercial shape</strong> (CAM, marketing, revenue share). Guessing creates friction; friction kills conversion—especially when brands compare five options in the same weekend.</p>
+      <p>This guide is written for <strong>property owners and asset managers</strong> who want faster “yes” decisions: what to publish, how to photograph, and how to present commercial terms without giving away negotiation posture.</p>
 
-      <h2>Specs that matter</h2>
-      <p>Publish <strong>usable depth</strong>, <strong>ceiling clear height</strong>, <strong>fresh air and exhaust path</strong>, <strong>allocated parking</strong>, and <strong>sanctioned use</strong>. Photos should include services shafts, not only the pretty angle.</p>
+      <h2>The “spec sheet” tenants actually filter on</h2>
+      <p>Publish these fields up front—accuracy matters more than marketing polish:</p>
+      <ul>
+        <li><strong>Usable depth and frontage</strong> (not just “approximate”).</li>
+        <li><strong>Ceiling clear height</strong> and bulkhead realities for ducting.</li>
+        <li><strong>Power:</strong> available KVA, proposed panel location, upgrade path, DG policy.</li>
+        <li><strong>HVAC:</strong> tonnage assumptions, OA provision, landlord vs tenant scope.</li>
+        <li><strong>Kitchen feasibility:</strong> grease trap path, exhaust riser, gas policy (if applicable).</li>
+        <li><strong>Sanctioned use</strong> and any historic change-of-use notes.</li>
+        <li><strong>Parking:</strong> allocated bays, validation rules, rider kerb access.</li>
+      </ul>
 
-      <h2>Commercial clarity</h2>
-      <p>State base rent, CAM, escalation, and deposit structure. If revenue share is on the table, show the band and inclusions—ambiguity kills momentum.</p>
+      <h2>Photography that builds trust (not just aspiration)</h2>
+      <p>Include photos of: main approach, ceiling services, rear service corridor, electrical room access, garbage pull-out path, and façade constraints. “Pretty renders” without shaft photos signal hiding risk.</p>
 
-      <h2>Operational readiness</h2>
-      <p>Note handover state, landlord works, and realistic timelines for NOC stack. Serious tenants model <strong>time-to-open</strong> as carefully as rent.</p>
+      <h2>Commercial clarity without over-committing</h2>
+      <p>You can be transparent without locking negotiation:</p>
+      <ul>
+        <li>State <strong>asking base rent</strong>, <strong>CAM band</strong>, and <strong>escalation methodology</strong>.</li>
+        <li>If revenue share is possible, publish <strong>bands</strong> and what revenue definitions include/exclude.</li>
+        <li>Clarify <strong>deposit structure</strong> and typical lock-in ranges (even if final terms vary).</li>
+      </ul>
+      <p>Ambiguity does not create “room to negotiate”; it creates <strong>no-shows on site visits</strong>.</p>
+
+      <h2>Operational readiness: time-to-open is a competitive spec</h2>
+      <p>Serious tenants model <strong>time-to-open</strong> alongside rent. Publish landlord works completion status, realistic design-review cycles (malls), and known statutory bottlenecks for the micro-market.</p>
+
+      <h2>How Lokazen surfaces structured inventory</h2>
+      <p>Listings that behave like <strong>SKU sheets</strong>—consistent fields, comparable numbers—win because brands can shortlist faster and compare fairly. Lokazen is built to reward that discipline with higher-intent inbound.</p>
 
       <h2>Conclusion</h2>
-      <p>Great packaging converts attention to visits. Lokazen surfaces structured fields so owners compete on facts, not only broker adjectives.</p>
+      <p>Great packaging converts attention into booked visits. When owners compete on facts, brokers spend less time translating, and tenants make faster, better decisions.</p>
     `),
   },
   {
@@ -228,26 +386,40 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Technology',
     author: 'Lokazen Team',
     date: '2026-03-19',
-    readTime: '6 min read',
+    readTime: '17 min read',
     tags: ['AI', 'matching', 'site visit', 'Lokazen'],
     metaTitle: 'AI Commercial Space Matching Guide | Lokazen',
     metaDescription:
       'What good AI matching for retail and F&B space looks like: explainable scores, guardrails, and when to insist on a human expert before site visits.',
     content: article(`
       <h2>Introduction</h2>
-      <p>AI should shrink search space—not replace judgment. The bar is simple: every shortlisted asset should ship a <strong>why</strong> a human can defend in ten seconds.</p>
+      <p>Commercial real estate search fails in two opposite ways: <strong>too few options</strong> (you never see the odd-but-perfect asset), and <strong>too many shallow options</strong> (you tour everything and learn nothing). AI can help—but only if the output is <strong>explainable</strong>, <strong>constraint-aware</strong>, and <strong>auditable</strong>. Otherwise you have faster broker roulette, not better decisions.</p>
+      <p>This article sets a practical quality bar for “good enough” AI-assisted matching before you book expensive leadership time on site visits.</p>
 
-      <h2>Explainability over buzzwords</h2>
-      <p>Demand explicit links between brand format, catchment, competition distance, and rental band. Opaque top-ten lists recreate broker roulette digitally.</p>
+      <h2>What “explainable matching” actually means</h2>
+      <p>Every shortlisted listing should ship a <strong>human-defensible why</strong> in plain language—ideally in under thirty seconds:</p>
+      <ul>
+        <li>Which <strong>hard constraints</strong> it satisfies (use, power, capex ceiling, kitchen feasibility).</li>
+        <li>Which <strong>soft fit signals</strong> it optimises (catchment income mix, competition distance, daypart alignment).</li>
+        <li>Which <strong>risks</strong> are explicitly flagged (access, seasonality, upcoming supply, landlord execution risk).</li>
+      </ul>
+      <p>If the system cannot point to evidence, it is not explaining—it is <em>asserting</em>.</p>
 
-      <h2>Guardrails</h2>
-      <p>Hard filters on use permissions, kitchen feasibility, and capex ceilings should never be “soft scored.” If a unit fails a hard rule, it should disappear—not rank eighth with a shrug.</p>
+      <h2>Hard filters vs soft scores (never mix them by accident)</h2>
+      <p><strong>Hard filters</strong> should eliminate: wrong sanctioned use, impossible extraction path, insufficient power without a funded upgrade path, rent above a board-mandated ceiling, or exclusivity conflicts in malls. A unit that fails a hard filter should <strong>disappear</strong>—not appear at rank eight “because overall score is okay.”</p>
+      <p><strong>Soft scores</strong> should rank among feasible options: brand-catchment fit, visibility quality, operational convenience, landlord quality proxies.</p>
 
-      <h2>Human override</h2>
-      <p>Experts should adjust weights for strategic bets—new cuisine, flagship posture, investor optics—without breaking auditability.</p>
+      <h2>Transparency that prevents silent false positives</h2>
+      <p>Teams should be able to answer: <em>What changed if we tweak one assumption?</em> If the shortlist swings wildly when rental guardrails move 5%, the model is unstable—either data is thin or weights are wrong. Stable shortlists are a sign of mature scoring, not “conservative AI.”</p>
+
+      <h2>Human override without breaking audit trails</h2>
+      <p>Strategic bets—flagship posture, category creation, investor narrative—sometimes require <strong>overrides</strong>. Good platforms log overrides with a reason code so later reviews do not treat judgement as mystery.</p>
+
+      <h2>Site visits: treat them as expensive experiments</h2>
+      <p>Book visits only where the thesis is already legible on paper. Pre-visit, define what observation will <strong>falsify</strong> the thesis (e.g., “if evening footfall is mostly pass-through, not dwell, we walk”). Post-visit, capture structured debriefs so learning compounds across the rollout team.</p>
 
       <h2>Conclusion</h2>
-      <p>Lokazen pairs algorithmic matching with placement experts so shortlists stay fast <em>and</em> accountable—book visits only where the thesis is already legible.</p>
+      <p>Lokazen pairs algorithmic matching with placement experts so shortlists stay fast <em>and</em> accountable: fewer tours, sharper questions, and decisions anchored in evidence—not vibes.</p>
     `),
   },
   {
@@ -258,26 +430,48 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Industry Insights',
     author: 'Lokazen Team',
     date: '2026-03-26',
-    readTime: '7 min read',
+    readTime: '16 min read',
     tags: ['QSR', 'cloud kitchen', 'experience retail', 'catchment'],
     metaTitle: 'QSR vs Cloud Kitchen Location Data | Lokazen',
     metaDescription:
       'Match catchment data to QSR, cloud kitchen, or experience retail: delivery radius, impulse capture, dwell, and competition signals that matter per format.',
     content: article(`
       <h2>Introduction</h2>
-      <p>The same polygon on a map is not the same market for <strong>QSR</strong>, <strong>cloud kitchen</strong>, and <strong>experience retail</strong>. Format dictates which signals dominate.</p>
+      <p>The same catchment polygon can look “great” on paper—and still be wrong for your operating model. <strong>QSR</strong> competes on impulse, queueing, and meal-window throughput; <strong>cloud kitchens</strong> compete on delivery-time contours and stackable production; <strong>experience retail</strong> competes on dwell, discovery, and social adjacency. If you optimise the wrong curve, you will misread rent, staffing, and marketing.</p>
+      <p>This guide explains how to read the <em>same map three ways</em>—with the data slices that actually matter per format.</p>
 
-      <h2>QSR</h2>
-      <p>Prioritise impulse corridors, parking friction, queue geometry, and visible competition overlap. Footfall peaks should align with meal architecture.</p>
+      <h2>QSR: impulse, friction, and meal architecture</h2>
+      <p>Prioritise:</p>
+      <ul>
+        <li><strong>Impulse capture:</strong> visibility from dominant flows (walk, drive, mall interior).</li>
+        <li><strong>Queue geometry:</strong> indoor/outdoor spill, ordering line vs pickup line separation.</li>
+        <li><strong>Parking and kerb friction:</strong> small annoyances become lost tickets at peak.</li>
+        <li><strong>Visible competition overlap:</strong> not “any competitor,” but same-meal-window substitutes.</li>
+      </ul>
+      <p>Footfall counts without <strong>daypart splits</strong> mislead: a busy street at 5pm may be irrelevant if your model is lunch-led.</p>
 
-      <h2>Cloud kitchen</h2>
-      <p>Optimise for delivery time contours, rider density, and kitchen stackability—not window line branding. Rent should flex against delivery share forecasts.</p>
+      <h2>Cloud kitchen: delivery physics beats façade branding</h2>
+      <p>Optimise for:</p>
+      <ul>
+        <li><strong>Delivery-time contours</strong> to dense demand nodes (offices, campuses, residential clusters).</li>
+        <li><strong>Rider density and kerb access</strong>—minutes saved per pickup compound across thousands of orders.</li>
+        <li><strong>Kitchen stackability:</strong> vertical production, cold chain path, separate brand lines if multi-brand.</li>
+        <li><strong>Rent flexibility vs delivery share</strong>—pure fixed rent can punish early ramp; some models need revenue-linked structures.</li>
+      </ul>
 
-      <h2>Experience retail</h2>
-      <p>Dwell, social adjacency, and eventability matter more than pure throughput. Read evenings and weekends as first-class series, not noise.</p>
+      <h2>Experience retail: dwell, adjacency, and “reason to return”</h2>
+      <p>Throughput alone underweights the model. Read:</p>
+      <ul>
+        <li><strong>Dwell drivers:</strong> seating comfort, programming potential, adjacency to complementary spend.</li>
+        <li><strong>Social adjacency:</strong> evening clusters, date-night corridors, weekend family anchors.</li>
+        <li><strong>Eventability:</strong> launches, collabs, limited drops—does the location support repeat discovery?</li>
+      </ul>
+
+      <h2>Building a comparable dataset across formats</h2>
+      <p>Standardise radius definitions (drive vs walk), time windows (weekday lunch vs weekend full day), and competitor tagging (same-category vs cross-category). Without standardisation, teams compare incomparable “scores.”</p>
 
       <h2>Conclusion</h2>
-      <p>Pick the dataset to match the operating model. Lokazen’s workflows keep format assumptions explicit so teams do not optimise the wrong curve.</p>
+      <p>Pick the dataset to match the operating model. Lokazen keeps format assumptions explicit so expansion committees do not optimise the wrong curve.</p>
     `),
   },
   {
@@ -288,26 +482,41 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Industry Insights',
     author: 'Lokazen Team',
     date: '2026-04-02',
-    readTime: '8 min read',
+    readTime: '18 min read',
     tags: ['FSSAI', 'fire NOC', 'mall compliance', 'India retail'],
     metaTitle: 'F&B Store Compliance India: FSSAI & Fire NOC | Lokazen',
     metaDescription:
       'Unified compliance timeline for Indian retail and F&B: FSSAI, fire NOC, signage, and mall design control—so openings stay on schedule.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Compliance is parallel workstreams masquerading as serial tasks. Treat <strong>mall design control</strong> and <strong>statutory filings</strong> as one programme with a single RACI.</p>
+      <p>Store openings in India fail quietly in the gap between <strong>creative intent</strong> and <strong>regulatory reality</strong>—especially when malls impose design control timelines that do not match municipal variance, or when high-street façades trigger neighbour objections you discover after the deposit clears.</p>
+      <p>This guide unifies the compliance lens across <strong>FSSAI</strong>, <strong>fire NOC pathways</strong>, <strong>signage</strong>, and <strong>mall house rules</strong>—so ops, legal, and design work off one integrated programme rather than competing timelines.</p>
 
-      <h2>Design control first</h2>
-      <p>Lock façade, MEP, and kitchen schematics early enough for landlord sign-off without starving statutory drawings. Late façade pivots are where openings die.</p>
+      <h2>Design control first (why sequence matters)</h2>
+      <p>Lock façade, MEP, and kitchen schematics early enough for landlord sign-off <em>without</em> starving statutory drawings. Late façade pivots are where openings die because they cascade into fire calculations, signage areas, extraction routing, and mock-up re-submissions in malls.</p>
+      <p>Practical rule: treat <strong>landlord-approved drawings</strong> and <strong>statutory-submittable drawings</strong> as version-controlled siblings—divergence should be rare and logged.</p>
 
-      <h2>Statutory stack</h2>
-      <p>Sequence FSSAI, fire, signage, and liquor (if applicable) with realistic municipal variance. Build buffer after soft opening for inspections that slip.</p>
+      <h2>FSSAI: what operators commonly underestimate</h2>
+      <ul>
+        <li><strong>Layout alignment</strong> with actual cooking line and storage—changes after licensing create rework risk.</li>
+        <li><strong>Water testing cadence</strong> and documentation discipline—especially where mall loops differ from municipal supply.</li>
+        <li><strong>Category boundaries</strong> when menus span multiple formats (bakery + full kitchen + bar).</li>
+      </ul>
 
-      <h2>Ops handoff</h2>
-      <p>Train managers on house rules, noise, waste, and delivery rider behaviour—malls enforce what regulators never see on paper.</p>
+      <h2>Fire NOC and life-safety: the “non-negotiable” engineering path</h2>
+      <p>Engage fire consultants early on detection, suppression, travel distances, and kitchen hood interlocks. In malls, landlord base build conditions may constrain choices—assume variance cycles and plan mock inspections before hard opening marketing.</p>
+
+      <h2>Signage and façade: where creative teams collide with enforcement</h2>
+      <p>Signage is both <strong>aesthetic</strong> and <strong>statutory</strong>: size, illumination, projection over public set-back, and mall design guidelines. Build a single “signage packet” checklist: renders, measurements, structural attachments, electrical load, and maintenance access.</p>
+
+      <h2>Mall house rules: what regulators never write down</h2>
+      <p>Train GMs on rider behaviour, waste pull-out windows, noise after hours, delivery dock etiquette, and cold-chain receiving rules. Malls enforce operational discipline that can become existential if ignored.</p>
+
+      <h2>Integrated timeline template (RACI)</h2>
+      <p>Create one master sheet with owners: design, landlord review, statutory submissions, procurement long-leads, and soft-opening readiness. Weekly review only the <strong>critical path</strong> items—avoid status meetings that hide slips.</p>
 
       <h2>Conclusion</h2>
-      <p>Compliance is a location strategy, not only legal. Choose assets where the pathway is known and document owners are credible—Lokazen helps surface those signals early.</p>
+      <p>Compliance is a location strategy: choose assets where the pathway is known and document owners are credible. Lokazen helps teams surface early risk signals on assets <em>before</em> capital is committed to the wrong shell.</p>
     `),
   },
   {
@@ -318,26 +527,54 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Industry Insights',
     author: 'Lokazen Team',
     date: '2026-04-09',
-    readTime: '9 min read',
+    readTime: '19 min read',
     tags: ['mall lease', 'CAM', 'revenue share', 'India'],
     metaTitle: 'Mall CAM & Revenue Share India Guide | Lokazen',
     metaDescription:
       'Decode mall term sheets in India: CAM inclusions, marketing funds, revenue share breakpoints, and fitout contributions—model with confidence.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Two malls quoting ₹180 and ₹165 per sqft may not be comparable until <strong>CAM</strong>, <strong>marketing</strong>, and <strong>revenue share</strong> are normalised to an all-in occupancy line.</p>
+      <p>Indian mall leasing conversations often anchor on a single headline number—<strong>base rent per sqft</strong>. That number is dangerously incomplete. Two centres quoting ₹180 vs ₹165 can invert economically once you normalise <strong>CAM</strong>, <strong>marketing levies</strong>, <strong>revenue share mechanics</strong>, <strong>fitout contributions</strong>, and <strong>rent commencement triggers</strong>.</p>
+      <p>This guide is a practitioner’s walkthrough of how to read a mall term sheet like an operator and modeller—not like a press release.</p>
 
-      <h2>CAM inclusions</h2>
-      <p>Demand line-item categories: housekeeping, security, common electricity, chilled water, and capex reserves. Ask what is <strong>variable vs fixed</strong> through the lease.</p>
+      <h2>Build an all-in occupancy line (the only comparison that matters)</h2>
+      <p>Start from cash out the door each month (or each sales rupee), including:</p>
+      <ul>
+        <li>Base rent and any stepped ramps</li>
+        <li>CAM (fixed + variable components)</li>
+        <li>Marketing / promotion fund (mandatory vs elective)</li>
+        <li>Revenue share, if applicable, with defined revenue base</li>
+        <li>Utilities and mall-specific charges (chilled water, common power allocation)</li>
+        <li>Fitout amortisation (explicit or implicit)</li>
+      </ul>
 
-      <h2>Revenue share mechanics</h2>
-      <p>Model breakpoints with realistic ramp curves. Include exclusions (wholesale, delivery aggregator accounting) up front to avoid year-two disputes.</p>
+      <h2>CAM: demand line items, not a lump label</h2>
+      <p>Ask for category splits: housekeeping, security, common electricity, chilled water, waste, pest control, capital reserves, and management fees. Then ask what is <strong>fixed vs variable</strong> through the lease and what audit rights you have when CAM spikes.</p>
+      <p>Historical CAM variance is a signal of landlord governance—two malls with identical quoted CAM can behave differently in year three.</p>
 
-      <h2>Fitout contributions</h2>
-      <p>Landlord capex should be tied to deliverables and drawdown milestones—not vibes. Tie rent-free to measurable landlord works completion.</p>
+      <h2>Revenue share: breakpoints, exclusions, and accounting wars you prevent upfront</h2>
+      <p>Model breakpoints with realistic ramp curves—not straight-line sales from month one. Define exclusions clearly:</p>
+      <ul>
+        <li>Wholesale / B2B sales (if any)</li>
+        <li>Delivery aggregator revenue treatment (gross vs net; fees)</li>
+        <li>Gift cards, vouchers, and refunds</li>
+        <li>Inter-store transfers in multi-brand operators</li>
+      </ul>
+      <p>Most revenue-share disputes are definitions problems, not maths problems.</p>
+
+      <h2>Fitout contributions and landlord works: tie money to milestones</h2>
+      <p>Landlord capex should be tied to deliverables: slab readiness, power at panel, shaft completion, fire barrier completion. Tie <strong>rent-free</strong> and <strong>rent commencement</strong> to measurable landlord completion—not “practical completion” without a punch list.</p>
+
+      <h2>Negotiation playbook: questions that signal competence</h2>
+      <ul>
+        <li>Show me CAM actuals for the last 24 months by category.</li>
+        <li>What marketing spend is mandatory vs optional, and how is it reported?</li>
+        <li>What happens to CAM if anchor occupancy shifts materially?</li>
+        <li>What are the true ramp assumptions used in revenue share bands?</li>
+      </ul>
 
       <h2>Conclusion</h2>
-      <p>Great centres deserve great maths. Bring structured questions and external benchmarks—Lokazen supports teams through LOI and negotiation with placement experts.</p>
+      <p>Great centres deserve great maths. Bring structured questions and external benchmarks; pair term-sheet discipline with location evidence so you are not optimising rent inside a weak catchment.</p>
     `),
   },
   {
@@ -348,26 +585,49 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Industry Insights',
     author: 'Lokazen Team',
     date: '2026-04-16',
-    readTime: '8 min read',
+    readTime: '17 min read',
     tags: ['expansion', 'multi-outlet', 'investors', '2026'],
     metaTitle: 'Multi-Outlet Retail Expansion 2026 | Lokazen',
     metaDescription:
       'Sequence multi-outlet retail and F&B expansion in India: proof ladders, cluster strategy, investor metrics, and when to pause national sprawl.',
     content: article(`
       <h2>Introduction</h2>
-      <p>After the first hits, expansion becomes a <strong>capital allocation</strong> game. Boards reward disciplined sequencing more than vanity pin maps.</p>
+      <p>After the first successful stores, expansion stops being a “founder hustle” problem and becomes a <strong>capital allocation</strong> problem: where to place the next rupee of capex, how fast to hire regional leadership, and what evidence will convince investors after outlet three that the model is not just a hero location fluke.</p>
+      <p>This guide lays out a practical sequencing framework for 2026 India: <strong>proof ladders</strong>, <strong>cluster density vs national sprawl</strong>, and the metrics boardrooms actually re-underwrite.</p>
 
-      <h2>Proof ladder</h2>
-      <p>Outlet one proves unit economics; outlet two tests replication; outlet three tests management thickness. Document what each stage must prove before the next cheque.</p>
+      <h2>The proof ladder: what each stage must demonstrate</h2>
+      <p>Treat expansion like staged experiments with explicit pass/fail criteria:</p>
+      <ul>
+        <li><strong>Outlet 1:</strong> proves baseline unit economics and product-market fit in a chosen micro-market.</li>
+        <li><strong>Outlet 2:</strong> proves replication—can the model survive a different catchment shape without heroic intervention?</li>
+        <li><strong>Outlet 3:</strong> proves management thickness—training, supply chain, audits, and brand consistency at distance.</li>
+        <li><strong>Outlet 4+:</strong> proves portfolio mechanics—procurement leverage, marketing efficiency, and regional leadership depth.</li>
+      </ul>
+      <p>Write the criteria before you sign leases—otherwise every store becomes “strategic” by default.</p>
 
-      <h2>Cluster vs sprawl</h2>
-      <p>Density in a single metro often beats scattered metros early—shared leadership, vendor leverage, and marketing efficiency compound.</p>
+      <h2>Cluster density vs national sprawl (early years)</h2>
+      <p>Density within a metro often beats scattered metros early because it compounds:</p>
+      <ul>
+        <li><strong>Leadership bandwidth:</strong> fewer flight hours, faster crisis response.</li>
+        <li><strong>Vendor leverage:</strong> cold chain, maintenance, and fitout contractors repeat.</li>
+        <li><strong>Marketing efficiency:</strong> shared buzz, cross-promotions, and local influencer reuse.</li>
+        <li><strong>Learning loops:</strong> ops audits can compare like-for-like neighbourhoods.</li>
+      </ul>
+      <p>National sprawl before systems mature creates “random walk” portfolios—pretty maps, noisy economics.</p>
 
-      <h2>Investor narrative</h2>
-      <p>Pair revenue with payback distribution, not only averages. Show downside cases where rent or competition moves against you.</p>
+      <h2>Investor narrative: averages hide poison</h2>
+      <p>Boards stop trusting headline averages quickly. Pair revenue growth with:</p>
+      <ul>
+        <li><strong>Payback distribution</strong> across stores (not only the mean).</li>
+        <li><strong>Downside cases</strong> where rent steps, competition entry, or delivery mix shifts.</li>
+        <li><strong>Cohort ramp curves</strong> by catchment archetype (office-led vs residential-led vs mall-led).</li>
+      </ul>
+
+      <h2>Location strategy as a portfolio discipline</h2>
+      <p>Define “allowed” and “disallowed” catchment archetypes for the next twelve openings. Use consistent scoring so leadership debates trade-offs instead of anecdotes.</p>
 
       <h2>Conclusion</h2>
-      <p>Great brands grow where the map and the model agree. Lokazen helps prioritise corridors with consistent evidence so sequencing stays defensible.</p>
+      <p>Great brands grow where the map and the model agree. Lokazen helps teams prioritise corridors with consistent evidence so sequencing stays defensible to investors—and executable for ops.</p>
     `),
   },
   {
@@ -378,26 +638,43 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Technology',
     author: 'Lokazen Team',
     date: '2026-04-22',
-    readTime: '6 min read',
+    readTime: '18 min read',
     tags: ['Lokazen', 'placement', 'product', 'Bangalore'],
     metaTitle: 'How Lokazen Placement Works End-to-End',
     metaDescription:
       'End-to-end Lokazen flow: brief, AI-assisted matching, expert review, visits, and LOI support for retail and F&B commercial space in India.',
     content: article(`
       <h2>Introduction</h2>
-      <p>Lokazen exists to shrink the distance between <strong>intent</strong> and <strong>keys handed over</strong>. The platform is built for brands that need both speed and auditability.</p>
+      <p>Commercial leasing in India still behaves like a high-friction bazaar: fragmented inventory, asymmetric information, and a lot of expensive discovery travel before teams even know if a space is physically and economically feasible. Lokazen exists to shrink the distance between <strong>intent</strong> (what you need to operate) and <strong>keys handed over</strong>—with a workflow that stays fast <em>and</em> auditable.</p>
+      <p>This article explains the end-to-end placement journey on Lokazen: how briefs become criteria, how criteria become shortlists, and how experts keep judgement in the loop when edge cases inevitably appear.</p>
 
-      <h2>Brief to criteria</h2>
-      <p>Operators translate strategy into measurable filters: format, capex band, catchment, competition distance, and rental guardrails. Ambiguity here costs weeks later.</p>
+      <h2>From strategy brief to measurable criteria</h2>
+      <p>Operators translate strategy into filters a system can execute: format (QSR, bar-forward, dessert lab), capex band, catchment income mix, competition distance thresholds, rental guardrails, kitchen constraints, and timeline. The important discipline is to avoid soft criteria smuggled in as vibes—<strong>ambiguity at intake always costs weeks downstream</strong>.</p>
+      <p>Strong briefs also define <strong>non-goals</strong>: corridors you will not pursue, formats you will not attempt without a flagship exception, and financial tripwires that trigger an automatic pause.</p>
 
-      <h2>Matching and scoring</h2>
-      <p>Listings are evaluated against the brief with explainable scoring—hard constraints first, then ranked fit. Experts sanity-check edge cases machines mishandle.</p>
+      <h2>Matching and scoring: hard constraints first, ranking second</h2>
+      <p>Listings are evaluated against the brief in two layers:</p>
+      <ul>
+        <li><strong>Hard constraints</strong> eliminate infeasible options (use permissions, extraction path, power without upgrade path, exclusivity conflicts).</li>
+        <li><strong>Ranked fit</strong> compares feasible options using explainable signals: catchment alignment, daypart fit, visibility quality, landlord execution proxies, and economic normalisation (all-in occupancy thinking).</li>
+      </ul>
+      <p>Experts sanity-check machine outputs where judgement matters: unusual flagship bets, competitive dynamics machines underweight, and mall-specific negotiation posture.</p>
 
-      <h2>Visits to LOI</h2>
-      <p>Shortlists become calendars: coordinated visits, landlord Q&A, and term negotiation support. The goal is fewer, higher-quality tours.</p>
+      <h2>Shortlists become calendars: fewer, higher-quality site visits</h2>
+      <p>Once a shortlist stabilises, Lokazen supports execution logistics: coordinated visits, landlord Q&amp;A prep, and structured debrief templates so each tour produces learning—not only photos. The objective is fewer tours with higher information yield.</p>
+
+      <h2>From visit notes to LOI: negotiation anchored in evidence</h2>
+      <p>When terms move, teams should be able to point to <strong>why</strong> a concession is requested (visibility risk, CAM variance risk, ramp risk) rather than generic market-practice claims. Evidence-backed negotiation tends to converge faster—even when the answer is still no.</p>
+
+      <h2>What success looks like (operational, not rhetorical)</h2>
+      <ul>
+        <li>Shorter cycle time from first conversation to signed LOI for comparable sites.</li>
+        <li>Lower revisit rate (fewer second visits caused by missed constraints).</li>
+        <li>Clear audit trail: why this asset, why now, and what would falsify the thesis.</li>
+      </ul>
 
       <h2>Conclusion</h2>
-      <p>Software should accelerate judgement, not replace it. That is the Lokazen bar—from first map view to placement closed.</p>
+      <p>Software should accelerate judgement, not replace it. That is the Lokazen bar—from first map view to placement closed—with experts in the loop where it matters most.</p>
     `),
   },
   {
@@ -408,7 +685,7 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     category: 'Placements',
     author: 'Lokazen Team',
     date: '2026-04-23',
-    readTime: '9 min read',
+    readTime: '20 min read',
     tags: ['placements', 'Bangalore', 'F&B', 'retail', 'Lokazen'],
     metaTitle: 'Lokazen Brand Placements Bangalore | Lokazen',
     metaDescription:
@@ -434,16 +711,37 @@ const postsRaw: Omit<BlogPost, 'coverImage'>[] = [
     ],
     content: article(`
       <h2>Introduction</h2>
-      <p>Placement is the moment strategy touches the street—when a brand’s promise meets a real address, a real kitchen line, and a real rent line. On Lokazen, we built the stack—<strong>inventory, intelligence, and experts</strong>—so that moment arrives faster, with fewer blind corners.</p>
+      <p>Placement is the moment strategy touches the street—when a brand’s promise meets a real address, a real kitchen line, and a real rent line. It is also the moment where teams discover whether their internal thesis matches external reality: access friction at night, actual competition distance, mall anchor churn risk, or whether the extraction path survives a real MEP walk.</p>
+      <p>On Lokazen, we built the stack—<strong>inventory, intelligence, and experts</strong>—so operators can move from map to move-in with fewer blind corners. This flagship note explains what “placement” means in our workflow, why we publish real brand markers publicly, and how to interpret the placement gallery as more than marketing.</p>
 
-      <h2>What “placement” means here</h2>
-      <p>We use placement to describe <strong>end-to-end support</strong> from shortlist through LOI: clarifying briefs, scoring options, booking visits, and helping teams negotiate with context. The gallery below references <strong>recent Bangalore placements</strong> surfaced on our live map—names, corridors, and sizes exactly as we publish them for the ecosystem.</p>
+      <h2>What “placement” means on Lokazen (scope, not slogans)</h2>
+      <p>We use placement to describe <strong>end-to-end support</strong> from the point a brief is legible through the point a deal is actionable—typically including:</p>
+      <ul>
+        <li><strong>Brief refinement:</strong> translating strategy into measurable constraints (power, capex, catchment, exclusivity, timeline).</li>
+        <li><strong>Shortlisting and scoring:</strong> comparing feasible assets with explainable rationale—not opaque rankings.</li>
+        <li><strong>Site visit execution:</strong> calendars, landlord Q&amp;A prep, and structured debriefs so each visit produces decisions.</li>
+        <li><strong>LOI-stage guidance:</strong> helping teams anchor asks in evidence (ramp risk, CAM variance risk, visibility risk).</li>
+      </ul>
+      <p>Placement is not “we sent three WhatsApp PDFs.” It is accountable progress toward a signed, operable location.</p>
 
-      <h2>Why logos matter</h2>
-      <p>Operators recognise peers faster than they trust abstract claims. Showing <strong>real brands</strong> on real corridors signals the density of activity Lokazen carries every week—not a render, a pipeline.</p>
+      <h2>Why we show real brands and real micro-locations</h2>
+      <p>Operators recognise peers faster than they trust abstract claims. Publishing <strong>named brands</strong> on <strong>named corridors</strong> with <strong>size bands</strong> signals the density of real activity Lokazen carries—not a render farm, a pipeline.</p>
+      <p>It also sets a quality bar internally: public markers reward disciplined data hygiene and discourage hand-wavy storytelling.</p>
 
-      <h2>How to read each card</h2>
-      <p>Each row pairs <strong>brand</strong>, <strong>micro-location</strong>, and <strong>size band</strong>. Use them as proof of format diversity—from compact QSR boxes to large-format sports and social concepts—then ask what analogue fits your own rollout.</p>
+      <h2>How to read each placement card (what each field implies)</h2>
+      <p>Each gallery row pairs <strong>brand</strong>, <strong>micro-location string</strong>, and <strong>approximate size</strong>. Interpret them as:</p>
+      <ul>
+        <li><strong>Format diversity proof:</strong> compact QSR footprints vs large-format sports and social concepts show we work across capex and operational complexity bands.</li>
+        <li><strong>Corridor diversity:</strong> high-street and mall-adjacent patterns differ; the list demonstrates we are not a single-corridor gimmick.</li>
+        <li><strong>Size realism:</strong> sqft bands anchor feasibility conversations early (extraction, seating, kitchen line length).</li>
+      </ul>
+
+      <h2>What Lokazen does not claim (intellectual honesty matters)</h2>
+      <p>Placement markers are not a substitute for your own legal diligence, landlord representations, or statutory approvals. They are <strong>ecosystem-visible outcomes</strong> we publish to reduce information asymmetry—while your deal terms remain negotiated in the real world.</p>
+
+      <h2>How owners and brands should use this page</h2>
+      <p><strong>Brands:</strong> use the gallery as a benchmark for the calibre of operators already running the Lokazen workflow—then start a brief with the same rigour.</p>
+      <p><strong>Owners:</strong> if your asset class matches published formats, list with structured specs so you enter the same shortlists faster.</p>
 
       <h2>Conclusion</h2>
       <p>If your next outlet needs the same discipline—transparent options, scored fit, expert placement—<a href="/filter/brand">open a brand search</a> or revisit the <a href="/#brand-placements">homepage placement map</a> anytime. We are building the default front door for serious commercial space in India.</p>
