@@ -9,6 +9,8 @@ export type { Database } from './client'
 
 // Server-side exports
 export { createServerClient, getServerClient, getAdminClient } from './server'
+/** Alias for admin/service-role client (e.g. server-only uploads and inserts). */
+export { getAdminClient as supabaseAdmin } from './server'
 
 // Auth exports
 export {

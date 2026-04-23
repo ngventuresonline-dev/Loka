@@ -182,6 +182,50 @@ export type Database = {
           updated_at?: string
         }
       }
+      job_applications: {
+        Row: {
+          id: string
+          full_name: string
+          email: string
+          phone: string
+          current_city: string
+          experience_years: string
+          languages: string[]
+          has_two_wheeler: boolean
+          why_this_role: string | null
+          resume_url: string
+          applied_at: string
+          status: string
+        }
+        Insert: {
+          id?: string
+          full_name: string
+          email: string
+          phone: string
+          current_city: string
+          experience_years: string
+          languages: string[]
+          has_two_wheeler: boolean
+          why_this_role?: string | null
+          resume_url: string
+          applied_at?: string
+          status?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string
+          email?: string
+          phone?: string
+          current_city?: string
+          experience_years?: string
+          languages?: string[]
+          has_two_wheeler?: boolean
+          why_this_role?: string | null
+          resume_url?: string
+          applied_at?: string
+          status?: string
+        }
+      }
     }
   }
 }
