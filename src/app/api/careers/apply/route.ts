@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
+import { sendPamCareersApplicationEmails } from '@/lib/careers-application-email'
 import { supabaseAdmin } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase/client'
 
@@ -10,6 +11,11 @@ function extFromFilename(name: string): 'pdf' | 'doc' | null {
   if (lower.endsWith('.pdf')) return 'pdf'
   if (lower.endsWith('.doc')) return 'doc'
   return null
+}
+
+function emptyToNull(s: string): string | null {
+  const t = s.trim()
+  return t.length > 0 ? t : null
 }
 
 function isAllowedResume(ext: 'pdf' | 'doc', mime: string): boolean {
@@ -40,6 +46,9 @@ export async function POST(request: Request) {
     const why_this_role = whyRaw.length > 0 ? whyRaw : null
     const hasTwo = formData.get('has_two_wheeler')
     const languagesRaw = formData.getAll('languages').map((v) => String(v).trim()).filter(Boolean)
+    const current_company = emptyToNull(String(formData.get('current_company') || ''))
+    const current_ctc = emptyToNull(String(formData.get('current_ctc') || ''))
+    const expected_ctc = emptyToNull(String(formData.get('expected_ctc') || ''))
 
     const resume = formData.get('resume')
     if (!(resume instanceof File)) {
@@ -120,6 +129,9 @@ export async function POST(request: Request) {
       email,
       phone,
       current_city,
+      current_company,
+      current_ctc,
+      expected_ctc,
       experience_years,
       languages: languagesRaw,
       has_two_wheeler,
@@ -136,6 +148,28 @@ export async function POST(request: Request) {
         { success: false, error: 'Could not save application. Please try again.' },
         { status: 500 }
       )
+    }
+
+    try {
+      await sendPamCareersApplicationEmails({
+        full_name,
+        email,
+        phone,
+        current_city,
+        current_company,
+        current_ctc,
+        expected_ctc,
+        experience_years,
+        languages: languagesRaw,
+        has_two_wheeler,
+        why_this_role,
+        resume_url,
+        resumeFilename: resume.name,
+        resumeBuffer: buffer,
+        resumeContentType: uploadContentType,
+      })
+    } catch (err) {
+      console.error('[careers/apply] Email send error:', err)
     }
 
     return NextResponse.json({ success: true })

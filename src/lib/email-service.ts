@@ -6,6 +6,7 @@
  */
 
 import { Resend } from 'resend'
+import type { Attachment } from 'resend'
 import type { AdminMatchRow } from '@/lib/admin-matches-compute'
 import { encodePropertyId } from '@/lib/property-slug'
 
@@ -15,6 +16,7 @@ interface EmailOptions {
   html: string
   text?: string
   replyTo?: string
+  attachments?: Attachment[]
 }
 
 /**
@@ -38,6 +40,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       html: options.html,
       text: options.text,
       ...(options.replyTo && { reply_to: options.replyTo }),
+      ...(options.attachments?.length ? { attachments: options.attachments } : {}),
       // Best-effort: help Gmail treat these as automated transactional emails.
       headers: {
         'Auto-Submitted': 'auto-generated',

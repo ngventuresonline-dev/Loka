@@ -189,6 +189,9 @@ export type Database = {
           email: string
           phone: string
           current_city: string
+          current_company: string | null
+          current_ctc: string | null
+          expected_ctc: string | null
           experience_years: string
           languages: string[]
           has_two_wheeler: boolean
@@ -203,6 +206,9 @@ export type Database = {
           email: string
           phone: string
           current_city: string
+          current_company?: string | null
+          current_ctc?: string | null
+          expected_ctc?: string | null
           experience_years: string
           languages: string[]
           has_two_wheeler: boolean
@@ -217,6 +223,9 @@ export type Database = {
           email?: string
           phone?: string
           current_city?: string
+          current_company?: string | null
+          current_ctc?: string | null
+          expected_ctc?: string | null
           experience_years?: string
           languages?: string[]
           has_two_wheeler?: boolean

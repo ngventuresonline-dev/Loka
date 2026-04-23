@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { Handshake, MapPin, Users } from 'lucide-react'
 import Logo from '@/components/Logo'
+import TrustedByLeadingBrands from '@/components/TrustedByLeadingBrands'
 
 const BRAND_ORANGE = '#FF5200'
 const BRAND_DARK = '#0F0E0D'
@@ -24,6 +25,9 @@ export default function PamCareersContent() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [currentCity, setCurrentCity] = useState('')
+  const [currentCompany, setCurrentCompany] = useState('')
+  const [currentCtc, setCurrentCtc] = useState('')
+  const [expectedCtc, setExpectedCtc] = useState('')
   const [experienceYears, setExperienceYears] = useState('')
   const [languages, setLanguages] = useState<Record<string, boolean>>({})
   const [twoWheeler, setTwoWheeler] = useState<'yes' | 'no' | ''>('')
@@ -105,6 +109,9 @@ export default function PamCareersContent() {
       fd.append('email', email.trim())
       fd.append('phone', phone.trim())
       fd.append('current_city', currentCity.trim())
+      if (currentCompany.trim()) fd.append('current_company', currentCompany.trim())
+      if (currentCtc.trim()) fd.append('current_ctc', currentCtc.trim())
+      if (expectedCtc.trim()) fd.append('expected_ctc', expectedCtc.trim())
       fd.append('experience_years', experienceYears)
       selectedLanguages.forEach((lang) => fd.append('languages', lang))
       fd.append('has_two_wheeler', twoWheeler)
@@ -152,7 +159,14 @@ export default function PamCareersContent() {
                 Property Acquisition Manager
               </h1>
               <p className="mt-4 max-w-xl text-base text-white/75 sm:text-lg">
-                Walk Bangalore. Meet owners. Build the city&apos;s commercial real estate future.
+                Walk Bangalore. Meet owners. Build the city&apos;s commercial real estate future. You are the
+                on-ground face of Lokazen — sourcing verified retail &amp; F&amp;B spaces, aligning them with live
+                brand briefs on our platform, and moving deals from first hello to signed LOI.
+              </p>
+              <p className="mt-3 max-w-xl text-sm text-white/60 sm:text-base">
+                Expect a high-energy field role: corridor planning, cold outreach, owner education, site-visit
+                coordination, and disciplined CRM updates on our AI workforce dashboard — working closely with our
+                central matching and brand success teams.
               </p>
               <button
                 type="button"
@@ -183,6 +197,11 @@ export default function PamCareersContent() {
                 <li className="font-semibold text-white">Full-time · Bangalore · Field Role</li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
+                  Own a geography: map corridors, prioritise high-potential micro-markets, and build a pipeline of
+                  owner-led listings
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
                   Deal incentives on every closure
                 </li>
                 <li className="flex items-start gap-2">
@@ -193,6 +212,10 @@ export default function PamCareersContent() {
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
                   Travel allowance included
                 </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
+                  Tools &amp; playbooks: AI match scores, brand requirement briefs, and leadership coaching on pitches
+                </li>
               </ul>
             </div>
           </div>
@@ -201,51 +224,103 @@ export default function PamCareersContent() {
 
       {/* Section 2 — About */}
       <section className="py-16 sm:py-20 lg:py-24" style={{ backgroundColor: SECTION_LIGHT }}>
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">About Lokazen</p>
-            <h2 className="mt-3 text-2xl font-bold leading-snug text-neutral-900 sm:text-3xl">
-              Bangalore&apos;s first AI-powered commercial real estate matchmaking platform
-            </h2>
-            <p className="mt-5 text-sm leading-relaxed text-neutral-700 sm:text-base">
-              We match F&B and retail brands — Biggies Burger, Boba Bhai, TAN Coffee, Samosa Party and 100+ more —
-              with verified commercial spaces across Bangalore using AI scoring. RERA registered under N &amp; G
-              Ventures.
-            </p>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">About Lokazen</p>
+              <h2 className="mt-3 text-2xl font-bold leading-snug text-neutral-900 sm:text-3xl">
+                Bangalore&apos;s first AI-powered commercial real estate matchmaking platform
+              </h2>
+              <p className="mt-5 text-sm leading-relaxed text-neutral-700 sm:text-base">
+                We match F&B and retail brands — Biggies Burger, Boba Bhai, TAN Coffee, Samosa Party and 100+ more —
+                with verified commercial spaces across Bangalore using AI scoring. RERA registered under N &amp; G
+                Ventures.
+              </p>
+              <p className="mt-4 text-sm leading-relaxed text-neutral-700 sm:text-base">
+                As Property Acquisition Manager, you sit at the intersection of supply and demand: you grow our
+                inventory of quality commercial spaces, keep owner relationships warm, and translate street-level
+                intelligence into structured data our matching engine can score — so brands get fewer junk leads and
+                owners get serious tenants.
+              </p>
 
-            <div className="mt-10 space-y-6">
-              {[
-                { title: 'Source properties across every Bangalore corridor', Icon: MapPin },
-                { title: 'Connect owners to 100+ active brand briefs', Icon: Users },
-                { title: 'Drive site visits and close deals', Icon: Handshake },
-              ].map(({ title, Icon }) => (
-                <div key={title} className="flex gap-4">
-                  <div
-                    className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border bg-white"
-                    style={{ borderColor: BORDER_MUTED, color: BRAND_ORANGE }}
-                  >
-                    <Icon className="h-6 w-6" strokeWidth={1.75} />
+              <div className="mt-10 space-y-6">
+                {[
+                  { title: 'Source properties across every Bangalore corridor', Icon: MapPin },
+                  { title: 'Connect owners to 100+ active brand briefs', Icon: Users },
+                  { title: 'Drive site visits and close deals', Icon: Handshake },
+                ].map(({ title, Icon }) => (
+                  <div key={title} className="flex gap-4">
+                    <div
+                      className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border bg-white"
+                      style={{ borderColor: BORDER_MUTED, color: BRAND_ORANGE }}
+                    >
+                      <Icon className="h-6 w-6" strokeWidth={1.75} />
+                    </div>
+                    <p className="pt-2 text-sm font-medium text-neutral-900 sm:text-base">{title}</p>
                   </div>
-                  <p className="pt-2 text-sm font-medium text-neutral-900 sm:text-base">{title}</p>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl border p-6 sm:p-8"
+              style={{ backgroundColor: CARD_DARK, borderColor: BORDER_MUTED }}
+            >
+              <h3 className="text-lg font-bold text-white sm:text-xl">What you&apos;ll do</h3>
+              <ul className="mt-6 list-disc space-y-4 pl-5 text-sm text-white/90 marker:text-[#FF5200] sm:text-base">
+                <li className="pl-1">
+                  Walk commercial streets across Bangalore — high streets, tech parks, residential hubs, and emerging
+                  catchments
+                </li>
+                <li className="pl-1">Meet property owners cold, pitch Lokazen&apos;s model, and get accurate spaces listed</li>
+                <li className="pl-1">Match spaces to active F&amp;B and retail brand briefs using Lokazen match scores</li>
+                <li className="pl-1">Coordinate site visits, align owner and brand expectations, and support negotiation</li>
+                <li className="pl-1">
+                  Capture photos, rent expectations, timelines, and handover constraints so our team can brief brands
+                  with confidence
+                </li>
+                <li className="pl-1">
+                  Log every visit, call, and follow-up on our AI-powered workforce dashboard — your pipeline should
+                  always be visible to leadership
+                </li>
+                <li className="pl-1">
+                  Partner with internal teams on corridor campaigns, owner events, and priority listings when brands
+                  run city-wide searches
+                </li>
+              </ul>
             </div>
           </div>
 
-          <div
-            className="rounded-2xl border p-6 sm:p-8"
-            style={{ backgroundColor: CARD_DARK, borderColor: BORDER_MUTED }}
-          >
-            <h3 className="text-lg font-bold text-white sm:text-xl">What you&apos;ll do</h3>
-            <ul className="mt-6 list-disc space-y-4 pl-5 text-sm text-white/90 marker:text-[#FF5200] sm:text-base">
-              <li className="pl-1">
-                Walk commercial streets across Bangalore — high streets, tech parks, residential hubs
-              </li>
-              <li className="pl-1">Meet property owners cold, pitch Lokazen, get spaces listed</li>
-              <li className="pl-1">Match spaces to active F&B and retail brand briefs</li>
-              <li className="pl-1">Coordinate site visits and support negotiation</li>
-              <li className="pl-1">Log all activity on our AI-powered workforce dashboard</li>
-            </ul>
+          <div className="mt-16 rounded-2xl border border-neutral-200 bg-white/80 p-6 sm:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Role in depth</p>
+            <h3 className="mt-2 text-xl font-bold text-neutral-900 sm:text-2xl">What success looks like</h3>
+            <div className="mt-5 space-y-4 text-sm leading-relaxed text-neutral-700 sm:text-base">
+              <p>
+                You will be measured on listing quality, pipeline depth, site-visit velocity, and closures supported
+                through Lokazen — not just meetings held. We care about verified inventory, accurate pricing signals, and
+                owners who trust the platform enough to prioritise Lokazen-led brands.
+              </p>
+              <p>
+                A typical week blends solo field work with structured check-ins: corridor sweeps, revisits to warm
+                leads, coordinating with our brand team on hot briefs, and tightening notes so nothing is lost between
+                the street and the dashboard.
+              </p>
+              <p>
+                You should be comfortable with ambiguity (every lane has a different story), resilient to rejection,
+                and excited to represent a young, well-funded proptech brand that is redefining how Bangalore fills its
+                shopfronts.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-14 overflow-hidden">
+            <p className="mx-auto max-w-2xl text-center text-sm text-neutral-600 sm:text-base">
+              The same brand marquee as our homepage — the operators you&apos;ll reference when pitching owners already
+              trust Lokazen for expansion and matching.
+            </p>
+            <div className="mt-6 -mx-4 sm:mx-0">
+              <TrustedByLeadingBrands />
+            </div>
           </div>
         </div>
       </section>
@@ -339,6 +414,52 @@ export default function PamCareersContent() {
                     onChange={(e) => setCurrentCity(e.target.value)}
                     className={FIELD_CLASS}
                     placeholder="City you live in"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="current_company" className="mb-2 block text-sm font-medium text-white/80">
+                    Current company you&apos;re working for{' '}
+                    <span className="text-white/40">(optional)</span>
+                  </label>
+                  <input
+                    id="current_company"
+                    name="current_company"
+                    type="text"
+                    value={currentCompany}
+                    onChange={(e) => setCurrentCompany(e.target.value)}
+                    className={FIELD_CLASS}
+                    placeholder="Employer name, or Independent / Between roles"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="current_ctc" className="mb-2 block text-sm font-medium text-white/80">
+                    Current CTC <span className="text-white/40">(optional)</span>
+                  </label>
+                  <input
+                    id="current_ctc"
+                    name="current_ctc"
+                    type="text"
+                    value={currentCtc}
+                    onChange={(e) => setCurrentCtc(e.target.value)}
+                    className={FIELD_CLASS}
+                    placeholder="e.g. ₹9 LPA, or Fixed + variable breakdown"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="expected_ctc" className="mb-2 block text-sm font-medium text-white/80">
+                    Expected CTC <span className="text-white/40">(optional)</span>
+                  </label>
+                  <input
+                    id="expected_ctc"
+                    name="expected_ctc"
+                    type="text"
+                    value={expectedCtc}
+                    onChange={(e) => setExpectedCtc(e.target.value)}
+                    className={FIELD_CLASS}
+                    placeholder="What you are looking for in this move"
                   />
                 </div>
 
@@ -498,7 +619,8 @@ export default function PamCareersContent() {
               </div>
               <h2 className="text-xl font-bold text-white sm:text-2xl">Application received.</h2>
               <p className="mt-3 text-sm leading-relaxed text-white/70 sm:text-base">
-                We&apos;ll be in touch within 3 working days.
+                We&apos;ll be in touch within 3 working days. A confirmation has also been sent to the email address
+                you provided (check spam if you don&apos;t see it).
               </p>
             </div>
           )}
