@@ -206,13 +206,13 @@ export type Database = {
           email: string
           phone: string
           current_city: string
-          current_company?: string | null
-          current_ctc?: string | null
-          expected_ctc?: string | null
+          current_company: string
+          current_ctc: string
+          expected_ctc: string
           experience_years: string
           languages: string[]
           has_two_wheeler: boolean
-          why_this_role?: string | null
+          why_this_role: string
           resume_url: string
           applied_at?: string
           status?: string

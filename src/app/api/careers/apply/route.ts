@@ -13,11 +13,6 @@ function extFromFilename(name: string): 'pdf' | 'doc' | null {
   return null
 }
 
-function emptyToNull(s: string): string | null {
-  const t = s.trim()
-  return t.length > 0 ? t : null
-}
-
 function isAllowedResume(ext: 'pdf' | 'doc', mime: string): boolean {
   const m = mime.toLowerCase()
   if (m === 'application/octet-stream' || m === '') return true
@@ -42,20 +37,29 @@ export async function POST(request: Request) {
     const phone = String(formData.get('phone') || '').trim()
     const current_city = String(formData.get('current_city') || '').trim()
     const experience_years = String(formData.get('experience_years') || '').trim()
-    const whyRaw = String(formData.get('why_this_role') || '').trim()
-    const why_this_role = whyRaw.length > 0 ? whyRaw : null
+    const why_this_role = String(formData.get('why_this_role') || '').trim()
     const hasTwo = formData.get('has_two_wheeler')
     const languagesRaw = formData.getAll('languages').map((v) => String(v).trim()).filter(Boolean)
-    const current_company = emptyToNull(String(formData.get('current_company') || ''))
-    const current_ctc = emptyToNull(String(formData.get('current_ctc') || ''))
-    const expected_ctc = emptyToNull(String(formData.get('expected_ctc') || ''))
+    const current_company = String(formData.get('current_company') || '').trim()
+    const current_ctc = String(formData.get('current_ctc') || '').trim()
+    const expected_ctc = String(formData.get('expected_ctc') || '').trim()
 
     const resume = formData.get('resume')
     if (!(resume instanceof File)) {
       return NextResponse.json({ success: false, error: 'Resume file is required' }, { status: 400 })
     }
 
-    if (!full_name || !email || !phone || !current_city || !experience_years) {
+    if (
+      !full_name ||
+      !email ||
+      !phone ||
+      !current_city ||
+      !current_company ||
+      !current_ctc ||
+      !expected_ctc ||
+      !experience_years ||
+      !why_this_role
+    ) {
       return NextResponse.json({ success: false, error: 'Please fill all required fields' }, { status: 400 })
     }
 

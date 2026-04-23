@@ -15,13 +15,13 @@ export type PamApplicationEmailPayload = {
   email: string
   phone: string
   current_city: string
-  current_company: string | null
-  current_ctc: string | null
-  expected_ctc: string | null
+  current_company: string
+  current_ctc: string
+  expected_ctc: string
   experience_years: string
   languages: string[]
   has_two_wheeler: boolean
-  why_this_role: string | null
+  why_this_role: string
   resume_url: string
   resumeFilename: string
   resumeBuffer: Buffer
@@ -69,13 +69,13 @@ support@lokazen.in`
     ['Email', p.email],
     ['Phone', p.phone],
     ['Current city', p.current_city],
-    ['Current company', p.current_company ?? '—'],
-    ['Current CTC', p.current_ctc ?? '—'],
-    ['Expected CTC', p.expected_ctc ?? '—'],
+    ['Current company', p.current_company],
+    ['Current CTC', p.current_ctc],
+    ['Expected CTC', p.expected_ctc],
     ['Experience (sales / RE / BD)', p.experience_years],
     ['Languages', p.languages.join(', ')],
     ['Two-wheeler', p.has_two_wheeler ? 'Yes' : 'No'],
-    ['Why this role', p.why_this_role ?? '—'],
+    ['Why this role', p.why_this_role],
     ['Resume file (Supabase)', p.resume_url],
   ]
 

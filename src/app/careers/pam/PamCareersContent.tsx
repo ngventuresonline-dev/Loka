@@ -81,8 +81,22 @@ export default function PamCareersContent() {
     e.preventDefault()
     setFormError(null)
 
-    if (!fullName.trim() || !email.trim() || !phone.trim() || !currentCity.trim() || !experienceYears) {
+    if (
+      !fullName.trim() ||
+      !email.trim() ||
+      !phone.trim() ||
+      !currentCity.trim() ||
+      !currentCompany.trim() ||
+      !currentCtc.trim() ||
+      !expectedCtc.trim() ||
+      !experienceYears
+    ) {
       setFormError('Please complete all required fields.')
+      return
+    }
+
+    if (!whyRole.trim()) {
+      setFormError('Please tell us why you want this role.')
       return
     }
 
@@ -109,13 +123,13 @@ export default function PamCareersContent() {
       fd.append('email', email.trim())
       fd.append('phone', phone.trim())
       fd.append('current_city', currentCity.trim())
-      if (currentCompany.trim()) fd.append('current_company', currentCompany.trim())
-      if (currentCtc.trim()) fd.append('current_ctc', currentCtc.trim())
-      if (expectedCtc.trim()) fd.append('expected_ctc', expectedCtc.trim())
+      fd.append('current_company', currentCompany.trim())
+      fd.append('current_ctc', currentCtc.trim())
+      fd.append('expected_ctc', expectedCtc.trim())
       fd.append('experience_years', experienceYears)
       selectedLanguages.forEach((lang) => fd.append('languages', lang))
       fd.append('has_two_wheeler', twoWheeler)
-      if (whyRole.trim()) fd.append('why_this_role', whyRole.trim())
+      fd.append('why_this_role', whyRole.trim())
       fd.append('resume', resumeFile as File)
 
       const res = await fetch('/api/careers/apply', {
@@ -145,43 +159,38 @@ export default function PamCareersContent() {
           className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full opacity-[0.12] blur-3xl"
           style={{ backgroundColor: BRAND_ORANGE }}
         />
-        <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-12 lg:pb-24 lg:pt-16">
-          <div className="mb-10 sm:mb-12">
-            <Logo variant="dark" showPoweredBy={false} size="lg" href="https://lokazen.in" />
+        <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-9 lg:pb-16 lg:pt-12">
+          <div className="mb-5 sm:mb-8">
+            <Logo variant="dark" showPoweredBy={false} size="md" href="https://lokazen.in" />
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="grid grid-cols-1 items-start gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-14">
             <div>
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/50 sm:text-sm">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50 sm:mb-3 sm:text-xs">
                 Now Hiring · Bangalore
               </p>
-              <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+              <h1 className="text-2xl font-extrabold leading-[1.15] tracking-tight text-white sm:text-4xl lg:text-5xl">
                 Property Acquisition Manager
               </h1>
-              <p className="mt-4 max-w-xl text-base text-white/75 sm:text-lg">
-                Walk Bangalore. Meet owners. Build the city&apos;s commercial real estate future. You are the
-                on-ground face of Lokazen — sourcing verified retail &amp; F&amp;B spaces, aligning them with live
-                brand briefs on our platform, and moving deals from first hello to signed LOI.
-              </p>
-              <p className="mt-3 max-w-xl text-sm text-white/60 sm:text-base">
-                Expect a high-energy field role: corridor planning, cold outreach, owner education, site-visit
-                coordination, and disciplined CRM updates on our AI workforce dashboard — working closely with our
-                central matching and brand success teams.
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/75 sm:mt-4 sm:text-base sm:text-lg">
+                Walk Bangalore. Meet owners. Build the city&apos;s commercial real estate future — sourcing spaces,
+                aligning them with live brand briefs on Lokazen, and moving deals from first hello toward closure. Field
+                role: corridor work, cold outreach, site visits, and CRM updates with our matching team.
               </p>
               <button
                 type="button"
                 onClick={scrollToApply}
-                className="mt-8 inline-flex items-center justify-center rounded-full px-8 py-3.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110 active:scale-[0.98] sm:text-base"
+                className="mt-5 inline-flex items-center justify-center rounded-full px-7 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110 active:scale-[0.98] sm:mt-6 sm:px-8 sm:py-3.5 sm:text-base"
                 style={{ backgroundColor: BRAND_ORANGE, boxShadow: `0 12px 40px ${BRAND_ORANGE}44` }}
               >
                 Apply Now
               </button>
 
-              <div className="mt-10 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-2 sm:mt-7 sm:gap-3">
                 {['100+ Active Brands', '500+ Properties', '20+ Corridors'].map((label) => (
                   <span
                     key={label}
-                    className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-medium text-white/90 sm:text-sm"
+                    className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-medium text-white/90 sm:px-4 sm:py-2 sm:text-sm"
                   >
                     {label}
                   </span>
@@ -190,16 +199,11 @@ export default function PamCareersContent() {
             </div>
 
             <div
-              className="rounded-2xl border p-6 sm:p-8"
+              className="rounded-xl border p-5 sm:rounded-2xl sm:p-7 lg:p-8"
               style={{ backgroundColor: CARD_DARK, borderColor: BORDER_MUTED }}
             >
-              <ul className="space-y-4 text-sm text-white/90 sm:text-base">
+              <ul className="space-y-3 text-xs text-white/90 sm:space-y-3.5 sm:text-sm lg:text-base">
                 <li className="font-semibold text-white">Full-time · Bangalore · Field Role</li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
-                  Own a geography: map corridors, prioritise high-potential micro-markets, and build a pipeline of
-                  owner-led listings
-                </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
                   Deal incentives on every closure
@@ -212,10 +216,6 @@ export default function PamCareersContent() {
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
                   Travel allowance included
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: BRAND_ORANGE }} />
-                  Tools &amp; playbooks: AI match scores, brand requirement briefs, and leadership coaching on pitches
-                </li>
               </ul>
             </div>
           </div>
@@ -223,9 +223,9 @@ export default function PamCareersContent() {
       </section>
 
       {/* Section 2 — About */}
-      <section className="py-16 sm:py-20 lg:py-24" style={{ backgroundColor: SECTION_LIGHT }}>
+      <section className="py-12 sm:py-16 lg:py-20" style={{ backgroundColor: SECTION_LIGHT }}>
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="grid grid-cols-1 gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-14">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">About Lokazen</p>
               <h2 className="mt-3 text-2xl font-bold leading-snug text-neutral-900 sm:text-3xl">
@@ -243,7 +243,7 @@ export default function PamCareersContent() {
                 owners get serious tenants.
               </p>
 
-              <div className="mt-10 space-y-6">
+              <div className="mt-8 space-y-5 sm:mt-10 sm:space-y-6">
                 {[
                   { title: 'Source properties across every Bangalore corridor', Icon: MapPin },
                   { title: 'Connect owners to 100+ active brand briefs', Icon: Users },
@@ -263,11 +263,11 @@ export default function PamCareersContent() {
             </div>
 
             <div
-              className="rounded-2xl border p-6 sm:p-8"
+              className="rounded-xl border p-5 sm:rounded-2xl sm:p-7 lg:p-8"
               style={{ backgroundColor: CARD_DARK, borderColor: BORDER_MUTED }}
             >
-              <h3 className="text-lg font-bold text-white sm:text-xl">What you&apos;ll do</h3>
-              <ul className="mt-6 list-disc space-y-4 pl-5 text-sm text-white/90 marker:text-[#FF5200] sm:text-base">
+              <h3 className="text-base font-bold text-white sm:text-lg lg:text-xl">What you&apos;ll do</h3>
+              <ul className="mt-4 list-disc space-y-3 pl-4 text-sm text-white/90 marker:text-[#FF5200] sm:mt-5 sm:space-y-3.5 sm:pl-5 sm:text-base">
                 <li className="pl-1">
                   Walk commercial streets across Bangalore — high streets, tech parks, residential hubs, and emerging
                   catchments
@@ -291,10 +291,10 @@ export default function PamCareersContent() {
             </div>
           </div>
 
-          <div className="mt-16 rounded-2xl border border-neutral-200 bg-white/80 p-6 sm:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Role in depth</p>
-            <h3 className="mt-2 text-xl font-bold text-neutral-900 sm:text-2xl">What success looks like</h3>
-            <div className="mt-5 space-y-4 text-sm leading-relaxed text-neutral-700 sm:text-base">
+          <div className="mt-10 rounded-xl border border-neutral-200 bg-white/80 p-5 sm:mt-14 sm:rounded-2xl sm:p-8 lg:p-10">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500 sm:text-xs">Role in depth</p>
+            <h3 className="mt-1.5 text-lg font-bold text-neutral-900 sm:mt-2 sm:text-xl lg:text-2xl">What success looks like</h3>
+            <div className="mt-4 space-y-3 text-sm leading-relaxed text-neutral-700 sm:mt-5 sm:space-y-4 sm:text-base">
               <p>
                 You will be measured on listing quality, pipeline depth, site-visit velocity, and closures supported
                 through Lokazen — not just meetings held. We care about verified inventory, accurate pricing signals, and
@@ -313,12 +313,12 @@ export default function PamCareersContent() {
             </div>
           </div>
 
-          <div className="mt-14 overflow-hidden">
-            <p className="mx-auto max-w-2xl text-center text-sm text-neutral-600 sm:text-base">
+          <div className="mt-10 overflow-hidden pb-1 sm:mt-12">
+            <p className="mx-auto max-w-2xl px-1 text-center text-xs text-neutral-600 sm:text-sm lg:text-base">
               The same brand marquee as our homepage — the operators you&apos;ll reference when pitching owners already
               trust Lokazen for expansion and matching.
             </p>
-            <div className="mt-6 -mx-4 sm:mx-0">
+            <div className="mt-4 -mx-1 sm:mt-5 sm:mx-0">
               <TrustedByLeadingBrands />
             </div>
           </div>
@@ -329,18 +329,18 @@ export default function PamCareersContent() {
       <section
         ref={applySectionRef}
         id="apply-form"
-        className="scroll-mt-8 py-16 sm:py-20 lg:py-24"
+        className="scroll-mt-6 py-12 sm:scroll-mt-8 sm:py-16 lg:py-20"
         style={{ backgroundColor: BRAND_DARK }}
       >
         <div className="mx-auto max-w-[680px] px-4 sm:px-6">
           {!success ? (
             <>
-              <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">Apply for this Role</h2>
-              <p className="mt-2 text-center text-sm text-white/60 sm:text-base">
-                Takes 3 minutes. We read every application.
+              <h2 className="text-center text-xl font-bold text-white sm:text-2xl lg:text-3xl">Apply for this Role</h2>
+              <p className="mt-1.5 text-center text-xs text-white/60 sm:mt-2 sm:text-sm lg:text-base">
+                Takes a few minutes. We read every application.
               </p>
 
-              <form className="mt-10 space-y-6" onSubmit={handleSubmit} noValidate>
+              <form className="mt-7 space-y-5 sm:mt-9 sm:space-y-6" onSubmit={handleSubmit} noValidate>
                 {formError && (
                   <div
                     className="rounded-lg border px-4 py-3 text-sm text-white"
@@ -419,13 +419,13 @@ export default function PamCareersContent() {
 
                 <div>
                   <label htmlFor="current_company" className="mb-2 block text-sm font-medium text-white/80">
-                    Current company you&apos;re working for{' '}
-                    <span className="text-white/40">(optional)</span>
+                    Current company you&apos;re working for <span className="text-[#FF5200]">*</span>
                   </label>
                   <input
                     id="current_company"
                     name="current_company"
                     type="text"
+                    required
                     value={currentCompany}
                     onChange={(e) => setCurrentCompany(e.target.value)}
                     className={FIELD_CLASS}
@@ -435,27 +435,29 @@ export default function PamCareersContent() {
 
                 <div>
                   <label htmlFor="current_ctc" className="mb-2 block text-sm font-medium text-white/80">
-                    Current CTC <span className="text-white/40">(optional)</span>
+                    Current CTC <span className="text-[#FF5200]">*</span>
                   </label>
                   <input
                     id="current_ctc"
                     name="current_ctc"
                     type="text"
+                    required
                     value={currentCtc}
                     onChange={(e) => setCurrentCtc(e.target.value)}
                     className={FIELD_CLASS}
-                    placeholder="e.g. ₹9 LPA, or Fixed + variable breakdown"
+                    placeholder="e.g. ₹3.5 lakhs LPA, or fixed + variable breakdown"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="expected_ctc" className="mb-2 block text-sm font-medium text-white/80">
-                    Expected CTC <span className="text-white/40">(optional)</span>
+                    Expected CTC <span className="text-[#FF5200]">*</span>
                   </label>
                   <input
                     id="expected_ctc"
                     name="expected_ctc"
                     type="text"
+                    required
                     value={expectedCtc}
                     onChange={(e) => setExpectedCtc(e.target.value)}
                     className={FIELD_CLASS}
@@ -543,16 +545,17 @@ export default function PamCareersContent() {
 
                 <div>
                   <label htmlFor="why_this_role" className="mb-2 block text-sm font-medium text-white/80">
-                    Why do you want this role? <span className="text-white/40">(optional)</span>
+                    Why do you want this role? <span className="text-[#FF5200]">*</span>
                   </label>
                   <textarea
                     id="why_this_role"
                     name="why_this_role"
                     rows={3}
+                    required
                     value={whyRole}
                     onChange={(e) => setWhyRole(e.target.value)}
                     className={FIELD_CLASS + ' min-h-[5rem] resize-y'}
-                    placeholder="A few lines is enough."
+                    placeholder="A few lines is enough — we read every answer."
                   />
                 </div>
 
@@ -582,7 +585,7 @@ export default function PamCareersContent() {
                       const f = e.dataTransfer.files?.[0]
                       if (f) onFileChosen(f)
                     }}
-                    className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-10 text-center text-sm transition sm:text-base"
+                    className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-8 text-center text-sm transition sm:px-4 sm:py-10 sm:text-base"
                     style={{
                       borderColor: dragOver ? BRAND_ORANGE : `${BRAND_ORANGE}99`,
                       backgroundColor: dragOver ? `${CARD_DARK}` : 'transparent',
@@ -608,7 +611,7 @@ export default function PamCareersContent() {
             </>
           ) : (
             <div
-              className="rounded-2xl border px-6 py-14 text-center sm:px-10"
+              className="rounded-xl border px-5 py-10 text-center sm:rounded-2xl sm:px-10 sm:py-14"
               style={{ backgroundColor: CARD_DARK, borderColor: BORDER_MUTED }}
             >
               <div
