@@ -314,11 +314,7 @@ export default function PamCareersContent() {
           </div>
 
           <div className="mt-10 overflow-hidden pb-1 sm:mt-12">
-            <p className="mx-auto max-w-2xl px-1 text-center text-xs text-neutral-600 sm:text-sm lg:text-base">
-              The same brand marquee as our homepage — the operators you&apos;ll reference when pitching owners already
-              trust Lokazen for expansion and matching.
-            </p>
-            <div className="mt-4 -mx-1 sm:mt-5 sm:mx-0">
+            <div className="-mx-1 sm:mx-0">
               <TrustedByLeadingBrands />
             </div>
           </div>
