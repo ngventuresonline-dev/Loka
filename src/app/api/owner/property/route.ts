@@ -11,6 +11,7 @@ import { OWNER_VIDEO_MAX_COUNT } from '@/lib/image-base64'
 import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-compat'
 import { appendToSheet, istTimestamp } from '@/lib/sheets'
 import { fireOwnerPropertyMetaConversion } from '@/lib/meta-capi'
+import { sendNewPropertyNotification } from '@/lib/lead-email'
 
 /* TODO: Add auth when owner registration enabled
 import { getAuthenticatedUser } from '@/lib/api-auth'
@@ -632,13 +633,47 @@ export async function POST(request: NextRequest) {
       ownerPhone: owner?.phone,
     }).catch(err => console.warn('[Owner Property API] Failed to send webhook:', err))
 
-    let ownerForMeta: { email: string; phone: string | null } | null = null
+    let ownerForMeta: { email: string; phone: string | null; name: string | null } | null = null
     if (ownerId) {
       ownerForMeta = await prisma.user.findUnique({
         where: { id: ownerId },
-        select: { email: true, phone: true },
+        select: { email: true, phone: true, name: true },
       })
     }
+
+    const mapLinkForEmail =
+      property.mapLink?.trim() ||
+      (typeof amenitiesData.map_link === 'string' ? amenitiesData.map_link : null) ||
+      null
+    const firstHttpImage =
+      Array.isArray(images) && images.length > 0
+        ? (images as unknown[]).find(
+            (img): img is string => typeof img === 'string' && img.startsWith('http')
+          ) ?? null
+        : null
+
+    sendNewPropertyNotification({
+      propertyId: propertyRow.id,
+      title,
+      propertyType: normalizedType,
+      size,
+      price: rent,
+      priceType: 'monthly',
+      address: propertyData.address,
+      city,
+      state: 'Karnataka',
+      mapLink: mapLinkForEmail,
+      ownerName: ownerForMeta?.name || owner?.name || 'Property Owner',
+      ownerEmail: ownerForMeta?.email || owner?.email || '',
+      ownerPhone: ownerForMeta?.phone || owner?.phone || '',
+      imageUrl: firstHttpImage,
+    })
+      .then((ok) => {
+        console.log(`[Owner Property API] Admin new-listing email (Resend): ${ok} for ${propertyRow.id}`)
+      })
+      .catch((err) => {
+        console.error('[Owner Property API] Admin new-listing email failed:', err)
+      })
 
     const metaEventId = fireOwnerPropertyMetaConversion(request, {
       kind: 'create',
