@@ -32,7 +32,7 @@ export const metadata: Metadata = {
         url: '/lokazen-social.png',
         width: 1200,
         height: 630,
-        alt: 'Lokazen - AI-Powered Commercial Real Estate Matching Platform',
+        alt: 'Lokazen — three-node mark on dark background',
         type: 'image/png',
       },
     ],
