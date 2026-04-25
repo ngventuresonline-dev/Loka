@@ -749,6 +749,41 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Triangular 3-node mark — moving cluster (rings stay static) */
+@keyframes lokaNodesDrift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(0, -2px) rotate(1.3deg);
+  }
+}
+
+.loka-nodes-drift {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: lokaNodesDrift 4.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loka-nodes-drift {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  @keyframes lokaNodesDrift {
+    0%,
+    100% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate(0, -1.5px) rotate(0.5deg);
+    }
+  }
+}
+
 @keyframes fadeLine {
   0%, 100% {
     opacity: 0.2;
