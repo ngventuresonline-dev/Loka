@@ -109,7 +109,7 @@ export async function generateMetadata({
       openGraph: {
         title: 'Property | Lokazen',
         url: canonicalUrl,
-        images: [`${SITE_URL}/opengraph-image`],
+        images: [`${SITE_URL}/lokazen-social.png`],
       },
     }
   }
@@ -152,7 +152,7 @@ export async function generateMetadata({
       openGraph: {
         title: 'Property | Lokazen',
         url: canonicalUrl,
-        images: [`${SITE_URL}/opengraph-image`],
+        images: [`${SITE_URL}/lokazen-social.png`],
       },
     }
   }

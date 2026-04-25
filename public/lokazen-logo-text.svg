@@ -1,38 +1,68 @@
 <svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="gO" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF6B2A" />
-      <stop offset="100%" stop-color="#E12D0E" />
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF5200;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E4002B;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="gM" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF4D7D" />
-      <stop offset="100%" stop-color="#B0155C" />
-    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <g transform="translate(0, 10)">
-    <circle cx="60" cy="50" r="36.5" fill="none" stroke="rgba(255, 130, 70, 0.45)" stroke-width="1" />
-    <g>
-      <animateTransform attributeName="transform" type="translate" values="0 0; 0 -0.5; 0 0" dur="4.5s" repeatCount="indefinite" />
-      <line x1="60" y1="23.5" x2="40.5" y2="64.5" stroke="rgba(110, 55, 30, 0.55)" stroke-width="1" stroke-linecap="round" />
-      <line x1="60" y1="23.5" x2="79.5" y2="60" stroke="rgba(110, 55, 30, 0.55)" stroke-width="1" stroke-linecap="round" />
-      <line x1="40.5" y1="64.5" x2="79.5" y2="60" stroke="rgba(110, 55, 30, 0.55)" stroke-width="1" stroke-linecap="round" />
-      <circle cx="60" cy="23.5" r="5.5" fill="url(#gO)" />
-      <circle cx="55.2" cy="20.1" r="1.1" fill="white" fill-opacity="0.4" />
-      <circle cx="40.5" cy="64.5" r="4.1" fill="url(#gO)" />
-      <circle cx="37.1" cy="60.2" r="0.8" fill="white" fill-opacity="0.3" />
-      <circle cx="79.5" cy="60" r="3" fill="url(#gM)" />
-      <circle cx="76.8" cy="56.6" r="0.7" fill="white" fill-opacity="0.3" />
-    </g>
+  
+  <!-- Logo Icon (Quantum Nodes) -->
+  <g transform="translate(60, 60)">
+    <!-- Quantum Paths -->
+    <circle cx="0" cy="0" r="30" fill="none" stroke="url(#logoGradient)" stroke-width="1.5" opacity="0.2"/>
+    <circle cx="0" cy="0" r="40" fill="none" stroke="url(#logoGradient)" stroke-width="1" opacity="0.15"/>
+    
+    <!-- Quantum Orbs -->
+    <circle cx="0" cy="-30" r="4" fill="url(#logoGradient)" filter="url(#glow)" opacity="0.9">
+      <animate attributeName="cy" values="-30;-28;-30" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="30" cy="0" r="4" fill="url(#logoGradient)" filter="url(#glow)" opacity="0.9">
+      <animate attributeName="cx" values="30;32;30" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="0" cy="30" r="4" fill="url(#logoGradient)" filter="url(#glow)" opacity="0.9">
+      <animate attributeName="cy" values="30;32;30" dur="4s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="-30" cy="0" r="4" fill="url(#logoGradient)" filter="url(#glow)" opacity="0.9">
+      <animate attributeName="cx" values="-30;-28;-30" dur="4s" begin="1.5s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- Center Orb -->
+    <circle cx="0" cy="0" r="6" fill="url(#logoGradient)" filter="url(#glow)" opacity="0.95"/>
   </g>
-  <text x="140" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="url(#textGrad)">L</text>
-  <circle cx="185" cy="50" r="8" fill="url(#textGrad)">
-    <animate attributeName="r" values="7.5;8.5;7.5" dur="3s" repeatCount="indefinite" />
+  
+  <!-- Text: Lokazen -->
+  <text x="140" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="url(#textGradient)">
+    L
+  </text>
+  
+  <!-- Quantum Node as "O" -->
+  <circle cx="185" cy="50" r="8" fill="url(#logoGradient)" filter="url(#glow)" opacity="0.95">
+    <animate attributeName="r" values="8;9;8" dur="3s" repeatCount="indefinite"/>
   </circle>
-  <text x="200" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="url(#textGrad)">ka</text>
-  <text x="260" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#1F2937">zen</text>
-  <text x="150" y="85" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#6B7280">Powered By Ai</text>
+  
+  <text x="200" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="url(#textGradient)">
+    ka
+  </text>
+  
+  <text x="260" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#1F2937">
+    zen
+  </text>
+  
+  <!-- Powered By Ai -->
+  <text x="140" y="85" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#6B7280">
+    Powered By Ai
+  </text>
 </svg>
+
+

@@ -27,12 +27,22 @@ export const metadata: Metadata = {
     siteName: 'Lokazen',
     type: 'website',
     locale: 'en_IN',
+    images: [
+      {
+        url: '/lokazen-social.png',
+        width: 1200,
+        height: 630,
+        alt: 'Lokazen - AI-Powered Commercial Real Estate Matching Platform',
+        type: 'image/png',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Lokazen - Connect Brands with Properties | AI-Powered Commercial Real Estate Matching',
     description:
       'Brands: Find your ideal commercial space. Owners: List properties and connect with qualified tenants. AI-powered matchmaking for retail, QSR, F&B spaces in Bangalore. Get matched instantly.',
+    images: ['/lokazen-social.png'],
     creator: '@lokazen',
   },
   icons: {
