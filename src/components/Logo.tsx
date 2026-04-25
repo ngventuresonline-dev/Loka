@@ -13,17 +13,11 @@ interface LogoProps {
 }
 
 export default function Logo({ showText = true, showPoweredBy = true, size = 'md', className = '', href = '/', variant = 'light' }: LogoProps) {
-  const markFrame = {
-    sm: 'w-10 h-10 sm:w-12 sm:h-12',
-    md: 'w-12 h-12 sm:w-14 sm:h-14',
-    lg: 'w-16 h-16 sm:w-20 sm:h-20',
-  }[size]
-
-  const oFrame = {
-    sm: 'w-[1.1rem] h-[1.1rem] sm:w-[1.2rem] sm:h-[1.2rem]',
-    md: 'w-[1.25rem] h-[1.25rem] sm:w-[1.4rem] sm:h-[1.4rem]',
-    lg: 'w-8 h-8 sm:w-9 sm:h-9',
-  }[size]
+  const sizeClasses = {
+    sm: { container: 'w-10 h-10 sm:w-12 sm:h-12' },
+    md: { container: 'w-12 h-12 sm:w-14 sm:h-14' },
+    lg: { container: 'w-16 h-16 sm:w-20 sm:h-20' },
+  }
 
   const textSizes = {
     sm: { main: 'text-sm sm:text-sm', domain: 'text-[10px] sm:text-[10px]' },
@@ -31,6 +25,7 @@ export default function Logo({ showText = true, showPoweredBy = true, size = 'md
     lg: { main: 'text-2xl sm:text-3xl md:text-4xl', domain: 'text-sm sm:text-sm' },
   }
 
+  const sizes = sizeClasses[size]
   const textSize = textSizes[size]
   const markVariant = variant === 'dark' ? 'dark' : 'light'
   const textColor = variant === 'dark' ? 'text-white' : 'text-gray-900'
@@ -38,7 +33,7 @@ export default function Logo({ showText = true, showPoweredBy = true, size = 'md
 
   const LogoContent = () => (
     <div className={`flex items-center gap-2 sm:gap-3 ${className}`}>
-      <div className={`relative ${markFrame} flex-shrink-0`}>
+      <div className={`relative ${sizes.container} flex-shrink-0`}>
         <LokaNodesMark className="block h-full w-full" size={100} variant={markVariant} />
       </div>
 
@@ -46,13 +41,27 @@ export default function Logo({ showText = true, showPoweredBy = true, size = 'md
         <div className="min-w-0 flex flex-col">
           <h1 className={`${textSize.main} font-black ${textColor} flex items-center leading-tight`}>
             <span className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">L</span>
+            {/* O = single moving orb (unchanged lockup) */}
             <span
               className="relative inline-flex items-center justify-center"
-              style={{ width: '0.85em', height: '1em', marginLeft: '0.04em', marginRight: '0.04em' }}
+              style={{ width: '0.7em', height: '1em', marginLeft: '0.05em', marginRight: '0.05em' }}
             >
-              <span className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${oFrame}`}>
-                <LokaNodesMark className="h-full w-full" size={100} variant={markVariant} />
-              </span>
+              <div
+                className={
+                  `absolute top-1/2 left-1/2 ${
+                    size === 'sm'
+                      ? 'w-2.5 h-2.5 sm:w-3 sm:h-3'
+                      : size === 'md'
+                        ? 'w-3 h-3 sm:w-3.5 sm:h-3.5'
+                        : 'w-3.5 h-3.5 sm:w-4 sm:h-4'
+                  } bg-gradient-to-br from-[#FF5200] to-[#E4002B] rounded-full shadow-sm sm:shadow-md shadow-[#FF5200]/40`
+                }
+                style={{
+                  animation: 'quantumFloatO 3s ease-in-out infinite',
+                  animationDelay: '0s',
+                  willChange: 'transform',
+                }}
+              />
             </span>
             <span className="bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">ka</span>
             <span className={textColor}>zen</span>

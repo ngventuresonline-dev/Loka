@@ -7,19 +7,22 @@ export const alt = 'Lokazen - AI-Powered Commercial Real Estate Matching'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-const OR = '#E8500A'
-const O2 = '#FF6B2B'
-const MUTED = '#1F2937'
-const TINT = 'rgba(255, 90, 30, 0.06)'
+const L_ORANGE = '#E8500A'
+const DARK = '#1a1a1a'
+const MUTED = '#4B5563'
 
-function getMarkDataUrl(): string {
-  const path = join(process.cwd(), 'public/brand/loka-nodes-og.svg')
-  const buf = readFileSync(path, 'utf-8')
+function loadDataUrl(relative: string) {
+  const p = join(process.cwd(), 'public', relative)
+  const buf = readFileSync(p, 'utf-8')
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(buf)}`
 }
 
+/**
+ * Social preview aligned with shared comp: two overlapping triangles above the name,
+ * “L” in orange, “o” as a simple dot, “kazen” dark, light peach→white background.
+ */
 export default function OpengraphImage() {
-  const mark = getMarkDataUrl()
+  const hero = loadDataUrl('brand/lokazen-og-hero.svg')
 
   return new ImageResponse(
     (
@@ -31,8 +34,8 @@ export default function OpengraphImage() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 56,
-          background: `linear-gradient(130deg, ${TINT} 0%, #FFFFFF 45%, #FFFFFF 100%)`,
+          padding: 48,
+          background: 'linear-gradient(105deg, #FFF1E6 0%, #FFFFFF 42%, #FFFFFF 100%)',
           fontFamily:
             'ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
         }}
@@ -40,29 +43,14 @@ export default function OpengraphImage() {
         <div
           style={{
             display: 'flex',
-            flexDirection: 'row',
+            width: 280,
+            height: 200,
             alignItems: 'center',
-            marginBottom: 32,
-            gap: 0,
+            justifyContent: 'center',
+            marginBottom: 8,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              width: 160,
-              height: 160,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <img
-              width={200}
-              height={200}
-              src={mark}
-              alt=""
-              style={{ objectFit: 'contain', display: 'flex' }}
-            />
-          </div>
+          <img width={200} height={200} src={hero} alt="" style={{ objectFit: 'contain' }} />
         </div>
 
         <div
@@ -70,51 +58,34 @@ export default function OpengraphImage() {
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            flexWrap: 'wrap',
             justifyContent: 'center',
+            marginTop: 8,
+            marginBottom: 20,
           }}
         >
-          <span
-            style={{
-              color: OR,
-              fontSize: 80,
-              fontWeight: 900,
-              lineHeight: 1,
-            }}
-          >
+          <span style={{ color: L_ORANGE, fontSize: 72, fontWeight: 900, lineHeight: 1, letterSpacing: -1 }}>
             L
           </span>
           <div
             style={{
               display: 'flex',
-              width: 72,
-              height: 72,
-              margin: '0 1px 0 4px',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              background: `linear-gradient(135deg, #FF5200, #E4002B)`,
+              margin: '0 2px 0 4px',
             }}
-          >
-            <img width={200} height={200} src={mark} alt="" style={{ objectFit: 'contain' }} />
-          </div>
+          />
           <span
             style={{
-              color: O2,
-              fontSize: 80,
-              fontWeight: 900,
+              color: DARK,
+              fontSize: 72,
+              fontWeight: 800,
               lineHeight: 1,
+              marginLeft: 0,
             }}
           >
-            ka
-          </span>
-          <span
-            style={{
-              color: MUTED,
-              fontSize: 80,
-              fontWeight: 900,
-              lineHeight: 1,
-            }}
-          >
-            zen
+            kazen
           </span>
         </div>
 
@@ -124,10 +95,9 @@ export default function OpengraphImage() {
             fontSize: 30,
             fontWeight: 600,
             lineHeight: 1.4,
-            margin: '32px 0 0 0',
+            margin: 0,
             textAlign: 'center',
-            maxWidth: 920,
-            opacity: 0.9,
+            maxWidth: 900,
           }}
         >
           AI-Powered commercial real estate matching in Bangalore
@@ -136,13 +106,12 @@ export default function OpengraphImage() {
           style={{
             color: '#6B7280',
             fontSize: 20,
-            fontWeight: 500,
+            fontWeight: 600,
             margin: '20px 0 0 0',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
           }}
         >
-          lokazen.in
+          LOKAZEN.IN
         </p>
       </div>
     ),
