@@ -4,25 +4,125 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { useAuth } from '@/contexts/AuthContext'
+import {
+  Building2,
+  Users,
+  UserCheck,
+  MessageSquare,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  ArrowUpRight,
+  GitMerge,
+  Zap,
+  Plus,
+} from 'lucide-react'
 
-interface DashboardStats {
-  propertiesTotal: number
-  propertiesPending: number
-  brandsActive: number
-  inquiriesPending: number
-  recentInquiries: Array<{
-    id: string
-    brand: { name: string }
-    property: { title: string }
-    status: string
-    createdAt: string
-  }>
+interface AdminStats {
+  overview: {
+    totalUsers: number
+    totalProperties: number
+    totalInquiries: number
+    activeMatches: number
+  }
+  breakdown: {
+    usersByType: Record<string, number>
+    propertiesByStatus: { available: number; occupied: number }
+    inquiriesByStatus: Record<string, number>
+  }
+  recentActivity: {
+    users: Array<{ id: string; name: string; email: string; userType: string; createdAt: string }>
+    properties: Array<{ id: string; title: string; city: string; price: number; createdAt: string }>
+    inquiries: Array<{
+      id: string
+      status: string
+      createdAt: string
+      brand: { name: string; email: string }
+      property: { title: string; address: string }
+    }>
+  }
+  platformMetrics: {
+    averageBFI: number
+    averagePFI: number
+    totalMatches: number
+    matchSuccessRate: number
+    conversionRate: number
+  }
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  accent,
+  href,
+  cta,
+}: {
+  label: string
+  value: number | string
+  sub?: string
+  icon: React.ElementType
+  accent: string
+  href?: string
+  cta?: string
+}) {
+  const router = useRouter()
+  return (
+    <div
+      className={`bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col gap-3 ${href ? 'cursor-pointer hover:border-gray-700 transition-colors group' : ''}`}
+      onClick={() => href && router.push(href)}
+    >
+      <div className="flex items-start justify-between">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center`} style={{ background: `${accent}20` }}>
+          <Icon className="w-5 h-5" style={{ color: accent }} />
+        </div>
+        {href && (
+          <ArrowUpRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
+        )}
+      </div>
+      <div>
+        <p className="text-3xl font-black text-white tabular-nums">{value}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+      </div>
+      {sub && <p className="text-xs font-medium" style={{ color: accent }}>{sub}</p>}
+      {cta && (
+        <p className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors mt-auto">{cta} →</p>
+      )}
+    </div>
+  )
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffH = Math.floor(diffMs / 3_600_000)
+  const diffD = Math.floor(diffMs / 86_400_000)
+  if (diffH < 1) return 'Just now'
+  if (diffH < 24) return `${diffH}h ago`
+  if (diffD < 7) return `${diffD}d ago`
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
+
+const USER_TYPE_COLOR: Record<string, string> = {
+  admin: 'text-red-400 bg-red-500/10',
+  brand: 'text-blue-400 bg-blue-500/10',
+  owner: 'text-green-400 bg-green-500/10',
+}
+
+const INQ_STATUS_COLOR: Record<string, string> = {
+  pending: 'text-yellow-400 bg-yellow-500/10',
+  responded: 'text-green-400 bg-green-500/10',
+  rejected: 'text-red-400 bg-red-500/10',
+  closed: 'text-gray-400 bg-gray-500/10',
 }
 
 export default function AdminPage() {
   const router = useRouter()
   const { user, isLoggedIn, loading: authLoading } = useAuth()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,57 +133,19 @@ export default function AdminPage() {
   }, [isLoggedIn, user, authLoading])
 
   const fetchStats = async () => {
-    if (!user?.id || !user?.email) return
-
+    if (!user?.id) return
     try {
       setLoading(true)
       setError(null)
-
-      const [propsRes, brandsRes, inquiriesRes] = await Promise.all([
-        fetch(`/api/admin/properties?limit=5000&page=1&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`),
-        fetch(`/api/admin/brands?userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`),
-        fetch(`/api/admin/inquiries?limit=100&page=1&userId=${user.id}&userEmail=${encodeURIComponent(user.email)}`),
-      ])
-
-      const propsData = propsRes.ok ? await propsRes.json() : { properties: [] }
-      const brandsData = brandsRes.ok ? await brandsRes.json() : { brands: [] }
-      const inquiriesData = inquiriesRes.ok ? await inquiriesRes.json() : { inquiries: [], total: 0 }
-
-      const properties = propsData.properties || []
-      const brands = brandsData.brands || []
-      const inquiries = inquiriesData.inquiries || []
-
-      const pendingProps = properties.filter(
-        (p: any) => (p.status || (p.availability === false ? 'pending' : 'approved')) === 'pending'
+      const res = await fetch(
+        `/api/admin/stats?range=all&userId=${user.id}&userEmail=${encodeURIComponent(user.email || '')}`,
+        { credentials: 'include' }
       )
-      const pendingInq = inquiries.filter(
-        (i: any) => ['pending'].includes(i.status?.toLowerCase() || '')
-      )
-      const activeBrands = brands.filter((b: any) => b.isActive !== false)
-
-      setStats({
-        propertiesTotal: properties.length,
-        propertiesPending: pendingProps.length,
-        brandsActive: activeBrands.length,
-        inquiriesPending: pendingInq.length,
-        recentInquiries: inquiries.slice(0, 5).map((i: any) => ({
-          id: i.id,
-          brand: i.brand || { name: 'N/A' },
-          property: i.property || { title: 'N/A' },
-          status: i.status || 'pending',
-          createdAt: i.createdAt || '',
-        })),
-      })
+      if (!res.ok) throw new Error(`Stats API returned ${res.status}`)
+      setStats(await res.json())
     } catch (err: any) {
-      console.error('[Admin] Error fetching stats:', err)
+      console.error('[Admin] Stats error:', err)
       setError(err.message || 'Failed to load dashboard')
-      setStats({
-        propertiesTotal: 0,
-        propertiesPending: 0,
-        brandsActive: 0,
-        inquiriesPending: 0,
-        recentInquiries: [],
-      })
     } finally {
       setLoading(false)
     }
@@ -93,148 +155,276 @@ export default function AdminPage() {
     return (
       <AdminLayout>
         <div className="flex justify-center items-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200]"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF5200]" />
         </div>
       </AdminLayout>
     )
   }
 
-  if (loading && !stats) {
-    return (
-      <AdminLayout>
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5200] mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading dashboard...</p>
-          </div>
-        </div>
-      </AdminLayout>
-    )
-  }
+  const ov = stats?.overview
+  const br = stats?.breakdown
+  const ra = stats?.recentActivity
+  const pm = stats?.platformMetrics
+
+  const pendingInq = br?.inquiriesByStatus?.pending ?? 0
+  const respondedInq = br?.inquiriesByStatus?.responded ?? 0
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-gray-400">
-            Welcome, <span className="text-[#FF5200] font-semibold">{user?.name || 'Admin'}</span>
-          </p>
-        </div>
-
-        {/* Simple Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div
-            className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 cursor-pointer hover:border-[#FF5200]/50 transition-colors"
-            onClick={() => router.push('/admin/properties')}
-          >
-            <div className="text-gray-400 text-sm mb-1">Properties</div>
-            <div className="text-3xl font-bold text-white">{stats?.propertiesTotal ?? 0}</div>
-            <div className="text-[#FF5200] text-sm mt-2 font-medium">
-              {stats?.propertiesPending ?? 0} pending
-            </div>
+      <div className="space-y-8 max-w-7xl">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Welcome back, <span className="text-[#FF5200] font-medium">{user?.name || 'Admin'}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
-              className="mt-3 text-sm text-gray-400 hover:text-[#FF5200]"
-              onClick={(e) => { e.stopPropagation(); router.push('/admin/properties/pending') }}
+              onClick={() => router.push('/admin/properties/new')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#FF5200] text-white rounded-lg text-sm font-medium hover:bg-[#E4002B] transition-colors"
             >
-              View pending →
+              <Plus className="w-4 h-4" />
+              Add Property
+            </button>
+            <button
+              onClick={() => router.push('/admin/brands/new')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-700 hover:text-white transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Brand
             </button>
           </div>
-
-          <div
-            className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 cursor-pointer hover:border-[#FF5200]/50 transition-colors"
-            onClick={() => router.push('/admin/brands')}
-          >
-            <div className="text-gray-400 text-sm mb-1">Brands</div>
-            <div className="text-3xl font-bold text-white">{stats?.brandsActive ?? 0}</div>
-            <div className="text-gray-400 text-sm mt-2">active searches</div>
-            <button
-              className="mt-3 text-sm text-gray-400 hover:text-[#FF5200]"
-              onClick={(e) => { e.stopPropagation(); router.push('/admin/brands') }}
-            >
-              Manage brands →
-            </button>
-          </div>
-
-          <div
-            className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 cursor-pointer hover:border-[#FF5200]/50 transition-colors"
-            onClick={() => router.push('/admin/inquiries')}
-          >
-            <div className="text-gray-400 text-sm mb-1">Inquiries</div>
-            <div className="text-3xl font-bold text-white">{stats?.inquiriesPending ?? 0}</div>
-            <div className="text-gray-400 text-sm mt-2">pending</div>
-            <button
-              className="mt-3 text-sm text-gray-400 hover:text-[#FF5200]"
-              onClick={(e) => { e.stopPropagation(); router.push('/admin/inquiries') }}
-            >
-              View pipeline →
-            </button>
-          </div>
-          <div
-            className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 cursor-pointer hover:border-[#FF5200]/50 transition-colors"
-            onClick={() => router.push('/admin/matches')}
-          >
-            <div className="text-gray-400 text-sm mb-1">BFI & PFI Matches</div>
-            <div className="text-3xl font-bold text-white">Property ↔ Brand</div>
-            <div className="text-gray-400 text-sm mt-2">fit scores</div>
-            <button
-              className="mt-3 text-sm text-gray-400 hover:text-[#FF5200]"
-              onClick={(e) => { e.stopPropagation(); router.push('/admin/matches') }}
-            >
-              View matches →
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Inquiries */}
-        <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white">Recent Inquiries</h2>
-            <button
-              onClick={() => router.push('/admin/inquiries')}
-              className="text-sm text-[#FF5200] hover:underline"
-            >
-              View all
-            </button>
-          </div>
-          {stats?.recentInquiries && stats.recentInquiries.length > 0 ? (
-            <div className="space-y-3">
-              {stats.recentInquiries.map((inq) => (
-                <div
-                  key={inq.id}
-                  className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0"
-                >
-                  <div>
-                    <span className="text-white font-medium">{inq.brand.name}</span>
-                    <span className="text-gray-400"> → </span>
-                    <span className="text-gray-300">{inq.property.title}</span>
-                  </div>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs ${
-                      inq.status === 'pending'
-                        ? 'bg-yellow-500/20 text-yellow-400'
-                        : 'bg-gray-500/20 text-gray-400'
-                    }`}
-                  >
-                    {inq.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400 text-center py-8">No recent inquiries</p>
-          )}
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
-            {error}
-            <button
-              onClick={fetchStats}
-              className="ml-4 px-3 py-1 bg-red-500/20 rounded text-sm hover:bg-red-500/30"
-            >
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center justify-between">
+            <p className="text-red-400 text-sm">{error}</p>
+            <button onClick={fetchStats} className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30">
               Retry
             </button>
+          </div>
+        )}
+
+        {/* Stats grid */}
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 animate-pulse h-36" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <StatCard
+                label="Total Properties"
+                value={ov?.totalProperties ?? 0}
+                sub={`${br?.propertiesByStatus?.available ?? 0} available`}
+                icon={Building2}
+                accent="#FF5200"
+                href="/admin/properties"
+                cta="Manage listings"
+              />
+              <StatCard
+                label="Active Brands"
+                value={br?.usersByType?.brand ?? 0}
+                sub="Searching spaces"
+                icon={Users}
+                accent="#6366f1"
+                href="/admin/brands"
+                cta="View brands"
+              />
+              <StatCard
+                label="Property Owners"
+                value={br?.usersByType?.owner ?? 0}
+                sub="Registered owners"
+                icon={UserCheck}
+                accent="#22c55e"
+                href="/admin/owners"
+                cta="View owners"
+              />
+              <StatCard
+                label="Total Inquiries"
+                value={ov?.totalInquiries ?? 0}
+                sub={`${pendingInq} pending`}
+                icon={MessageSquare}
+                accent="#f59e0b"
+                href="/admin/inquiries"
+                cta="View pipeline"
+              />
+              <StatCard
+                label="Matches"
+                value={pm?.totalMatches ?? 0}
+                sub={`${pm?.matchSuccessRate?.toFixed(0) ?? 0}% success rate`}
+                icon={GitMerge}
+                accent="#ec4899"
+                href="/admin/matches"
+                cta="View matches"
+              />
+              <StatCard
+                label="Conversion Rate"
+                value={`${pm?.conversionRate?.toFixed(1) ?? '0.0'}%`}
+                sub="Inquiries / users"
+                icon={TrendingUp}
+                accent="#14b8a6"
+              />
+            </div>
+
+            {/* Secondary stats row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Inquiries by Status</p>
+                <div className="space-y-2">
+                  {Object.entries(br?.inquiriesByStatus ?? {}).map(([status, count]) => (
+                    <div key={status} className="flex items-center justify-between">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${INQ_STATUS_COLOR[status] || 'text-gray-400 bg-gray-800'}`}>{status}</span>
+                      <span className="text-sm font-bold text-white">{count as number}</span>
+                    </div>
+                  ))}
+                  {Object.keys(br?.inquiriesByStatus ?? {}).length === 0 && (
+                    <p className="text-xs text-gray-600">No inquiries yet</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Users by Type</p>
+                <div className="space-y-2">
+                  {(['brand', 'owner', 'admin'] as const).map((type) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${USER_TYPE_COLOR[type] || ''}`}>{type}</span>
+                      <span className="text-sm font-bold text-white">{br?.usersByType?.[type] ?? 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Properties Status</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Available</span>
+                    <span className="text-sm font-bold text-white">{br?.propertiesByStatus?.available ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 flex items-center gap-1"><XCircle className="w-3 h-3" /> Occupied</span>
+                    <span className="text-sm font-bold text-white">{br?.propertiesByStatus?.occupied ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-yellow-400 flex items-center gap-1"><Clock className="w-3 h-3" /> Pending</span>
+                    <span className="text-sm font-bold text-white">
+                      {Math.max(0, (ov?.totalProperties ?? 0) - (br?.propertiesByStatus?.available ?? 0) - (br?.propertiesByStatus?.occupied ?? 0))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">AI Scores</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Avg BFI</span>
+                    <span className="text-sm font-bold text-[#FF5200]">{pm?.averageBFI ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Avg PFI</span>
+                    <span className="text-sm font-bold text-[#FF5200]">{pm?.averagePFI ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 flex items-center gap-1"><Zap className="w-3 h-3" /> Responded</span>
+                    <span className="text-sm font-bold text-white">{respondedInq}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Recent activity columns */}
+        {!loading && ra && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Recent inquiries */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+                <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#FF5200]" /> Recent Inquiries
+                </h2>
+                <button onClick={() => router.push('/admin/inquiries')} className="text-xs text-[#FF5200] hover:underline">View all</button>
+              </div>
+              <div className="divide-y divide-gray-800">
+                {ra.inquiries.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-gray-600">No inquiries yet</p>
+                ) : ra.inquiries.slice(0, 6).map((inq) => (
+                  <div key={inq.id} className="px-5 py-3 hover:bg-gray-800/40 transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">{inq.brand?.name}</p>
+                        <p className="text-[11px] text-gray-500 truncate">→ {inq.property?.title}</p>
+                      </div>
+                      <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize ${INQ_STATUS_COLOR[inq.status] || 'text-gray-400 bg-gray-800'}`}>
+                        {inq.status}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-1">{formatDate(inq.createdAt)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent properties */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+                <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-[#FF5200]" /> New Listings
+                </h2>
+                <button onClick={() => router.push('/admin/properties')} className="text-xs text-[#FF5200] hover:underline">View all</button>
+              </div>
+              <div className="divide-y divide-gray-800">
+                {ra.properties.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-gray-600">No listings yet</p>
+                ) : ra.properties.slice(0, 6).map((p) => (
+                  <div key={p.id} className="px-5 py-3 hover:bg-gray-800/40 transition-colors">
+                    <p className="text-xs font-semibold text-white truncate">{p.title}</p>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <p className="text-[11px] text-gray-500">{p.city}</p>
+                      <p className="text-[11px] font-bold text-[#FF5200]">
+                        ₹{p.price ? (p.price >= 100000 ? `${(p.price / 100000).toFixed(1)}L` : p.price.toLocaleString('en-IN')) : '—'}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-1">{formatDate(p.createdAt)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* New users */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+                <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#FF5200]" /> New Users
+                </h2>
+                <button onClick={() => router.push('/admin/brands')} className="text-xs text-[#FF5200] hover:underline">View all</button>
+              </div>
+              <div className="divide-y divide-gray-800">
+                {ra.users.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-gray-600">No users yet</p>
+                ) : ra.users.slice(0, 6).map((u) => (
+                  <div key={u.id} className="px-5 py-3 flex items-center gap-3 hover:bg-gray-800/40 transition-colors">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-white truncate">{u.name}</p>
+                      <p className="text-[10px] text-gray-500 truncate">{u.email}</p>
+                    </div>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize flex-shrink-0 ${USER_TYPE_COLOR[u.userType] || ''}`}>
+                      {u.userType}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>

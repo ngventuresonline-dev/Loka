@@ -338,6 +338,26 @@ type NearbyCommercialPocket = {
   dataConfidence: string | null
 }
 
+type NearbyRetailZone = {
+  id: string
+  name: string
+  zoneType: string | null
+  locality: string | null
+  zone: string | null
+  distanceM: number
+  totalRetailSqft: number | null
+  totalStores: number | null
+  anchorBrands: string[]
+  avgFootfallWeekday: number | null
+  avgFootfallWeekend: number | null
+  peakHours: string | null
+  avgTicketSize: number | null
+  metroConnected: boolean | null
+  mallGrade: string | null
+  vacancyPct: number | null
+  avgRentSqft: number | null
+}
+
 type NearbyBrandOutlet = {
   id: string
   brandName: string
@@ -1545,6 +1565,9 @@ type BrandHomeOverviewProps = {
   stats: Stats
   brand: BrandInfo | null
   brandName: string | null
+  recentViews?: PropertyView[]
+  savedProperties?: SavedProperty[]
+  inquiries?: Inquiry[]
   setActiveTab: (t: 'matched' | 'overview' | 'saved' | 'inquiries') => void
   selectProperty: (m: MatchedProperty) => void
   setVisitModal: Dispatch<
@@ -1563,6 +1586,9 @@ function BrandHomeOverview({
   stats,
   brand,
   brandName,
+  recentViews = [],
+  savedProperties = [],
+  inquiries = [],
   setActiveTab,
   selectProperty,
   setVisitModal,
@@ -1588,21 +1614,21 @@ function BrandHomeOverview({
     {
       label: 'Properties Saved',
       value: stats.totalSaved,
-      sub: 'Across your zones',
+      sub: 'Shortlisted by you',
       icon: Heart,
       color: '#6366f1',
     },
     {
-      label: 'Site Visits',
+      label: 'Inquiries Sent',
       value: stats.totalInquiries,
-      sub: 'Scheduled',
+      sub: stats.pendingInquiries > 0 ? `${stats.pendingInquiries} awaiting response` : 'Track your pipeline',
       icon: Calendar,
       color: '#22c55e',
     },
     {
-      label: 'Unread Alerts',
-      value: matches.filter((m) => m.bfiScore >= 85).length,
-      sub: 'Listings matching brief',
+      label: 'High-Fit Spaces',
+      value: matches.filter((m) => m.bfiScore >= 80).length,
+      sub: 'BFI ≥ 80 — strong matches',
       icon: Bell,
       color: '#f59e0b',
     },
@@ -1723,55 +1749,62 @@ function BrandHomeOverview({
         >
           <div className="flex items-center justify-between px-3 py-3 lg:px-4 lg:py-3 border-b border-gray-50">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Recent Activity</span>
             </div>
-            <button type="button" className="text-xs font-semibold text-[#FF5200] hover:underline">
-              All activity
+            <button type="button" onClick={() => { setActiveTab('overview'); setDashboardView('map') }} className="text-xs font-semibold text-[#FF5200] hover:underline">
+              All views
             </button>
           </div>
           <div className="divide-y divide-gray-50 px-3 lg:px-4">
-            {matches.slice(0, 3).map((m, i) => (
-              <div key={m.property.id} className="py-3 flex items-start gap-3">
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    i === 0 ? 'bg-orange-50' : i === 1 ? 'bg-blue-50' : 'bg-green-50'
-                  }`}
-                >
-                  {i === 0 ? (
-                    <Activity className="w-3.5 h-3.5 text-[#FF5200]" aria-hidden />
-                  ) : i === 1 ? (
-                    <Building2 className="w-3.5 h-3.5 text-blue-600" aria-hidden />
-                  ) : (
-                    <TrendingUp className="w-3.5 h-3.5 text-green-600" aria-hidden />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-700 leading-relaxed">
-                    {i === 0 ? (
-                      <>
-                        New <span className="font-semibold text-[#FF5200]">{m.bfiScore}% match</span> —{' '}
-                        {m.property.title.split('|')[0]?.trim() || m.property.title}
-                      </>
-                    ) : i === 1 ? (
-                      <>
-                        Property shortlisted:{' '}
-                        <span className="font-semibold text-gray-900">{m.property.address}</span>
-                      </>
-                    ) : (
-                      <>
-                        Location score updated for{' '}
-                        <span className="font-semibold text-gray-900">{m.property.city}</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
-                  {i === 0 ? '2m ago' : i === 1 ? '1h ago' : '3h ago'}
-                </span>
-              </div>
-            ))}
-            {matches.length === 0 && <div className="py-8 text-center text-sm text-gray-400">No recent activity.</div>}
+            {(() => {
+              const events = [
+                ...recentViews.slice(0, 3).map((v) => ({
+                  key: `view-${v.id}`,
+                  icon: <Activity className="w-3.5 h-3.5 text-[#FF5200]" aria-hidden />,
+                  bg: 'bg-orange-50',
+                  text: <><span className="font-semibold text-gray-900">{v.property.title.split('|')[0]?.trim() || v.property.title}</span> — viewed</>,
+                  time: v.viewedAt,
+                })),
+                ...savedProperties.slice(0, 2).map((sp) => ({
+                  key: `saved-${sp.id}`,
+                  icon: <Heart className="w-3.5 h-3.5 text-indigo-500" aria-hidden />,
+                  bg: 'bg-indigo-50',
+                  text: <><span className="font-semibold text-gray-900">{sp.property.title.split('|')[0]?.trim() || sp.property.title}</span> — saved</>,
+                  time: sp.savedAt,
+                })),
+                ...inquiries.slice(0, 2).map((inq) => ({
+                  key: `inq-${inq.id}`,
+                  icon: <TrendingUp className="w-3.5 h-3.5 text-green-600" aria-hidden />,
+                  bg: 'bg-green-50',
+                  text: <>Inquiry sent for <span className="font-semibold text-gray-900">{inq.property.title.split('|')[0]?.trim() || inq.property.title}</span></>,
+                  time: inq.createdAt,
+                })),
+              ]
+                .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+                .slice(0, 5)
+
+              if (events.length === 0) {
+                return <div className="py-8 text-center text-sm text-gray-400">No recent activity yet. Browse spaces to get started.</div>
+              }
+
+              return events.map(({ key, icon, bg, text, time }) => {
+                const d = new Date(time)
+                const diffH = Math.floor((Date.now() - d.getTime()) / 3_600_000)
+                const timeLabel = diffH < 1 ? 'Just now' : diffH < 24 ? `${diffH}h ago` : `${Math.floor(diffH / 24)}d ago`
+                return (
+                  <div key={key} className="py-3 flex items-start gap-3">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${bg}`}>
+                      {icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 leading-relaxed">{text}</p>
+                    </div>
+                    <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">{timeLabel}</span>
+                  </div>
+                )
+              })
+            })()}
           </div>
         </div>
       </div>
@@ -1963,6 +1996,7 @@ export default function BrandDashboardPage() {
   const [localityIntel, setLocalityIntel] = useState<LocalityIntelData | null>(null)
   const [nearestPocket, setNearestPocket] = useState<NearbyCommercialPocket | null>(null)
   const [nearbyBrandOutlets, setNearbyBrandOutlets] = useState<NearbyBrandOutlet[]>([])
+  const [nearbyRetailZones, setNearbyRetailZones] = useState<NearbyRetailZone[]>([])
 
   /** Listing pin: intel coords + map_link override for generic centroid; before intel loads, use map_link or match coords. */
   const selectedListingCoords = useMemo(() => {
@@ -2514,6 +2548,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
     setLocalityIntel(null)
     setNearestPocket(null)
     setNearbyBrandOutlets([])
+    setNearbyRetailZones([])
     const catchmentCoords = m.coords && areUsablePinCoords(m.coords) ? m.coords : null
     const coordSuffix = catchmentCoords ? `&lat=${catchmentCoords.lat}&lng=${catchmentCoords.lng}` : ''
     const pid = m.property.id
@@ -2548,6 +2583,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => { if (res?.outlets) setNearbyBrandOutlets(res.outlets) })
       .catch(() => {})
+
+    fetch(`/api/dashboard/brand/retail-zones?propertyId=${pid}${coordSuffix}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => { if (res?.zones) setNearbyRetailZones(res.zones) })
+      .catch(() => {})
   }
 
   const goToDashboardHome = useCallback(() => {
@@ -2561,6 +2601,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
     setLocalityIntel(null)
     setNearestPocket(null)
     setNearbyBrandOutlets([])
+    setNearbyRetailZones([])
     setRightMode('map')
     setDashboardView('home')
     setMobileView('list')
@@ -2876,7 +2917,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 },
               },
               {
-                label: 'Site Visits',
+                label: 'Inquiries',
                 icon: Calendar,
                 count: stats.totalInquiries,
                 active: false,
@@ -3009,6 +3050,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                 stats={stats}
                 brand={brand}
                 brandName={brandName}
+                recentViews={recentViews}
+                savedProperties={savedProperties}
+                inquiries={inquiries}
                 setActiveTab={setActiveTab}
                 selectProperty={selectProperty}
                 setVisitModal={setVisitModal}
@@ -3391,6 +3435,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
               stats={stats}
               brand={brand}
               brandName={brandName}
+              recentViews={recentViews}
+              savedProperties={savedProperties}
+              inquiries={inquiries}
               setActiveTab={setActiveTab}
               selectProperty={selectProperty}
               setVisitModal={setVisitModal}
@@ -5294,6 +5341,74 @@ Be specific to ${area} / ${address}. No generic statements.`,
                             )}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Nearby malls & retail zones from bangalore_retail_zones */}
+                    {nearbyRetailZones.length > 0 && (
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-gray-900">Nearby Retail Destinations</h3>
+                          <span className="text-[10px] bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-medium">
+                            Within 3km
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          {nearbyRetailZones.slice(0, 4).map((zone) => (
+                            <div key={zone.id} className="border border-gray-100 rounded-xl p-3">
+                              <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <div>
+                                  <p className="font-semibold text-gray-900 text-xs">{zone.name}</p>
+                                  <p className="text-[10px] text-gray-500">{zone.locality} · {(zone.distanceM / 1000).toFixed(1)}km away</p>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {zone.mallGrade && (
+                                    <span className="text-[9px] font-bold bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full">
+                                      Grade {zone.mallGrade}
+                                    </span>
+                                  )}
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                    zone.zoneType === 'mall'
+                                      ? 'bg-purple-50 text-purple-600'
+                                      : 'bg-green-50 text-green-600'
+                                  }`}>
+                                    {zone.zoneType === 'mall' ? 'Mall' : 'High Street'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                {zone.avgFootfallWeekday != null && (
+                                  <div className="bg-orange-50 rounded-lg p-1.5">
+                                    <p className="text-[9px] text-gray-500">Wkday footfall</p>
+                                    <p className="text-xs font-bold text-gray-800">{zone.avgFootfallWeekday.toLocaleString('en-IN')}</p>
+                                  </div>
+                                )}
+                                {zone.totalStores != null && (
+                                  <div className="bg-gray-50 rounded-lg p-1.5">
+                                    <p className="text-[9px] text-gray-500">Stores</p>
+                                    <p className="text-xs font-bold text-gray-800">{zone.totalStores}</p>
+                                  </div>
+                                )}
+                                {zone.avgRentSqft != null && (
+                                  <div className="bg-gray-50 rounded-lg p-1.5">
+                                    <p className="text-[9px] text-gray-500">Rent/sqft</p>
+                                    <p className="text-xs font-bold text-gray-800">₹{zone.avgRentSqft}</p>
+                                  </div>
+                                )}
+                              </div>
+                              {zone.anchorBrands.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {zone.anchorBrands.slice(0, 5).map((b) => (
+                                    <span key={b} className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{b}</span>
+                                  ))}
+                                  {zone.anchorBrands.length > 5 && (
+                                    <span className="text-[9px] text-gray-400">+{zone.anchorBrands.length - 5} more</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
