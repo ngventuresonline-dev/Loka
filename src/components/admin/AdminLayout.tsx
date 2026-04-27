@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEffect, useState } from 'react'
-import AdminSidebar from './AdminSidebar'
+import Link from 'next/link'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -79,9 +79,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </div>
 
-      {/* Sidebar + Content */}
       <div className="flex pt-16">
-        <AdminSidebar />
+        <aside className="fixed top-16 left-0 w-64 min-h-[calc(100vh-4rem)] border-r border-gray-800 bg-gray-900/90 p-4 text-sm text-gray-300">
+          <nav className="flex flex-col gap-2">
+            <Link href="/admin" className="hover:text-white">
+              Dashboard
+            </Link>
+            <Link href="/admin/properties" className="hover:text-white">
+              Properties
+            </Link>
+            <Link href="/admin/brands" className="hover:text-white">
+              Brands
+            </Link>
+            <Link href="/admin/owners" className="hover:text-white">
+              Owners
+            </Link>
+            <Link href="/admin/analytics" className="hover:text-white">
+              Analytics
+            </Link>
+          </nav>
+        </aside>
         <main className="flex-1 ml-64 p-8">
           {children}
         </main>

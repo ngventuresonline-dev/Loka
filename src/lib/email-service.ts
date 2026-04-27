@@ -383,23 +383,33 @@ export function generateSecurePassword(length: number = 12): string {
   const symbols = '!@#$%&*'
   const allChars = uppercase + lowercase + numbers + symbols
 
+  const randomIndex = (charset: string) => {
+    const a = new Uint32Array(1)
+    globalThis.crypto.getRandomValues(a)
+    return a[0]! % charset.length
+  }
+
   // Ensure at least one character from each set
   let password = ''
-  password += uppercase[Math.floor(Math.random() * uppercase.length)]
-  password += lowercase[Math.floor(Math.random() * lowercase.length)]
-  password += numbers[Math.floor(Math.random() * numbers.length)]
-  password += symbols[Math.floor(Math.random() * symbols.length)]
+  password += uppercase[randomIndex(uppercase)]
+  password += lowercase[randomIndex(lowercase)]
+  password += numbers[randomIndex(numbers)]
+  password += symbols[randomIndex(symbols)]
 
   // Fill the rest randomly
   for (let i = password.length; i < length; i++) {
-    password += allChars[Math.floor(Math.random() * allChars.length)]
+    password += allChars[randomIndex(allChars)]
   }
 
-  // Shuffle the password
-  return password
-    .split('')
-    .sort(() => Math.random() - 0.5)
-    .join('')
+  // Fisher–Yates shuffle
+  const chars = password.split('')
+  for (let i = chars.length - 1; i > 0; i--) {
+    const a = new Uint32Array(1)
+    globalThis.crypto.getRandomValues(a)
+    const j = a[0]! % (i + 1)
+    ;[chars[i], chars[j]] = [chars[j]!, chars[i]!]
+  }
+  return chars.join('')
 }
 
 

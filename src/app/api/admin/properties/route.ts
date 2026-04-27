@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUserType } from '@/lib/api-auth'
+import { requireUserType, requireAdminAuth as requireAdminSessionAuth } from '@/lib/api-auth'
 import { requireAdminAuth, logAdminAction } from '@/lib/admin-security'
 import { getPrisma } from '@/lib/get-prisma'
 import { generatePropertyId } from '@/lib/property-id-generator'
@@ -606,20 +606,29 @@ export async function POST(request: NextRequest) {
     // If no ownerId provided or explicitly marked as admin, attach to admin user
     const addedByValue = addedBy?.toLowerCase() || 'admin'
     if (!finalOwnerId || addedByValue === 'admin') {
-      const adminEmail = 'admin@ngventures.com'
-      const adminUser = await prisma.user.upsert({
-        where: { email: adminEmail },
-        update: {
-          userType: 'admin',
-        },
-        create: {
-          email: adminEmail,
-          name: 'System Administrator',
-          password: '$2b$10$placeholder_hash_change_in_production',
-          userType: 'admin',
-        },
-      })
-      finalOwnerId = adminUser.id
+      const defaultId = process.env.LOKAZEN_DEFAULT_LISTING_OWNER_USER_ID?.trim()
+      if (defaultId) {
+        const row = await prisma.user.findUnique({
+          where: { id: defaultId },
+          select: { id: true },
+        })
+        if (row) {
+          finalOwnerId = row.id
+        } else {
+          return NextResponse.json(
+            { error: 'LOKAZEN_DEFAULT_LISTING_OWNER_USER_ID does not match an existing user' },
+            { status: 500 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          {
+            error:
+              'Set LOKAZEN_DEFAULT_LISTING_OWNER_USER_ID to an existing user id, or pass ownerId for admin listings',
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // Generate property ID in prop-XXX format
@@ -775,52 +784,9 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    // Handle authentication with fallback (same pattern as DELETE)
-    let user
-    try {
-      user = await requireUserType(request, ['admin'])
-    } catch (authError: any) {
-      console.error('[Admin properties PATCH] Auth error:', authError?.message || authError)
-
-      // Fallback: Check if admin email is in query params (dev bypass)
-      const userEmailParam = request.nextUrl.searchParams.get('userEmail')
-      if (userEmailParam) {
-        const decodedEmail = decodeURIComponent(userEmailParam).toLowerCase()
-        if (decodedEmail === 'admin@ngventures.com') {
-          const prisma = await getPrisma()
-          if (prisma) {
-            try {
-              const adminUser = await prisma.user.upsert({
-                where: { email: 'admin@ngventures.com' },
-                update: { userType: 'admin' },
-                create: {
-                  email: 'admin@ngventures.com',
-                  name: 'System Administrator',
-                  password: '$2b$10$placeholder_hash_change_in_production',
-                  userType: 'admin',
-                },
-                select: { id: true, email: true, name: true, userType: true, phone: true },
-              })
-              user = {
-                id: adminUser.id,
-                email: adminUser.email,
-                name: adminUser.name,
-                userType: adminUser.userType as 'admin',
-                phone: adminUser.phone,
-              }
-            } catch (fallbackError: any) {
-              console.error('[Admin properties PATCH] Fallback auth failed:', fallbackError?.message || fallbackError)
-            }
-          }
-        }
-      }
-
-      if (!user) {
-        return NextResponse.json(
-          { error: authError?.message || 'Authentication required' },
-          { status: 401 }
-        )
-      }
+    const authPatch = await requireAdminSessionAuth(request)
+    if (!authPatch.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -1179,52 +1145,9 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Handle authentication with fallback
-    let user
-    try {
-      user = await requireUserType(request, ['admin'])
-    } catch (authError: any) {
-      console.error('[Admin properties DELETE] Auth error:', authError?.message || authError)
-      
-      // Fallback: Check if admin email is in query params
-      const userEmailParam = request.nextUrl.searchParams.get('userEmail')
-      if (userEmailParam) {
-        const decodedEmail = decodeURIComponent(userEmailParam).toLowerCase()
-        if (decodedEmail === 'admin@ngventures.com') {
-          const prisma = await getPrisma()
-          if (prisma) {
-            try {
-              const adminUser = await prisma.user.upsert({
-                where: { email: 'admin@ngventures.com' },
-                update: { userType: 'admin' },
-                create: {
-                  email: 'admin@ngventures.com',
-                  name: 'System Administrator',
-                  password: '$2b$10$placeholder_hash_change_in_production',
-                  userType: 'admin',
-                },
-                select: { id: true, email: true, name: true, userType: true, phone: true },
-              })
-              user = {
-                id: adminUser.id,
-                email: adminUser.email,
-                name: adminUser.name,
-                userType: adminUser.userType as 'admin',
-                phone: adminUser.phone,
-              }
-            } catch (fallbackError: any) {
-              console.error('[Admin properties DELETE] Fallback auth failed:', fallbackError?.message || fallbackError)
-            }
-          }
-        }
-      }
-      
-      if (!user) {
-        return NextResponse.json(
-          { error: authError?.message || 'Authentication required' },
-          { status: 401 }
-        )
-      }
+    const authDelete = await requireAdminSessionAuth(request)
+    if (!authDelete.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)

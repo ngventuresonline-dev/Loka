@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUserType } from '@/lib/api-auth'
+import { requireAdminAuth } from '@/lib/api-auth'
 import { getPrisma, executePrismaQuery } from '@/lib/get-prisma'
 import { generateGenericPropertyTitle, sanitizePropertyTitle } from '@/lib/generate-property-title'
 
@@ -10,8 +10,10 @@ import { generateGenericPropertyTitle, sanitizePropertyTitle } from '@/lib/gener
  */
 export async function POST(request: NextRequest) {
   try {
-    // Require admin authentication
-    await requireUserType(request, ['admin'])
+    const authResult = await requireAdminAuth(request)
+    if (!authResult.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const prisma = await getPrisma()
     if (!prisma) {

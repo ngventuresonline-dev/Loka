@@ -1,48 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUserType } from '@/lib/api-auth'
+import { requireAdminAuth } from '@/lib/api-auth'
 import { getPrisma } from '@/lib/get-prisma'
 import { scheduleWarmIntelCacheForProperty } from '@/lib/intelligence/trigger-warm-intel-cache'
 import { runPropertyReferenceEnrichment } from '@/lib/enrichment/property-reference-enrichment'
 
 export async function POST(request: NextRequest) {
   try {
-    // Handle authentication with fallback
-    let user
-    try {
-      user = await requireUserType(request, ['admin'])
-    } catch (authError: any) {
-      const userEmailParam = request.nextUrl.searchParams.get('userEmail')
-      if (userEmailParam) {
-        const decodedEmail = decodeURIComponent(userEmailParam).toLowerCase()
-        if (decodedEmail === 'admin@ngventures.com') {
-          const prisma = await getPrisma()
-          if (prisma) {
-            try {
-              const adminUser = await prisma.user.upsert({
-                where: { email: 'admin@ngventures.com' },
-                update: { userType: 'admin' },
-                create: {
-                  email: 'admin@ngventures.com',
-                  name: 'System Administrator',
-                  password: '$2b$10$placeholder_hash_change_in_production',
-                  userType: 'admin',
-                },
-                select: { id: true, email: true, name: true, userType: true, phone: true },
-              })
-              user = {
-                id: adminUser.id,
-                email: adminUser.email,
-                name: adminUser.name,
-                userType: adminUser.userType as 'admin',
-                phone: adminUser.phone,
-              }
-            } catch {}
-          }
-        }
-      }
-      if (!user) {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-      }
+    const auth = await requireAdminAuth(request)
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()

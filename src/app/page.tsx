@@ -23,7 +23,7 @@ const BrandRequirementsModal = lazy(() => import('@/components/BrandRequirements
 const PropertyDetailsModal = lazy(() => import('@/components/PropertyDetailsModal'))
 import { type FeaturedProperty } from '@/data/featured-properties'
 import { BrandProfile, OwnerProfile, Property } from '@/types/workflow'
-import { initializeAdminAccount, getCurrentUser, isAdmin } from '@/lib/auth'
+import { getCurrentUser, isAdmin } from '@/lib/auth'
 import { useAuth } from '@/contexts/AuthContext'
 import { getTheme, getPaletteColors } from '@/lib/theme'
 import { getBrandLogo, getBrandInitial } from '@/lib/brand-logos'
@@ -835,9 +835,6 @@ export default function Home() {
     if (typeof window === 'undefined') return
 
     try {
-      // Initialize default admin account
-      initializeAdminAccount()
-
       // Load current theme
       const currentTheme = getTheme()
       setThemeState(currentTheme)

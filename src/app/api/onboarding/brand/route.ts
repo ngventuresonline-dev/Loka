@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { toIndustryKey } from '@/lib/intelligence/industry-key'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
@@ -174,6 +175,33 @@ export async function POST(request: NextRequest) {
       `
     } catch (sessionErr) {
       console.warn('[Brand Onboarding API] Could not save session row:', sessionErr)
+    }
+
+    const industryKey = toIndustryKey(storeType)
+    const topMatches = await prisma.property
+      .findMany({
+        where: { status: 'approved', availability: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { id: true },
+      })
+      .catch(() => [] as { id: string }[])
+
+    const appBase =
+      (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')) ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const adminSecret = process.env.ADMIN_SECRET
+    if (adminSecret) {
+      for (const p of topMatches) {
+        void fetch(`${appBase}/api/intelligence/synthesize`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminSecret}`,
+          },
+          body: JSON.stringify({ propertyId: p.id, industryKey }),
+        }).catch((e) => console.error('[Brand Onboarding] synthesis warm failed', p.id, e))
+      }
     }
 
     return NextResponse.json({ success: true, userId, brandName })

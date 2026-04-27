@@ -283,25 +283,6 @@ export const checkAdminAccess = (): boolean => {
   return isAdmin(user);
 };
 
-// Create default admin account if doesn't exist
-export const initializeAdminAccount = async (): Promise<void> => {
-  if (typeof window === 'undefined') return;
-  
-  const adminEmail = 'admin@ngventures.com';
-  const existingAdmin = findUserByEmail(adminEmail);
-  
-  if (!existingAdmin) {
-    // Create default admin account
-    await createUser(
-      adminEmail,
-      'admin123', // Default password - should be changed
-      'System Administrator',
-      'admin'
-    );
-    console.log('✅ Default admin account created: admin@ngventures.com / admin123');
-  }
-};
-
 // Get all users (Admin only)
 export const getAllUsersAdmin = (): User[] => {
   if (!checkAdminAccess()) {

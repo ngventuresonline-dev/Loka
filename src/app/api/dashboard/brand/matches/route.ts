@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { getPrisma } from '@/lib/get-prisma'
 import {
   areUsablePinCoords,
@@ -10,6 +11,65 @@ import {
   deriveMonthlyRentFromListing,
   getAreaCommercialRentBand,
 } from '@/lib/location-intelligence/location-rent-context'
+import { toIndustryKey, type IndustryKey } from '@/lib/intelligence/industry-key'
+
+const BFI_COLUMN: Record<IndustryKey, string> = {
+  cafe: 'bfi_cafe_qsr',
+  qsr: 'bfi_cafe_qsr',
+  restaurant: 'bfi_restaurant',
+  retail: 'bfi_retail',
+  salon: 'bfi_salon_wellness',
+  bakery: 'bfi_bakery',
+  brewery: 'bfi_brewery',
+  wellness: 'bfi_salon_wellness',
+}
+
+function bfiFromSearchIndexRow(
+  row: Record<string, unknown> | undefined,
+  industry: IndustryKey
+): number | null {
+  if (!row) return null
+  const col = BFI_COLUMN[industry]
+  const o = row as Record<string, unknown>
+  const v = o[col] ?? o[String(col).toLowerCase() as string]
+  if (v == null || v === '') return null
+  const n = Number(v)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return Math.round(n)
+}
+
+/** Persist coords resolved in-dashboard so later requests hit property_location_cache without scanning all areas. */
+async function ensurePropertyLocationCacheCoords(
+  prisma: NonNullable<Awaited<ReturnType<typeof getPrisma>>>,
+  propertyId: string,
+  lat: number,
+  lng: number
+): Promise<void> {
+  try {
+    await prisma.$executeRaw`
+    UPDATE property_location_cache
+    SET resolved_lat = ${lat}::float8, resolved_lng = ${lng}::float8,
+        cached_at = COALESCE(cached_at, NOW())
+    WHERE property_id = ${propertyId}::varchar
+  `
+    await prisma.$executeRaw`
+    INSERT INTO property_location_cache (
+      property_id, resolved_lat, resolved_lng, overall_score, daily_footfall, peak_hours, weekend_boost,
+      competitors, competitor_count, complementary_brands, retail_mix, catchment, catchment_landmarks,
+      saturation_level, market_summary, saturation_index, whitespace_score, demand_gap_score, market_potential_score,
+      cannibalisation_risk, crowd_pullers, similar_markets, metro_name, metro_distance_m, bus_stops,
+      affluence_indicator, total_households, rent_per_sqft, market_rent_low, market_rent_high, rent_data_source, nearest_area_key,
+      cached_at, cache_expires_at, data_quality, source
+    ) SELECT
+      ${propertyId}::varchar, ${lat}::float8, ${lng}::float8, 50, 0, '12-2pm, 7-10pm', 20,
+      '[]'::jsonb, 0, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'medium', '', 0.5, 50, 50, 50, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, ''::varchar, 0, 0, 'Medium', 0, 0, 0, 0, 'area_benchmark', 'unknown',
+      NOW(), NOW() + interval '7 days', 0, 'dashboard_resolved'
+    WHERE NOT EXISTS (SELECT 1 FROM property_location_cache WHERE property_id = ${propertyId}::varchar)
+  `
+  } catch (e) {
+    console.warn('[matches] property_location_cache coords write skipped:', e)
+  }
+}
 
 function brandProfileText(profile: { industry?: string | null; category?: string | null }): string {
   return `${profile.industry || ''} ${profile.category || ''}`.toLowerCase()
@@ -237,6 +297,32 @@ export async function GET(request: NextRequest) {
     const sizeMin = profile.min_size ?? 0
     const sizeMax = profile.max_size ?? 999_999
 
+    const brandIndustry = toIndustryKey(profile.industry)
+    const searchIndexById = new Map<string, Record<string, unknown>>()
+    if (visibleProperties.length) {
+      try {
+        const ids = visibleProperties.map((x) => x.id)
+        const indexRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+          SELECT
+            property_id::text AS property_id,
+            bfi_cafe_qsr, bfi_retail, bfi_salon_wellness, bfi_restaurant, bfi_bakery, bfi_brewery, bfi_wellness, bfi_office
+          FROM property_search_index
+          WHERE property_id::text IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}`))})
+        `
+        for (const r of indexRows) {
+          const id = String(r['property_id'] ?? '')
+          if (id) searchIndexById.set(id, r)
+        }
+      } catch (e) {
+        console.warn(
+          '[Brand Matches API] property_search_index unavailable, using live BFI only:',
+          e instanceof Error ? e.message : e
+        )
+      }
+    }
+
+    const coordsPersist: { id: string; lat: number; lng: number }[] = []
+
     type ScoredMatch = {
       p: (typeof properties)[0]
       bfiScore: number
@@ -283,9 +369,11 @@ export async function GET(request: NextRequest) {
       const visibility = mainRoadVisibilityScore(p.title || '', p.address || '')
       const vfm = valueForMoneyFit(monthlyRent, size, budgetMax, price, band.mid)
 
-      const bfiScore = Math.round(
+      const liveBfi = Math.round(
         budgetFit * 0.24 + sizeFit * 0.2 + locationFit * 0.2 + visibility * 0.18 + vfm * 0.14 + 4
       )
+      const fromIndex = bfiFromSearchIndexRow(searchIndexById.get(p.id), brandIndustry)
+      const bfiScore = fromIndex != null ? fromIndex : liveBfi
 
       const rlat = Number(p.resolved_lat)
       const rlng = Number(p.resolved_lng)
@@ -313,8 +401,22 @@ export async function GET(request: NextRequest) {
         if (h) coords = h
       }
 
+      if (!cacheCoords && coords && areUsablePinCoords(coords)) {
+        coordsPersist.push({ id: p.id, lat: coords.lat, lng: coords.lng })
+      }
+
       return { p, bfiScore, budgetFit, sizeFit, locationFit, coords }
     })
+
+    if (coordsPersist.length) {
+      void Promise.all(
+        coordsPersist.map((c) =>
+          ensurePropertyLocationCacheCoords(prisma, c.id, c.lat, c.lng).catch((err) =>
+            console.warn('[Brand Matches] failed to cache coords for', c.id, err)
+          )
+        )
+      )
+    }
 
     const officeAllowed = (m: (typeof scoredRaw)[0]) => {
       const pt = String(m.p.propertyType || '').toLowerCase()

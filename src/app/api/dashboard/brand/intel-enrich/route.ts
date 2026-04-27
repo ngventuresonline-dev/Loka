@@ -109,6 +109,21 @@ export async function POST(request: NextRequest) {
 
     console.log('[intel-enrich] cache miss (cron will fill)', { propertyId, industryKey })
 
+    const appBase =
+      (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')) ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const adminSecret = process.env.ADMIN_SECRET
+    if (adminSecret) {
+      void fetch(`${appBase}/api/intelligence/synthesize`, {
+        method: 'POST',
+        body: JSON.stringify({ propertyId, industryKey }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminSecret}`,
+        },
+      }).catch(() => {})
+    }
+
     return NextResponse.json(
       {
         success: false,

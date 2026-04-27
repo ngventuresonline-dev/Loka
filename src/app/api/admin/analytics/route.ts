@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUserType } from '@/lib/api-auth'
+import { requireAdminAuth } from '@/lib/api-auth'
 import { getPrisma } from '@/lib/get-prisma'
 import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 
 export async function GET(request: NextRequest) {
   try {
-    // Require admin access
-    await requireUserType(request, ['admin'])
+    const authResult = await requireAdminAuth(request)
+    if (!authResult.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const { searchParams } = new URL(request.url)
     const dateRange = searchParams.get('range') || '30d' // today, 7d, 30d, all

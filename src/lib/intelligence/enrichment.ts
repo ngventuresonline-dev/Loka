@@ -5,8 +5,7 @@ import { fetchAndStoreCompetitorsForProperty } from './fetch-competitors'
 import { fetchTransportForLocation } from './fetch-transport'
 import { buildRevenueLocationProfile, calculateRevenueFromBenchmarks } from './calculate-revenue'
 import { calculateScores } from './calculate-scores'
-import { findNearestWard } from './ward-lookup'
-import { findNearestCensusWard } from './census-lookup'
+import { fetchWardAndCensus } from './fetch-ward-census'
 
 /** Nearest row from bangalore_commercial_pockets for pocket-level revenue inputs. */
 export async function resolveCommercialPocket(
@@ -128,11 +127,7 @@ export async function enrichPropertyIntelligence(propertyId: string, businessTyp
     lng = geocoded.lng
   }
 
-  // Nearest ward (Census 2021 + 2026 projection)
-  const ward = await findNearestWard(prisma, { latitude: lat, longitude: lng })
-
-  // Census-level detailed demographics for the nearest ward (24 Bangalore wards)
-  const census = await findNearestCensusWard(prisma, { latitude: lat, longitude: lng })
+  const { ward, census } = await fetchWardAndCensus(prisma, lat, lng)
 
   // Optional: locality-level area projections for infrastructure boost
   const area =

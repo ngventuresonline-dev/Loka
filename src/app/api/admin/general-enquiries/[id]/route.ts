@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUserType } from '@/lib/api-auth'
+import { requireAdminAuth } from '@/lib/api-auth'
 import { updateGeneralEnquiryStatus } from '@/lib/general-enquiry-db'
 
 export async function PATCH(
@@ -7,7 +7,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireUserType(request, ['admin'])
+    const authResult = await requireAdminAuth(request)
+    if (!authResult.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const { id } = await params
     const body = await request.json()

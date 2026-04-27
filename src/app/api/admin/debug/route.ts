@@ -4,8 +4,14 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { requireAdminAuth } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
+  const authResult = await requireAdminAuth(request)
+  if (!authResult.ok) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const diagnostics: any = {
     timestamp: new Date().toISOString(),
     checks: {}

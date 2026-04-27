@@ -12,6 +12,7 @@ import { ensurePropertiesOptionalColumns } from '@/lib/prisma-properties-schema-
 import { appendToSheet, istTimestamp } from '@/lib/sheets'
 import { fireOwnerPropertyMetaConversion } from '@/lib/meta-capi'
 import { sendNewPropertyNotification } from '@/lib/lead-email'
+import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 
 /* TODO: Add auth when owner registration enabled
 import { getAuthenticatedUser } from '@/lib/api-auth'
@@ -520,6 +521,10 @@ export async function POST(request: NextRequest) {
       property_id: propertyRow.id,
       owner_id: ownerId
     })
+
+    enrichPropertyIntelligence(propertyRow.id).catch((err) =>
+      console.error('[Owner Property] intel cache warm failed:', err)
+    )
 
     // Link session to user if anon_id exists - reuse anonId from top level
     if (anonId && ownerId && anonId.startsWith('anon_')) {

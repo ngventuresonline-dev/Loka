@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUser } from '@/lib/api-auth'
+import { getAuthenticatedUser, requireAdminAuth } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const authResult = await requireAdminAuth(request)
+    if (!authResult.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     console.log('[Test Auth] Starting authentication test...')
     console.log('[Test Auth] URL:', request.url)
     console.log('[Test Auth] Query params:', Object.fromEntries(request.nextUrl.searchParams))

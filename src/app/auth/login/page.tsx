@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
-import { loginUser, initializeAdminAccount } from '@/lib/auth'
+import { loginUser } from '@/lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,20 +13,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
-
-  useEffect(() => {
-    // Initialize admin account on page load
-    const initAdmin = async () => {
-      try {
-        if (typeof initializeAdminAccount === 'function') {
-          await initializeAdminAccount()
-        }
-      } catch (error) {
-        console.error('Error initializing admin account:', error)
-      }
-    }
-    initAdmin()
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

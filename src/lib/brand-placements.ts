@@ -51,7 +51,6 @@ export const brandPlacements: BrandPlacement[] = [
   { brand: "Klutch Klub", location: "Arekere, Bannerghatta Road", size: "15,000 sqft" },
   { brand: "Minibe", location: "Indiranagar 80ft Road", size: "1,000 sqft" },
   { brand: "Wrapafella", location: "Indiranagar 100ft Road", size: "500 sqft" },
-  { brand: "Mumbai Pav Co.", location: "Manyata Tech Park, Hebbal", size: "150 sqft" },
   { brand: "Meltin Desires", location: "Primeco ITPL, Whitefield", size: "400 sqft" },
 ];
 
@@ -75,7 +74,6 @@ const locationToBaseArea: Record<string, string> = {
   "Manyata Tech Park": "Manyata Tech Park",
   "Hennur/Hebbal": "Hennur/Hebbal",
   "Manyata Tech Park, Hennur/Hebbal": "Hennur/Hebbal",
-  "Manyata Tech Park, Hebbal": "Hennur/Hebbal",
   "Primeco ITPL": "Whitefield",
   "Primeco ITPL, Whitefield": "Whitefield",
 };

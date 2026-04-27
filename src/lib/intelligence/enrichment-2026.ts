@@ -9,7 +9,7 @@
 import { getPrisma } from '@/lib/get-prisma'
 import { geocodeAddress } from '@/lib/property-coordinates'
 import { getPropertyCoordinatesFromRow } from '@/lib/property-coordinates'
-import { findNearestCensusWard } from './census-lookup'
+import { fetchWardAndCensus } from './fetch-ward-census'
 import { project2026Demographics } from './projectors/2026-projector'
 import { project2026Economics } from './projectors/economic-projector'
 import { project2026Lifestyle } from './projectors/lifestyle-projector'
@@ -107,7 +107,7 @@ export async function enrich2026Projections(propertyId: string): Promise<Project
     lng = geocoded.lng
   }
 
-  const ward = await findNearestCensusWard(prisma, { latitude: lat, longitude: lng })
+  const { census: ward } = await fetchWardAndCensus(prisma, lat, lng)
   if (!ward) return null
 
   const wardId = ward.wardId as string

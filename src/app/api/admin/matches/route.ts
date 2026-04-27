@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
+import { requireAdminAuth } from '@/lib/api-auth'
 import { logQuerySize, estimateJsonSize } from '@/lib/api-cache'
 import {
   computeAdminMatches,
@@ -9,6 +10,11 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
+    const authResult = await requireAdminAuth(request)
+    if (!authResult.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const view = searchParams.get('view') || 'brand'
     const brandId = searchParams.get('brandId')

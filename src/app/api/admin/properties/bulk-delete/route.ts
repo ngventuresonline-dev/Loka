@@ -1,55 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUserType } from '@/lib/api-auth'
+import { requireAdminAuth } from '@/lib/api-auth'
 import { getPrisma } from '@/lib/get-prisma'
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Handle authentication with fallback
-    let user
-    try {
-      user = await requireUserType(request, ['admin'])
-    } catch (authError: any) {
-      console.error('[Admin properties Bulk DELETE] Auth error:', authError?.message || authError)
-      
-      // Fallback: Check if admin email is in query params
-      const userEmailParam = request.nextUrl.searchParams.get('userEmail')
-      if (userEmailParam) {
-        const decodedEmail = decodeURIComponent(userEmailParam).toLowerCase()
-        if (decodedEmail === 'admin@ngventures.com') {
-          const prisma = await getPrisma()
-          if (prisma) {
-            try {
-              const adminUser = await prisma.user.upsert({
-                where: { email: 'admin@ngventures.com' },
-                update: { userType: 'admin' },
-                create: {
-                  email: 'admin@ngventures.com',
-                  name: 'System Administrator',
-                  password: '$2b$10$placeholder_hash_change_in_production',
-                  userType: 'admin',
-                },
-                select: { id: true, email: true, name: true, userType: true, phone: true },
-              })
-              user = {
-                id: adminUser.id,
-                email: adminUser.email,
-                name: adminUser.name,
-                userType: adminUser.userType as 'admin',
-                phone: adminUser.phone,
-              }
-            } catch (fallbackError: any) {
-              console.error('[Admin properties Bulk DELETE] Fallback auth failed:', fallbackError?.message || fallbackError)
-            }
-          }
-        }
-      }
-      
-      if (!user) {
-        return NextResponse.json(
-          { error: authError?.message || 'Authentication required' },
-          { status: 401 }
-        )
-      }
+    const auth = await requireAdminAuth(request)
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Parse request body
