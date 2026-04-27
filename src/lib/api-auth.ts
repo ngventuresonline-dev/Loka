@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server'
+import { ADMIN_SESSION_COOKIE, verifyAdminSessionCookie } from '@/lib/admin-session-cookie'
 import { createServerClient } from '@/lib/supabase/server'
 import { getPrisma } from './get-prisma'
 
@@ -46,8 +47,9 @@ function collectSupabaseAuthJwtCandidates(request: NextRequest): string[] {
  * Get authenticated user from request
  * Supports multiple auth methods:
  * 1. Supabase session token (Authorization header)
- * 2. Supabase session from cookies
- * 3. Legacy: userId in request body/query (for backwards compatibility; never trust query-string identity alone)
+ * 2. HttpOnly admin session cookie (DB login via /api/auth/admin/login)
+ * 3. Supabase session from cookies
+ * 4. Legacy: userId in request body/query (for backwards compatibility; never trust query-string identity alone)
  */
 export async function getAuthenticatedUser(
   request: NextRequest
@@ -100,6 +102,33 @@ export async function getAuthenticatedUser(
               userType: user.userType as 'brand' | 'owner' | 'admin',
               phone: user.phone,
             }
+          }
+        }
+      }
+    }
+
+    // Method 1b: HttpOnly cookie from POST /api/auth/admin/login (Prisma admin user)
+    const adminCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value
+    if (adminCookie) {
+      const verified = verifyAdminSessionCookie(adminCookie)
+      if (verified) {
+        const user = await prisma.user.findUnique({
+          where: { id: verified.userId },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            userType: true,
+            phone: true,
+          },
+        })
+        if (user && user.userType === 'admin') {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            userType: 'admin',
+            phone: user.phone,
           }
         }
       }

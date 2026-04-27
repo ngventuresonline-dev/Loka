@@ -154,13 +154,17 @@ export const setSession = (user: User): void => {
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 };
 
-export const getSession = (): {
-  userId: string;
-  email: string;
-  userType: 'admin' | 'brand' | 'owner';
-  name: string;
-  isAdmin?: boolean;
-} | null => {
+export type SessionShape = {
+  userId: string
+  email: string
+  userType: 'admin' | 'brand' | 'owner'
+  name: string
+  isAdmin?: boolean
+  /** Set when logged in via /api/auth/admin/login (DB user); UI can show admin without legacy localStorage users table */
+  source?: 'server' | 'local'
+}
+
+export const getSession = (): SessionShape | null => {
   if (typeof window === 'undefined') return null;
   const sessionJson = localStorage.getItem(SESSION_KEY);
   if (!sessionJson) return null;
@@ -180,6 +184,27 @@ export const getSession = (): {
   return session;
 };
 
+/** Call after successful POST /api/auth/admin/login so AuthContext matches the DB admin user */
+export const setServerAdminSession = (u: {
+  id: string
+  email: string
+  name: string
+}): void => {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({
+      userId: u.id,
+      email: u.email,
+      name: u.name,
+      userType: 'admin',
+      isAdmin: true,
+      source: 'server',
+      timestamp: Date.now(),
+    })
+  )
+}
+
 export const clearSession = (): void => {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(SESSION_KEY);
@@ -192,12 +217,29 @@ export const isAuthenticated = (): boolean => {
 export const getCurrentUser = (): User | null => {
   const session = getSession();
   if (!session) return null;
-  
+
+  if (session.source === 'server' && session.userType === 'admin') {
+    return {
+      id: session.userId,
+      email: session.email,
+      name: session.name,
+      userType: 'admin',
+      passwordHash: 'server-managed',
+      createdAt: new Date().toISOString(),
+      onboardingComplete: true,
+      subscriptionTier: 'enterprise',
+      isAdmin: true,
+    }
+  }
+
   return findUserByEmail(session.email);
 };
 
 export const logout = (): void => {
   clearSession();
+  if (typeof window !== 'undefined') {
+    void fetch('/api/auth/admin/logout', { method: 'POST', credentials: 'include' })
+  }
 };
 
 // Update user
