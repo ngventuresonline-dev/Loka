@@ -259,6 +259,50 @@ type SocietiesSummary = {
   societyCount: number
 }
 
+type NearbyTechPark = {
+  id: string
+  name: string
+  locality: string
+  zone: string | null
+  distanceM: number
+  totalEmployees: number
+  totalCompanies: number
+  grade: string | null
+  anchorTenants: string[]
+  isSez: boolean
+  lat: number
+  lng: number
+}
+
+type TechParksSummary = {
+  totalEmployeesWithin3km: number
+  totalParksWithin3km: number
+  nearestParkName: string | null
+  nearestParkDistanceM: number | null
+  topAnchorTenants: string[]
+}
+
+type LocalityIntelData = {
+  locality: string
+  zone: string | null
+  distanceM: number
+  daytimePop: number
+  nighttimePop: number
+  totalOfficeEmployees: number
+  totalRestaurants: number
+  totalCafes: number
+  totalQsr: number
+  avgDailyFootfall: number
+  peakHour: string | null
+  weekendMultiplier: number | null
+  totalApartmentUnits: number
+  avgRent2bhk: number | null
+  commercialRentGfMin: number | null
+  commercialRentGfMax: number | null
+  spendingPowerIndex: number | null
+  diningOutWeekly: number | null
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatPrice(price: number, priceType: string) {
@@ -1863,6 +1907,9 @@ export default function BrandDashboardPage() {
   const [intelWardLabel, setIntelWardLabel] = useState<string | null>(null)
   const [nearbySocieties, setNearbySocieties] = useState<NearbySociety[]>([])
   const [societiesSummary, setSocietiesSummary] = useState<SocietiesSummary | null>(null)
+  const [nearbyTechParks, setNearbyTechParks] = useState<NearbyTechPark[]>([])
+  const [techParksSummary, setTechParksSummary] = useState<TechParksSummary | null>(null)
+  const [localityIntel, setLocalityIntel] = useState<LocalityIntelData | null>(null)
 
   /** Listing pin: intel coords + map_link override for generic centroid; before intel loads, use map_link or match coords. */
   const selectedListingCoords = useMemo(() => {
@@ -2406,19 +2453,35 @@ Be specific to ${area} / ${address}. No generic statements.`,
       m
     )
 
-    // Fire-and-forget nearby societies fetch (non-blocking)
+    // Fire-and-forget enrichment fetches (non-blocking, parallel)
     setNearbySocieties([])
     setSocietiesSummary(null)
+    setNearbyTechParks([])
+    setTechParksSummary(null)
+    setLocalityIntel(null)
     const catchmentCoords = m.coords && areUsablePinCoords(m.coords) ? m.coords : null
-    const catchmentUrl = catchmentCoords
-      ? `/api/dashboard/brand/catchment?propertyId=${m.property.id}&lat=${catchmentCoords.lat}&lng=${catchmentCoords.lng}`
-      : `/api/dashboard/brand/catchment?propertyId=${m.property.id}`
-    fetch(catchmentUrl, { cache: 'no-store' })
+    const coordSuffix = catchmentCoords ? `&lat=${catchmentCoords.lat}&lng=${catchmentCoords.lng}` : ''
+    const pid = m.property.id
+
+    fetch(`/api/dashboard/brand/catchment?propertyId=${pid}${coordSuffix}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
         if (res?.societies) setNearbySocieties(res.societies)
         if (res?.summary) setSocietiesSummary(res.summary)
       })
+      .catch(() => {})
+
+    fetch(`/api/dashboard/brand/techparks?propertyId=${pid}${coordSuffix}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (res?.parks) setNearbyTechParks(res.parks)
+        if (res?.summary) setTechParksSummary(res.summary)
+      })
+      .catch(() => {})
+
+    fetch(`/api/dashboard/brand/locality-intel?propertyId=${pid}${coordSuffix}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => { if (res?.data) setLocalityIntel(res.data) })
       .catch(() => {})
   }
 
@@ -2428,6 +2491,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
     setIntelWardLabel(null)
     setNearbySocieties([])
     setSocietiesSummary(null)
+    setNearbyTechParks([])
+    setTechParksSummary(null)
+    setLocalityIntel(null)
     setRightMode('map')
     setDashboardView('home')
     setMobileView('list')
@@ -4835,6 +4901,71 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         </ul>
                       </div>
                     )}
+
+                    {/* Nearby tech parks / daytime workforce */}
+                    {(nearbyTechParks.length > 0 || techParksSummary) && (
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-gray-900">Daytime Workforce</h3>
+                          <span className="text-[10px] bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5 font-medium">
+                            {techParksSummary ? `${techParksSummary.totalParksWithin3km} parks · 3km` : `${nearbyTechParks.length} parks`}
+                          </span>
+                        </div>
+
+                        {techParksSummary && techParksSummary.totalEmployeesWithin3km > 0 && (
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            <div className="bg-indigo-50 rounded-xl p-3 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Office workers within 3km</p>
+                              <p className="font-bold text-gray-900 text-base">{(techParksSummary.totalEmployeesWithin3km / 1000).toFixed(0)}K+</p>
+                            </div>
+                            <div className="bg-indigo-50 rounded-xl p-3 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Nearest tech park</p>
+                              <p className="font-bold text-gray-900 text-sm truncate">{techParksSummary.nearestParkName ?? '—'}</p>
+                              {techParksSummary.nearestParkDistanceM && (
+                                <p className="text-[10px] text-gray-500">{(techParksSummary.nearestParkDistanceM / 1000).toFixed(2)} km</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {techParksSummary && techParksSummary.topAnchorTenants.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-[10px] text-gray-500 mb-1.5 uppercase tracking-wide font-medium">Key employers nearby</p>
+                            <div className="flex flex-wrap gap-1">
+                              {techParksSummary.topAnchorTenants.slice(0, 8).map((t) => (
+                                <span key={t} className="text-[10px] bg-gray-100 text-gray-700 rounded-full px-2 py-0.5">{t}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <ul className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                          {nearbyTechParks.slice(0, 10).map((tp) => {
+                            const gradeColor = tp.grade === 'A+' ? 'bg-purple-50 text-purple-700'
+                              : tp.grade === 'A' ? 'bg-indigo-50 text-indigo-700'
+                              : 'bg-gray-100 text-gray-600'
+                            return (
+                              <li key={tp.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-gray-50">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-medium text-gray-800 truncate">{tp.name}</span>
+                                    {tp.grade && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${gradeColor}`}>{tp.grade}</span>}
+                                    {tp.isSez && <span className="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">SEZ</span>}
+                                  </div>
+                                  <p className="text-[10px] text-gray-400">{tp.locality}</p>
+                                </div>
+                                <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
+                                  <span className="text-gray-500">{(tp.distanceM / 1000).toFixed(2)} km</span>
+                                  {tp.totalEmployees > 0 && (
+                                    <span className="text-[10px] text-indigo-600 font-medium">{(tp.totalEmployees / 1000).toFixed(0)}K ppl</span>
+                                  )}
+                                </div>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -5030,6 +5161,74 @@ Be specific to ${area} / ${address}. No generic statements.`,
                             ))}
                           </tbody>
                         </table>
+                      </div>
+                    )}
+                  </div>
+
+                    {/* Locality intel from bangalore_locality_intel */}
+                    {localityIntel && (
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-gray-900">Area Intelligence</h3>
+                          <span className="text-[10px] bg-orange-50 text-orange-700 rounded-full px-2 py-0.5 font-medium capitalize">
+                            {localityIntel.locality} · {(localityIntel.distanceM / 1000).toFixed(1)}km
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                          {localityIntel.daytimePop > 0 && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Daytime population</p>
+                              <p className="font-bold text-gray-900 text-sm">{(localityIntel.daytimePop / 1000).toFixed(0)}K</p>
+                            </div>
+                          )}
+                          {localityIntel.avgDailyFootfall > 0 && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Daily footfall</p>
+                              <p className="font-bold text-gray-900 text-sm">{localityIntel.avgDailyFootfall.toLocaleString('en-IN')}</p>
+                              {localityIntel.peakHour && <p className="text-[9px] text-gray-400">Peak: {localityIntel.peakHour}</p>}
+                            </div>
+                          )}
+                          {localityIntel.spendingPowerIndex != null && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Spending power</p>
+                              <p className="font-bold text-gray-900 text-sm">{localityIntel.spendingPowerIndex}/100</p>
+                            </div>
+                          )}
+                          {localityIntel.weekendMultiplier != null && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Weekend boost</p>
+                              <p className="font-bold text-gray-900 text-sm">{localityIntel.weekendMultiplier}×</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                          <div className="border border-gray-100 rounded-xl p-2">
+                            <p className="text-[10px] text-gray-500">Restaurants</p>
+                            <p className="font-bold text-gray-800">{localityIntel.totalRestaurants}</p>
+                          </div>
+                          <div className="border border-gray-100 rounded-xl p-2">
+                            <p className="text-[10px] text-gray-500">Cafes</p>
+                            <p className="font-bold text-gray-800">{localityIntel.totalCafes}</p>
+                          </div>
+                          <div className="border border-gray-100 rounded-xl p-2">
+                            <p className="text-[10px] text-gray-500">QSR</p>
+                            <p className="font-bold text-gray-800">{localityIntel.totalQsr}</p>
+                          </div>
+                        </div>
+
+                        {(localityIntel.commercialRentGfMin || localityIntel.commercialRentGfMax) && (
+                          <div className="text-xs text-gray-600 bg-gray-50 rounded-xl p-2.5">
+                            <span className="font-medium">Ground floor rent: </span>
+                            ₹{localityIntel.commercialRentGfMin?.toLocaleString('en-IN') ?? '?'}
+                            {' – '}
+                            ₹{localityIntel.commercialRentGfMax?.toLocaleString('en-IN') ?? '?'}/sqft/mo
+                            {localityIntel.diningOutWeekly && (
+                              <span className="ml-2 text-gray-500">· Dines out {localityIntel.diningOutWeekly}×/wk</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
