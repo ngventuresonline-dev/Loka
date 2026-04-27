@@ -303,6 +303,57 @@ type LocalityIntelData = {
   diningOutWeekly: number | null
 }
 
+type NearbyCommercialPocket = {
+  id: string
+  name: string
+  locality: string
+  zone: string | null
+  distanceM: number
+  tier: number | null
+  avgDailyFootfall: number
+  peakFootfallWeekday: number | null
+  peakFootfallWeekend: number | null
+  peakHours: string | null
+  rentGfMin: number | null
+  rentGfMax: number | null
+  rentGfTypical: number | null
+  officeDemandPct: number | null
+  residentialDemandPct: number | null
+  transitDemandPct: number | null
+  leisureDemandPct: number | null
+  spendingPowerIndex: number | null
+  avgTicketMultiplier: number | null
+  revenueMultiplier: number | null
+  officeLunchCaptureRate: number | null
+  residentialCaptureRate: number | null
+  fnbSaturation: string | null
+  cafeCountEstimate: number | null
+  qsrCountEstimate: number | null
+  restaurantCountEstimate: number | null
+  retailSaturation: string | null
+  topBrandsPresent: string[]
+  nearbyOfficesMajor: string[]
+  transitAccess: string | null
+  parkingAvailability: string | null
+  dataConfidence: string | null
+}
+
+type NearbyBrandOutlet = {
+  id: string
+  brandName: string
+  industry: string | null
+  type: string | null
+  category: string | null
+  locality: string | null
+  zone: string | null
+  mallName: string | null
+  format: string | null
+  isFlagship: boolean
+  distanceM: number
+  lat: number
+  lng: number
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatPrice(price: number, priceType: string) {
@@ -1910,6 +1961,8 @@ export default function BrandDashboardPage() {
   const [nearbyTechParks, setNearbyTechParks] = useState<NearbyTechPark[]>([])
   const [techParksSummary, setTechParksSummary] = useState<TechParksSummary | null>(null)
   const [localityIntel, setLocalityIntel] = useState<LocalityIntelData | null>(null)
+  const [nearestPocket, setNearestPocket] = useState<NearbyCommercialPocket | null>(null)
+  const [nearbyBrandOutlets, setNearbyBrandOutlets] = useState<NearbyBrandOutlet[]>([])
 
   /** Listing pin: intel coords + map_link override for generic centroid; before intel loads, use map_link or match coords. */
   const selectedListingCoords = useMemo(() => {
@@ -2459,6 +2512,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
     setNearbyTechParks([])
     setTechParksSummary(null)
     setLocalityIntel(null)
+    setNearestPocket(null)
+    setNearbyBrandOutlets([])
     const catchmentCoords = m.coords && areUsablePinCoords(m.coords) ? m.coords : null
     const coordSuffix = catchmentCoords ? `&lat=${catchmentCoords.lat}&lng=${catchmentCoords.lng}` : ''
     const pid = m.property.id
@@ -2483,6 +2538,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => { if (res?.data) setLocalityIntel(res.data) })
       .catch(() => {})
+
+    fetch(`/api/dashboard/brand/commercial-pocket?propertyId=${pid}${coordSuffix}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => { if (res?.nearest) setNearestPocket(res.nearest) })
+      .catch(() => {})
+
+    fetch(`/api/dashboard/brand/brand-outlets?propertyId=${pid}${coordSuffix}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => { if (res?.outlets) setNearbyBrandOutlets(res.outlets) })
+      .catch(() => {})
   }
 
   const goToDashboardHome = useCallback(() => {
@@ -2494,6 +2559,8 @@ Be specific to ${area} / ${address}. No generic statements.`,
     setNearbyTechParks([])
     setTechParksSummary(null)
     setLocalityIntel(null)
+    setNearestPocket(null)
+    setNearbyBrandOutlets([])
     setRightMode('map')
     setDashboardView('home')
     setMobileView('list')
@@ -5229,6 +5296,134 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         )}
                       </div>
                     )}
+
+                    {/* Commercial pocket from bangalore_commercial_pockets */}
+                    {nearestPocket && (
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-gray-900">Commercial Pocket</h3>
+                          <div className="flex items-center gap-1.5">
+                            {nearestPocket.tier && (
+                              <span className="text-[10px] bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 font-medium">
+                                Tier {nearestPocket.tier}
+                              </span>
+                            )}
+                            <span className="text-[10px] bg-orange-50 text-orange-700 rounded-full px-2 py-0.5 font-medium">
+                              {nearestPocket.name} · {(nearestPocket.distanceM / 1000).toFixed(1)}km
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Footfall + rent metrics */}
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                          {nearestPocket.avgDailyFootfall > 0 && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Daily footfall</p>
+                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.avgDailyFootfall.toLocaleString('en-IN')}</p>
+                              {nearestPocket.peakHours && <p className="text-[9px] text-gray-400">Peak: {nearestPocket.peakHours}</p>}
+                            </div>
+                          )}
+                          {nearestPocket.rentGfTypical != null && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">GF rent typical</p>
+                              <p className="font-bold text-gray-900 text-sm">₹{nearestPocket.rentGfTypical}/sqft</p>
+                              {nearestPocket.rentGfMin && nearestPocket.rentGfMax && (
+                                <p className="text-[9px] text-gray-400">₹{nearestPocket.rentGfMin}–{nearestPocket.rentGfMax}</p>
+                              )}
+                            </div>
+                          )}
+                          {nearestPocket.revenueMultiplier != null && (
+                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Revenue multiplier</p>
+                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.revenueMultiplier}×</p>
+                            </div>
+                          )}
+                          {nearestPocket.spendingPowerIndex != null && (
+                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Spending power</p>
+                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.spendingPowerIndex}/100</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* F&B saturation + demand split */}
+                        <div className="flex items-center gap-2 mb-3">
+                          {nearestPocket.fnbSaturation && (
+                            <span className={`text-[10px] rounded-full px-2 py-0.5 font-medium ${
+                              nearestPocket.fnbSaturation === 'high'
+                                ? 'bg-red-50 text-red-700'
+                                : nearestPocket.fnbSaturation === 'medium'
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-green-50 text-green-700'
+                            }`}>
+                              F&B saturation: {nearestPocket.fnbSaturation}
+                            </span>
+                          )}
+                          {nearestPocket.retailSaturation && (
+                            <span className={`text-[10px] rounded-full px-2 py-0.5 font-medium ${
+                              nearestPocket.retailSaturation === 'high'
+                                ? 'bg-red-50 text-red-700'
+                                : nearestPocket.retailSaturation === 'medium'
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-green-50 text-green-700'
+                            }`}>
+                              Retail: {nearestPocket.retailSaturation}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Demand split */}
+                        {(nearestPocket.officeDemandPct || nearestPocket.residentialDemandPct || nearestPocket.transitDemandPct) && (
+                          <div className="mb-3">
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Demand mix</p>
+                            <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                              {nearestPocket.officeDemandPct ? (
+                                <div className="bg-blue-400 h-full" style={{ width: `${nearestPocket.officeDemandPct}%` }} title={`Office ${nearestPocket.officeDemandPct}%`} />
+                              ) : null}
+                              {nearestPocket.residentialDemandPct ? (
+                                <div className="bg-green-400 h-full" style={{ width: `${nearestPocket.residentialDemandPct}%` }} title={`Residential ${nearestPocket.residentialDemandPct}%`} />
+                              ) : null}
+                              {nearestPocket.transitDemandPct ? (
+                                <div className="bg-orange-400 h-full" style={{ width: `${nearestPocket.transitDemandPct}%` }} title={`Transit ${nearestPocket.transitDemandPct}%`} />
+                              ) : null}
+                              {nearestPocket.leisureDemandPct ? (
+                                <div className="bg-purple-400 h-full" style={{ width: `${nearestPocket.leisureDemandPct}%` }} title={`Leisure ${nearestPocket.leisureDemandPct}%`} />
+                              ) : null}
+                            </div>
+                            <div className="flex gap-3 mt-1">
+                              {nearestPocket.officeDemandPct ? <span className="text-[9px] text-blue-600">Office {nearestPocket.officeDemandPct}%</span> : null}
+                              {nearestPocket.residentialDemandPct ? <span className="text-[9px] text-green-600">Residential {nearestPocket.residentialDemandPct}%</span> : null}
+                              {nearestPocket.transitDemandPct ? <span className="text-[9px] text-orange-600">Transit {nearestPocket.transitDemandPct}%</span> : null}
+                              {nearestPocket.leisureDemandPct ? <span className="text-[9px] text-purple-600">Leisure {nearestPocket.leisureDemandPct}%</span> : null}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Top brands present */}
+                        {nearestPocket.topBrandsPresent.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Brands present</p>
+                            <div className="flex flex-wrap gap-1">
+                              {nearestPocket.topBrandsPresent.slice(0, 8).map((b) => (
+                                <span key={b} className="text-[10px] bg-gray-100 text-gray-700 rounded-full px-2 py-0.5">{b}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Capture rates footer */}
+                        {(nearestPocket.officeLunchCaptureRate || nearestPocket.residentialCaptureRate) && (
+                          <div className="text-[10px] text-gray-500 bg-gray-50 rounded-xl p-2 mt-3 flex gap-3">
+                            {nearestPocket.officeLunchCaptureRate && (
+                              <span>Office lunch capture: <span className="font-medium text-gray-700">{(nearestPocket.officeLunchCaptureRate * 100).toFixed(0)}%</span></span>
+                            )}
+                            {nearestPocket.residentialCaptureRate && (
+                              <span>Residential capture: <span className="font-medium text-gray-700">{(nearestPocket.residentialCaptureRate * 100).toFixed(0)}%</span></span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -5472,6 +5667,46 @@ Be specific to ${area} / ${address}. No generic statements.`,
                             ))}
                           </tbody>
                         </table>
+                      </div>
+                    )}
+
+                    {/* Brand outlets from bangalore_brand_outlets */}
+                    {nearbyBrandOutlets.length > 0 && (
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-gray-900">Brands Operating Nearby</h3>
+                          <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+                            {nearbyBrandOutlets.length} within 1.5km
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {nearbyBrandOutlets.slice(0, 12).map((o) => (
+                            <div key={o.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                  <span className="text-[9px] font-bold text-gray-600">
+                                    {o.brandName.slice(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-gray-800 truncate">{o.brandName}</p>
+                                  <p className="text-[9px] text-gray-400 truncate">
+                                    {[o.category || o.industry, o.locality].filter(Boolean).join(' · ')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                {o.isFlagship && (
+                                  <span className="text-[9px] bg-orange-50 text-orange-700 rounded-full px-1.5 py-0.5">Flagship</span>
+                                )}
+                                {o.format && (
+                                  <span className="text-[9px] bg-gray-50 text-gray-500 rounded-full px-1.5 py-0.5">{o.format}</span>
+                                )}
+                                <span className="text-[9px] text-gray-400">{(o.distanceM / 1000).toFixed(2)}km</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
