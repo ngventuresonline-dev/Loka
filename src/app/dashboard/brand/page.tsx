@@ -5163,8 +5163,6 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         </table>
                       </div>
                     )}
-                  </div>
-
                     {/* Locality intel from bangalore_locality_intel */}
                     {localityIntel && (
                       <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
