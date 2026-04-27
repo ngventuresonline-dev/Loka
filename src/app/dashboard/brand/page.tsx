@@ -4311,14 +4311,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           </p>
                         </div>
                       ) : intelData.locationSynthesisError && !intelData.locationSynthesis ? (
-                        <>
-                          <div className="text-[11px] text-gray-400 italic py-2">
-                            Intelligence analysis unavailable — chart data is still shown above.
-                          </div>
-                          <div className="text-[11px] text-gray-400 italic py-2">
-                            Intelligence analysis unavailable — chart data is still shown above.
-                          </div>
-                        </>
+                        <div className="text-[11px] text-gray-400 italic py-2">
+                          Intelligence analysis unavailable — chart data is still shown above.
+                        </div>
                       ) : null}
                     </div>
 
@@ -5182,12 +5177,15 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">5 min Walking</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <MetricCell label="TOTAL FOOTFALL" value={intelData.totalFootfall.toLocaleString()} trend="up" benchmark="7.68" tooltip="Estimated average daily footfall in the 5-min walking catchment. Derived from POI density and Lokazen area multipliers." />
+                        <MetricCell label="CATCHMENT FOOTFALL" value={intelData.totalFootfall.toLocaleString()} trend="up" benchmark="7.68" tooltip="AI-modeled average daily foot traffic within ~400m of this property (5-min walking zone). Derived from POI density and area multipliers — not live sensor data. Differs from locality/pocket footfall shown below." />
                         <MetricCell label="GROWTH TRENDS" value={intelData.growthTrend.toFixed(1)} trend="up" benchmark="36.89" tooltip="Whitespace score — higher means more room to grow. Measures unmet demand vs current supply." />
-                        <MetricCell label="SPENDING CAPACITY" value={intelData.spendingCapacity.toFixed(1)} trend="up" benchmark="27.89" tooltip="Demand Gap Score — how underserved this area is for your category. Higher = better opportunity." />
+                        <MetricCell label="DEMAND GAP SCORE" value={intelData.spendingCapacity.toFixed(1)} trend="up" benchmark="27.89" tooltip="How underserved this area is for your category (0–100). Higher = more unmet demand and room to grow. Distinct from spending power." />
                         <MetricCell label="NUMBER OF STORES" value={String(intelData.numberOfStores)} trend="down" benchmark="245" tooltip="Total competitor and complementary brand count within 800m of the listing pin from Lokazen’s mapped trade area." />
                         <MetricCell label="RETAIL INDEX" value={intelData.retailIndex.toFixed(3)} trend="up" benchmark="0.34" tooltip="Inverse saturation index — higher means less congested retail market. 1.0 = zero competition." />
                       </div>
+                      <p className="text-[9px] text-gray-400 mt-3 leading-snug border-t border-gray-50 pt-2">
+                        Catchment footfall is AI-modeled for the 5-min walking zone (~400m). Locality-level and pocket-level footfall figures appear in sections below — these represent larger geographies and will differ.
+                      </p>
                     </div>
 
                     <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -5216,7 +5214,12 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
-                      <p className="text-[9px] text-gray-400 mt-1 text-center">{footfallView === 'weekend' ? 'Weekend footfall typically 40-60% higher in F&B/retail areas' : 'Weekday pattern — office hours drive AM/lunch/PM peaks'}</p>
+                      <p className="text-[9px] text-gray-400 mt-1 text-center">
+                        {intelData.hourlyPattern.length >= 18
+                          ? (footfallView === 'weekend' ? 'Weekend distribution from location intelligence data' : 'Hourly pattern from location intelligence data')
+                          : (footfallView === 'weekend' ? 'Weekend footfall typically 40-60% higher in F&B/retail areas' : 'Weekday pattern — office hours drive AM/lunch/PM peaks')}
+                        {intelData.hourlyPattern.length < 18 && <span className="ml-1 text-amber-500 font-medium">· modeled distribution</span>}
+                      </p>
                     </div>
 
                     {intelData.retailMix.length > 0 && (
@@ -5296,15 +5299,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           )}
                           {localityIntel.avgDailyFootfall > 0 && (
                             <div className="bg-orange-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Daily footfall</p>
+                              <p className="text-[10px] text-gray-500 mb-0.5">Daily footfall <span className="text-gray-400">(locality avg.)</span></p>
                               <p className="font-bold text-gray-900 text-sm">{localityIntel.avgDailyFootfall.toLocaleString('en-IN')}</p>
                               {localityIntel.peakHour && <p className="text-[9px] text-gray-400">Peak: {localityIntel.peakHour}</p>}
                             </div>
                           )}
                           {localityIntel.spendingPowerIndex != null && (
                             <div className="bg-orange-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Spending power</p>
+                              <p className="text-[10px] text-gray-500 mb-0.5">Spending power index</p>
                               <p className="font-bold text-gray-900 text-sm">{localityIntel.spendingPowerIndex}/100</p>
+                              <p className="text-[9px] text-gray-400">household income proxy</p>
                             </div>
                           )}
                           {localityIntel.weekendMultiplier != null && (
@@ -5332,7 +5336,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
 
                         {(localityIntel.commercialRentGfMin || localityIntel.commercialRentGfMax) && (
                           <div className="text-xs text-gray-600 bg-gray-50 rounded-xl p-2.5">
-                            <span className="font-medium">Ground floor rent: </span>
+                            <span className="font-medium">GF rent benchmark <span className="font-normal text-gray-400">(locality avg.)</span>: </span>
                             ₹{localityIntel.commercialRentGfMin?.toLocaleString('en-IN') ?? '?'}
                             {' – '}
                             ₹{localityIntel.commercialRentGfMax?.toLocaleString('en-IN') ?? '?'}/sqft/mo
@@ -5433,14 +5437,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         <div className="grid grid-cols-2 gap-2 mb-4">
                           {nearestPocket.avgDailyFootfall > 0 && (
                             <div className="bg-orange-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Daily footfall</p>
+                              <p className="text-[10px] text-gray-500 mb-0.5">Daily footfall <span className="text-gray-400">(pocket est.)</span></p>
                               <p className="font-bold text-gray-900 text-sm">{nearestPocket.avgDailyFootfall.toLocaleString('en-IN')}</p>
                               {nearestPocket.peakHours && <p className="text-[9px] text-gray-400">Peak: {nearestPocket.peakHours}</p>}
                             </div>
                           )}
                           {nearestPocket.rentGfTypical != null && (
                             <div className="bg-orange-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">GF rent typical</p>
+                              <p className="text-[10px] text-gray-500 mb-0.5">GF rent <span className="text-gray-400">(pocket)</span></p>
                               <p className="font-bold text-gray-900 text-sm">₹{nearestPocket.rentGfTypical}/sqft</p>
                               {nearestPocket.rentGfMin && nearestPocket.rentGfMax && (
                                 <p className="text-[9px] text-gray-400">₹{nearestPocket.rentGfMin}–{nearestPocket.rentGfMax}</p>
@@ -5455,8 +5459,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           )}
                           {nearestPocket.spendingPowerIndex != null && (
                             <div className="bg-green-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Spending power</p>
+                              <p className="text-[10px] text-gray-500 mb-0.5">Spending power index</p>
                               <p className="font-bold text-gray-900 text-sm">{nearestPocket.spendingPowerIndex}/100</p>
+                              <p className="text-[9px] text-gray-400">pocket-level</p>
                             </div>
                           )}
                         </div>
@@ -5555,21 +5560,33 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       analysisLines={3}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
-                    {intelData.competitors.length > 0 &&
-                      (() => {
+                    {(() => {
+                      const brandIndustryComp = (brand?.industry || '').toLowerCase()
+                      const brandCategoryComp = (brand?.category || '').toLowerCase()
+                      const sameIndustryForSummary = nearbyBrandOutlets.filter((o) => {
+                        const oInd = (o.industry || '').toLowerCase()
+                        const oCat = (o.category || '').toLowerCase()
+                        return (
+                          (brandIndustryComp && (oInd.includes(brandIndustryComp) || brandIndustryComp.includes(oInd) || oCat.includes(brandIndustryComp))) ||
+                          (brandCategoryComp && (oCat.includes(brandCategoryComp) || brandCategoryComp.includes(oCat)))
+                        )
+                      })
+
+                      if (intelData.competitors.length > 0) {
+                        /* Google Places summary */
                         const within500 = intelData.competitors.filter((c) => c.distance <= 500).length
                         const within1km = intelData.competitors.filter((c) => c.distance > 500 && c.distance <= 1000).length
                         const beyond1km = intelData.competitors.filter((c) => c.distance > 1000).length
                         const branded = intelData.competitors.filter((c) => c.branded).length
                         const rated = intelData.competitors.filter((c) => c.rating != null && Number.isFinite(c.rating))
-                        const avgRating =
-                          rated.length > 0 ? rated.reduce((s, c) => s + (c.rating || 0), 0) / rated.length : 0
+                        const avgRating = rated.length > 0 ? rated.reduce((s, c) => s + (c.rating || 0), 0) / rated.length : 0
                         const total = intelData.competitors.length
                         return (
                           <div className="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
-                            <h3 className="font-bold text-gray-900 text-sm mb-3">
-                              {brand?.industry || 'Category'} Competition Summary
-                            </h3>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="font-bold text-gray-900 text-sm">{brand?.industry || 'Category'} Competition Summary</h3>
+                              <span className="text-[9px] text-gray-400 bg-gray-50 rounded-full px-2 py-0.5">Google Places</span>
+                            </div>
                             <div className="grid grid-cols-3 gap-2 mb-3">
                               <div className="bg-red-50 rounded-xl p-2.5 text-center">
                                 <p className="text-lg font-black text-red-600">{total}</p>
@@ -5580,9 +5597,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                 <p className="text-[9px] text-gray-500 uppercase tracking-wide">Chains</p>
                               </div>
                               <div className="bg-gray-50 rounded-xl p-2.5 text-center">
-                                <p
-                                  className={`text-lg font-black ${avgRating >= 4.0 ? 'text-green-600' : 'text-amber-600'}`}
-                                >
+                                <p className={`text-lg font-black ${avgRating >= 4.0 ? 'text-green-600' : 'text-amber-600'}`}>
                                   {avgRating > 0 ? avgRating.toFixed(1) : '—'}
                                 </p>
                                 <p className="text-[9px] text-gray-500 uppercase tracking-wide">Avg Rating</p>
@@ -5610,7 +5625,59 @@ Be specific to ${area} / ${address}. No generic statements.`,
                             </div>
                           </div>
                         )
-                      })()}
+                      } else if (nearbyBrandOutlets.length > 0) {
+                        /* Brand directory summary when Google Places has no results */
+                        const within500 = nearbyBrandOutlets.filter((o) => o.distanceM <= 500).length
+                        const within1km = nearbyBrandOutlets.filter((o) => o.distanceM > 500 && o.distanceM <= 1000).length
+                        const beyond1km = nearbyBrandOutlets.filter((o) => o.distanceM > 1000).length
+                        const flagships = nearbyBrandOutlets.filter((o) => o.isFlagship).length
+                        const total = nearbyBrandOutlets.length
+                        return (
+                          <div className="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="font-bold text-gray-900 text-sm">Brand Landscape Summary</h3>
+                              <span className="text-[9px] text-gray-400 bg-gray-50 rounded-full px-2 py-0.5">Lokazen directory</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              <div className="bg-gray-50 rounded-xl p-2.5 text-center">
+                                <p className="text-lg font-black text-gray-700">{total}</p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide">All brands</p>
+                              </div>
+                              <div className="bg-red-50 rounded-xl p-2.5 text-center">
+                                <p className="text-lg font-black text-red-600">{sameIndustryForSummary.length}</p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide">Same category</p>
+                              </div>
+                              <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                                <p className="text-lg font-black text-orange-600">{flagships}</p>
+                                <p className="text-[9px] text-gray-500 uppercase tracking-wide">Flagships</p>
+                              </div>
+                            </div>
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Distance Distribution</p>
+                            <div className="space-y-1.5">
+                              {[
+                                { label: 'Within 500m', count: within500, color: 'bg-red-500' },
+                                { label: '500m – 1km', count: within1km, color: 'bg-amber-400' },
+                                { label: 'Beyond 1km', count: beyond1km, color: 'bg-gray-300' },
+                              ].map(({ label, count, color }) => (
+                                <div key={label} className="flex items-center gap-2">
+                                  <span className="text-[10px] text-gray-500 w-20 shrink-0">{label}</span>
+                                  <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${color} rounded-full flex items-center justify-end pr-1.5`}
+                                      style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}
+                                    >
+                                      {count > 0 && <span className="text-[8px] text-white font-bold">{count}</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-[9px] text-gray-400 mt-2">Google Places returned no direct category pins — showing Lokazen brand directory (12k+ tracked outlets)</p>
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
                     {/* Competitor map — show pins of all competitors around selected property */}
                     {selectedListingCoords && areUsablePinCoords(selectedListingCoords) && isLoaded && (
                       <div className="h-[220px] relative rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
@@ -5660,170 +5727,284 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         </div>
                       </div>
                     )}
-                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h3 className="font-bold text-gray-900">Your segment — competitors</h3>
-                          {primarySegmentLabel(buildLocationBusinessType(brand)) && (
-                            <p className="text-[10px] text-gray-500 mt-0.5">{primarySegmentLabel(buildLocationBusinessType(brand))}</p>
-                          )}
-                        </div>
-                        <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
-                      </div>
-                      {intelData.competitors.length === 0 ? (
-                        <div className="space-y-3">
-                          {competitorFallbackLoading ? (
-                            <div className="rounded-xl bg-orange-50 border border-orange-100 p-4">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-3 h-3 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
-                                <p className="text-xs text-gray-600 font-medium">
-                                  Analysing competitive landscape for {brand?.industry || 'your category'}...
-                                </p>
+                    {/* Primary competitor section — uses Google Places when available, falls back to brand directory */}
+                    {(() => {
+                      const brandIndustry = (brand?.industry || '').toLowerCase()
+                      const brandCategory = (brand?.category || '').toLowerCase()
+                      const sameIndustryOutlets = nearbyBrandOutlets.filter((o) => {
+                        const oInd = (o.industry || '').toLowerCase()
+                        const oCat = (o.category || '').toLowerCase()
+                        return (
+                          (brandIndustry && (oInd.includes(brandIndustry) || brandIndustry.includes(oInd) || oCat.includes(brandIndustry))) ||
+                          (brandCategory && (oCat.includes(brandCategory) || brandCategory.includes(oCat)))
+                        )
+                      })
+                      const otherOutlets = nearbyBrandOutlets.filter((o) => !sameIndustryOutlets.includes(o))
+                      const hasGoogleCompetitors = intelData.competitors.length > 0
+
+                      return (
+                        <>
+                          <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <h3 className="font-bold text-gray-900">Your segment — competitors</h3>
+                                {primarySegmentLabel(buildLocationBusinessType(brand)) && (
+                                  <p className="text-[10px] text-gray-500 mt-0.5">{primarySegmentLabel(buildLocationBusinessType(brand))}</p>
+                                )}
                               </div>
+                              <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">15 min Driving</span>
                             </div>
-                          ) : competitorFallback ? (
-                            <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
-                              <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide mb-2">
-                                Lokazen Intelligence — {brand?.industry || 'Category'} Competitive Landscape
-                              </p>
-                              <p className="text-sm text-gray-700 leading-relaxed">{competitorFallback}</p>
-                              <p className="text-[9px] text-gray-400 mt-2">
-                                AI-generated analysis · Google Places returned no pins for this segment in this area
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-400 italic">
-                              No direct segment peers mapped — check complementary retail below or widen the trade area.
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {[...intelData.competitors]
-                            .sort((a, b) => a.distance - b.distance)
-                            .slice(0, 8)
-                            .map((c, i) => (
-                              <div
-                                key={`${c.name}-${c.distance}-${i}`}
-                                className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-orange-200 transition-all"
-                              >
-                                <div
-                                  className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${
-                                    c.branded ? 'bg-red-500' : 'bg-gray-400'
-                                  }`}
-                                >
-                                  {c.category?.charAt(0)?.toUpperCase() || 'F'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <p className="text-xs font-semibold text-gray-900 truncate">{c.name}</p>
-                                    {c.branded && (
-                                      <span className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full shrink-0 font-medium">
-                                        Chain
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[10px] text-gray-500 capitalize">{c.category}</span>
-                                    <span className="text-[10px] text-gray-400">·</span>
-                                    <span className="text-[10px] text-gray-500">{(c.distance / 1000).toFixed(2)}km away</span>
-                                  </div>
-                                  {c.rating != null && (
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                      <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                          className={`h-full rounded-full ${
-                                            c.rating >= 4.2 ? 'bg-green-500' : c.rating >= 3.8 ? 'bg-amber-400' : 'bg-red-400'
-                                          }`}
-                                          style={{ width: `${(c.rating / 5) * 100}%` }}
-                                        />
-                                      </div>
-                                      <span
-                                        className={`text-[9px] font-bold shrink-0 inline-flex items-center gap-0.5 ${
-                                          c.rating >= 4.2 ? 'text-green-600' : c.rating >= 3.8 ? 'text-amber-600' : 'text-red-500'
+
+                            {hasGoogleCompetitors ? (
+                              /* Google Places competitors — rated + with lat/lng */
+                              <div className="space-y-2">
+                                {[...intelData.competitors]
+                                  .sort((a, b) => a.distance - b.distance)
+                                  .slice(0, 8)
+                                  .map((c, i) => (
+                                    <div
+                                      key={`${c.name}-${c.distance}-${i}`}
+                                      className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-orange-200 transition-all"
+                                    >
+                                      <div
+                                        className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${
+                                          c.branded ? 'bg-red-500' : 'bg-gray-400'
                                         }`}
                                       >
-                                        <StarIcon filled className="w-3 h-3 flex-shrink-0" />
-                                        {c.rating.toFixed(1)}
-                                      </span>
-                                      {c.reviewCount != null && c.reviewCount > 0 && (
-                                        <span className="text-[9px] text-gray-400">({c.reviewCount.toLocaleString('en-IN')})</span>
-                                      )}
+                                        {c.category?.charAt(0)?.toUpperCase() || 'F'}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <p className="text-xs font-semibold text-gray-900 truncate">{c.name}</p>
+                                          {c.branded && (
+                                            <span className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full shrink-0 font-medium">
+                                              Chain
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                          <span className="text-[10px] text-gray-500 capitalize">{c.category}</span>
+                                          <span className="text-[10px] text-gray-400">·</span>
+                                          <span className="text-[10px] text-gray-500">{(c.distance / 1000).toFixed(2)}km away</span>
+                                        </div>
+                                        {c.rating != null && (
+                                          <div className="flex items-center gap-1.5 mt-1">
+                                            <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                              <div
+                                                className={`h-full rounded-full ${
+                                                  c.rating >= 4.2 ? 'bg-green-500' : c.rating >= 3.8 ? 'bg-amber-400' : 'bg-red-400'
+                                                }`}
+                                                style={{ width: `${(c.rating / 5) * 100}%` }}
+                                              />
+                                            </div>
+                                            <span
+                                              className={`text-[9px] font-bold shrink-0 inline-flex items-center gap-0.5 ${
+                                                c.rating >= 4.2 ? 'text-green-600' : c.rating >= 3.8 ? 'text-amber-600' : 'text-red-500'
+                                              }`}
+                                            >
+                                              <StarIcon filled className="w-3 h-3 flex-shrink-0" />
+                                              {c.rating.toFixed(1)}
+                                            </span>
+                                            {c.reviewCount != null && c.reviewCount > 0 && (
+                                              <span className="text-[9px] text-gray-400">({c.reviewCount.toLocaleString('en-IN')})</span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  )}
-                                </div>
+                                  ))}
                               </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {intelData.complementaryBrands.length > 0 && (
-                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
-                        <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                          <div className="flex flex-wrap items-center gap-2 min-w-0">
-                            <div className="min-w-0">
-                              <h3 className="font-bold text-gray-900 text-sm sm:text-base">Other categories nearby</h3>
-                              <p className="text-[10px] text-gray-500 font-normal leading-snug">Broader trade-area retail — context, not direct substitutes</p>
-                            </div>
-                            <span className="text-xs bg-green-100 text-green-600 rounded-full px-1.5 py-0.5 flex-shrink-0">Low Risk</span>
+                            ) : (
+                              /* No Google Places results — use brand directory as primary */
+                              <div className="space-y-3">
+                                {nearbyBrandOutlets.length > 0 ? (
+                                  <>
+                                    {sameIndustryOutlets.length > 0 ? (
+                                      <>
+                                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                                          Same-category brands nearby <span className="text-gray-400 normal-case font-normal">(Lokazen brand directory)</span>
+                                        </p>
+                                        <div className="space-y-2">
+                                          {sameIndustryOutlets.slice(0, 6).map((o) => (
+                                            <div key={o.id} className="flex items-center justify-between p-3 bg-red-50/60 rounded-xl border border-red-100">
+                                              <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                                                  {o.brandName.slice(0, 2).toUpperCase()}
+                                                </div>
+                                                <div className="min-w-0">
+                                                  <p className="text-xs font-semibold text-gray-900 truncate">{o.brandName}</p>
+                                                  <p className="text-[10px] text-gray-500">{[o.category || o.industry, o.locality].filter(Boolean).join(' · ')}</p>
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                                {o.isFlagship && <span className="text-[9px] bg-orange-50 text-orange-700 rounded-full px-1.5 py-0.5">Flagship</span>}
+                                                {o.format && <span className="text-[9px] bg-gray-50 text-gray-500 rounded-full px-1.5 py-0.5">{o.format}</span>}
+                                                <span className="text-[9px] text-gray-400">{(o.distanceM / 1000).toFixed(2)}km</span>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <div className="rounded-xl bg-green-50 border border-green-100 p-3">
+                                        <p className="text-xs font-semibold text-green-800">No same-category brands in Lokazen's database nearby</p>
+                                        <p className="text-[10px] text-green-600 mt-0.5">
+                                          Google Places also returned no direct competitors — first-mover advantage possible
+                                        </p>
+                                      </div>
+                                    )}
+                                    {competitorFallbackLoading ? (
+                                      <div className="rounded-xl bg-orange-50 border border-orange-100 p-3">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-3 h-3 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
+                                          <p className="text-xs text-gray-600">Loading AI competitive analysis...</p>
+                                        </div>
+                                      </div>
+                                    ) : competitorFallback ? (
+                                      <div className="rounded-xl bg-blue-50 border border-blue-100 p-3">
+                                        <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide mb-1.5">Lokazen Analysis</p>
+                                        <p className="text-xs text-gray-700 leading-relaxed">{competitorFallback}</p>
+                                        <p className="text-[9px] text-gray-400 mt-1.5">AI analysis · no live Google Places pins in this segment</p>
+                                      </div>
+                                    ) : null}
+                                  </>
+                                ) : (
+                                  /* No brand directory data either */
+                                  competitorFallbackLoading ? (
+                                    <div className="rounded-xl bg-orange-50 border border-orange-100 p-4">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-3 h-3 border-2 border-[#FF5200] border-t-transparent rounded-full animate-spin" />
+                                        <p className="text-xs text-gray-600 font-medium">
+                                          Analysing competitive landscape for {brand?.industry || 'your category'}...
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ) : competitorFallback ? (
+                                    <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
+                                      <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide mb-2">
+                                        Lokazen Intelligence — {brand?.industry || 'Category'} Competitive Landscape
+                                      </p>
+                                      <p className="text-sm text-gray-700 leading-relaxed">{competitorFallback}</p>
+                                      <p className="text-[9px] text-gray-400 mt-2">
+                                        AI-generated analysis · no direct competitors in Google Places or brand directory
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-gray-400 italic">
+                                      No direct segment peers mapped — check complementary retail below or widen the trade area.
+                                    </p>
+                                  )
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5 flex-shrink-0">15 min Driving</span>
-                        </div>
-                        <table className="w-full text-xs">
-                          <thead><tr className="text-gray-400 border-b"><th className="text-left py-1">POI</th><th className="text-left">CATEGORY</th><th className="text-right">DIST (KM)</th></tr></thead>
-                          <tbody>
-                            {intelData.complementaryBrands.slice(0, 6).map((b, i) => (
-                              <tr key={i} className="border-b border-gray-50">
-                                <td className="py-1.5 text-gray-800 font-medium">{b.name}</td>
-                                <td className="text-gray-500 capitalize">{b.category}</td>
-                                <td className="text-right text-gray-700">{(b.distance / 1000).toFixed(2)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
 
-                    {/* Brand outlets from bangalore_brand_outlets */}
-                    {nearbyBrandOutlets.length > 0 && (
-                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-gray-900">Brands Operating Nearby</h3>
-                          <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
-                            {nearbyBrandOutlets.length} within 1.5km
-                          </span>
-                        </div>
-                        <div className="space-y-1.5">
-                          {nearbyBrandOutlets.slice(0, 12).map((o) => (
-                            <div key={o.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                                  <span className="text-[9px] font-bold text-gray-600">
-                                    {o.brandName.slice(0, 2).toUpperCase()}
-                                  </span>
+                          {intelData.complementaryBrands.length > 0 && (
+                            <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                              <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                  <div className="min-w-0">
+                                    <h3 className="font-bold text-gray-900 text-sm sm:text-base">Other categories nearby</h3>
+                                    <p className="text-[10px] text-gray-500 font-normal leading-snug">Broader trade-area retail — context, not direct substitutes</p>
+                                  </div>
+                                  <span className="text-xs bg-green-100 text-green-600 rounded-full px-1.5 py-0.5 flex-shrink-0">Low Risk</span>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-xs font-semibold text-gray-800 truncate">{o.brandName}</p>
-                                  <p className="text-[9px] text-gray-400 truncate">
-                                    {[o.category || o.industry, o.locality].filter(Boolean).join(' · ')}
-                                  </p>
-                                </div>
+                                <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5 flex-shrink-0">15 min Driving</span>
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                                {o.isFlagship && (
-                                  <span className="text-[9px] bg-orange-50 text-orange-700 rounded-full px-1.5 py-0.5">Flagship</span>
-                                )}
-                                {o.format && (
-                                  <span className="text-[9px] bg-gray-50 text-gray-500 rounded-full px-1.5 py-0.5">{o.format}</span>
-                                )}
-                                <span className="text-[9px] text-gray-400">{(o.distanceM / 1000).toFixed(2)}km</span>
+                              <table className="w-full text-xs">
+                                <thead><tr className="text-gray-400 border-b"><th className="text-left py-1">POI</th><th className="text-left">CATEGORY</th><th className="text-right">DIST (KM)</th></tr></thead>
+                                <tbody>
+                                  {intelData.complementaryBrands.slice(0, 6).map((b, i) => (
+                                    <tr key={i} className="border-b border-gray-50">
+                                      <td className="py-1.5 text-gray-800 font-medium">{b.name}</td>
+                                      <td className="text-gray-500 capitalize">{b.category}</td>
+                                      <td className="text-right text-gray-700">{(b.distance / 1000).toFixed(2)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Other brands from directory — show when Google Places had competitors (directory supplements, doesn't duplicate) */}
+                          {hasGoogleCompetitors && nearbyBrandOutlets.length > 0 && (
+                            <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <h3 className="font-bold text-gray-900">All brands operating nearby</h3>
+                                  <p className="text-[10px] text-gray-500 mt-0.5">Lokazen brand directory · tracked outlets</p>
+                                </div>
+                                <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+                                  {nearbyBrandOutlets.length} within 1.5km
+                                </span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {nearbyBrandOutlets.slice(0, 12).map((o) => (
+                                  <div key={o.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${sameIndustryOutlets.includes(o) ? 'bg-red-100' : 'bg-gray-100'}`}>
+                                        <span className={`text-[9px] font-bold ${sameIndustryOutlets.includes(o) ? 'text-red-700' : 'text-gray-600'}`}>
+                                          {o.brandName.slice(0, 2).toUpperCase()}
+                                        </span>
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-semibold text-gray-800 truncate">{o.brandName}</p>
+                                        <p className="text-[9px] text-gray-400 truncate">
+                                          {[o.category || o.industry, o.locality].filter(Boolean).join(' · ')}
+                                          {sameIndustryOutlets.includes(o) && <span className="text-red-500 ml-1">· competitor</span>}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                      {o.isFlagship && (
+                                        <span className="text-[9px] bg-orange-50 text-orange-700 rounded-full px-1.5 py-0.5">Flagship</span>
+                                      )}
+                                      {o.format && (
+                                        <span className="text-[9px] bg-gray-50 text-gray-500 rounded-full px-1.5 py-0.5">{o.format}</span>
+                                      )}
+                                      <span className="text-[9px] text-gray-400">{(o.distanceM / 1000).toFixed(2)}km</span>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          )}
+
+                          {/* When no Google Places competitors — show remaining directory brands as context */}
+                          {!hasGoogleCompetitors && otherOutlets.length > 0 && (
+                            <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <h3 className="font-bold text-gray-900">Other brands nearby</h3>
+                                  <p className="text-[10px] text-gray-500 mt-0.5">Different categories — context, not direct competitors</p>
+                                </div>
+                                <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{otherOutlets.length} outlets</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {otherOutlets.slice(0, 8).map((o) => (
+                                  <div key={o.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                        <span className="text-[9px] font-bold text-gray-600">{o.brandName.slice(0, 2).toUpperCase()}</span>
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-semibold text-gray-800 truncate">{o.brandName}</p>
+                                        <p className="text-[9px] text-gray-400 truncate">{[o.category || o.industry, o.locality].filter(Boolean).join(' · ')}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                      {o.isFlagship && <span className="text-[9px] bg-orange-50 text-orange-700 rounded-full px-1.5 py-0.5">Flagship</span>}
+                                      {o.format && <span className="text-[9px] bg-gray-50 text-gray-500 rounded-full px-1.5 py-0.5">{o.format}</span>}
+                                      <span className="text-[9px] text-gray-400">{(o.distanceM / 1000).toFixed(2)}km</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
                   </div>
                 )}
 
@@ -5938,6 +6119,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               )
                             })}
                           </div>
+                          <p className="text-[9px] text-gray-400 mt-2 leading-snug">
+                            Rent Risk uses modeled revenue estimate (catchment footfall × 4% conversion × ₹300 avg ticket × 26 days). Validate with your own unit economics.
+                          </p>
                         </div>
                       )
                     })()}
@@ -6265,7 +6449,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                     {Array.from({ length: 5 }).map((_, i) => <StarIcon key={i} filled={i < Math.round(m.score / 20)} className="w-3 h-3" />)}
                                     <span className="text-[10px] text-gray-400 ml-1">{m.score}/100</span>
                                   </div>
-                                  <div className="grid grid-cols-2 gap-1 mb-2">
+                                  <div className="grid grid-cols-2 gap-1 mb-1.5">
                                     {[
                                       { label: 'Restaurants', val: restaurants },
                                       { label: 'Cafes', val: cafes },
@@ -6273,11 +6457,12 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                       { label: 'Salons', val: salons },
                                     ].map(({ label, val }) => (
                                       <div key={label} className="bg-gray-50 rounded-lg px-1.5 py-1 text-center">
-                                        <p className="text-[11px] font-bold text-gray-900">{val}</p>
+                                        <p className="text-[11px] font-bold text-gray-900">~{val}</p>
                                         <p className="text-[8px] text-gray-400">{label}</p>
                                       </div>
                                     ))}
                                   </div>
+                                  <p className="text-[8px] text-gray-400 mb-2">Category counts are modeled estimates</p>
                                   <button
                                     type="button"
                                     className="w-full text-[10px] text-center py-1.5 border border-gray-200 rounded-lg text-gray-500 hover:text-[#FF5200] hover:border-orange-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
