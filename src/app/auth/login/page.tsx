@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
-import { loginUser, setServerAdminSession } from '@/lib/auth'
+import { loginUser } from '@/lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,61 +25,17 @@ export default function LoginPage() {
         throw new Error('Login function is not available')
       }
 
-      // Admins must authenticate against the database so server APIs (properties, brands, …) receive an HttpOnly session.
-      const adminTry = await fetch('/api/auth/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      })
-      const adminJson = await adminTry.json().catch(() => null)
-
-      if (adminTry.ok && adminJson?.success && adminJson?.user?.userType === 'admin') {
-        setServerAdminSession({
-          id: adminJson.user.id,
-          email: adminJson.user.email,
-          name: adminJson.user.name,
-        })
-        router.push('/admin')
-        return
-      }
-
-      if (adminTry.status === 403 && adminJson?.code === 'NOT_ADMIN') {
-        const result = await loginUser(email, password)
-        if (result && result.success && result.user) {
-          router.push('/')
-        } else {
-          setError(result?.error || 'Failed to login')
-        }
-        return
-      }
-
-      if (adminTry.status === 401) {
-        const result = await loginUser(email, password)
-        if (result && result.success && result.user) {
-          if (result.user.userType === 'admin') {
-            setError(
-              'This admin account exists only in browser storage, not in the database. Use an admin user from the database, or contact support.'
-            )
-          } else {
-            router.push('/')
-          }
-        } else {
-          setError(adminJson?.error || result?.error || 'Invalid email or password')
-        }
-        return
-      }
-
       const result = await loginUser(email, password)
 
       if (result && result.success && result.user) {
+        // Redirect admins to admin dashboard, others to homepage
         if (result.user.userType === 'admin') {
           router.push('/admin')
         } else {
           router.push('/')
         }
       } else {
-        setError(result?.error || adminJson?.error || 'Failed to login')
+        setError(result?.error || 'Failed to login')
       }
     } catch (err: any) {
       console.error('Login error:', err)
