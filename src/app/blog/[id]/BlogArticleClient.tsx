@@ -9,7 +9,6 @@ import { brandPlacements } from '@/lib/brand-placements'
 import { getBrandLogo } from '@/lib/brand-logos'
 import { getHeroBrandLogos } from '@/lib/blog-hero-brands'
 import { publicSrc } from '@/lib/public-image-src'
-import DOMPurify from 'isomorphic-dompurify'
 
 function formatArticleHtml(html: string): string {
   return html
@@ -138,7 +137,7 @@ export default function BlogArticleClient({ post }: BlogArticleClientProps) {
           <div className="max-w-none text-lg" style={{ color: '#374151' }}>
             <div
               className="space-y-6 leading-relaxed max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatArticleHtml(post.content)) }}
+              dangerouslySetInnerHTML={{ __html: formatArticleHtml(post.content) }}
             />
           </div>
 

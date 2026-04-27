@@ -4,6 +4,7 @@ import BlogArticleClient from './BlogArticleClient'
 import type { BlogPost } from '@/lib/blog-posts'
 import { getAllBlogSlugs, getBlogPostById } from '@/lib/blog-posts'
 import { getSiteBaseUrl } from '@/lib/site-url'
+import { sanitizeArticleHtml } from '@/lib/sanitize-article-html'
 
 export const dynamicParams = false
 
@@ -99,13 +100,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
   const post = getBlogPostById(id)
   if (!post) notFound()
 
+  const postForClient = { ...post, content: sanitizeArticleHtml(post.content) }
+
   const base = getSiteBaseUrl()
   const structuredData = buildJsonLd(post, base)
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <BlogArticleClient post={post} />
+      <BlogArticleClient post={postForClient} />
     </>
   )
 }
