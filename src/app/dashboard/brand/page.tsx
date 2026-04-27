@@ -236,6 +236,29 @@ type IntelligenceData = {
 type RightPanelMode = 'map' | 'intelligence'
 type IntelTab = 'overview' | 'catchment' | 'market' | 'competitors' | 'risk' | 'similar' | 'map'
 
+type NearbySociety = {
+  id: string
+  name: string
+  locality: string
+  zone: string | null
+  distanceM: number
+  totalUnits: number
+  avgPriceSqft: number
+  occupancyPct: number | null
+  secProfile: string | null
+  residentProfile: string | null
+  developer: string | null
+  lat: number
+  lng: number
+}
+
+type SocietiesSummary = {
+  totalUnitsWithin2km: number
+  avgPriceSqft: number
+  dominantSecProfile: string
+  societyCount: number
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatPrice(price: number, priceType: string) {
@@ -1838,6 +1861,8 @@ export default function BrandDashboardPage() {
   const [competitorFallbackLoading, setCompetitorFallbackLoading] = useState(false)
   const competitorFallbackInFlight = useRef(false)
   const [intelWardLabel, setIntelWardLabel] = useState<string | null>(null)
+  const [nearbySocieties, setNearbySocieties] = useState<NearbySociety[]>([])
+  const [societiesSummary, setSocietiesSummary] = useState<SocietiesSummary | null>(null)
 
   /** Listing pin: intel coords + map_link override for generic centroid; before intel loads, use map_link or match coords. */
   const selectedListingCoords = useMemo(() => {
@@ -2380,12 +2405,29 @@ Be specific to ${area} / ${address}. No generic statements.`,
       m.coords && areUsablePinCoords(m.coords) ? m.coords : null,
       m
     )
+
+    // Fire-and-forget nearby societies fetch (non-blocking)
+    setNearbySocieties([])
+    setSocietiesSummary(null)
+    const catchmentCoords = m.coords && areUsablePinCoords(m.coords) ? m.coords : null
+    const catchmentUrl = catchmentCoords
+      ? `/api/dashboard/brand/catchment?propertyId=${m.property.id}&lat=${catchmentCoords.lat}&lng=${catchmentCoords.lng}`
+      : `/api/dashboard/brand/catchment?propertyId=${m.property.id}`
+    fetch(catchmentUrl, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (res?.societies) setNearbySocieties(res.societies)
+        if (res?.summary) setSocietiesSummary(res.summary)
+      })
+      .catch(() => {})
   }
 
   const goToDashboardHome = useCallback(() => {
     setSelectedMatch(null)
     setIntelData(null)
     setIntelWardLabel(null)
+    setNearbySocieties([])
+    setSocietiesSummary(null)
     setRightMode('map')
     setDashboardView('home')
     setMobileView('list')
@@ -4733,6 +4775,66 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         </div>
                       )}
                     </div>
+
+                    {/* Nearby residential societies from bangalore_societies table */}
+                    {(nearbySocieties.length > 0 || societiesSummary) && (
+                      <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-gray-900">Nearby Residential Societies</h3>
+                          <span className="text-[10px] bg-green-50 text-green-700 rounded-full px-2 py-0.5 font-medium">
+                            {societiesSummary ? `${societiesSummary.societyCount} within 2km` : `${nearbySocieties.length} found`}
+                          </span>
+                        </div>
+
+                        {societiesSummary && societiesSummary.totalUnitsWithin2km > 0 && (
+                          <div className="grid grid-cols-3 gap-2 mb-4">
+                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Captive units</p>
+                              <p className="font-bold text-gray-900 text-sm">{societiesSummary.totalUnitsWithin2km.toLocaleString('en-IN')}</p>
+                            </div>
+                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Avg ₹/sqft</p>
+                              <p className="font-bold text-gray-900 text-sm">₹{societiesSummary.avgPriceSqft.toLocaleString('en-IN')}</p>
+                            </div>
+                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">SEC profile</p>
+                              <p className="font-bold text-gray-900 text-sm">{societiesSummary.dominantSecProfile}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <ul className="space-y-1.5 max-h-[240px] overflow-y-auto">
+                          {nearbySocieties.slice(0, 12).map((s) => {
+                            const secColor =
+                              s.secProfile === 'A+' ? 'bg-purple-50 text-purple-700'
+                              : s.secProfile === 'A' ? 'bg-indigo-50 text-indigo-700'
+                              : s.secProfile === 'B+' ? 'bg-blue-50 text-blue-700'
+                              : 'bg-gray-100 text-gray-600'
+                            return (
+                              <li key={s.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-gray-50">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-medium text-gray-800 truncate">{s.name}</span>
+                                    {s.secProfile && (
+                                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${secColor}`}>{s.secProfile}</span>
+                                    )}
+                                  </div>
+                                  {s.residentProfile && (
+                                    <p className="text-[10px] text-gray-400 truncate mt-0.5">{s.residentProfile}</p>
+                                  )}
+                                </div>
+                                <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
+                                  <span className="text-gray-500">{(s.distanceM / 1000).toFixed(2)} km</span>
+                                  {s.totalUnits > 0 && (
+                                    <span className="text-[10px] text-gray-400">{s.totalUnits.toLocaleString('en-IN')} units</span>
+                                  )}
+                                </div>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
 
