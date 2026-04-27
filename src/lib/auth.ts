@@ -192,7 +192,22 @@ export const isAuthenticated = (): boolean => {
 export const getCurrentUser = (): User | null => {
   const session = getSession();
   if (!session) return null;
-  
+
+  // Server-backed sessions (DB admins) won't exist in localStorage users array
+  if ((session as any).source === 'server') {
+    return {
+      id: session.userId,
+      email: session.email,
+      name: session.name,
+      userType: session.userType,
+      passwordHash: '',
+      createdAt: '',
+      onboardingComplete: true,
+      subscriptionTier: 'enterprise',
+      isAdmin: true,
+    } as User;
+  }
+
   return findUserByEmail(session.email);
 };
 

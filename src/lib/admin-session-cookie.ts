@@ -6,7 +6,10 @@ export const ADMIN_SESSION_COOKIE = 'lz_admin_session'
 const MAX_AGE_SEC = 60 * 60 * 24 // 24h
 
 function getSecret(): string | null {
-  const s = process.env.ADMIN_SESSION_SECRET || process.env.NEXTAUTH_SECRET
+  const s =
+    process.env.ADMIN_SESSION_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   if (s && s.length >= 16) return s
   if (process.env.NODE_ENV !== 'production') {
     return '__dev-admin-session-secret-min16__'
