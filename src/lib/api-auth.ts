@@ -15,33 +15,6 @@ export interface ApiUser {
   phone?: string | null
 }
 
-/** Supabase stores the JWT under sb-<projectRef>-auth-token (and sometimes chunked .0, .1, …). */
-function collectSupabaseAuthJwtCandidates(request: NextRequest): string[] {
-  const assembled = new Map<string, Map<number, string>>()
-
-  for (const { name, value } of request.cookies.getAll()) {
-    if (!value?.trim()) continue
-    if (name === 'sb-access-token') {
-      assembled.set('sb-access-token', new Map([[0, value]]))
-      continue
-    }
-    const m = name.match(/^(sb-[a-zA-Z0-9]+-auth-token)(?:\.(\d+))?$/)
-    if (!m) continue
-    const base = m[1]
-    const chunkIdx = m[2] !== undefined ? parseInt(m[2], 10) : 0
-    if (!Number.isFinite(chunkIdx)) continue
-    if (!assembled.has(base)) assembled.set(base, new Map())
-    assembled.get(base)!.set(chunkIdx, value)
-  }
-
-  const tokens: string[] = []
-  for (const [, chunks] of assembled) {
-    const indices = [...chunks.keys()].sort((a, b) => a - b)
-    tokens.push(indices.map((i) => chunks.get(i)!).join(''))
-  }
-  return tokens
-}
-
 /**
  * Get authenticated user from request
  * Supports multiple auth methods:
@@ -105,32 +78,43 @@ export async function getAuthenticatedUser(
       }
     }
 
-    // Method 2: Check cookies for Supabase session (use Request cookies API; JWT values contain "=")
-    const jwtCandidates = collectSupabaseAuthJwtCandidates(request)
-    for (const accessToken of jwtCandidates) {
-      const {
-        data: { user: supabaseUser },
-      } = await supabase.auth.getUser(accessToken)
+    // Method 2: Check cookies for Supabase session
+    const cookieHeader = request.headers.get('cookie')
+    if (cookieHeader) {
+      // Extract access token from cookies
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=')
+        acc[key] = value
+        return acc
+      }, {} as Record<string, string>)
 
-      if (supabaseUser) {
-        const user = await prisma.user.findUnique({
-          where: { id: supabaseUser.id },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            userType: true,
-            phone: true,
-          },
-        })
+      const accessToken = cookies['sb-access-token'] || cookies['sb-<project-ref>-auth-token']
+      
+      if (accessToken) {
+        const {
+          data: { user: supabaseUser },
+        } = await supabase.auth.getUser(accessToken)
 
-        if (user) {
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            userType: user.userType as 'brand' | 'owner' | 'admin',
-            phone: user.phone,
+        if (supabaseUser) {
+          const user = await prisma.user.findUnique({
+            where: { id: supabaseUser.id },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              userType: true,
+              phone: true,
+            },
+          })
+
+          if (user) {
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              userType: user.userType as 'brand' | 'owner' | 'admin',
+              phone: user.phone,
+            }
           }
         }
       }
