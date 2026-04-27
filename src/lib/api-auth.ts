@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server'
+import { ADMIN_SESSION_COOKIE, verifyAdminSessionCookie } from '@/lib/admin-session-cookie'
 import { createServerClient } from '@/lib/supabase/server'
 import { getPrisma } from './get-prisma'
 
@@ -39,6 +40,27 @@ export async function getAuthenticatedUser(
     
     if (process.env.NODE_ENV === 'development') {
       console.log('[API Auth] Auth attempt, userId param:', userIdParam)
+    }
+
+    // Method 0: HttpOnly admin session cookie (fastest — no Supabase round-trip)
+    const adminCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value
+    if (adminCookie) {
+      const verified = verifyAdminSessionCookie(adminCookie)
+      if (verified) {
+        const user = await prisma.user.findUnique({
+          where: { id: verified.userId },
+          select: { id: true, email: true, name: true, userType: true, phone: true },
+        })
+        if (user && user.userType === 'admin') {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            userType: 'admin',
+            phone: user.phone,
+          }
+        }
+      }
     }
 
     // Method 1: Check Authorization header for Supabase token

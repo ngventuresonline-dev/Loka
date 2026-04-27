@@ -198,7 +198,28 @@ export const getCurrentUser = (): User | null => {
 
 export const logout = (): void => {
   clearSession();
+  // Clear HttpOnly admin session cookie if present
+  if (typeof window !== 'undefined') {
+    void fetch('/api/auth/admin/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
+  }
 };
+
+/** Call after a successful POST /api/auth/admin/login so AuthContext reflects the DB admin user */
+export const setServerAdminSession = (u: { id: string; email: string; name: string }): void => {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({
+      userId: u.id,
+      email: u.email,
+      name: u.name,
+      userType: 'admin',
+      isAdmin: true,
+      source: 'server',
+      timestamp: Date.now(),
+    })
+  )
+}
 
 // Update user
 export const updateUser = (userId: string, updates: Partial<User>): boolean => {

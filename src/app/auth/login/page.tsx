@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
-import { loginUser } from '@/lib/auth'
+import { loginUser, setServerAdminSession } from '@/lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,22 +20,54 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Authenticate user
-      if (typeof loginUser !== 'function') {
-        throw new Error('Login function is not available')
+      // Try database-backed admin login first (sets HttpOnly cookie for API auth)
+      const adminRes = await fetch('/api/auth/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      })
+      const adminJson = await adminRes.json().catch(() => null)
+
+      if (adminRes.ok && adminJson?.success && adminJson?.user?.userType === 'admin') {
+        setServerAdminSession({
+          id: adminJson.user.id,
+          email: adminJson.user.email,
+          name: adminJson.user.name,
+        })
+        router.push('/admin')
+        return
       }
 
-      const result = await loginUser(email, password)
-
-      if (result && result.success && result.user) {
-        // Redirect admins to admin dashboard, others to homepage
-        if (result.user.userType === 'admin') {
-          router.push('/admin')
-        } else {
+      // NOT_ADMIN means password was correct but it's a non-admin account
+      if (adminRes.status === 403 && adminJson?.code === 'NOT_ADMIN') {
+        const result = await loginUser(email, password)
+        if (result?.success && result.user) {
           router.push('/')
+        } else {
+          setError(result?.error || 'Failed to login')
         }
+        return
+      }
+
+      // 401 = wrong password (try legacy localStorage for non-admin users)
+      if (adminRes.status === 401) {
+        const result = await loginUser(email, password)
+        if (result?.success && result.user) {
+          router.push('/')
+        } else {
+          setError(adminJson?.error || result?.error || 'Invalid email or password')
+        }
+        return
+      }
+
+      // Fallback for 503 (DB unavailable) or other errors
+      const result = await loginUser(email, password)
+      if (result?.success && result.user) {
+        if (result.user.userType === 'admin') router.push('/admin')
+        else router.push('/')
       } else {
-        setError(result?.error || 'Failed to login')
+        setError(result?.error || adminJson?.error || 'Failed to login')
       }
     } catch (err: any) {
       console.error('Login error:', err)
