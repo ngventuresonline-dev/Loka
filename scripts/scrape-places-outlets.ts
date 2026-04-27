@@ -241,6 +241,8 @@ async function main() {
               allDiscovered.push(place.name)
               corridorInserted++
               totalInserted++
+            } else {
+              process.stdout.write(`\n    ⚠️  insert error [${place.name}]: ${error.message} (code:${error.code})\n`)
             }
           } else {
             existingIds.add(id) // prevent dry-run duplicates

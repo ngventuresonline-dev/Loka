@@ -21,13 +21,10 @@
 import { resolve } from 'path'
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs'
 import { createClient } from '@supabase/supabase-js'
+import { config as dotenvConfig } from 'dotenv'
 
-// Load .env.local if present (optional — can also pass vars inline)
-try {
-  const { config } = await import('dotenv')
-  config({ path: resolve(process.cwd(), '.env.local') })
-  config({ path: resolve(process.cwd(), '.env') })
-} catch { /* dotenv optional */ }
+dotenvConfig({ path: resolve(process.cwd(), '.env.local') })
+dotenvConfig({ path: resolve(process.cwd(), '.env') })
 
 const MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
