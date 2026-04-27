@@ -32,6 +32,7 @@ export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProperties, setSelectedProperties] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
@@ -61,8 +62,8 @@ export default function PropertiesPage() {
   }, [filters.status])
 
   useEffect(() => {
-    if (user?.id && user?.email) fetchProperties()
-  }, [user?.id, user?.email, filters.status, page])
+    if (user?.id) fetchProperties()
+  }, [user?.id, filters.status, page])
 
   useEffect(() => {
     applyFilters(properties)
@@ -75,11 +76,12 @@ export default function PropertiesPage() {
     
     try {
       setLoading(true)
+      setLoadError(null)
       const statusQuery = statusParam === 'all' ? '' : `&status=${statusParam}`
       const url = `/api/admin/properties?userEmail=${encodeURIComponent(
         userEmail
       )}&userId=${userId}&limit=${limit}&page=${page}${statusQuery}`
-      const response = await fetch(url)
+      const response = await fetch(url, { credentials: 'include' })
       
       if (response.ok) {
         const data = await response.json()
@@ -107,14 +109,14 @@ export default function PropertiesPage() {
           console.error('Failed to fetch properties:', response.status, response.statusText)
         }
         setProperties([])
-        // Optionally show error to user
-        // alert(errorMessage)
+        setLoadError(errorMessage)
       }
     } catch (error) {
       console.error('Error fetching properties:', error)
       setProperties([])
       setTotalPages(1)
       setTotalCount(0)
+      setLoadError(error instanceof Error ? error.message : 'Failed to load properties')
     } finally {
       setLoading(false)
     }
@@ -487,9 +489,20 @@ export default function PropertiesPage() {
             <LokazenNodesLoader size="lg" className="mb-4" />
             <p className="mt-4 text-gray-600">Loading properties...</p>
           </div>
+        ) : loadError ? (
+          <div className="text-center py-12 bg-red-950/40 border border-red-800/50 rounded-lg px-4">
+            <p className="text-red-200 font-medium">Could not load properties</p>
+            <p className="text-red-300/90 text-sm mt-2">{loadError}</p>
+            <p className="text-gray-400 text-sm mt-3">
+              If you are logged in as admin, try refreshing the page. Otherwise sign in again.
+            </p>
+          </div>
         ) : properties.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <p className="text-gray-600">No properties found</p>
+            <p className="text-gray-500 text-sm mt-2">
+              There are no listings in the database yet, or none match the current API filters.
+            </p>
           </div>
         ) : filteredProperties.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
