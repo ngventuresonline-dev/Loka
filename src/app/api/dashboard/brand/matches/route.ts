@@ -258,6 +258,7 @@ export async function GET(request: NextRequest) {
     const rawProperties = await prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT p.id, p.title, p.address, p.city, p.state, p.price::text as price, p.price_type, p.size,
              p.property_type, p.amenities, p.images, p.status, p.created_at,
+             p.lat AS prop_lat, p.lng AS prop_lng,
              plc.resolved_lat, plc.resolved_lng
       FROM properties p
       LEFT JOIN property_location_cache plc ON plc.property_id = p.id
@@ -282,6 +283,8 @@ export async function GET(request: NextRequest) {
       amenities: p['amenities'],
       images: p['images'],
       status: p['status'],
+      prop_lat: p['prop_lat'],
+      prop_lng: p['prop_lng'],
       resolved_lat: p['resolved_lat'],
       resolved_lng: p['resolved_lng'],
     }))
@@ -375,16 +378,22 @@ export async function GET(request: NextRequest) {
       const fromIndex = bfiFromSearchIndexRow(searchIndexById.get(p.id), brandIndustry)
       const bfiScore = fromIndex != null ? fromIndex : liveBfi
 
+      // 1. Direct lat/lng on properties row (populated from amenities.map_link) — most reliable
+      const plat = Number(p.prop_lat)
+      const plng = Number(p.prop_lng)
+      const propCoords = Number.isFinite(plat) && Number.isFinite(plng) ? { lat: plat, lng: plng } : null
+      const usablePropCoords = propCoords && areUsablePinCoords(propCoords) ? propCoords : null
+
+      // 2. Resolved cache coords (geocoded address)
       const rlat = Number(p.resolved_lat)
       const rlng = Number(p.resolved_lng)
       const rawCache =
         Number.isFinite(rlat) && Number.isFinite(rlng) ? { lat: rlat, lng: rlng } : null
       const cacheCoords = rawCache && areUsablePinCoords(rawCache) ? rawCache : null
 
-      let coords: { lat: number; lng: number } | null = mergeListingCoordsPreferringMapLink(
-        cacheCoords,
-        p.amenities
-      )
+      // 3. Merge: amenities.map_link first, then prop lat/lng, then cache
+      let coords: { lat: number; lng: number } | null = usablePropCoords
+        ?? mergeListingCoordsPreferringMapLink(cacheCoords, p.amenities)
 
       if (!coords) {
         const cityLower = (p.city || '').toLowerCase()

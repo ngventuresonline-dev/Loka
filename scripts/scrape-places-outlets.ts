@@ -95,6 +95,46 @@ const PLACE_TYPES = [
   'movie_theater',
 ]
 
+// ── Branded pharmacy chains only (no standalone chemists) ─────────────────────
+const BRANDED_PHARMACY_PATTERNS = [
+  /apollo\s*pharmacy/i,
+  /medplus/i,
+  /wellness\s*(forever|pharmacy)/i,
+  /frank\s*ross/i,
+  /guardian\s*pharmacy/i,
+  /netmeds/i,
+  /pharmeasy/i,
+  /1mg/i,
+  /health\s*&\s*glow/i,
+  /health\s*and\s*glow/i,
+  /tata\s*1mg/i,
+  /cipla\s*health/i,
+  /sasta\s*sundar/i,
+]
+
+function isBrandedPharmacy(name: string): boolean {
+  return BRANDED_PHARMACY_PATTERNS.some((re) => re.test(name))
+}
+
+// ── Skip non-retail establishments ─────────────────────────────────────────────
+const NON_RETAIL_PATTERNS = [
+  /\bcredit\s*card\b/i, /\binsurance\b/i, /\bfintech\b/i, /\bbank\b/i,
+  /\batm\b/i, /\bnbfc\b/i, /\bloan\b/i, /\bmutual\s*fund\b/i,
+  /\bhospital\b/i, /\bclinic\b/i, /\bdiagnostic\b/i, /\blab\b/i,
+  /\bschool\b/i, /\bcollege\b/i, /\buniversity\b/i, /\bacademy\b/i,
+  /\btemple\b/i, /\bchurch\b/i, /\bmosque\b/i, /\bgurdwara\b/i,
+  /\boffice\b/i, /\bcorporate\b/i, /\btech\s*park\b/i, /\bco-?work/i,
+  /\bservice\s*center\b/i, /\bworkshop\b/i, /\bgarage\b/i,
+]
+
+function isNonRetail(name: string, types: string[]): boolean {
+  const n = name.toLowerCase()
+  if (NON_RETAIL_PATTERNS.some((re) => re.test(n))) return true
+  // Google types that mean this is definitely not a retail/F&B outlet
+  const excludedTypes = ['school', 'hospital', 'doctor', 'lodging', 'airport', 'transit_station', 'atm', 'bank', 'insurance_agency', 'real_estate_agency', 'lawyer', 'accounting']
+  return types.some((t) => excludedTypes.includes(t))
+}
+
 // ── Google type → our industry/category mapping ───────────────────────────────
 function mapTypes(googleTypes: string[]): { industry: string; category: string } {
   if (googleTypes.includes('restaurant')) return { industry: 'F&B', category: 'Restaurant' }
@@ -110,7 +150,7 @@ function mapTypes(googleTypes: string[]): { industry: string; category: string }
   if (googleTypes.includes('gym')) return { industry: 'Wellness', category: 'Gym' }
   if (googleTypes.includes('beauty_salon')) return { industry: 'Wellness', category: 'Salon' }
   if (googleTypes.includes('spa')) return { industry: 'Wellness', category: 'Spa' }
-  if (googleTypes.includes('pharmacy')) return { industry: 'Services', category: 'Pharmacy' }
+  if (googleTypes.includes('pharmacy')) return { industry: 'Wellness', category: 'Pharmacy' }
   if (googleTypes.includes('movie_theater')) return { industry: 'Entertainment', category: 'Cinema' }
   return { industry: 'Retail', category: 'Other' }
 }
@@ -209,12 +249,19 @@ async function main() {
           if (place.business_status === 'CLOSED_PERMANENTLY') continue
 
           const id = slugId(place.name, place.geometry.location.lat, place.geometry.location.lng)
-
           if (existingIds.has(id)) { totalSkipped++; continue }
 
-          // Skip very generic non-branded places
-          const skipWords = ['unnamed', 'shop', 'store', 'outlet', 'market', 'hospital', 'clinic', 'atm', 'bank branch']
-          if (skipWords.some((w) => place.name.toLowerCase().includes(w) && place.name.length < 15)) {
+          // Pharmacy: only keep branded chains
+          if (place.types.includes('pharmacy') && !isBrandedPharmacy(place.name)) {
+            totalSkipped++; continue
+          }
+
+          // Skip non-retail establishments (offices, hospitals, etc.)
+          if (isNonRetail(place.name, place.types)) { totalSkipped++; continue }
+
+          // Skip very generic unnamed places
+          const genericWords = ['unnamed', 'unknown', 'shop no', 'stall no']
+          if (genericWords.some((w) => place.name.toLowerCase().startsWith(w))) {
             totalSkipped++; continue
           }
 

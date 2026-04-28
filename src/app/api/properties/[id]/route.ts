@@ -414,7 +414,16 @@ export async function PUT(
       updateData.priceType = priceTypeMap.includes(raw as any) ? raw : 'monthly'
     }
     if (data.securityDeposit !== undefined) updateData.securityDeposit = data.securityDeposit
-    if (data.amenities !== undefined) updateData.amenities = data.amenities
+    if (data.amenities !== undefined) {
+      updateData.amenities = data.amenities
+      // Extract lat/lng from map_link whenever amenities change so the direct columns stay in sync
+      const mapLink = getMapLinkFromAmenities(data.amenities)
+      const coords = mapLink ? extractLatLngFromMapLink(mapLink) : null
+      if (coords) {
+        ;(updateData as any).lat = coords.lat
+        ;(updateData as any).lng = coords.lng
+      }
+    }
     if (data.images !== undefined) updateData.images = data.images
     if (data.availability !== undefined) updateData.availability = data.availability
     if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured
