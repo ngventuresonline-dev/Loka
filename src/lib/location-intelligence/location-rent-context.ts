@@ -3,35 +3,41 @@
  * plus optional listing-implied ₹/sqft. Replaces a single hardcoded city average.
  */
 
-/** Typical monthly commercial rent per sqft (₹), by nearest area key — broad retail / street / Grade-B bands. */
+/**
+ * Typical monthly commercial ground-floor rent per sqft (₹), by nearest area key.
+ * Bands represent street-level retail / high-street / Grade-B retail (not Grade-A office).
+ * Updated Q1 2025 — prime spots within each area can exceed the high end.
+ */
 const RENT_BAND_BY_AREA_KEY: Record<string, { low: number; high: number }> = {
-  'mg road': { low: 220, high: 400 },
-  'ub city': { low: 260, high: 450 },
-  'st marks road': { low: 200, high: 380 },
-  'brigade road': { low: 200, high: 380 },
-  'cunningham road': { low: 190, high: 360 },
-  indiranagar: { low: 170, high: 320 },
-  koramangala: { low: 160, high: 300 },
-  'richmond town': { low: 170, high: 310 },
-  'hsr layout': { low: 130, high: 240 },
-  jayanagar: { low: 120, high: 220 },
-  'jp nagar': { low: 115, high: 210 },
-  'btm layout': { low: 110, high: 200 },
-  malleswaram: { low: 95, high: 180 },
-  rajajinagar: { low: 90, high: 170 },
-  banashankari: { low: 85, high: 160 },
-  whitefield: { low: 110, high: 220 },
-  marathahalli: { low: 105, high: 200 },
-  bellandur: { low: 100, high: 195 },
-  'sarjapur road': { low: 105, high: 200 },
-  'aecs layout': { low: 100, high: 190 },
-  mahadevapura: { low: 100, high: 190 },
-  brookfield: { low: 100, high: 185 },
-  kaikondrahalli: { low: 100, high: 185 },
-  'electronic city': { low: 55, high: 105 },
+  'mg road': { low: 280, high: 520 },
+  'ub city': { low: 320, high: 580 },
+  'st marks road': { low: 250, high: 460 },
+  'brigade road': { low: 250, high: 460 },
+  'cunningham road': { low: 230, high: 420 },
+  indiranagar: { low: 220, high: 420 },
+  koramangala: { low: 200, high: 380 },
+  'richmond town': { low: 210, high: 380 },
+  'hsr layout': { low: 180, high: 340 },
+  jayanagar: { low: 160, high: 300 },
+  'jp nagar': { low: 150, high: 280 },
+  'btm layout': { low: 140, high: 260 },
+  malleswaram: { low: 130, high: 240 },
+  rajajinagar: { low: 120, high: 220 },
+  banashankari: { low: 110, high: 200 },
+  whitefield: { low: 150, high: 300 },
+  marathahalli: { low: 140, high: 270 },
+  bellandur: { low: 135, high: 260 },
+  'sarjapur road': { low: 140, high: 270 },
+  'sarjapur junction': { low: 140, high: 270 },
+  'aecs layout': { low: 130, high: 250 },
+  mahadevapura: { low: 130, high: 250 },
+  brookfield: { low: 130, high: 245 },
+  kaikondrahalli: { low: 130, high: 245 },
+  'kalyan nagar': { low: 120, high: 230 },
+  'electronic city': { low: 70, high: 140 },
 }
 
-const DEFAULT_BAND = { low: 95, high: 175 }
+const DEFAULT_BAND = { low: 120, high: 220 }
 
 export type RentDataSource = 'listing' | 'area_benchmark'
 

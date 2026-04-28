@@ -1411,7 +1411,7 @@ function MetricCell({ label, value, trend, benchmark, tooltip }: { label: string
       </div>
       {benchmark && (
         <p className="text-[10px] text-gray-400 mt-0.5">
-          Bengaluru Avg <span className="font-semibold text-gray-600">{benchmark}</span>
+          Benchmark: <span className="font-semibold text-gray-600">{benchmark}</span>
         </p>
       )}
     </div>
@@ -5091,101 +5091,109 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       analysisLines={2}
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
-                    <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-gray-900">Catchment economics</h3>
-                        <span className={`text-xs rounded-full px-2 py-0.5 ${
-                          intelData.locationSynthesis?.liveEconomics
-                            ? 'bg-orange-100 text-orange-900 font-medium'
-                            : intelData.locationSynthesisPending && !intelData.locationSynthesis
-                              ? 'bg-amber-50 text-amber-800'
-                              : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {intelData.locationSynthesis?.liveEconomics
-                            ? 'Synthesized rent + platform band'
-                            : intelData.locationSynthesisPending && !intelData.locationSynthesis
-                              ? 'Intelligence sync pending'
-                              : intelData.rentDataSource === 'listing'
-                                ? 'Listing + area band'
-                                : 'Area benchmark model'}
-                        </span>
-                      </div>
-                      {intelData.nearestCommercialAreaKey && (
-                        <p className="text-[10px] text-gray-500 mb-2">
-                          Micro-market: <span className="font-medium text-gray-700 capitalize">{intelData.nearestCommercialAreaKey.replace(/-/g, ' ')}</span>
-                          {intelData.rentDataSource === 'listing' ? ' · Listing used for implied ₹/sqft' : ''}
-                        </p>
-                      )}
-                      <div className="grid grid-cols-2 gap-3 mb-1">
-                        <MetricCell
-                          label={
-                            intelData.locationSynthesis?.liveEconomics
-                              ? 'COMM. RENT (LIVE)'
-                              : 'COMM. RENT (MODEL)'
-                          }
-                          value={(() => {
-                            const le = intelData.locationSynthesis?.liveEconomics
-                            const v = le?.commercialRentPerSqftTypical ?? intelData.rentPerSqftCommercial
-                            return v != null && Number.isFinite(Number(v)) ? `₹${Math.round(Number(v))}/sqft` : '—'
-                          })()}
-                          trend="up"
-                          benchmark={(() => {
-                            const le = intelData.locationSynthesis?.liveEconomics
-                            if (le) return `₹${le.commercialRentLow}–${le.commercialRentHigh}/sqft (${le.confidence})`
-                            if (intelData.marketRentLow != null && intelData.marketRentHigh != null) {
-                              return `₹${intelData.marketRentLow}–${intelData.marketRentHigh}/sqft`
-                            }
-                            return undefined
-                          })()}
-                          tooltip={(() => {
-                            const le = intelData.locationSynthesis?.liveEconomics
-                            if (le) return `${le.rationale} Not a quote—validate with on-market comps and your own diligence.`
-                            return 'Typical commercial ₹/sqft/month band for the nearest mapped Bengaluru sub-market, adjusted for property type. Pass listing rent + size for listing-implied ₹/sqft.'
-                          })()}
-                        />
-                        <MetricCell
-                          label="INCOME BAND (AREA)"
-                          value={intelData.incomeLevel ? intelData.incomeLevel.charAt(0).toUpperCase() + intelData.incomeLevel.slice(1) : '—'}
-                          trend="up"
-                          benchmark="medium"
-                          tooltip="Household income mix proxy from Census demographics for the surrounding ward."
-                        />
-                        <MetricCell
-                          label="AFFLUENCE"
-                          value={intelData.affluenceIndicator}
-                          trend="up"
-                          benchmark="Medium"
-                          tooltip="Spending-power indicator from projected household income / affluence labels."
-                        />
-                        <MetricCell
-                          label="HOUSEHOLDS (EST.)"
-                          value={intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString() : '—'}
-                          trend="up"
-                          tooltip="Estimated household count where Census ward data is available."
-                        />
-                      </div>
-                      {intelData.locationSynthesis?.liveEconomics?.listingVsMarketNote ? (
-                        <p className="text-[11px] text-gray-600 mt-2 leading-snug border-t border-gray-100 pt-2">
-                          <span className="font-semibold text-gray-700">Listing vs market: </span>
-                          {intelData.locationSynthesis.liveEconomics.listingVsMarketNote}
-                        </p>
-                      ) : null}
-                    </div>
+                    {(() => {
+                      /* Rent hierarchy: synthesis (live AI) > pocket DB > locality DB > area model */
+                      const le = intelData.locationSynthesis?.liveEconomics
+                      const pocketRent = nearestPocket?.rentGfTypical
+                      const localityRentMin = localityIntel?.commercialRentGfMin
+                      const localityRentMax = localityIntel?.commercialRentGfMax
+                      const areaModelRent = intelData.rentPerSqftCommercial
+
+                      let rentDisplay = '—'
+                      let rentBand: string | undefined
+                      let rentLabel = 'COMM. RENT'
+                      let rentTooltip = 'Ground floor commercial rent estimate — uses the best available source in order: AI synthesis > commercial pocket benchmark > locality average > area model.'
+
+                      if (le) {
+                        rentDisplay = `₹${le.commercialRentPerSqftTypical}/sqft`
+                        rentBand = `₹${le.commercialRentLow}–${le.commercialRentHigh}/sqft (${le.confidence} confidence)`
+                        rentLabel = 'COMM. RENT (AI)'
+                        rentTooltip = `${le.rationale} Not a quote — validate with on-market comps.`
+                      } else if (pocketRent != null) {
+                        rentDisplay = `₹${pocketRent}/sqft`
+                        rentBand = nearestPocket?.rentGfMin && nearestPocket?.rentGfMax
+                          ? `₹${nearestPocket.rentGfMin}–${nearestPocket.rentGfMax}/sqft (pocket range)`
+                          : undefined
+                        rentLabel = 'COMM. RENT (POCKET)'
+                        rentTooltip = `Ground floor rent benchmark for ${nearestPocket?.name || 'nearest commercial pocket'} — from Lokazen database. Not listing-specific.`
+                      } else if (localityRentMin != null && localityRentMax != null) {
+                        rentDisplay = `₹${localityRentMin}–${localityRentMax}/sqft`
+                        rentLabel = 'COMM. RENT (AREA AVG)'
+                        rentTooltip = `Ground floor rent average for ${localityIntel?.locality || 'this locality'} — from Lokazen locality database.`
+                      } else if (areaModelRent != null && Number.isFinite(Number(areaModelRent))) {
+                        rentDisplay = `₹${Math.round(Number(areaModelRent))}/sqft`
+                        rentBand = intelData.marketRentLow != null && intelData.marketRentHigh != null
+                          ? `₹${intelData.marketRentLow}–${intelData.marketRentHigh}/sqft (${intelData.nearestCommercialAreaKey?.replace(/-/g, ' ') || 'area'} band, Q1 2025)`
+                          : undefined
+                        rentLabel = 'COMM. RENT (MODEL)'
+                        rentTooltip = `Q1 2025 ground floor retail rent band for ${intelData.nearestCommercialAreaKey?.replace(/-/g, ' ') || 'nearest mapped area'}. Midpoint shown — validate with on-market listings before committing.`
+                      }
+
+                      const rentSource = le ? 'AI Synthesis' : pocketRent != null ? 'Pocket DB' : (localityRentMin != null ? 'Locality DB' : 'Area Model')
+
+                      return (
+                        <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-bold text-gray-900">Catchment economics</h3>
+                            <span className={`text-xs rounded-full px-2 py-0.5 ${
+                              le ? 'bg-orange-100 text-orange-900 font-medium'
+                                : pocketRent != null ? 'bg-blue-50 text-blue-700'
+                                  : localityRentMin != null ? 'bg-green-50 text-green-700'
+                                    : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {rentSource}
+                            </span>
+                          </div>
+                          {intelData.nearestCommercialAreaKey && (
+                            <p className="text-[10px] text-gray-500 mb-2">
+                              Micro-market: <span className="font-medium text-gray-700 capitalize">{intelData.nearestCommercialAreaKey.replace(/-/g, ' ')}</span>
+                              {intelData.rentDataSource === 'listing' ? ' · Listing implies ₹/sqft' : ''}
+                            </p>
+                          )}
+                          <div className="grid grid-cols-2 gap-3 mb-1">
+                            <MetricCell
+                              label={rentLabel}
+                              value={rentDisplay}
+                              trend="up"
+                              benchmark={rentBand}
+                              tooltip={rentTooltip}
+                            />
+                            <MetricCell
+                              label="INCOME BAND (AREA)"
+                              value={intelData.incomeLevel ? intelData.incomeLevel.charAt(0).toUpperCase() + intelData.incomeLevel.slice(1) : '—'}
+                              tooltip="Household income mix proxy from Census demographics for the surrounding ward."
+                            />
+                            <MetricCell
+                              label="AFFLUENCE"
+                              value={intelData.affluenceIndicator}
+                              tooltip="Spending-power tier inferred from projected household income for this catchment."
+                            />
+                            <MetricCell
+                              label="HOUSEHOLDS (EST.)"
+                              value={intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString() : '—'}
+                              tooltip="Estimated household count where Census ward data is available."
+                            />
+                          </div>
+                          {le?.listingVsMarketNote ? (
+                            <p className="text-[11px] text-gray-600 mt-2 leading-snug border-t border-gray-100 pt-2">
+                              <span className="font-semibold text-gray-700">Listing vs market: </span>
+                              {le.listingVsMarketNote}
+                            </p>
+                          ) : null}
+                        </div>
+                      )
+                    })()}
                     <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900">Retail Indicators</h3>
                         <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">5 min Walking</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <MetricCell label="CATCHMENT FOOTFALL" value={intelData.totalFootfall.toLocaleString()} trend="up" benchmark="7.68" tooltip="AI-modeled average daily foot traffic within ~400m of this property (5-min walking zone). Derived from POI density and area multipliers — not live sensor data. Differs from locality/pocket footfall shown below." />
-                        <MetricCell label="GROWTH TRENDS" value={intelData.growthTrend.toFixed(1)} trend="up" benchmark="36.89" tooltip="Whitespace score — higher means more room to grow. Measures unmet demand vs current supply." />
-                        <MetricCell label="DEMAND GAP SCORE" value={intelData.spendingCapacity.toFixed(1)} trend="up" benchmark="27.89" tooltip="How underserved this area is for your category (0–100). Higher = more unmet demand and room to grow. Distinct from spending power." />
-                        <MetricCell label="NUMBER OF STORES" value={String(intelData.numberOfStores)} trend="down" benchmark="245" tooltip="Total competitor and complementary brand count within 800m of the listing pin from Lokazen’s mapped trade area." />
-                        <MetricCell label="RETAIL INDEX" value={intelData.retailIndex.toFixed(3)} trend="up" benchmark="0.34" tooltip="Inverse saturation index — higher means less congested retail market. 1.0 = zero competition." />
+                        <MetricCell label="GROWTH TRENDS" value={intelData.growthTrend.toFixed(1)} trend="up" tooltip="Whitespace score — higher means more room to grow. Measures unmet demand vs current supply in this catchment." />
+                        <MetricCell label="DEMAND GAP SCORE" value={intelData.spendingCapacity.toFixed(1)} trend="up" tooltip="How underserved this area is for your category (0–100). Higher = more unmet demand. Distinct from household spending power." />
+                        <MetricCell label="NUMBER OF STORES" value={String(intelData.numberOfStores)} trend="down" tooltip="Total competitor and complementary brand count within 800m of the listing pin." />
+                        <MetricCell label="RETAIL INDEX" value={intelData.retailIndex.toFixed(3)} trend="up" tooltip="Inverse saturation index — higher means less congested retail market. 1.0 = zero competition." />
                       </div>
-                      <p className="text-[9px] text-gray-400 mt-3 leading-snug border-t border-gray-50 pt-2">
-                        Catchment footfall is AI-modeled for the 5-min walking zone (~400m). Locality-level and pocket-level footfall figures appear in sections below — these represent larger geographies and will differ.
-                      </p>
                     </div>
 
                     <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -5334,15 +5342,9 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           </div>
                         </div>
 
-                        {(localityIntel.commercialRentGfMin || localityIntel.commercialRentGfMax) && (
+                        {localityIntel.diningOutWeekly != null && (
                           <div className="text-xs text-gray-600 bg-gray-50 rounded-xl p-2.5">
-                            <span className="font-medium">GF rent benchmark <span className="font-normal text-gray-400">(locality avg.)</span>: </span>
-                            ₹{localityIntel.commercialRentGfMin?.toLocaleString('en-IN') ?? '?'}
-                            {' – '}
-                            ₹{localityIntel.commercialRentGfMax?.toLocaleString('en-IN') ?? '?'}/sqft/mo
-                            {localityIntel.diningOutWeekly && (
-                              <span className="ml-2 text-gray-500">· Dines out {localityIntel.diningOutWeekly}×/wk</span>
-                            )}
+                            <span className="font-medium">Dining frequency: </span>dines out ~{localityIntel.diningOutWeekly}×/week
                           </div>
                         )}
                       </div>
@@ -5433,35 +5435,31 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           </div>
                         </div>
 
-                        {/* Footfall + rent metrics */}
+                        {/* Pocket-specific metrics — footfall/rent/spending power are shown in other sections above */}
                         <div className="grid grid-cols-2 gap-2 mb-4">
-                          {nearestPocket.avgDailyFootfall > 0 && (
-                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Daily footfall <span className="text-gray-400">(pocket est.)</span></p>
-                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.avgDailyFootfall.toLocaleString('en-IN')}</p>
-                              {nearestPocket.peakHours && <p className="text-[9px] text-gray-400">Peak: {nearestPocket.peakHours}</p>}
-                            </div>
-                          )}
-                          {nearestPocket.rentGfTypical != null && (
-                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">GF rent <span className="text-gray-400">(pocket)</span></p>
-                              <p className="font-bold text-gray-900 text-sm">₹{nearestPocket.rentGfTypical}/sqft</p>
-                              {nearestPocket.rentGfMin && nearestPocket.rentGfMax && (
-                                <p className="text-[9px] text-gray-400">₹{nearestPocket.rentGfMin}–{nearestPocket.rentGfMax}</p>
-                              )}
-                            </div>
-                          )}
                           {nearestPocket.revenueMultiplier != null && (
                             <div className="bg-green-50 rounded-xl p-2.5 text-center">
                               <p className="text-[10px] text-gray-500 mb-0.5">Revenue multiplier</p>
                               <p className="font-bold text-gray-900 text-sm">{nearestPocket.revenueMultiplier}×</p>
+                              <p className="text-[9px] text-gray-400">vs pocket baseline</p>
                             </div>
                           )}
-                          {nearestPocket.spendingPowerIndex != null && (
-                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Spending power index</p>
-                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.spendingPowerIndex}/100</p>
-                              <p className="text-[9px] text-gray-400">pocket-level</p>
+                          {nearestPocket.avgTicketMultiplier != null && (
+                            <div className="bg-blue-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Avg ticket multiplier</p>
+                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.avgTicketMultiplier}×</p>
+                            </div>
+                          )}
+                          {nearestPocket.peakFootfallWeekday != null && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Peak footfall weekday</p>
+                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.peakFootfallWeekday.toLocaleString('en-IN')}</p>
+                            </div>
+                          )}
+                          {nearestPocket.peakFootfallWeekend != null && (
+                            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Peak footfall weekend</p>
+                              <p className="font-bold text-gray-900 text-sm">{nearestPocket.peakFootfallWeekend.toLocaleString('en-IN')}</p>
                             </div>
                           )}
                         </div>
