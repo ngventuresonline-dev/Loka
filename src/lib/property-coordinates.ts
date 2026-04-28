@@ -120,10 +120,16 @@ async function geocodeSingleQuery(query: string): Promise<{ lat: number; lng: nu
 export function extractLatLngFromMapLink(mapLink: string | null | undefined): { lat: number; lng: number } | null {
   if (!mapLink || typeof mapLink !== 'string') return null
   const s = mapLink.trim()
+  // @lat,lng (most common — present when user copies URL from browser address bar)
   const atMatch = s.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
   if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
+  // /place/X/@lat,lng
   const placeMatch = s.match(/\/place\/[^/]+\/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
   if (placeMatch) return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) }
+  // Google Maps data parameter: !3d{lat}!4d{lng}
+  const dataMatch = s.match(/!3d(-?\d+\.?\d+).*?!4d(-?\d+\.?\d+)/)
+  if (dataMatch) return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) }
+  // ?q=lat,lng or ?ll=lat,lng
   const qMatch = s.match(/[?&]q=(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
   if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) }
   const llMatch = s.match(/[?&]ll=(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
