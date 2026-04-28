@@ -1435,15 +1435,50 @@ function HighlightChip({ label }: { label: string }) {
   )
 }
 
-function CatchmentFlow({ catchment }: { catchment: Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType?: string }> }) {
+function CatchmentFlow({
+  catchment,
+  societies,
+  propertyName,
+}: {
+  catchment: Array<{ pincode: string; name: string; sharePct: number; distanceM: number; areaType?: string }>
+  societies?: Array<{ locality: string; distanceM: number; totalUnits: number }>
+  propertyName?: string
+}) {
   const cx = 175
   const cy = 145
   const innerR = 70
   const outerR = 118
 
-  const items = catchment.slice(0, 10)
+  // Prefer locality groupings from real society data over synthetic catchment zones
+  type FlowNode = { pincode: string; name: string; sharePct: number; distanceM: number; areaType?: string }
+  let items: FlowNode[]
+  if (societies && societies.length > 0) {
+    const localityMap = new Map<string, { totalUnits: number; minDist: number }>()
+    for (const s of societies) {
+      const key = (s.locality || 'Other').trim()
+      const prev = localityMap.get(key) ?? { totalUnits: 0, minDist: Infinity }
+      localityMap.set(key, { totalUnits: prev.totalUnits + (s.totalUnits || 0), minDist: Math.min(prev.minDist, s.distanceM) })
+    }
+    const grandTotal = [...localityMap.values()].reduce((sum, v) => sum + v.totalUnits, 0)
+    const raw = [...localityMap.entries()]
+      .map(([name, { totalUnits, minDist }]) => ({
+        pincode: name,
+        name,
+        sharePct: grandTotal > 0 ? Math.round((totalUnits / grandTotal) * 100) : 0,
+        distanceM: minDist === Infinity ? 0 : minDist,
+        areaType: 'residential' as const,
+      }))
+      .sort((a, b) => b.sharePct - a.sharePct)
+    // Re-normalise to 100% if rounding left a gap
+    const total = raw.reduce((s, n) => s + n.sharePct, 0)
+    if (total > 0 && raw[0]) raw[0].sharePct += 100 - total
+    items = raw.filter((n) => n.sharePct > 0).slice(0, 10)
+  } else {
+    items = catchment.slice(0, 10)
+  }
+
   if (items.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-6">No catchment pincode nodes within range — location coordinates may still be syncing.</p>
+    return <p className="text-sm text-gray-400 text-center py-6">No nearby localities found — coordinates may still be syncing.</p>
   }
 
   const maxDist = Math.max(...items.map((i) => i.distanceM), 1)
@@ -1454,107 +1489,50 @@ function CatchmentFlow({ catchment }: { catchment: Array<{ pincode: string; name
   const typeColor = (t?: string) =>
     t === 'commercial' ? '#FF5200' : t === 'tech' ? '#6366f1' : t === 'residential' ? '#22c55e' : '#6b7280'
 
-  const positionOnRing = (
-    ringItems: typeof items,
-    radius: number,
-    ring: 'inner' | 'outer'
-  ) =>
+  type Positioned = FlowNode & { x: number; y: number; ring: 'inner' | 'outer' }
+  const positionOnRing = (ringItems: FlowNode[], radius: number, ring: 'inner' | 'outer'): Positioned[] =>
     ringItems.map((item, i) => {
       const angle = (i / Math.max(ringItems.length, 1)) * 2 * Math.PI - Math.PI / 2
-      return {
-        ...item,
-        x: cx + radius * Math.cos(angle),
-        y: cy + radius * Math.sin(angle),
-        ring,
-      }
+      return { ...item, x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), ring }
     })
 
-  const innerNodes = positionOnRing(innerItems, innerR, 'inner')
-  const outerNodes = positionOnRing(outerItems, outerR, 'outer')
-  const allNodes = [...innerNodes, ...outerNodes]
+  const allNodes: Positioned[] = [
+    ...positionOnRing(innerItems, innerR, 'inner'),
+    ...positionOnRing(outerItems, outerR, 'outer'),
+  ]
+
+  const centerLabel = propertyName ? propertyName.split(' ').slice(0, 2).join(' ').toUpperCase() : 'PROPERTY'
 
   return (
     <svg viewBox="0 0 350 290" className="w-full max-h-[300px]">
-      <circle
-        cx={cx}
-        cy={cy}
-        r={outerR}
-        fill="none"
-        stroke="#FF5200"
-        strokeWidth={0.5}
-        strokeDasharray="3,4"
-        strokeOpacity={0.15}
-      />
-      <circle
-        cx={cx}
-        cy={cy}
-        r={innerR}
-        fill="none"
-        stroke="#FF5200"
-        strokeWidth={0.5}
-        strokeDasharray="3,4"
-        strokeOpacity={0.2}
-      />
-      <text x={cx + innerR + 4} y={cy - 3} fill="#9CA3AF" fontSize={6.5}>
-        ~1km
-      </text>
-      <text x={cx + outerR + 4} y={cy - 3} fill="#9CA3AF" fontSize={6.5}>
-        ~4km
-      </text>
+      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke="#FF5200" strokeWidth={0.5} strokeDasharray="3,4" strokeOpacity={0.15} />
+      <circle cx={cx} cy={cy} r={innerR} fill="none" stroke="#FF5200" strokeWidth={0.5} strokeDasharray="3,4" strokeOpacity={0.2} />
+      <text x={cx + innerR + 4} y={cy - 3} fill="#9CA3AF" fontSize={6.5}>~1km</text>
+      <text x={cx + outerR + 4} y={cy - 3} fill="#9CA3AF" fontSize={6.5}>~4km</text>
       {allNodes.map((node, i) => (
-        <line
-          key={`spoke-${node.pincode}-${node.name}-${i}`}
-          x1={cx}
-          y1={cy}
-          x2={node.x}
-          y2={node.y}
-          stroke="#FF5200"
-          strokeWidth={1}
-          strokeDasharray="4,3"
-          strokeOpacity={0.3}
-        />
+        <line key={`spoke-${node.name}-${i}`} x1={cx} y1={cy} x2={node.x} y2={node.y} stroke="#FF5200" strokeWidth={1} strokeDasharray="4,3" strokeOpacity={0.3} />
       ))}
-      <circle cx={cx} cy={cy} r={28} fill="#FF5200" />
-      <circle cx={cx} cy={cy} r={22} fill="#E4002B" />
-      <text x={cx} y={cy - 5} textAnchor="middle" fill="white" fontSize={7} fontWeight="bold">
-        YOUR
-      </text>
-      <text x={cx} y={cy + 6} textAnchor="middle" fill="white" fontSize={7} fontWeight="bold">
-        LOCATION
-      </text>
+      <circle cx={cx} cy={cy} r={30} fill="#FF5200" />
+      <circle cx={cx} cy={cy} r={24} fill="#E4002B" />
+      <text x={cx} y={cy + 3} textAnchor="middle" fill="white" fontSize={6.5} fontWeight="bold">{centerLabel}</text>
       {allNodes.map((node, i) => {
         const col = typeColor(node.areaType)
-        const nameParts = node.name.split(/\s+/)
-        const line1 = nameParts.slice(0, 2).join(' ')
-        const line2 = nameParts.slice(2).join(' ')
+        // For locality names: split at space or dash, show at most 2 lines
+        const words = node.name.replace(/-/g, ' ').split(/\s+/)
+        const line1 = words.slice(0, 2).join(' ')
+        const line2 = words.slice(2, 4).join(' ')
         const nodeR = node.ring === 'inner' ? 22 : 26
         return (
-          <g key={`${node.pincode}-${node.name}-${i}`}>
-            <circle
-              cx={node.x}
-              cy={node.y}
-              r={nodeR}
-              fill="white"
-              stroke={col}
-              strokeWidth={2}
-              filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"
-            />
-            <text x={node.x} y={node.y - (line2 ? 9 : 4)} textAnchor="middle" fill={col} fontSize={9} fontWeight="bold">
-              {node.sharePct}%
-            </text>
-            <text x={node.x} y={node.y + (line2 ? 1 : 5)} textAnchor="middle" fill="#374151" fontSize={6} fontWeight="600">
-              {line1}
-            </text>
-            {line2 ? (
-              <text x={node.x} y={node.y + 10} textAnchor="middle" fill="#9CA3AF" fontSize={5.5}>
-                {line2}
-              </text>
-            ) : null}
+          <g key={`${node.name}-${i}`}>
+            <circle cx={node.x} cy={node.y} r={nodeR} fill="white" stroke={col} strokeWidth={1.5} filter="drop-shadow(0 1px 3px rgba(0,0,0,0.08))" />
+            <text x={node.x} y={node.y - (line2 ? 9 : 4)} textAnchor="middle" fill={col} fontSize={9} fontWeight="bold">{node.sharePct}%</text>
+            <text x={node.x} y={node.y + (line2 ? 1 : 5)} textAnchor="middle" fill="#374151" fontSize={6} fontWeight="600">{line1}</text>
+            {line2 ? <text x={node.x} y={node.y + 10} textAnchor="middle" fill="#9CA3AF" fontSize={5.5}>{line2}</text> : null}
           </g>
         )
       })}
       <text x={cx} y={282} textAnchor="middle" fill="#9CA3AF" fontSize={7}>
-        Inner ring ≈ 1km · Outer ring ≈ 4km · Orange = commercial · Green = residential · Indigo = tech
+        {societies && societies.length > 0 ? 'Locality share by residential units · Green = residential' : 'Inner ≈ 1km · Outer ≈ 4km · Orange = commercial · Green = residential · Indigo = tech'}
       </text>
     </svg>
   )
@@ -2529,14 +2507,23 @@ Be specific to ${area} / ${address}. No generic statements.`,
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setMobileView('intel')
     }
-    if (m.coords && areUsablePinCoords(m.coords) && mapRef) {
-      mapRef.panTo(m.coords)
+    // Prefer map link coords (exact pin from listing) over match-resolved coords
+    const mapLinkCoords = extractLatLngFromMapLink(getMapLinkFromAmenities(m.property.amenities))
+    const bestCoords =
+      mapLinkCoords && areUsablePinCoords(mapLinkCoords)
+        ? mapLinkCoords
+        : m.coords && areUsablePinCoords(m.coords)
+          ? m.coords
+          : null
+    if (bestCoords && mapRef) {
+      mapRef.panTo(bestCoords)
       mapRef.setZoom(15)
     }
+
     fetchPropertyIntelligence(
       m.property.id,
       m.property,
-      m.coords && areUsablePinCoords(m.coords) ? m.coords : null,
+      bestCoords,
       m
     )
 
@@ -2549,8 +2536,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
     setNearestPocket(null)
     setNearbyBrandOutlets([])
     setNearbyRetailZones([])
-    const catchmentCoords = m.coords && areUsablePinCoords(m.coords) ? m.coords : null
-    const coordSuffix = catchmentCoords ? `&lat=${catchmentCoords.lat}&lng=${catchmentCoords.lng}` : ''
+    const coordSuffix = bestCoords ? `&lat=${bestCoords.lat}&lng=${bestCoords.lng}` : ''
     const pid = m.property.id
 
     fetch(`/api/dashboard/brand/catchment?propertyId=${pid}${coordSuffix}`, { cache: 'no-store' })
@@ -4695,7 +4681,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       ) : null}
                       <div className="grid grid-cols-2 gap-4">
                         <MetricCell label="TOTAL HOUSEHOLDS" value={intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString('en-IN') : '—'} trend="up" />
-                        <MetricCell label="AFFLUENCE INDICATOR" value={intelData.affluenceIndicator || '—'} trend="up" benchmark="Bengaluru Avg 0.49" />
+                        <MetricCell label="AFFLUENCE INDICATOR" value={intelData.affluenceIndicator || '—'} trend="up" />
                       </div>
                     </div>
                     {(intelData.totalHouseholds > 0 || Boolean(intelData.affluenceIndicator)) && (
@@ -4839,7 +4825,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         <h3 className="font-bold text-gray-900">Where Shoppers Come From</h3>
                         <span className="text-[10px] bg-orange-100 text-orange-600 rounded-full px-2 py-0.5">4km radius</span>
                       </div>
-                      <CatchmentFlow catchment={intelData.catchment} />
+                      <CatchmentFlow
+                        catchment={intelData.catchment}
+                        societies={nearbySocieties.length > 0 ? nearbySocieties : undefined}
+                        propertyName={selectedMatch?.property.title}
+                      />
                       {intelData.catchment.length > 0 && (
                         <div className="mt-4 space-y-1.5">
                           {intelData.catchment.slice(0, 10).map((c) => {
@@ -4921,7 +4911,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                                 <span className="text-[10px] bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">Heatmap density</span>
                               </div>
                               <ul className="space-y-1.5 max-h-[220px] overflow-y-auto">
-                                {intelData.catchmentLandmarks.slice(0, 12).map((lm) => {
+                                {[...intelData.catchmentLandmarks].sort((a, b) => a.distance - b.distance).slice(0, 12).map((lm) => {
                                   const chip =
                                     lm.kind === 'residential'
                                       ? 'Residential'
@@ -5092,19 +5082,50 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       synthesisUnavailable={Boolean(intelData.locationSynthesisError && !intelData.locationSynthesis)}
                     />
                     {(() => {
-                      /* Rent hierarchy: synthesis (live AI) > pocket DB > locality DB > area model */
+                      /* Rent hierarchy: listing ask > synthesis (AI) > pocket DB > locality DB > area model */
+                      const prop = selectedMatch?.property
+                      const priceNum = prop?.price != null ? Number(prop.price) : null
+                      const sizeNum = prop?.size != null && Number(prop.size) > 0 ? Number(prop.size) : null
+                      // Compute listing-implied ₹/sqft/month from asking price
+                      let listingPsf: number | null = null
+                      if (priceNum != null && priceNum > 0 && prop) {
+                        if (prop.priceType === 'sqft') {
+                          listingPsf = Math.round(priceNum * 10) / 10
+                        } else if (sizeNum) {
+                          const monthly = prop.priceType === 'yearly' ? priceNum / 12 : priceNum
+                          const psf = monthly / sizeNum
+                          if (Number.isFinite(psf) && psf >= 12 && psf <= 750) listingPsf = Math.round(psf * 10) / 10
+                        }
+                      }
+
                       const le = intelData.locationSynthesis?.liveEconomics
                       const pocketRent = nearestPocket?.rentGfTypical
                       const localityRentMin = localityIntel?.commercialRentGfMin
                       const localityRentMax = localityIntel?.commercialRentGfMax
                       const areaModelRent = intelData.rentPerSqftCommercial
 
+                      // Market benchmark for comparing against listing ask
+                      const mktBand = pocketRent != null
+                        ? `Mkt: ₹${nearestPocket?.rentGfMin ?? pocketRent}–${nearestPocket?.rentGfMax ?? pocketRent}/sqft (pocket)`
+                        : localityRentMin != null && localityRentMax != null
+                          ? `Mkt: ₹${localityRentMin}–${localityRentMax}/sqft (area avg)`
+                          : le
+                            ? `Mkt: ₹${le.commercialRentLow}–${le.commercialRentHigh}/sqft (AI)`
+                            : intelData.marketRentLow != null && intelData.marketRentHigh != null
+                              ? `Mkt: ₹${intelData.marketRentLow}–${intelData.marketRentHigh}/sqft (area model)`
+                              : undefined
+
                       let rentDisplay = '—'
                       let rentBand: string | undefined
                       let rentLabel = 'COMM. RENT'
-                      let rentTooltip = 'Ground floor commercial rent estimate — uses the best available source in order: AI synthesis > commercial pocket benchmark > locality average > area model.'
+                      let rentTooltip = 'Ground floor commercial rent — listing ask shown first (property-specific), then best area benchmark.'
 
-                      if (le) {
+                      if (listingPsf != null) {
+                        rentDisplay = `₹${listingPsf}/sqft`
+                        rentBand = mktBand
+                        rentLabel = 'LISTING ASK (₹/sqft)'
+                        rentTooltip = `Owner's asking rent implied from listed price ÷ ${sizeNum ?? '?'} sqft. Compare with the market band shown as benchmark.`
+                      } else if (le) {
                         rentDisplay = `₹${le.commercialRentPerSqftTypical}/sqft`
                         rentBand = `₹${le.commercialRentLow}–${le.commercialRentHigh}/sqft (${le.confidence} confidence)`
                         rentLabel = 'COMM. RENT (AI)'
@@ -5129,17 +5150,18 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         rentTooltip = `Q1 2025 ground floor retail rent band for ${intelData.nearestCommercialAreaKey?.replace(/-/g, ' ') || 'nearest mapped area'}. Midpoint shown — validate with on-market listings before committing.`
                       }
 
-                      const rentSource = le ? 'AI Synthesis' : pocketRent != null ? 'Pocket DB' : (localityRentMin != null ? 'Locality DB' : 'Area Model')
+                      const rentSource = listingPsf != null ? 'Listing Ask' : le ? 'AI Synthesis' : pocketRent != null ? 'Pocket DB' : (localityRentMin != null ? 'Locality DB' : 'Area Model')
 
                       return (
                         <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="font-bold text-gray-900">Catchment economics</h3>
                             <span className={`text-xs rounded-full px-2 py-0.5 ${
-                              le ? 'bg-orange-100 text-orange-900 font-medium'
-                                : pocketRent != null ? 'bg-blue-50 text-blue-700'
-                                  : localityRentMin != null ? 'bg-green-50 text-green-700'
-                                    : 'bg-slate-100 text-slate-600'
+                              listingPsf != null ? 'bg-emerald-100 text-emerald-900 font-medium'
+                                : le ? 'bg-orange-100 text-orange-900 font-medium'
+                                  : pocketRent != null ? 'bg-blue-50 text-blue-700'
+                                    : localityRentMin != null ? 'bg-green-50 text-green-700'
+                                      : 'bg-slate-100 text-slate-600'
                             }`}>
                               {rentSource}
                             </span>
@@ -5164,14 +5186,14 @@ Be specific to ${area} / ${address}. No generic statements.`,
                               tooltip="Household income mix proxy from Census demographics for the surrounding ward."
                             />
                             <MetricCell
-                              label="AFFLUENCE"
-                              value={intelData.affluenceIndicator}
-                              tooltip="Spending-power tier inferred from projected household income for this catchment."
+                              label="DAYTIME POP"
+                              value={localityIntel?.daytimePop != null && localityIntel.daytimePop > 0 ? `${Math.round(localityIntel.daytimePop / 1000)}K` : '—'}
+                              tooltip="Estimated daytime population in this locality (residents + office workers + visitors) — from Lokazen locality model."
                             />
                             <MetricCell
-                              label="HOUSEHOLDS (EST.)"
-                              value={intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString() : '—'}
-                              tooltip="Estimated household count where Census ward data is available."
+                              label="SPENDING INDEX"
+                              value={localityIntel?.spendingPowerIndex != null ? `${localityIntel.spendingPowerIndex}/100` : '—'}
+                              tooltip="Spending power index for this locality (0–100). Higher = stronger consumer purchasing power."
                             />
                           </div>
                           {le?.listingVsMarketNote ? (
