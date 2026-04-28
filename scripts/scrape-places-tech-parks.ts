@@ -138,23 +138,33 @@ function localityFromAddress(vicinity?: string, address?: string): string {
   return parts[0] || 'Bangalore'
 }
 
-// Types that indicate a real office/tech park vs a random establishment
-const OFFICE_TYPES = new Set([
-  'premise', 'establishment', 'point_of_interest', 'real_estate_agency',
-])
-
-// Skip results that are clearly not tech parks/offices
+// Skip results that are clearly not tech/office environments
 const SKIP_PATTERNS = [
-  /residential/i, /hotel/i, /restaurant/i, /cafe/i, /shop/i, /store/i,
-  /school/i, /hospital/i, /clinic/i, /apartment/i, /flat/i, /society/i,
-  /mall/i, /temple/i, /church/i, /mosque/i,
+  // Residential / hospitality
+  /\b(hotel|resort|hostel|inn|lodge|guesthouse|pg|paying guest|apartment|flat|society|residenc|villa)\b/i,
+  // Food & retail
+  /\b(restaurant|cafe|coffee|bakery|sweet|dhaba|bar|pub|club|shop|store|supermarket|mall|showroom|salon|spa|gym)\b/i,
+  // Education & medical
+  /\b(school|college|university|academy|coaching|hospital|clinic|diagnostic|pharmacy|dispensary|nursing home)\b/i,
+  // Religious & civic
+  /\b(temple|church|mosque|gurdwara|mandir|masjid|ashram)\b/i,
+  // Government non-tech offices
+  /\b(sub-?registrar|registrar|revenue office|municipal|panchayat|taluk|court|police|bbmp|bescom|bwssb|post office|india post|lic of india|government of|bruhat bengaluru)\b/i,
+  // Banks & finance (not fintech HQs)
+  /\b(sbi|hdfc bank|icici bank|axis bank|canara bank|union bank|bank of |atm|insurance agency)\b/i,
 ]
 
 function isLikelyOfficeOrPark(name: string, types: string[]): boolean {
-  if (SKIP_PATTERNS.some((re) => re.test(name))) return false
-  const hasOfficeType = types.some((t) => OFFICE_TYPES.has(t))
-  const nameHasOfficeWord = /park|campus|office|tower|hub|centre|center|complex|tech|it\s|sez|building|plaza|square/i.test(name)
-  return hasOfficeType || nameHasOfficeWord
+  const n = name.toLowerCase()
+  if (SKIP_PATTERNS.some((re) => re.test(n))) return false
+  // Google types that definitely mean non-office
+  const hardExclude = ['lodging', 'restaurant', 'cafe', 'bar', 'school', 'hospital', 'doctor', 'pharmacy',
+    'grocery_or_supermarket', 'shopping_mall', 'clothing_store', 'church', 'mosque', 'hindu_temple',
+    'airport', 'bus_station', 'train_station', 'subway_station', 'atm', 'bank', 'insurance_agency']
+  if (types.some((t) => hardExclude.includes(t))) return false
+  // Must have at least some indicator it's an office or park
+  const nameHasOfficeWord = /park|campus|office|tower|hub|centre|center|complex|tech|it\s|sez|building|plaza|cowork|bhive|indiqube|awfis|315work|regus|wework|springboard/i.test(n)
+  return nameHasOfficeWord
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────

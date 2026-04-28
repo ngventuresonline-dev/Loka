@@ -9,6 +9,7 @@ import { getCacheHeaders, CACHE_CONFIGS, logQuerySize, estimateJsonSize } from '
 import { enrichPropertyIntelligence } from '@/lib/intelligence/enrichment'
 import { sendNewPropertyNotification } from '@/lib/lead-email'
 import { appendToSheet, istTimestamp } from '@/lib/sheets'
+import { extractLatLngFromMapLink, getMapLinkFromAmenities } from '@/lib/property-coordinates'
 
 /**
  * POST /api/properties
@@ -80,6 +81,11 @@ export async function POST(request: NextRequest) {
     // Generate property ID in prop-XXX format
     const propertyId = await generatePropertyId()
 
+    // Extract lat/lng from amenities.map_link at creation time so the direct columns are always populated
+    const amenitiesData = data.amenities || []
+    const mapLink = getMapLinkFromAmenities(amenitiesData)
+    const coordsFromLink = mapLink ? extractLatLngFromMapLink(mapLink) : null
+
     // Create property
     const property = await prisma.property.create({
       data: {
@@ -95,14 +101,15 @@ export async function POST(request: NextRequest) {
         price: data.price,
         priceType: data.priceType as 'monthly' | 'yearly' | 'sqft',
         securityDeposit: data.securityDeposit,
-        amenities: data.amenities || [],
+        amenities: amenitiesData,
         images: data.images || [],
-        status: 'pending', // New properties start as pending
-        availability: data.availability ?? false, // Start as unavailable until approved
+        status: 'pending',
+        availability: data.availability ?? false,
         isFeatured: data.isFeatured ?? false,
         ownerId: user.id,
         views: 0,
-      },
+        ...(coordsFromLink ? { lat: coordsFromLink.lat, lng: coordsFromLink.lng } : {}),
+      } as any,
       include: {
         owner: {
           select: {

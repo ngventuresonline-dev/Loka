@@ -49,14 +49,25 @@ export async function GET(request: NextRequest) {
   let lng: number | null = lngParam ? Number(lngParam) : null
 
   if (propertyId && (!lat || !Number.isFinite(lat))) {
-    const rows = await prisma.$queryRaw<Array<{ lat: number; lng: number }>>`
-      SELECT lat, lng FROM property_location_cache
-      WHERE property_id = ${propertyId} AND lat IS NOT NULL AND lng IS NOT NULL
+    // Prefer properties.lat/lng (extracted from map_link) — more accurate than cache centroid
+    const propRows = await prisma.$queryRaw<Array<{ lat: number; lng: number }>>`
+      SELECT lat, lng FROM properties
+      WHERE id = ${propertyId} AND lat IS NOT NULL AND lng IS NOT NULL
       LIMIT 1
     `.catch(() => [])
-    if (rows[0]) {
-      lat = Number(rows[0].lat)
-      lng = Number(rows[0].lng)
+    if (propRows[0]) {
+      lat = Number(propRows[0].lat)
+      lng = Number(propRows[0].lng)
+    } else {
+      const cacheRows = await prisma.$queryRaw<Array<{ lat: number; lng: number }>>`
+        SELECT resolved_lat AS lat, resolved_lng AS lng FROM property_location_cache
+        WHERE property_id = ${propertyId} AND resolved_lat IS NOT NULL AND resolved_lng IS NOT NULL
+        LIMIT 1
+      `.catch(() => [])
+      if (cacheRows[0]) {
+        lat = Number(cacheRows[0].lat)
+        lng = Number(cacheRows[0].lng)
+      }
     }
   }
 
