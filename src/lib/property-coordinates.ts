@@ -190,27 +190,21 @@ export function getPropertyCoordinatesFromRow(row: {
 }
 
 /**
- * Prefer parseable `amenities.map_link` when resolved coords are missing or still the generic city centroid
- * (e.g. warm cache wrote Bengaluru center). Otherwise keep resolved — same rule as the brand dashboard.
+ * Map link (amenities.map_link) is the owner-pinned exact location — always wins over geocoded coords.
+ * Falls back to resolved coords only when no parseable map link exists.
  */
 export function mergeCoordsWithMapLink(
   property: { amenities?: unknown } | null | undefined,
   resolved: { lat: number; lng: number } | null | undefined
 ): { lat: number; lng: number } {
   const fromLink = getPropertyCoordinatesFromRow({ amenities: property?.amenities })
-  const r =
-    resolved && areUsablePinCoords(resolved) ? { lat: resolved.lat, lng: resolved.lng } : null
-  if (fromLink) {
-    if (!r || isDefaultBangaloreMapCenter(r)) {
-      return { lat: fromLink.lat, lng: fromLink.lng }
-    }
-    return r
-  }
+  if (fromLink && areUsablePinCoords(fromLink)) return { lat: fromLink.lat, lng: fromLink.lng }
+  const r = resolved && areUsablePinCoords(resolved) ? { lat: resolved.lat, lng: resolved.lng } : null
   return r ?? DEFAULT_BANGALORE_MAP_CENTER
 }
 
 /**
- * Same precedence as {@link mergeCoordsWithMapLink}, but returns null if neither map link nor resolved coords apply.
+ * Same as {@link mergeCoordsWithMapLink} but returns null instead of the Bangalore default.
  * Used by the brand matches API before area/heuristic fallbacks.
  */
 export function mergeListingCoordsPreferringMapLink(
@@ -218,13 +212,8 @@ export function mergeListingCoordsPreferringMapLink(
   amenities: unknown
 ): { lat: number; lng: number } | null {
   const fromLink = getPropertyCoordinatesFromRow({ amenities })
+  if (fromLink && areUsablePinCoords(fromLink)) return { lat: fromLink.lat, lng: fromLink.lng }
   const r = resolved && areUsablePinCoords(resolved) ? { lat: resolved.lat, lng: resolved.lng } : null
-  if (fromLink) {
-    if (!r || isDefaultBangaloreMapCenter(r)) {
-      return { lat: fromLink.lat, lng: fromLink.lng }
-    }
-    return r
-  }
   return r
 }
 
