@@ -1979,13 +1979,14 @@ export default function BrandDashboardPage() {
   /** Listing pin: intel coords + map_link override for generic centroid; before intel loads, use map_link or match coords. */
   const selectedListingCoords = useMemo(() => {
     if (!selectedMatch) return null
+    // Map link (amenities.map_link) is the owner-pinned exact location — always wins
     const fromAmenities = extractLatLngFromMapLink(getMapLinkFromAmenities(selectedMatch.property.amenities))
+    if (fromAmenities && areUsablePinCoords(fromAmenities)) return fromAmenities
+    // Fall back to geocoded intel coords, then match coords from API
     const ic = intelData?.coords
-    if (ic && areUsablePinCoords(ic)) {
-      return mergeCoordsWithMapLink(selectedMatch.property, ic)
-    }
+    if (ic && areUsablePinCoords(ic)) return ic
     const mc = selectedMatch.coords
-    return fromAmenities ?? (mc && areUsablePinCoords(mc) ? mc : null) ?? null
+    return mc && areUsablePinCoords(mc) ? mc : null
   }, [selectedMatch, intelData?.coords])
 
   // Google Maps loader
@@ -4232,18 +4233,15 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       ) : intelData.locationSynthesis ? (
                         <div className="space-y-3 text-xs text-gray-700">
                           <p className="leading-relaxed text-gray-800">{intelData.locationSynthesis.executiveSummary}</p>
-                          {intelData.locationSynthesis.liveEconomics && (
+                          {intelData.locationSynthesis.liveEconomics && intelData.locationSynthesis.liveEconomics.confidence !== 'low' && (
                             <div className="rounded-lg border border-orange-100 bg-white/90 px-3 py-2">
-                              <p className="text-[9px] font-bold text-orange-800 uppercase tracking-wide mb-0.5">Live commercial rent</p>
+                              <p className="text-[9px] font-bold text-orange-800 uppercase tracking-wide mb-0.5">Commercial rent · AI estimate</p>
                               <p className="text-sm font-bold text-gray-900">
-                                ₹{intelData.locationSynthesis.liveEconomics.commercialRentPerSqftTypical}/sqft/mo typical
+                                ₹{intelData.locationSynthesis.liveEconomics.commercialRentPerSqftTypical}/sqft/mo
                                 <span className="text-[11px] font-normal text-gray-500">
-                                  {' '}· band ₹{intelData.locationSynthesis.liveEconomics.commercialRentLow}–
-                                  {intelData.locationSynthesis.liveEconomics.commercialRentHigh}
-                                  <span className="capitalize"> · {intelData.locationSynthesis.liveEconomics.confidence} confidence</span>
+                                  {' '}· range ₹{intelData.locationSynthesis.liveEconomics.commercialRentLow}–{intelData.locationSynthesis.liveEconomics.commercialRentHigh}
                                 </span>
                               </p>
-                              <p className="text-[10px] text-gray-600 mt-1">{shortenText(intelData.locationSynthesis.liveEconomics.rationale, 220)}</p>
                             </div>
                           )}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -4679,10 +4677,6 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           Census ward / unit: <span className="font-semibold text-gray-700">{intelWardLabel}</span>
                         </p>
                       ) : null}
-                      <div className="grid grid-cols-2 gap-4">
-                        <MetricCell label="TOTAL HOUSEHOLDS" value={intelData.totalHouseholds > 0 ? intelData.totalHouseholds.toLocaleString('en-IN') : '—'} trend="up" />
-                        <MetricCell label="AFFLUENCE INDICATOR" value={intelData.affluenceIndicator || '—'} trend="up" />
-                      </div>
                     </div>
                     {(intelData.totalHouseholds > 0 || Boolean(intelData.affluenceIndicator)) && (
                       <div className="p-4 rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -5088,13 +5082,17 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       const sizeNum = prop?.size != null && Number(prop.size) > 0 ? Number(prop.size) : null
                       // Compute listing-implied ₹/sqft/month from asking price
                       let listingPsf: number | null = null
+                      let monthlyRent: number | null = null
                       if (priceNum != null && priceNum > 0 && prop) {
                         if (prop.priceType === 'sqft') {
                           listingPsf = Math.round(priceNum * 10) / 10
+                          monthlyRent = sizeNum != null ? priceNum * sizeNum : null
                         } else if (sizeNum) {
-                          const monthly = prop.priceType === 'yearly' ? priceNum / 12 : priceNum
-                          const psf = monthly / sizeNum
+                          monthlyRent = prop.priceType === 'yearly' ? priceNum / 12 : priceNum
+                          const psf = monthlyRent / sizeNum
                           if (Number.isFinite(psf) && psf >= 12 && psf <= 750) listingPsf = Math.round(psf * 10) / 10
+                        } else {
+                          monthlyRent = prop.priceType === 'yearly' ? priceNum / 12 : priceNum
                         }
                       }
 
@@ -5150,58 +5148,92 @@ Be specific to ${area} / ${address}. No generic statements.`,
                         rentTooltip = `Q1 2025 ground floor retail rent band for ${intelData.nearestCommercialAreaKey?.replace(/-/g, ' ') || 'nearest mapped area'}. Midpoint shown — validate with on-market listings before committing.`
                       }
 
-                      const rentSource = listingPsf != null ? 'Listing Ask' : le ? 'AI Synthesis' : pocketRent != null ? 'Pocket DB' : (localityRentMin != null ? 'Locality DB' : 'Area Model')
+                      // Best real market benchmark (DB only, no AI)
+                      const mktLow = pocketRent != null ? (nearestPocket?.rentGfMin ?? pocketRent) : localityRentMin
+                      const mktHigh = pocketRent != null ? (nearestPocket?.rentGfMax ?? pocketRent) : localityRentMax
+                      const mktSource = pocketRent != null
+                        ? (nearestPocket?.name || 'Nearest pocket')
+                        : localityRentMin != null
+                          ? (localityIntel?.locality || 'Area avg')
+                          : intelData.nearestCommercialAreaKey?.replace(/-/g, ' ') || null
 
                       return (
                         <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="font-bold text-gray-900">Catchment economics</h3>
-                            <span className={`text-xs rounded-full px-2 py-0.5 ${
-                              listingPsf != null ? 'bg-emerald-100 text-emerald-900 font-medium'
-                                : le ? 'bg-orange-100 text-orange-900 font-medium'
-                                  : pocketRent != null ? 'bg-blue-50 text-blue-700'
-                                    : localityRentMin != null ? 'bg-green-50 text-green-700'
-                                      : 'bg-slate-100 text-slate-600'
-                            }`}>
-                              {rentSource}
-                            </span>
+                            {intelData.nearestCommercialAreaKey && (
+                              <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 capitalize font-medium">
+                                {intelData.nearestCommercialAreaKey.replace(/-/g, ' ')}
+                              </span>
+                            )}
                           </div>
-                          {intelData.nearestCommercialAreaKey && (
-                            <p className="text-[10px] text-gray-500 mb-2">
-                              Micro-market: <span className="font-medium text-gray-700 capitalize">{intelData.nearestCommercialAreaKey.replace(/-/g, ' ')}</span>
-                              {intelData.rentDataSource === 'listing' ? ' · Listing implies ₹/sqft' : ''}
-                            </p>
-                          )}
-                          <div className="grid grid-cols-2 gap-3 mb-1">
-                            <MetricCell
-                              label={rentLabel}
-                              value={rentDisplay}
-                              trend="up"
-                              benchmark={rentBand}
-                              tooltip={rentTooltip}
-                            />
-                            <MetricCell
-                              label="INCOME BAND (AREA)"
-                              value={intelData.incomeLevel ? intelData.incomeLevel.charAt(0).toUpperCase() + intelData.incomeLevel.slice(1) : '—'}
-                              tooltip="Household income mix proxy from Census demographics for the surrounding ward."
-                            />
-                            <MetricCell
-                              label="DAYTIME POP"
-                              value={localityIntel?.daytimePop != null && localityIntel.daytimePop > 0 ? `${Math.round(localityIntel.daytimePop / 1000)}K` : '—'}
-                              tooltip="Estimated daytime population in this locality (residents + office workers + visitors) — from Lokazen locality model."
-                            />
-                            <MetricCell
-                              label="SPENDING INDEX"
-                              value={localityIntel?.spendingPowerIndex != null ? `${localityIntel.spendingPowerIndex}/100` : '—'}
-                              tooltip="Spending power index for this locality (0–100). Higher = stronger consumer purchasing power."
-                            />
+
+                          {/* Rent — hero block */}
+                          <div className="bg-orange-50 rounded-xl p-3 mb-3">
+                            {listingPsf != null ? (
+                              <>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Asking rent · from listing price</p>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-2xl font-black text-gray-900">₹{listingPsf}</span>
+                                  <span className="text-sm text-gray-500">/sqft/mo</span>
+                                </div>
+                                {monthlyRent != null && sizeNum != null && (
+                                  <p className="text-[11px] text-gray-500 mt-0.5">
+                                    ₹{monthlyRent >= 100000 ? `${(monthlyRent / 100000).toFixed(1)}L` : monthlyRent.toLocaleString('en-IN')}/mo · {sizeNum.toLocaleString('en-IN')} sqft
+                                  </p>
+                                )}
+                                {mktLow != null && mktHigh != null && (() => {
+                                  const above = listingPsf > mktHigh
+                                  const below = listingPsf < mktLow
+                                  return (
+                                    <div className="mt-2 pt-2 border-t border-orange-100 flex items-center justify-between">
+                                      <span className="text-[10px] text-gray-500">
+                                        Market: ₹{mktLow}–{mktHigh}/sqft{mktSource ? ` · ${mktSource}` : ''}
+                                      </span>
+                                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${above ? 'bg-red-100 text-red-700' : below ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                        {above ? '↑ Above market' : below ? '↓ Below market' : '≈ At market'}
+                                      </span>
+                                    </div>
+                                  )
+                                })()}
+                              </>
+                            ) : mktLow != null && mktHigh != null ? (
+                              <>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Market rent · {mktSource}</p>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-2xl font-black text-gray-900">₹{mktLow}–{mktHigh}</span>
+                                  <span className="text-sm text-gray-500">/sqft/mo</span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Add listing price to compare against market</p>
+                              </>
+                            ) : intelData.marketRentLow != null && intelData.marketRentHigh != null ? (
+                              <>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Area rent band · Q1 2025</p>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-2xl font-black text-gray-900">₹{intelData.marketRentLow}–{intelData.marketRentHigh}</span>
+                                  <span className="text-sm text-gray-500">/sqft/mo</span>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-sm text-gray-400">Rent data loading…</p>
+                            )}
                           </div>
-                          {le?.listingVsMarketNote ? (
-                            <p className="text-[11px] text-gray-600 mt-2 leading-snug border-t border-gray-100 pt-2">
-                              <span className="font-semibold text-gray-700">Listing vs market: </span>
-                              {le.listingVsMarketNote}
-                            </p>
-                          ) : null}
+
+                          {/* Supporting stats — only real DB values */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Income</p>
+                              <p className="text-sm font-bold text-gray-800 capitalize">{intelData.incomeLevel || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Spending</p>
+                              <p className="text-sm font-bold text-gray-800">{localityIntel?.spendingPowerIndex != null ? `${localityIntel.spendingPowerIndex}/100` : '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Daytime pop</p>
+                              <p className="text-sm font-bold text-gray-800">{localityIntel?.daytimePop != null && localityIntel.daytimePop > 0 ? `${Math.round(localityIntel.daytimePop / 1000)}K` : '—'}</p>
+                            </div>
+                          </div>
                         </div>
                       )
                     })()}
