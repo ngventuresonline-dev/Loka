@@ -501,12 +501,16 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   { name: 'Sarjapur Road',    lat: [12.848, 12.918], lng: [77.658, 77.758] },
 
   // ── South: outer belt ─────────────────────────────────────────────────────────
-  // Banashankari east boundary extended to 77.572 (where Jayanagar now starts)
-  // so the Banashankari Main Rd / Kanakapura Rd commercial belt is captured.
-  { name: 'Banashankari',     lat: [12.892, 12.948], lng: [77.508, 77.572] },
-  { name: 'JP Nagar',         lat: [12.872, 12.928], lng: [77.538, 77.598] },
+  // Uttarahalli listed BEFORE Banashankari so its main-road commercial strip
+  // (lat ~12.91, lng ~77.55 — Subramanyapura, Pantaloons, Forum South stores,
+  // McDonald's, KFC, "Domino's Uttarahalli Hobli", Boba Bhai etc.) doesn't
+  // get stolen by Banashankari's older too-wide bbox.
+  { name: 'Uttarahalli',      lat: [12.880, 12.918], lng: [77.510, 77.560] },
+  // Banashankari proper sits NORTH of Uttarahalli — BSK 1st–3rd Stage,
+  // Banashankari Temple, Kathriguppe, Padmanabhanagar.
+  { name: 'Banashankari',     lat: [12.918, 12.948], lng: [77.530, 77.578] },
+  { name: 'JP Nagar',         lat: [12.872, 12.928], lng: [77.560, 77.605] },
   { name: 'Vijayanagar',      lat: [12.938, 12.988], lng: [77.488, 77.548] },
-  { name: 'Uttarahalli',      lat: [12.868, 12.918], lng: [77.488, 77.538] },
   { name: 'Kengeri',          lat: [12.868, 12.945], lng: [77.442, 77.502] },
 
   // ── Bannerghatta Road corridor — hard east/west split at lng 77.618 ───────────
