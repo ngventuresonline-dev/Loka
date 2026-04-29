@@ -568,18 +568,13 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /^damro\b/i,                               category: 'Home' },
   { pattern: /style\s*spa/i,                            category: 'Home' },
   { pattern: /stanley\s*lifestyles?/i,                  category: 'Home' },
+  // Premium mattress only — The Sleep Company / King Koil / Wakefit
+  { pattern: /the\s*sleep\s*company/i,                  category: 'Home' },
   { pattern: /king\s*koil/i,                            category: 'Home' },
-  { pattern: /kurl-?\s*on|kurlon/i,                     category: 'Home' },
-  { pattern: /^centuary\b/i,                            category: 'Home' },
-  // Bath / tiles / paint chains (premium home retail)
-  { pattern: /^kohler\b/i,                              category: 'Home' },
-  { pattern: /^jaquar\b/i,                              category: 'Home' },
-  { pattern: /^hindware\b/i,                            category: 'Home' },
-  { pattern: /^cera\b/i,                                category: 'Home' },
-  { pattern: /asian\s*paints/i,                         category: 'Home' },
-  { pattern: /^nerolac\b/i,                             category: 'Home' },
-  { pattern: /berger\s*paints/i,                        category: 'Home' },
-  { pattern: /^dulux\b/i,                               category: 'Home' },
+  // Premium experience centers
+  { pattern: /^scullers?\s*home/i,                      category: 'Home' },
+  { pattern: /^arttdinox\b/i,                           category: 'Home' },
+  { pattern: /^evok\b/i,                                category: 'Home' },
 ]
 
 function forceCategory(brandName: string): string | null {
@@ -909,17 +904,9 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /^damro\b/i,                       canonical: 'Damro' },
   { match: /style\s*spa/i,                    canonical: 'Style Spa' },
   { match: /stanley\s*lifestyles?/i,          canonical: 'Stanley Lifestyles' },
+  { match: /the\s*sleep\s*company/i,          canonical: 'The Sleep Company' },
   { match: /king\s*koil/i,                    canonical: 'King Koil' },
-  { match: /kurl-?\s*on|kurlon/i,             canonical: 'Kurl-on' },
-  { match: /^centuary\b/i,                    canonical: 'Centuary' },
-  { match: /^kohler\b/i,                      canonical: 'Kohler' },
-  { match: /^jaquar\b/i,                      canonical: 'Jaquar' },
-  { match: /^hindware\b/i,                    canonical: 'Hindware' },
-  { match: /^cera\b/i,                        canonical: 'Cera' },
-  { match: /asian\s*paints/i,                 canonical: 'Asian Paints' },
-  { match: /^nerolac\b/i,                     canonical: 'Nerolac' },
-  { match: /berger\s*paints/i,                canonical: 'Berger Paints' },
-  { match: /^dulux\b/i,                       canonical: 'Dulux' },
+  { match: /^evok\b/i,                        canonical: 'Evok' },
 ]
 
 function canonicalBrand(name: string): string {
@@ -969,15 +956,13 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   'Amoeba', 'Machaxi', 'CoPlay', 'Smaaash', 'Apex Arena',
   // Kids / Toys
   'FirstCry', 'Mothercare', 'Hamleys',
-  // Home / Furniture
+  // Home / Furniture (premium only — no paints / bath / mass mattress)
   'IKEA', 'Pepperfry', 'Urban Ladder', 'HomeStop', 'Home Centre',
-  'HomeTown', 'Godrej Interio', 'Nilkamal', 'Wakefit', 'Sleepwell',
+  'HomeTown', 'Godrej Interio', 'Nilkamal',
   'Fabindia Home', '@Home', 'Furlenco', 'RentoMojo', 'Durian',
-  'Damro', 'Style Spa', 'Stanley Lifestyles', 'King Koil',
-  'Kurl-on', 'Centuary',
-  // Bath / tiles / paint
-  'Kohler', 'Jaquar', 'Hindware', 'Cera',
-  'Asian Paints', 'Nerolac', 'Berger Paints', 'Dulux',
+  'Damro', 'Style Spa', 'Stanley Lifestyles', 'Evok',
+  // Premium mattress only — The Sleep Company / Wakefit / Sleepwell / King Koil
+  'The Sleep Company', 'Wakefit', 'Sleepwell', 'King Koil',
   // Bakery
   'Theobroma', "Glen's Bakehouse", 'Daily Bread', 'The Sweet Chariot',
   'French Loaf', 'Mustard Bakehouse', 'TrueCakes', 'Sugar Bloom',
