@@ -215,7 +215,7 @@ function CategoryPanel({ zone, filter, allZones }: { zone: ZoneData; filter: str
         </div>
       )}
 
-      <a href="/onboarding/brand"
+      <a href="/for-brands#pricing"
         className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:brightness-110"
         style={{ background: `linear-gradient(135deg, ${catColor}dd, ${catColor})`, boxShadow: `0 4px 20px ${catColor}40` }}>
         Find {filter} space in {ZONE_POS[zone.zone]?.label ?? zone.zone}
@@ -581,7 +581,7 @@ export default function BrandIntelligenceMap() {
                       ))}
                     </div>
 
-                    <a href="/onboarding/brand"
+                    <a href="/for-brands#pricing"
                       className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:brightness-110"
                       style={{ background: 'linear-gradient(135deg, #FF5200, #E4002B)', boxShadow: '0 4px 20px rgba(255,82,0,0.3)' }}>
                       Find space in {ZONE_POS[activeZone.zone]?.label ?? activeZone.zone}
@@ -642,7 +642,7 @@ export default function BrandIntelligenceMap() {
               <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full border border-[#FF5200]/30 text-[#FF5200] font-semibold uppercase tracking-wider">Soon</span>
             </div>
           </div>
-          <a href="/onboarding/brand"
+          <a href="/for-brands#pricing"
             className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FF5200] text-white text-sm font-semibold hover:bg-[#e64a00] transition-colors">
             Onboard your brand
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
