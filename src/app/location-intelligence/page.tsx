@@ -216,7 +216,7 @@ export default function LocationIntelligencePage() {
 
       <Navbar />
 
-      <div className="relative z-10 min-h-screen">
+      <div className="relative z-10">
         <div className="pt-24 sm:pt-28 md:pt-32 lg:pt-36 xl:pt-40 pb-2 sm:pb-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Hero */}
