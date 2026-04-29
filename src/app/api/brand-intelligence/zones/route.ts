@@ -343,6 +343,14 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /^looks\s*salon/i,                         category: 'Salon' },
   { pattern: /toni\s*&?\s*guy|essensuals\s*by\s*toni/i, category: 'Salon' },
   { pattern: /^vlcc\b/i,                                category: 'Salon' },
+  { pattern: /^bblunt|^b:?blunt|^b\.blunt/i,            category: 'Salon' },
+  { pattern: /^bounce\s*(salon|spa|unisex|family|hair)/i, category: 'Salon' },
+  { pattern: /hakim'?s?\s*aalim|^hakim\s*alim/i,        category: 'Salon' },
+  { pattern: /jawed\s*habib|javed\s*habib/i,            category: 'Salon' },
+  { pattern: /^toabh\b/i,                               category: 'Salon' },
+  { pattern: /page\s*3\s*salon/i,                       category: 'Salon' },
+  { pattern: /^geetanjali\s*(salon|lifestyle)/i,        category: 'Salon' },
+  { pattern: /sasoon\s*salon/i,                         category: 'Salon' },
   // ── Footwear (often tagged as Apparel) ──
   { pattern: /^bata\b|bata\s*(shoe|store|showroom|outlet|india|shoe\s*store)/i, category: 'Footwear' },
   { pattern: /^nike\s*(store|outlet)|^nike\s*(india|sport)|^nike$/i, category: 'Footwear' },
@@ -434,10 +442,24 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /bath\s*&\s*body\s*works/i,                category: 'Beauty' },
   { pattern: /plum\s*goodness|plum\s*store/i,           category: 'Beauty' },
   { pattern: /^maybelline\b/i,                          category: 'Beauty' },
-  // ── Sports retail ──
+  // ── Sports retail + facilities (pickleball / badminton / arcade / clubs) ──
   { pattern: /^decathlon\b/i,                           category: 'Sports' },
   { pattern: /^wildcraft\b/i,                           category: 'Sports' },
   { pattern: /columbia\s*sportswear/i,                  category: 'Sports' },
+  // Sports facilities — pickleball / badminton / multi-sport venues
+  { pattern: /^game\s*theory\b/i,                       category: 'Sports' },
+  { pattern: /^gorally\b|^go\s*rally\b/i,               category: 'Sports' },
+  { pattern: /^klutch\s*(kulb|club)/i,                  category: 'Sports' },
+  { pattern: /^amoeba\b/i,                              category: 'Sports' },
+  { pattern: /^machaxi\b/i,                             category: 'Sports' },
+  { pattern: /^coplay\b/i,                              category: 'Sports' },
+  { pattern: /^smaaash\b/i,                             category: 'Sports' },
+  { pattern: /^apex\s*arena/i,                          category: 'Sports' },
+  { pattern: /backyard\s*pickleball/i,                  category: 'Sports' },
+  { pattern: /beyond\s*boundaries\s*pickleball/i,       category: 'Sports' },
+  { pattern: /centre\s*court\s*pickleball/i,            category: 'Sports' },
+  { pattern: /easy\s*court\s*pickleball/i,              category: 'Sports' },
+  { pattern: /ferrohub\s*sports/i,                      category: 'Sports' },
   // ── Kids / toys retail ──
   { pattern: /^firstcry/i,                              category: 'Kids' },
   { pattern: /^mothercare\b/i,                          category: 'Kids' },
@@ -475,6 +497,10 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /the\s*irish\s*house/i,                    category: 'Bar & Brewery' },
   { pattern: /flying\s*elephant/i,                      category: 'Bar & Brewery' },
   { pattern: /monkey\s*bar/i,                           category: 'Bar & Brewery' },
+  { pattern: /^1522\b/i,                                category: 'Bar & Brewery' },
+  { pattern: /the\s*pump\s*house|^pump\s*house\b/i,     category: 'Bar & Brewery' },
+  { pattern: /fenny'?s\s*lounge/i,                      category: 'Bar & Brewery' },
+  { pattern: /amoeba\s*sports\s*bar/i,                  category: 'Bar & Brewery' },
   // ── Bakery (premium chains + Bangalore originals) ──
   { pattern: /^theobroma\b/i,                           category: 'Bakery' },
   { pattern: /glen.?s\s*bake/i,                         category: 'Bakery' },
@@ -682,6 +708,10 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /flying\s*elephant/i,              canonical: 'The Flying Elephant' },
   { match: /monkey\s*bar/i,                   canonical: 'Monkey Bar' },
   { match: /^1131\s*bar/i,                    canonical: '1131 Bar + Kitchen' },
+  { match: /^1522\b/i,                        canonical: '1522 The Pub' },
+  { match: /the\s*pump\s*house|^pump\s*house\b/i, canonical: 'The Pump House' },
+  { match: /fenny'?s\s*lounge/i,              canonical: "Fenny's Lounge" },
+  { match: /amoeba\s*sports\s*bar/i,          canonical: 'Amoeba Sports Bar' },
   // Bakery
   { match: /^theobroma\b/i,                   canonical: 'Theobroma' },
   { match: /glen.?s\s*bake/i,                 canonical: "Glen's Bakehouse" },
@@ -706,10 +736,19 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /kiehl'?s/i,                       canonical: "Kiehl's" },
   { match: /bath\s*&\s*body\s*works/i,        canonical: 'Bath & Body Works' },
   { match: /plum\s*goodness|^plum\s*store/i,  canonical: 'Plum' },
-  // Sports
+  // Sports — retail
   { match: /^decathlon\b/i,                   canonical: 'Decathlon' },
   { match: /^wildcraft\b/i,                   canonical: 'Wildcraft' },
   { match: /columbia\s*sportswear/i,          canonical: 'Columbia Sportswear' },
+  // Sports — facilities (pickleball, badminton, multi-sport)
+  { match: /^game\s*theory\b/i,               canonical: 'Game Theory' },
+  { match: /^gorally\b|^go\s*rally\b/i,       canonical: 'GoRally' },
+  { match: /^klutch\s*(kulb|club)/i,          canonical: 'Klutch Kulb' },
+  { match: /^amoeba(?!\s*sports\s*bar)/i,     canonical: 'Amoeba' },
+  { match: /^machaxi\b/i,                     canonical: 'Machaxi' },
+  { match: /^coplay\b/i,                      canonical: 'CoPlay' },
+  { match: /^smaaash\b/i,                     canonical: 'Smaaash' },
+  { match: /^apex\s*arena/i,                  canonical: 'Apex Arena' },
   // Kids
   { match: /^firstcry/i,                      canonical: 'FirstCry' },
   { match: /^mothercare\b/i,                  canonical: 'Mothercare' },
@@ -769,8 +808,10 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   'Sephora', 'Nykaa', 'Nykd by Nykaa', 'M·A·C', 'The Body Shop',
   'SUGAR Cosmetics', 'Forest Essentials', "L'Occitane", 'Innisfree',
   "Kiehl's", 'Bath & Body Works', 'Plum',
-  // Sports
+  // Sports — retail + facilities
   'Decathlon', 'Wildcraft', 'Columbia Sportswear',
+  'Game Theory', 'GoRally', 'Klutch Kulb',
+  'Amoeba', 'Machaxi', 'CoPlay', 'Smaaash', 'Apex Arena',
   // Kids / Toys
   'FirstCry', 'Mothercare', 'Hamleys',
   // Home / Furniture
@@ -788,7 +829,8 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   'Hoppipola', 'The Beer Cafe', 'Big Pitcher', 'Tao Terraces',
   'Loft 38', 'The Black Pearl', 'TGI Fridays', 'Hard Rock Cafe',
   'The Irish House', 'The Flying Elephant', 'Monkey Bar',
-  '1131 Bar + Kitchen',
+  '1131 Bar + Kitchen', '1522 The Pub', 'The Pump House',
+  "Fenny's Lounge", 'Amoeba Sports Bar',
 ])
 const RETAIL_CATS_FILTERED: Set<string> = new Set([
   'Apparel', 'Footwear', 'Eyewear', 'Jewellery', 'Electronics',
@@ -841,8 +883,12 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   // Bommanahalli proper sits SOUTH of HSR along Hosur Road / BG Road / Madivala —
   // lat strictly south of HSR's southern boundary, no overlap.
   { name: 'Bommanahalli',     lat: [12.860, 12.895], lng: [77.620, 77.660] },
-  { name: 'Bellandur',        lat: [12.902, 12.952], lng: [77.645, 77.718] },
-  { name: 'Sarjapur Road',    lat: [12.848, 12.918], lng: [77.658, 77.758] },
+  // Bellandur tightened to its true core (ORR junction / Bellandur Lake /
+  // RMZ Ecoworld). Sarjapur Road covers the long stretch south of Bellandur
+  // all the way to Sarjapur town — was previously losing 1000+ outlets to
+  // Bellandur because Bellandur's bbox extended too far south.
+  { name: 'Bellandur',        lat: [12.918, 12.952], lng: [77.660, 77.715] },
+  { name: 'Sarjapur Road',    lat: [12.848, 12.918], lng: [77.660, 77.795] },
 
   // ── South: outer belt ─────────────────────────────────────────────────────────
   // Uttarahalli listed BEFORE Banashankari so its main-road commercial strip
