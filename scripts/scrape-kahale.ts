@@ -1,5 +1,5 @@
 /**
- * One-off scraper: KAHALE - Filter Kaapi Bar
+ * One-off scraper: premium local Bangalore cafes that are missing from the DB.
  * Searches across all Bangalore macro-zones and inserts any found locations.
  *
  * Usage:
@@ -71,8 +71,15 @@ async function textSearch(query: string, lat: number, lng: number) {
   }> }>
 }
 
+type Brand = { query: string; canonical: string; pattern: RegExp; category: string }
+const BRANDS: Brand[] = [
+  { query: 'KAHALE Filter Kaapi Bar Bangalore',  canonical: 'KAHALE - Filter Kaapi Bar', pattern: /kahale/i,             category: 'Specialty Coffee' },
+  { query: 'Ground Up Coffee Roasters Bangalore', canonical: 'Ground Up Coffee',          pattern: /ground\s*up\s*coffee/i, category: 'Specialty Coffee' },
+  { query: 'Kinya Coffee Bangalore',              canonical: 'Kinya Coffee',              pattern: /kinya/i,              category: 'Specialty Coffee' },
+]
+
 async function main() {
-  console.log(`\n☕  Kahale scraper  ${apply ? '(APPLYING)' : '(DRY RUN — pass --apply to write)'}`)
+  console.log(`\n☕  Premium cafe scraper  ${apply ? '(APPLYING)' : '(DRY RUN — pass --apply to write)'}`)
 
   // Load existing IDs
   const existingIds = new Set<string>()
@@ -88,42 +95,44 @@ async function main() {
   const seen = new Set<string>()
   const toInsert: Array<Record<string, unknown>> = []
 
-  for (const anchor of ANCHORS) {
-    await sleep(200)
-    const data = await textSearch('KAHALE Filter Kaapi Bar Bangalore', anchor.lat, anchor.lng)
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error(`API error: ${data.status}`)
-      continue
-    }
-    for (const place of data.results) {
-      if (place.business_status === 'CLOSED_PERMANENTLY') continue
-      if (!/kahale/i.test(place.name)) continue
+  for (const brand of BRANDS) {
+    for (const anchor of ANCHORS) {
+      await sleep(200)
+      const data = await textSearch(brand.query, anchor.lat, anchor.lng)
+      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+        console.error(`API error: ${data.status} for ${brand.canonical} @ ${anchor.lat},${anchor.lng}`)
+        continue
+      }
+      for (const place of data.results) {
+        if (place.business_status === 'CLOSED_PERMANENTLY') continue
+        if (!brand.pattern.test(place.name)) continue
 
-      const { lat, lng } = place.geometry.location
-      if (!inBangalore(lat, lng)) continue
+        const { lat, lng } = place.geometry.location
+        if (!inBangalore(lat, lng)) continue
 
-      const id = slugId(place.name, lat, lng)
-      if (existingIds.has(id) || seen.has(id)) continue
-      seen.add(id)
+        const id = slugId(place.name, lat, lng)
+        if (existingIds.has(id) || seen.has(id)) continue
+        seen.add(id)
 
-      const addrParts = place.formatted_address.split(',').map((s: string) => s.trim())
-      const locality = addrParts.length >= 3 ? addrParts[addrParts.length - 3] : addrParts[0]
+        const addrParts = place.formatted_address.split(',').map((s: string) => s.trim())
+        const locality = addrParts.length >= 3 ? addrParts[addrParts.length - 3] : addrParts[0]
 
-      toInsert.push({
-        id,
-        brand_name: 'KAHALE - Filter Kaapi Bar',
-        industry: 'F&B',
-        category: 'Specialty Coffee',
-        type: 'Specialty Coffee',
-        street_address: place.formatted_address,
-        locality,
-        zone: anchor.zone,
-        lat,
-        lng,
-        is_active: true,
-        data_source: 'google_places_text',
-        data_confidence: (place.user_ratings_total ?? 0) > 50 ? 'high' : 'medium',
-      })
+        toInsert.push({
+          id,
+          brand_name: brand.canonical,
+          industry: 'F&B',
+          category: brand.category,
+          type: brand.category,
+          street_address: place.formatted_address,
+          locality,
+          zone: anchor.zone,
+          lat,
+          lng,
+          is_active: true,
+          data_source: 'google_places_text',
+          data_confidence: (place.user_ratings_total ?? 0) > 50 ? 'high' : 'medium',
+        })
+      }
     }
   }
 
