@@ -182,6 +182,74 @@ function isAnchorBrand(name: string): boolean {
   return ANCHOR_BRANDS_LOWER.has(name.toLowerCase().trim())
 }
 
+// ── Category-specific blocklists ─────────────────────────────────────────────
+// Safety net: even if bad data survives the DB cleanup, it won't reach the UI.
+const CINEMA_BLOCK: RegExp[] = [
+  /private\s*(theatre|theater|screen)/i,
+  /home\s*(theatre|theater|cinema)/i,
+  /hometheatre|home\s*automation/i,
+  /production\s*(company|studio|house)/i,
+  /acting\s*(class|institute|school)|film\s*institute/i,
+  /av\s*solution|audio\s*visual/i,
+  /party\s*hall/i,
+  /ticket\s*counter|refreshment/i,
+  /preview\s*theater|screening\s*room/i,
+  /micro\s*theatre|miniplex/i,
+]
+const APPAREL_BLOCK: RegExp[] = [
+  /\btailor(s|ing|ed)?\b/i,
+  /\bstitching\b|\balteration/i,
+  /\bdry\s*clean|\blaundry\b/i,
+  /\buniform\b/i,
+  /\btextiles\b|\bfabrics?\b/i,
+  /\bcobbler\b|shoe\s*repair|chappal\s*repair/i,
+  /\bwholesale\b|\bdistributor\b|\bmanufactur/i,
+  /pvt\.?\s*(ltd|limited)/i,
+]
+const ELECTRONICS_BLOCK: RegExp[] = [
+  /repair\s*(shop|service|center|centre)/i,
+  /service\s*(center|centre)/i,
+  /authoris[e]?d\s*service|authorized\s*service/i,
+  /\bspare\s*parts?\b/i,
+  /second\s*hand|used\s*(phone|laptop|camera|mobile)/i,
+  /camera\s*rental|dslr\s*rental|lens\s*rental/i,
+  /buy.*sell.*repair|sell\s*used/i,
+  /\btrading\s*(co|corp)\b/i,
+  /pvt\.?\s*(ltd|limited)/i,
+]
+const GYM_BLOCK: RegExp[] = [
+  /nutrition\s*(club|cent(er|re))/i,
+  /\bherbalife\b/i,
+  /supplement\s*store/i,
+  /\bphysiotherap/i,
+  /physio\s*(clinic|center|centre|meet)/i,
+  /ayurveda.*clinic|ayurveda.*hospital|nature\s*cure\s*hospital/i,
+  /treadmill\s*repair|equipment\s*suppl/i,
+]
+const SALON_BLOCK: RegExp[] = [
+  /hair\s*transplant/i,
+  /multispecialit/i,
+  /orthopaedic|general\s*medicine|\bxray\b|patholog/i,
+]
+const BOOKS_BLOCK: RegExp[] = [
+  /\bstationer(y|s)?\b/i,
+  /\bxerox\b|\bphotocopy\b/i,
+  /\bprinting\s*(press|shop|studio)\b/i,
+]
+const RESTAURANT_BLOCK: RegExp[] = [
+  /\bmess\b/i,
+  /tiffin\s*(cent(er|re)|adda|service)/i,
+  /cloud\s*kitchen/i,
+  /home\s*kitchen|home\s*food|home\s*cooked|ghar\s*ki\s*rasoi/i,
+  /catering\s*(only|service|company)/i,
+]
+const BAKERY_BLOCK: RegExp[] = [
+  /cloud\s*kitchen/i,
+  /home\s*made|home-made|made\s*to\s*order/i,
+  /\benterprises\b/i,
+  /pvt\.?\s*(ltd|limited)/i,
+]
+
 // ── Brand-level category overrides ───────────────────────────────────────────
 // Some brands get mis-tagged by Google Places (e.g., Domino's showing up as
 // "cafe" or "restaurant" type). Override the DB category for known chains.
@@ -197,7 +265,17 @@ const QSR_FORCE_BRANDS_LOWER = new Set([
 function resolveCategory(brandName: string, rawCategory: string | null): string {
   const bl = brandName.toLowerCase().trim()
   if (QSR_FORCE_BRANDS_LOWER.has(bl)) return 'QSR'
-  return normalizeCategory(rawCategory)
+  const cat = normalizeCategory(rawCategory)
+  if (cat === 'Cinema'      && CINEMA_BLOCK.some(re => re.test(brandName)))     return 'Other'
+  if (cat === 'Apparel'     && APPAREL_BLOCK.some(re => re.test(brandName)))    return 'Other'
+  if (cat === 'Footwear'    && APPAREL_BLOCK.some(re => re.test(brandName)))    return 'Other'
+  if (cat === 'Electronics' && ELECTRONICS_BLOCK.some(re => re.test(brandName))) return 'Other'
+  if (cat === 'Gym'         && GYM_BLOCK.some(re => re.test(brandName)))        return 'Other'
+  if (cat === 'Salon'       && SALON_BLOCK.some(re => re.test(brandName)))      return 'Other'
+  if (cat === 'Books'       && BOOKS_BLOCK.some(re => re.test(brandName)))      return 'Other'
+  if (cat === 'Restaurant'  && RESTAURANT_BLOCK.some(re => re.test(brandName))) return 'Other'
+  if (cat === 'Bakery'      && BAKERY_BLOCK.some(re => re.test(brandName)))     return 'Other'
+  return cat
 }
 
 function sortBrands(entries: [string, number][]): string[] {
