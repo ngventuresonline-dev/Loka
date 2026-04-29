@@ -501,6 +501,29 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /the\s*pump\s*house|^pump\s*house\b/i,     category: 'Bar & Brewery' },
   { pattern: /fenny'?s\s*lounge/i,                      category: 'Bar & Brewery' },
   { pattern: /amoeba\s*sports\s*bar/i,                  category: 'Bar & Brewery' },
+  // SOCIAL chain (9+ Bangalore outlets — Church St / Indiranagar / Hebbal /
+  // Bellandur / Sarjapur / Whitefield / E-City / JP Nagar)
+  { pattern: /^social\b|^(church\s*street|indiranagar|hebbal|bellandur|sarjapur|whitefield|e-?city|jp\s*nagar(a)?|koramangala)\s+social\b/i, category: 'Bar & Brewery' },
+  // Gilly's (multiple Bangalore outlets)
+  { pattern: /^gilly'?s/i,                              category: 'Bar & Brewery' },
+  // Big / Byg Brewsky — same chain spelt two ways across DB rows
+  { pattern: /^b(y|i)g\s*brews?ky/i,                    category: 'Bar & Brewery' },
+  // Watson's pub (Indiranagar / Ulsoor)
+  { pattern: /^watson'?s\b/i,                           category: 'Bar & Brewery' },
+  // Tipsy Bull
+  { pattern: /tipsy\s*bull/i,                           category: 'Bar & Brewery' },
+  // Murphy's Brewhouse, Vapour, Mojo by Vapour
+  { pattern: /murphy'?s\s*brewhouse/i,                  category: 'Bar & Brewery' },
+  { pattern: /^vapour\s*(brewpub|pub|brewery)|mojo\s*by\s*vapour/i, category: 'Bar & Brewery' },
+  // Misc Bangalore bars
+  { pattern: /three\s*dots\s*&?\s*a\s*dash/i,           category: 'Bar & Brewery' },
+  { pattern: /^easy\s*tiger\b/i,                        category: 'Bar & Brewery' },
+  { pattern: /the\s*black\s*rabbit/i,                   category: 'Bar & Brewery' },
+  { pattern: /lazy\s*suzy/i,                            category: 'Bar & Brewery' },
+  { pattern: /^communiti\b/i,                           category: 'Bar & Brewery' },
+  { pattern: /the\s*humming\s*tree/i,                   category: 'Bar & Brewery' },
+  { pattern: /^jamming\s*goat/i,                        category: 'Bar & Brewery' },
+  { pattern: /^brewco\b/i,                              category: 'Bar & Brewery' },
   // ── Bakery (premium chains + Bangalore originals) ──
   { pattern: /^theobroma\b/i,                           category: 'Bakery' },
   { pattern: /glen.?s\s*bake/i,                         category: 'Bakery' },
@@ -536,12 +559,78 @@ function forceCategory(brandName: string): string | null {
   return null
 }
 
+// ── Bar/pub heuristic — name-pattern detection ──────────────────────────────
+// Many bars in the DB are tagged 'Restaurant' / 'Casual Dining' because the
+// place serves food too. The brand name almost always reveals the truth though
+// — 'Kadamba Restaurant And Bar', 'KA.01 Rooftop Bar', 'Paros Brewery & Kitchen'
+// etc. This heuristic catches them so zones like Banashankari / Electronic
+// City / Peenya / Kengeri get realistic Bar counts.
+const BAR_NAME_PATTERNS: RegExp[] = [
+  /\brestaurant\s*(and|&|n)?\s*bar\b/i,
+  /\bbar\s*(and|&|\+|n)?\s*(restaurant|resto|kitchen|grill|club|eats|bistro|lounge|grill\s*house)/i,
+  /\bresto\s*bar\b|\bresto-bar\b/i,
+  /\bsports\s*bar\b/i,
+  /\brooftop\s*bar\b/i,
+  /\bsky\s*(bar|lounge)\b/i,
+  /\blounge\s*bar\b|\bbar\s*&?\s*lounge\b/i,
+  /\bcocktail\s*bar\b/i,
+  /\bgastro\s*pub\b|\bgastropub\b/i,
+  /\bbrewpub\b|\bbrew\s*pub\b/i,
+  /\bbrewhouse\b|\bbrew\s*house\b/i,
+  /\bmicrobrewery\b|\bmicro\s*brewery\b/i,
+  /\b(rock|music|beer|sky|tap)\s*bar\b/i,
+]
+// Excludes — these contain 'bar' / 'lounge' / 'brewery' but aren't pubs.
+// Per the user, the floor is 'Dolphins Bar & Kitchen' level — i.e. a real
+// hospitality venue with seating. MRP shops, wine retail, toddy shops etc.
+// must be excluded even if 'Bar' appears in the name.
+const BAR_NAME_EXCLUDES: RegExp[] = [
+  // Non-bar 'X bar' names
+  /coffee\s*bar|coffee\s*brewery/i,
+  /tea\s*bar/i,
+  /juice\s*bar/i,
+  /milk\s*bar/i,
+  /salad\s*bar|fresh\s*bar|veg(gie)?\s*bar/i,
+  /smoothie\s*bar/i,
+  /oxygen\s*bar/i,
+  /sushi\s*bar/i,                         // these are usually restaurants
+  /candy\s*bar|chocolate\s*bar/i,
+  /beauty\s*bar/i,
+  /\bbarber/i,
+  /cake\s*bar|dessert\s*bar/i,
+  /chai\s*bar/i,
+  /reflexology/i,                         // foot lounge
+  /makeup\s*lounge|nail\s*lounge|hair\s*lounge|beauty\s*lounge/i,
+  /kids\s*lounge|family\s*lounge/i,
+  /cigar\s*lounge/i,
+  // Liquor retail / MRP shops / KSBCL / wine shops — not bars
+  /\bMRP\b/,
+  /wines?\s*(&|and)?\s*(spirits?|liquors?|liqour)/i,
+  /\bliqu?or\s*(store|shop|retail|outlet|mart|world)/i,
+  /^wines?\s*shop|wine\s*shop/i,
+  /madhuloka|tonique|^bws\b/i,
+  /\btoddy\s*(shop|bar|stall)/i,
+  /country\s*liquor/i,
+  /military\s*canteen|csd\s*(outlet|canteen)|^ksbcl\b|^kbcl\b/i,
+  /^beer\s*shop|^beer\s*store/i,
+  /\bbeverages?\s*shop/i,
+  /\bdrugs?\s*&?\s*liqu?or/i,
+]
+
+function isBarLikeName(name: string): boolean {
+  if (BAR_NAME_EXCLUDES.some(re => re.test(name))) return false
+  return BAR_NAME_PATTERNS.some(re => re.test(name))
+}
+
 function resolveCategory(brandName: string, rawCategory: string | null): string {
   const bl = brandName.toLowerCase().trim()
   if (QSR_FORCE_BRANDS_LOWER.has(bl)) return 'QSR'
   // Force rules take priority over the DB-tagged category
   const forced = forceCategory(brandName)
   if (forced) return forced
+  // Bar-like name heuristic — promotes 'X Bar & Restaurant', 'Y Brewpub' etc.
+  // from Restaurant to Bar & Brewery so zones get realistic bar counts.
+  if (isBarLikeName(brandName)) return 'Bar & Brewery'
   const cat = normalizeCategory(rawCategory)
   if (cat === 'Cinema'      && CINEMA_BLOCK.some(re => re.test(brandName)))     return 'Other'
   if (cat === 'Cafe'        && CAFE_BLOCK.some(re => re.test(brandName)))       return 'Other'
@@ -712,6 +801,24 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /the\s*pump\s*house|^pump\s*house\b/i, canonical: 'The Pump House' },
   { match: /fenny'?s\s*lounge/i,              canonical: "Fenny's Lounge" },
   { match: /amoeba\s*sports\s*bar/i,          canonical: 'Amoeba Sports Bar' },
+  // SOCIAL chain (collapse all 9 location-prefixed variants into one chip)
+  { match: /^social\b|^(church\s*street|indiranagar|hebbal|bellandur|sarjapur|whitefield|e-?city|jp\s*nagar(a)?|koramangala)\s+social\b/i, canonical: 'SOCIAL' },
+  // Gilly's
+  { match: /^gilly'?s/i,                      canonical: "Gilly's" },
+  // Big / Byg Brewsky — same chain
+  { match: /^b(y|i)g\s*brews?ky/i,            canonical: 'Byg Brewski' },
+  { match: /^watson'?s\b/i,                   canonical: "Watson's" },
+  { match: /tipsy\s*bull/i,                   canonical: 'Tipsy Bull' },
+  { match: /murphy'?s\s*brewhouse/i,          canonical: "Murphy's Brewhouse" },
+  { match: /^vapour\s*(brewpub|pub|brewery)|mojo\s*by\s*vapour/i, canonical: 'Vapour Brewpub' },
+  { match: /three\s*dots\s*&?\s*a\s*dash/i,   canonical: 'Three Dots & A Dash' },
+  { match: /^easy\s*tiger\b/i,                canonical: 'Easy Tiger' },
+  { match: /the\s*black\s*rabbit/i,           canonical: 'The Black Rabbit' },
+  { match: /lazy\s*suzy/i,                    canonical: 'Lazy Suzy' },
+  { match: /^communiti\b/i,                   canonical: 'Communiti' },
+  { match: /the\s*humming\s*tree/i,           canonical: 'The Humming Tree' },
+  { match: /^jamming\s*goat/i,                canonical: 'Jamming Goat' },
+  { match: /^brewco\b/i,                      canonical: 'Brewco' },
   // Bakery
   { match: /^theobroma\b/i,                   canonical: 'Theobroma' },
   { match: /glen.?s\s*bake/i,                 canonical: "Glen's Bakehouse" },
@@ -831,6 +938,11 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   'The Irish House', 'The Flying Elephant', 'Monkey Bar',
   '1131 Bar + Kitchen', '1522 The Pub', 'The Pump House',
   "Fenny's Lounge", 'Amoeba Sports Bar',
+  // Bangalore restobars / brewpubs — recognised premium chains only
+  'SOCIAL', "Gilly's", "Watson's", 'Tipsy Bull',
+  "Murphy's Brewhouse", 'Vapour Brewpub', 'Three Dots & A Dash',
+  'Easy Tiger', 'The Black Rabbit', 'Lazy Suzy', 'Communiti',
+  'The Humming Tree', 'Jamming Goat', 'Brewco',
 ])
 const RETAIL_CATS_FILTERED: Set<string> = new Set([
   'Apparel', 'Footwear', 'Eyewear', 'Jewellery', 'Electronics',
