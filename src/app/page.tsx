@@ -15,6 +15,7 @@ const BrandPlacementPin = lazy(() => import('@/components/BrandPlacementPin').th
 import { brandPlacements, getPlacementCoordinates } from '@/lib/brand-placements'
 
 const BrandIntelStatStrip = lazy(() => import('@/components/BrandIntelStatStrip'))
+const BrandIntelTeaser = lazy(() => import('@/components/BrandIntelTeaser'))
 
 // Lazy load heavy components below the fold
 const BrandOnboardingForm = lazy(() => import('@/components/onboarding/BrandOnboardingForm'))
@@ -1222,6 +1223,10 @@ export default function Home() {
 
       <Suspense fallback={null}>
         <BrandIntelStatStrip />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <BrandIntelTeaser />
       </Suspense>
 
       {/* Clientele Slider - Full Width */}
