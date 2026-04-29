@@ -349,7 +349,7 @@ export default function BrandIntelligenceMap() {
               </div>
             </div>
 
-            <div className="p-3 sm:p-5">
+            <div className="p-1 sm:p-5">
               {loading ? (
                 <div className="flex items-center justify-center h-[460px] text-gray-500 text-sm">
                   <div className="flex flex-col items-center gap-3">
@@ -360,6 +360,20 @@ export default function BrandIntelligenceMap() {
               ) : (
                 <svg viewBox="0 0 380 460" className="w-full h-auto min-h-[520px] sm:min-h-[460px] sm:max-h-[560px]" style={{ fontFamily: 'inherit' }}>
                   <defs>
+                    <style>
+                      {`
+                        .bim-zone-label  { font-size: 7px;   font-weight: 500; }
+                        .bim-num-small   { font-size: 7.5px; font-weight: 800; letter-spacing: -0.3px; }
+                        .bim-num-large   { font-size: 9.5px; font-weight: 800; letter-spacing: -0.3px; }
+                        .bim-orr-label   { font-size: 5.5px; font-weight: 700; letter-spacing: 0.5px; }
+                        @media (max-width: 640px) {
+                          .bim-zone-label { font-size: 9.5px; font-weight: 600; }
+                          .bim-num-small  { font-size: 10px; }
+                          .bim-num-large  { font-size: 13px; }
+                          .bim-orr-label  { font-size: 7.5px; }
+                        }
+                      `}
+                    </style>
                     <filter id="bim-glow" x="-50%" y="-50%" width="200%" height="200%">
                       <feGaussianBlur stdDeviation="3.5" result="blur" />
                       <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
@@ -389,7 +403,7 @@ export default function BrandIntelligenceMap() {
                     {/* Outer Ring Road (ORR) — dashed ellipse */}
                     <ellipse cx="190" cy="210" rx="138" ry="148"
                       fill="none" stroke="rgba(255,82,0,0.28)" strokeWidth="0.9" strokeDasharray="5 4" />
-                    <text x="335" y="100" fontSize="5.5" fill="rgba(255,82,0,0.55)" fontWeight="700" letterSpacing="0.5">ORR</text>
+                    <text x="335" y="100" className="bim-orr-label" fill="rgba(255,82,0,0.55)">ORR</text>
 
                     {/* Inner ring road / CBD halo */}
                     <ellipse cx="195" cy="200" rx="60" ry="72"
@@ -481,7 +495,7 @@ export default function BrandIntelligenceMap() {
 
                         {r > 10 && (
                           <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                            fill="#fff" fontSize={r > 20 ? '9.5' : '7.5'} fontWeight="800" letterSpacing="-0.3"
+                            fill="#fff" className={r > 20 ? 'bim-num-large' : 'bim-num-small'}
                             style={{ pointerEvents: 'none' }}>
                             {fmt(displayCount)}
                           </text>
@@ -489,8 +503,8 @@ export default function BrandIntelligenceMap() {
 
                         <text x={pos.x} y={pos.y + r + 9} textAnchor="middle"
                           fill={isSel ? '#111827' : '#4B5563'}
-                          fontSize="7" fontWeight={isSel ? '700' : '500'}
-                          style={{ pointerEvents: 'none', transition: 'fill 0.2s' }}>
+                          className="bim-zone-label"
+                          style={{ pointerEvents: 'none', transition: 'fill 0.2s', fontWeight: isSel ? 700 : undefined }}>
                           {pos.label}
                         </text>
                       </g>
