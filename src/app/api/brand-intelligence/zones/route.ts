@@ -65,16 +65,18 @@ function normalizeCategory(raw: string | null): string {
   if (r.includes('cinema') || r.includes('multiplex')) return 'Cinema'
   if (r.includes('electronics') || r.includes('telecom retail') ||
       r.includes('mobile & smart') || r.includes('camera')) return 'Electronics'
-  if (r.includes('apparel') || r.includes('fashion') || r.includes('clothing') ||
-      r.includes('wear') || r.includes('denim') || r.includes('ethnic') ||
-      r.includes('lingerie') || r.includes('innerwear') || r.includes('sportswear') ||
-      r.includes('saree') || r.includes('silk') || r.includes('formal') ||
-      r.includes('casual apparel') || r.includes('youth casual')) return 'Apparel'
-  if (r.includes('footwear') || r.includes('shoe') || r.includes('sneaker') ||
-      r.includes('sandal')) return 'Footwear'
-  if (r.includes('jewel') || r.includes('diamond') || r.includes('gold') && r.includes('jewel')) return 'Jewellery'
+  // Order matters: Eyewear and Footwear must be checked BEFORE Apparel because
+  // 'eyewear' / 'footwear' / 'sportswear' / 'innerwear' all contain 'wear'.
   if (r.includes('eyewear') || r.includes('optical') || r.includes('sunglasses') ||
       r.includes('prescription eyewear')) return 'Eyewear'
+  if (r.includes('footwear') || r.includes('shoe') || r.includes('sneaker') ||
+      r.includes('sandal')) return 'Footwear'
+  if (r.includes('jewel') || r.includes('diamond') || (r.includes('gold') && r.includes('jewel'))) return 'Jewellery'
+  if (r.includes('apparel') || r.includes('fashion') || r.includes('clothing') ||
+      r.includes('denim') || r.includes('ethnic') || r.includes('lingerie') ||
+      r.includes('innerwear') || r.includes('sportswear') || r.includes('saree') ||
+      r.includes('silk') || r.includes('formal') || r.includes('casual apparel') ||
+      r.includes('youth casual') || r.includes('wear')) return 'Apparel'
 
   return raw
 }
