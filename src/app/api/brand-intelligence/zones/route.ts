@@ -304,6 +304,152 @@ function resolveCategory(brandName: string, rawCategory: string | null): string 
   return cat
 }
 
+// ── Brand canonicalisation ───────────────────────────────────────────────────
+// Google Places returns each store with a unique long descriptive name, so a
+// single brand fragments into many strings (Bata Shoe Store / Bata / Bata
+// Showroom / Bata Store, or each Lenskart with a unique address blob). We
+// fold these to a canonical brand name before counting, so the UI shows one
+// chip per real brand instead of one chip per outlet.
+type CanonicalRule = { match: RegExp; canonical: string }
+const CANONICAL_RULES: CanonicalRule[] = [
+  // Eyewear
+  { match: /lenskart/i,                       canonical: 'Lenskart' },
+  { match: /titan\s*eye\s*\+|titan\s*eyeplus/i, canonical: 'Titan Eye+' },
+  { match: /vision\s*express/i,               canonical: 'Vision Express' },
+  { match: /^specsmakers/i,                   canonical: 'Specsmakers' },
+  // Footwear
+  { match: /^bata\b|bata\s+(shoe|store|showroom|outlet)/i, canonical: 'Bata' },
+  { match: /^nike\b|nike\s+(store|outlet)/i,  canonical: 'Nike' },
+  { match: /^adidas\b/i,                      canonical: 'Adidas' },
+  { match: /^puma\b/i,                        canonical: 'Puma' },
+  { match: /^reebok\b/i,                      canonical: 'Reebok' },
+  { match: /^skechers\b/i,                    canonical: 'Skechers' },
+  { match: /^woodland\b/i,                    canonical: 'Woodland' },
+  { match: /^mochi\b/i,                       canonical: 'Mochi' },
+  { match: /metro\s*shoes/i,                  canonical: 'Metro Shoes' },
+  { match: /hush\s*puppies/i,                 canonical: 'Hush Puppies' },
+  { match: /^clarks\b/i,                      canonical: 'Clarks' },
+  { match: /^liberty\b.*shoe|^liberty$/i,     canonical: 'Liberty' },
+  { match: /^converse\b/i,                    canonical: 'Converse' },
+  { match: /^vans\b/i,                        canonical: 'Vans' },
+  { match: /new\s*balance/i,                  canonical: 'New Balance' },
+  { match: /^crocs\b/i,                       canonical: 'Crocs' },
+  { match: /^fila\b/i,                        canonical: 'Fila' },
+  { match: /red\s*tape/i,                     canonical: 'Red Tape' },
+  // Apparel — premium / mass-premium
+  { match: /^zara\b/i,                        canonical: 'Zara' },
+  { match: /^h\s*&\s*m\b|^h\s+and\s+m\b/i,    canonical: 'H&M' },
+  { match: /^uniqlo\b/i,                      canonical: 'Uniqlo' },
+  { match: /^mango\b/i,                       canonical: 'Mango' },
+  { match: /^westside\b/i,                    canonical: 'Westside' },
+  { match: /^lifestyle\b/i,                   canonical: 'Lifestyle' },
+  { match: /^max(\s+fashion)?\b/i,            canonical: 'Max Fashion' },
+  { match: /shoppers\s*stop/i,                canonical: 'Shoppers Stop' },
+  { match: /marks\s*&\s*spencer|m\s*&\s*s\b/i, canonical: 'Marks & Spencer' },
+  { match: /^fabindia\b/i,                    canonical: 'Fabindia' },
+  { match: /^manyavar\b/i,                    canonical: 'Manyavar' },
+  { match: /allen\s*solly/i,                  canonical: 'Allen Solly' },
+  { match: /van\s*heusen/i,                   canonical: 'Van Heusen' },
+  { match: /peter\s*england/i,                canonical: 'Peter England' },
+  { match: /louis\s*philippe/i,               canonical: 'Louis Philippe' },
+  { match: /^arrow\b/i,                       canonical: 'Arrow' },
+  { match: /^raymond\b/i,                     canonical: 'Raymond' },
+  { match: /^biba\b/i,                        canonical: 'BIBA' },
+  { match: /^w\s+for\s+woman|^w\s*$/i,        canonical: 'W' },
+  { match: /^aurelia\b/i,                     canonical: 'Aurelia' },
+  { match: /^soch\b/i,                        canonical: 'Soch' },
+  { match: /^mohey\b/i,                       canonical: 'Mohey' },
+  { match: /^levi'?s\b|^levis\b/i,            canonical: "Levi's" },
+  { match: /^lee\b.*store|^lee\s+jeans/i,     canonical: 'Lee' },
+  { match: /^wrangler\b/i,                    canonical: 'Wrangler' },
+  { match: /pepe\s*jeans/i,                   canonical: 'Pepe Jeans' },
+  { match: /tommy\s*hilfiger/i,               canonical: 'Tommy Hilfiger' },
+  { match: /calvin\s*klein/i,                 canonical: 'Calvin Klein' },
+  { match: /^gap\b/i,                         canonical: 'GAP' },
+  { match: /us\s*polo|u\.?s\.?\s*polo/i,      canonical: 'US Polo Assn.' },
+  { match: /flying\s*machine/i,               canonical: 'Flying Machine' },
+  { match: /jack\s*&\s*jones/i,               canonical: 'Jack & Jones' },
+  { match: /vero\s*moda/i,                    canonical: 'Vero Moda' },
+  { match: /^only\b.*store|^only$/i,          canonical: 'ONLY' },
+  { match: /^pantaloons\b/i,                  canonical: 'Pantaloons' },
+  { match: /forever\s*21/i,                   canonical: 'Forever 21' },
+  { match: /^nicobar\b/i,                     canonical: 'Nicobar' },
+  { match: /bombay\s*shirt/i,                 canonical: 'Bombay Shirt Company' },
+  // Jewellery
+  { match: /^tanishq\b/i,                     canonical: 'Tanishq' },
+  { match: /malabar\s*gold/i,                 canonical: 'Malabar Gold & Diamonds' },
+  { match: /kalyan\s*jewell/i,                canonical: 'Kalyan Jewellers' },
+  { match: /joyalukkas/i,                     canonical: 'Joyalukkas' },
+  { match: /^caratlane\b/i,                   canonical: 'CaratLane' },
+  { match: /pc\s*jewell/i,                    canonical: 'PC Jeweller' },
+  { match: /senco\s*gold/i,                   canonical: 'Senco Gold' },
+  { match: /^orra\b/i,                        canonical: 'Orra' },
+  { match: /grt\s*jewell/i,                   canonical: 'GRT Jewellers' },
+  // Electronics
+  { match: /reliance\s*digital/i,             canonical: 'Reliance Digital' },
+  { match: /^croma\b/i,                       canonical: 'Croma' },
+  { match: /vijay\s*sales/i,                  canonical: 'Vijay Sales' },
+  { match: /^apple\b.*store|^apple$/i,        canonical: 'Apple' },
+  { match: /^samsung\b.*(store|smartcafe|experience)/i, canonical: 'Samsung' },
+  { match: /^oneplus\b/i,                     canonical: 'OnePlus' },
+  { match: /^mi\s*store|^xiaomi\b/i,          canonical: 'Mi / Xiaomi' },
+  { match: /^bose\b/i,                        canonical: 'Bose' },
+  { match: /^sony\b.*(centre|center|store)/i, canonical: 'Sony' },
+  { match: /^lg\b.*(showroom|electronics)/i,  canonical: 'LG' },
+  // Pharmacy
+  { match: /apollo\s*pharmacy/i,              canonical: 'Apollo Pharmacy' },
+  { match: /^medplus\b/i,                     canonical: 'MedPlus' },
+  { match: /wellness\s*forever/i,             canonical: 'Wellness Forever' },
+  { match: /frank\s*ross/i,                   canonical: 'Frank Ross' },
+  { match: /guardian\s*pharmacy/i,            canonical: 'Guardian Pharmacy' },
+  // Supermarket
+  { match: /^d.?mart\b/i,                     canonical: 'DMart' },
+  { match: /reliance\s*fresh/i,               canonical: 'Reliance Fresh' },
+  { match: /reliance\s*smart/i,               canonical: 'Reliance Smart' },
+  { match: /^more\b.*supermarket|^more\s+megastore/i, canonical: 'More' },
+  { match: /^spar\b.*(hyper|supermarket)/i,   canonical: 'SPAR' },
+  { match: /lulu\s*hyper/i,                   canonical: 'Lulu Hypermarket' },
+  { match: /nature'?s\s*basket/i,             canonical: "Nature's Basket" },
+  { match: /star\s*market|star\s*bazaar/i,    canonical: 'Star Market' },
+  // Cinema
+  { match: /^pvr\b|^p\[xl\].*pvr/i,           canonical: 'PVR' },
+  { match: /^inox\b/i,                        canonical: 'INOX' },
+  { match: /^cinepolis\b/i,                   canonical: 'Cinepolis' },
+  { match: /miraj\s*cinema/i,                 canonical: 'Miraj Cinemas' },
+]
+
+function canonicalBrand(name: string): string {
+  for (const rule of CANONICAL_RULES) {
+    if (rule.match.test(name)) return rule.canonical
+  }
+  return name
+}
+
+// ── Premium-only filter for retail brand chips ───────────────────────────────
+// Retail categories should ONLY surface recognizable brands. Anything not in
+// this allowlist gets hidden from per-zone Apparel/Footwear/Eyewear/Jewellery
+// chip lists (still counted in totals, just not shown as a featured brand).
+const PREMIUM_RETAIL: Set<string> = new Set([
+  // Apparel
+  'Zara', 'H&M', 'Uniqlo', 'Mango', 'Westside', 'Lifestyle', 'Max Fashion',
+  'Shoppers Stop', 'Marks & Spencer', 'Fabindia', 'Manyavar', 'Allen Solly',
+  'Van Heusen', 'Peter England', 'Louis Philippe', 'Arrow', 'Raymond', 'BIBA',
+  'W', 'Aurelia', 'Soch', 'Mohey', "Levi's", 'Lee', 'Wrangler', 'Pepe Jeans',
+  'Tommy Hilfiger', 'Calvin Klein', 'GAP', 'US Polo Assn.', 'Flying Machine',
+  'Jack & Jones', 'Vero Moda', 'ONLY', 'Pantaloons', 'Forever 21', 'Nicobar',
+  'Bombay Shirt Company',
+  // Footwear
+  'Bata', 'Nike', 'Adidas', 'Puma', 'Reebok', 'Skechers', 'Woodland', 'Mochi',
+  'Metro Shoes', 'Hush Puppies', 'Clarks', 'Liberty', 'Converse', 'Vans',
+  'New Balance', 'Crocs', 'Fila', 'Red Tape',
+  // Eyewear
+  'Lenskart', 'Titan Eye+', 'Vision Express', 'Specsmakers',
+  // Jewellery
+  'Tanishq', 'Malabar Gold & Diamonds', 'Kalyan Jewellers', 'Joyalukkas',
+  'CaratLane', 'PC Jeweller', 'Senco Gold', 'Orra', 'GRT Jewellers',
+])
+const RETAIL_CATS_FILTERED: Set<string> = new Set(['Apparel', 'Footwear', 'Eyewear', 'Jewellery'])
+
 function sortBrands(entries: [string, number][]): string[] {
   return entries
     .filter(([name]) => !isBadBrand(name))
@@ -440,12 +586,15 @@ export async function GET() {
       let z = byZone.get(zone)
       if (!z) { z = { cats: new Map(), brands: new Map(), catBrands: new Map() }; byZone.set(zone, z) }
 
+      // Canonicalise the brand name first so "Bata Shoe Store" / "Bata Store" /
+      // "Bata Showroom" all collapse into a single 'Bata' chip in this zone.
+      const brand = canonicalBrand(r.brand_name)
       const cat = resolveCategory(r.brand_name, r.category)
       z.cats.set(cat, (z.cats.get(cat) ?? 0) + 1)
-      z.brands.set(r.brand_name, (z.brands.get(r.brand_name) ?? 0) + 1)
+      z.brands.set(brand, (z.brands.get(brand) ?? 0) + 1)
       let cb = z.catBrands.get(cat)
       if (!cb) { cb = new Map(); z.catBrands.set(cat, cb) }
-      cb.set(r.brand_name, (cb.get(r.brand_name) ?? 0) + 1)
+      cb.set(brand, (cb.get(brand) ?? 0) + 1)
     }
 
     const zones: ZoneData[] = Array.from(byZone.entries()).map(([zone, d]) => ({
@@ -457,14 +606,22 @@ export async function GET() {
         .sort((a, b) => b.count - a.count),
       topBrands: sortBrands(Array.from(d.brands.entries())).slice(0, 10),
       brandsByCategory: Object.fromEntries(
-        Array.from(d.catBrands.entries()).map(([cat, bm]) => [
-          cat,
-          sortBrands(Array.from(bm.entries())).slice(0, 8),
-        ])
+        Array.from(d.catBrands.entries()).map(([cat, bm]) => {
+          let brandList = sortBrands(Array.from(bm.entries()))
+          // Retail categories (Apparel/Footwear/Eyewear/Jewellery) only show
+          // recognised premium / mass-premium brands. Local one-off shops are
+          // hidden so the chips stay credible.
+          if (RETAIL_CATS_FILTERED.has(cat)) {
+            brandList = brandList.filter(name => PREMIUM_RETAIL.has(name))
+          }
+          return [cat, brandList.slice(0, 8)]
+        })
       ),
     })).sort((a, b) => b.totalOutlets - a.totalOutlets)
 
-    const allBrands = new Set(allRows.filter(r => classify(r.lat, r.lng)).map(r => r.brand_name))
+    const allBrands = new Set(
+      allRows.filter(r => classify(r.lat, r.lng)).map(r => canonicalBrand(r.brand_name))
+    )
     return NextResponse.json({
       zones,
       totalOutlets: zones.reduce((s, z) => s + z.totalOutlets, 0),
