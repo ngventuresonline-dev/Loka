@@ -337,10 +337,13 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
 
   // ── South-East ────────────────────────────────────────────────────────────────
   { name: 'BTM Layout',       lat: [12.892, 12.938], lng: [77.568, 77.618] },
-  // HSR east boundary stopped at 77.638 — Bommanahalli begins there
-  { name: 'HSR Layout',       lat: [12.875, 12.932], lng: [77.595, 77.638] },
-  // Bommanahalli: starts at 77.638, truly east of HSR — zero bbox containment
-  { name: 'Bommanahalli',     lat: [12.892, 12.938], lng: [77.638, 77.688] },
+  // HSR Layout extends from Sector 1 (west, ~77.620) all the way to Sector 7
+  // (east, ~77.660) along the Sarjapur Road border. Listed BEFORE Bommanahalli
+  // so HSR claims its own sectors back from Bommanahalli's old bbox.
+  { name: 'HSR Layout',       lat: [12.895, 12.940], lng: [77.605, 77.660] },
+  // Bommanahalli proper sits SOUTH of HSR along Hosur Road / BG Road / Madivala —
+  // lat strictly south of HSR's southern boundary, no overlap.
+  { name: 'Bommanahalli',     lat: [12.860, 12.895], lng: [77.620, 77.660] },
   { name: 'Bellandur',        lat: [12.902, 12.952], lng: [77.645, 77.718] },
   { name: 'Sarjapur Road',    lat: [12.848, 12.918], lng: [77.658, 77.758] },
 

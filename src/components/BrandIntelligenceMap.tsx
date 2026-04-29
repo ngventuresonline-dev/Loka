@@ -358,7 +358,7 @@ export default function BrandIntelligenceMap() {
                   </div>
                 </div>
               ) : (
-                <svg viewBox="0 0 380 460" className="w-full max-h-[460px]" style={{ fontFamily: 'inherit' }}>
+                <svg viewBox="0 0 380 460" className="w-full h-auto min-h-[520px] sm:min-h-[460px] sm:max-h-[560px]" style={{ fontFamily: 'inherit' }}>
                   <defs>
                     <filter id="bim-glow" x="-50%" y="-50%" width="200%" height="200%">
                       <feGaussianBlur stdDeviation="3.5" result="blur" />
@@ -379,6 +379,33 @@ export default function BrandIntelligenceMap() {
                   </defs>
 
                   <rect width="380" height="460" fill="url(#bim-grid)" />
+
+                  {/* Bangalore map: stylised outline + ring roads + major spokes */}
+                  <g pointerEvents="none">
+                    {/* Rough BBMP city outline — hand-traced approximation */}
+                    <path d="M 80 100 C 70 130, 60 180, 60 220 C 55 260, 65 310, 90 350 C 115 380, 160 395, 200 390 C 245 385, 290 365, 320 330 C 345 295, 350 250, 345 210 C 340 165, 320 120, 290 90 C 255 60, 200 45, 155 55 C 115 65, 90 80, 80 100 Z"
+                      fill="none" stroke="rgba(255,82,0,0.18)" strokeWidth="1" strokeDasharray="2 3" />
+
+                    {/* Outer Ring Road (ORR) — dashed ellipse */}
+                    <ellipse cx="190" cy="210" rx="138" ry="148"
+                      fill="none" stroke="rgba(255,82,0,0.28)" strokeWidth="0.9" strokeDasharray="5 4" />
+                    <text x="335" y="100" fontSize="5.5" fill="rgba(255,82,0,0.55)" fontWeight="700" letterSpacing="0.5">ORR</text>
+
+                    {/* Inner ring road / CBD halo */}
+                    <ellipse cx="195" cy="200" rx="60" ry="72"
+                      fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="0.6" strokeDasharray="2 3" />
+
+                    {/* Major spoke roads from city centre */}
+                    <line x1="195" y1="200" x2="155" y2="32"  stroke="rgba(0,0,0,0.07)" strokeWidth="0.6" />  {/* Bellary Rd N */}
+                    <line x1="195" y1="200" x2="338" y2="188" stroke="rgba(0,0,0,0.07)" strokeWidth="0.6" />  {/* Old Madras E */}
+                    <line x1="195" y1="200" x2="280" y2="338" stroke="rgba(0,0,0,0.07)" strokeWidth="0.6" />  {/* Sarjapur SE */}
+                    <line x1="195" y1="200" x2="178" y2="338" stroke="rgba(0,0,0,0.07)" strokeWidth="0.6" />  {/* Hosur S */}
+                    <line x1="195" y1="200" x2="72"  y2="348" stroke="rgba(0,0,0,0.07)" strokeWidth="0.6" />  {/* Mysore SW */}
+                    <line x1="195" y1="200" x2="82"  y2="108" stroke="rgba(0,0,0,0.07)" strokeWidth="0.6" />  {/* Tumkur NW */}
+
+                    {/* City centre marker (Cubbon Park / MG Road) */}
+                    <circle cx="195" cy="200" r="2.5" fill="rgba(255,82,0,0.35)" />
+                  </g>
 
                   {/* Scan line */}
                   <rect width="380" height="40" fill="url(#bim-scan)">
@@ -452,17 +479,17 @@ export default function BrandIntelligenceMap() {
 
                         <circle cx={pos.x} cy={pos.y} r={r * 0.68} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.7" />
 
-                        {r > 11 && (
+                        {r > 10 && (
                           <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                            fill="#fff" fontSize={r > 20 ? '8' : '6.5'} fontWeight="800" letterSpacing="-0.3"
+                            fill="#fff" fontSize={r > 20 ? '9.5' : '7.5'} fontWeight="800" letterSpacing="-0.3"
                             style={{ pointerEvents: 'none' }}>
                             {fmt(displayCount)}
                           </text>
                         )}
 
-                        <text x={pos.x} y={pos.y + r + 8} textAnchor="middle"
-                          fill={isSel ? '#111827' : '#6B7280'}
-                          fontSize="5.8" fontWeight={isSel ? '700' : '400'}
+                        <text x={pos.x} y={pos.y + r + 9} textAnchor="middle"
+                          fill={isSel ? '#111827' : '#4B5563'}
+                          fontSize="7" fontWeight={isSel ? '700' : '500'}
                           style={{ pointerEvents: 'none', transition: 'fill 0.2s' }}>
                           {pos.label}
                         </text>
