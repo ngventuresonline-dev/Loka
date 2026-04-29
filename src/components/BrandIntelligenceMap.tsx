@@ -349,7 +349,7 @@ export default function BrandIntelligenceMap() {
               </div>
             </div>
 
-            <div className="p-3 sm:p-5 overflow-x-auto sm:overflow-visible -mx-px sm:mx-0">
+            <div className="p-3 sm:p-5">
               {loading ? (
                 <div className="flex items-center justify-center h-[460px] text-gray-500 text-sm">
                   <div className="flex flex-col items-center gap-3">
@@ -358,9 +358,7 @@ export default function BrandIntelligenceMap() {
                   </div>
                 </div>
               ) : (
-                <svg viewBox="0 0 380 460"
-                  className="block mx-auto h-auto max-h-[640px]"
-                  style={{ width: '100%', minWidth: '460px', fontFamily: 'inherit' }}>
+                <svg viewBox="0 0 380 460" className="w-full h-auto min-h-[520px] sm:min-h-[460px] sm:max-h-[560px]" style={{ fontFamily: 'inherit' }}>
                   <defs>
                     <filter id="bim-glow" x="-50%" y="-50%" width="200%" height="200%">
                       <feGaussianBlur stdDeviation="3.5" result="blur" />
