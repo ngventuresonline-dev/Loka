@@ -104,6 +104,78 @@ function bubbleR(n: number, maxN: number) {
   return 8 + (n / maxN) * 26
 }
 
+// City-centre coords in viewBox space (matches the city-centre marker drawn
+// in the SVG). Labels fan outward from this point so the cluster around
+// MG Road / Cubbon doesn't have every label stacked under its bubble.
+const CENTROID = { x: 195, y: 200 }
+
+type LabelDir = 'top' | 'bottom' | 'left' | 'right' | 'topright' | 'topleft' | 'bottomright' | 'bottomleft'
+
+// Per-zone overrides — used where the angular default puts a label into
+// another bubble or off the edge of the canvas.
+const LABEL_DIR_OVERRIDE: Record<string, LabelDir> = {
+  'Yelahanka':       'top',         // far north, no neighbour above
+  'Sahakar Nagar':   'topleft',     // sits between Hebbal and the edge
+  'Thanisandra':     'top',         // tight cluster north of Manyata
+  'New BEL Road':    'left',        // west of RT Nagar
+  'Peenya':          'left',        // far west
+  'Yeshwanthpur':    'left',        // packed against Malleshwaram
+  'Rajajinagar':     'left',
+  'Vijayanagar':     'left',
+  'Kengeri':         'left',
+  'Uttarahalli':     'bottomleft',
+  'Banashankari':    'bottomleft',
+  'Basavanagudi':    'left',
+  'Jayanagar':       'left',
+  'JP Nagar':        'bottom',
+  'Arekere':         'bottom',
+  'Hulimavu':        'bottom',
+  'Electronic City': 'bottom',
+  'BTM Layout':      'bottomleft',
+  'HSR Layout':      'bottom',
+  'Bommanahalli':    'bottom',
+  'Bellandur':       'right',
+  'Sarjapur Road':   'right',
+  'Varthur':         'right',
+  'Whitefield':      'right',
+  'Mahadevapura':    'right',
+  'Brookefield':     'right',
+  'Marathahalli':    'right',
+  'KR Puram':        'top',
+  'Ramamurthynagar': 'right',
+  'Kalyan Nagar':    'right',
+  'Indiranagar':     'right',
+  'Frazer Town':     'top',
+  'Shivajinagar':    'topleft',
+  'Malleshwaram':    'left',
+  'MG Road':         'topright',
+  'Langford Town':   'left',
+  'Koramangala':     'right',
+  'Hebbal':          'topright',
+  'Manyata':         'right',
+  'RT Nagar':        'left',
+}
+
+function labelPlacement(zone: string, pos: { x: number; y: number }, r: number): {
+  tx: number; ty: number; anchor: 'start' | 'middle' | 'end'; baseline: 'auto' | 'central' | 'hanging'
+} {
+  const dir = LABEL_DIR_OVERRIDE[zone]
+    ?? (Math.abs(pos.x - CENTROID.x) > Math.abs(pos.y - CENTROID.y)
+          ? (pos.x > CENTROID.x ? 'right' : 'left')
+          : (pos.y > CENTROID.y ? 'bottom' : 'top'))
+  const gap = 4
+  switch (dir) {
+    case 'top':         return { tx: pos.x,             ty: pos.y - r - gap, anchor: 'middle', baseline: 'auto' }
+    case 'bottom':      return { tx: pos.x,             ty: pos.y + r + gap + 5, anchor: 'middle', baseline: 'hanging' }
+    case 'left':        return { tx: pos.x - r - gap,   ty: pos.y,           anchor: 'end',    baseline: 'central' }
+    case 'right':       return { tx: pos.x + r + gap,   ty: pos.y,           anchor: 'start',  baseline: 'central' }
+    case 'topleft':     return { tx: pos.x - r * 0.7,   ty: pos.y - r - gap, anchor: 'end',    baseline: 'auto' }
+    case 'topright':    return { tx: pos.x + r * 0.7,   ty: pos.y - r - gap, anchor: 'start',  baseline: 'auto' }
+    case 'bottomleft':  return { tx: pos.x - r * 0.7,   ty: pos.y + r + gap + 4, anchor: 'end',    baseline: 'hanging' }
+    case 'bottomright': return { tx: pos.x + r * 0.7,   ty: pos.y + r + gap + 4, anchor: 'start',  baseline: 'hanging' }
+  }
+}
+
 function AnimCount({ target, duration = 1400 }: { target: number; duration?: number }) {
   const [val, setVal] = useState(0)
   const ref = useRef(false)
@@ -501,12 +573,21 @@ export default function BrandIntelligenceMap() {
                           </text>
                         )}
 
-                        <text x={pos.x} y={pos.y + r + 9} textAnchor="middle"
-                          fill={isSel ? '#111827' : '#4B5563'}
-                          className="bim-zone-label"
-                          style={{ pointerEvents: 'none', transition: 'fill 0.2s', fontWeight: isSel ? 700 : undefined }}>
-                          {pos.label}
-                        </text>
+                        {/* Label is placed in the direction the zone sits relative
+                            to the city centre, so labels naturally fan outward and
+                            don't all stack below the bubble. */}
+                        {(() => {
+                          const lp = labelPlacement(z.zone, pos, r)
+                          return (
+                            <text x={lp.tx} y={lp.ty} textAnchor={lp.anchor}
+                              dominantBaseline={lp.baseline}
+                              fill={isSel ? '#111827' : isHov ? '#1F2937' : '#4B5563'}
+                              className="bim-zone-label"
+                              style={{ pointerEvents: 'none', transition: 'fill 0.2s', fontWeight: isSel ? 700 : undefined }}>
+                              {pos.label}
+                            </text>
+                          )
+                        })()}
                       </g>
                     )
                   })}
