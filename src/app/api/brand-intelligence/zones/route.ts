@@ -354,6 +354,27 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /wellness\s*forever/i,                     category: 'Pharmacy' },
   { pattern: /frank\s*ross/i,                           category: 'Pharmacy' },
   { pattern: /guardian\s*pharmacy/i,                    category: 'Pharmacy' },
+  { pattern: /^netmeds\b/i,                             category: 'Pharmacy' },
+  // ── Electronics (premium chains — fold telecom + electronics together) ──
+  { pattern: /reliance\s*digital/i,                     category: 'Electronics' },
+  { pattern: /^croma\b/i,                               category: 'Electronics' },
+  { pattern: /vijay\s*sales/i,                          category: 'Electronics' },
+  { pattern: /apple\s*premium\s*reseller|apple\s*authoris(ed|ed)\s*reseller|^iplanet\b|^invent\b.*apple/i, category: 'Electronics' },
+  { pattern: /^samsung\s*(smartplaza|smartcafe|exclusive|experience|store)/i, category: 'Electronics' },
+  { pattern: /^oneplus\s*(experience|store|exclusive)/i, category: 'Electronics' },
+  { pattern: /^mi\s*(home|store|exclusive)|^xiaomi\b/i, category: 'Electronics' },
+  { pattern: /^bose\s*store|the\s*bose\s*store/i,       category: 'Electronics' },
+  { pattern: /^sony\s*(centre|center|store|exclusive)/i, category: 'Electronics' },
+  { pattern: /^lg\s*(showroom|brand\s*shoppe|electronics)/i, category: 'Electronics' },
+  { pattern: /^acer\s*(mall|exclusive|store)/i,         category: 'Electronics' },
+  { pattern: /^asus\s*(exclusive|store)/i,              category: 'Electronics' },
+  { pattern: /^lenovo\s*(exclusive|store|smart)/i,      category: 'Electronics' },
+  { pattern: /^dell\s*(exclusive|store)/i,              category: 'Electronics' },
+  { pattern: /^hp\s*(world|store|exclusive)/i,          category: 'Electronics' },
+  // Telecom chains — folded into Electronics for the demo so they show together
+  { pattern: /^airtel\s*(store|exclusive|experience)/i, category: 'Electronics' },
+  { pattern: /^my\s*jio\s*store|^jio\s*store/i,         category: 'Electronics' },
+  { pattern: /^vi\s*store|^vodafone\s*store/i,          category: 'Electronics' },
   // ── Cafe (premium chains) ──
   { pattern: /^starbucks\b/i,                           category: 'Cafe' },
   { pattern: /third\s*wave\s*coffee/i,                  category: 'Cafe' },
@@ -493,13 +514,23 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /reliance\s*digital/i,             canonical: 'Reliance Digital' },
   { match: /^croma\b/i,                       canonical: 'Croma' },
   { match: /vijay\s*sales/i,                  canonical: 'Vijay Sales' },
+  { match: /apple\s*premium\s*reseller|apple\s*authoris(ed|ed)\s*reseller|^iplanet\b|invent.*apple/i, canonical: 'Apple' },
   { match: /^apple\b.*store|^apple$/i,        canonical: 'Apple' },
-  { match: /^samsung\b.*(store|smartcafe|experience)/i, canonical: 'Samsung' },
+  { match: /^samsung\b.*(store|smartplaza|smartcafe|experience|exclusive)/i, canonical: 'Samsung' },
   { match: /^oneplus\b/i,                     canonical: 'OnePlus' },
-  { match: /^mi\s*store|^xiaomi\b/i,          canonical: 'Mi / Xiaomi' },
-  { match: /^bose\b/i,                        canonical: 'Bose' },
-  { match: /^sony\b.*(centre|center|store)/i, canonical: 'Sony' },
-  { match: /^lg\b.*(showroom|electronics)/i,  canonical: 'LG' },
+  { match: /^mi\s*(home|store|exclusive)|^xiaomi\b/i,  canonical: 'Mi / Xiaomi' },
+  { match: /^bose\s*store|the\s*bose\s*store/i, canonical: 'Bose' },
+  { match: /^sony\b.*(centre|center|store|exclusive)/i, canonical: 'Sony' },
+  { match: /^lg\b.*(showroom|electronics|brand\s*shoppe)/i, canonical: 'LG' },
+  { match: /^acer\s*(mall|exclusive|store)/i, canonical: 'Acer' },
+  { match: /^asus\s*(exclusive|store)/i,      canonical: 'Asus' },
+  { match: /^lenovo\s*(exclusive|store|smart)/i, canonical: 'Lenovo' },
+  { match: /^dell\s*(exclusive|store)/i,      canonical: 'Dell' },
+  { match: /^hp\s*(world|store|exclusive)/i,  canonical: 'HP' },
+  // Telecom chains
+  { match: /^airtel\s*(store|exclusive|experience)/i, canonical: 'Airtel' },
+  { match: /^my\s*jio\s*store|^jio\s*store/i, canonical: 'Jio' },
+  { match: /^vi\s*store|^vodafone\s*store/i,  canonical: 'Vi (Vodafone Idea)' },
   // Pharmacy
   { match: /apollo\s*pharmacy/i,              canonical: 'Apollo Pharmacy' },
   { match: /^medplus\b/i,                     canonical: 'MedPlus' },
@@ -551,8 +582,14 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   // Jewellery
   'Tanishq', 'Malabar Gold & Diamonds', 'Kalyan Jewellers', 'Joyalukkas',
   'CaratLane', 'PC Jeweller', 'Senco Gold', 'Orra', 'GRT Jewellers',
+  // Electronics + Telecom
+  'Reliance Digital', 'Croma', 'Vijay Sales',
+  'Apple', 'Samsung', 'OnePlus', 'Mi / Xiaomi',
+  'Bose', 'Sony', 'LG',
+  'Acer', 'Asus', 'Lenovo', 'Dell', 'HP',
+  'Airtel', 'Jio', 'Vi (Vodafone Idea)',
 ])
-const RETAIL_CATS_FILTERED: Set<string> = new Set(['Apparel', 'Footwear', 'Eyewear', 'Jewellery'])
+const RETAIL_CATS_FILTERED: Set<string> = new Set(['Apparel', 'Footwear', 'Eyewear', 'Jewellery', 'Electronics'])
 
 function sortBrands(entries: [string, number][]): string[] {
   return entries
