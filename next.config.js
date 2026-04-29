@@ -1,7 +1,18 @@
+const path = require('path')
+const fs = require('fs')
+
+// Only override the file-tracing root when running from a git worktree
+// (where node_modules lives three levels up at C:\Loka). On Vercel and any
+// standalone clone, node_modules is installed locally — the default
+// auto-detection works correctly there. Always overriding caused Vercel to
+// resolve the tracing root to '/' and produce paths like
+// '/vercel/path0/vercel/path0/.next/routes-manifest.json'.
+const isLocalWorktree = !fs.existsSync(path.join(__dirname, 'node_modules'))
+const worktreeRoot = path.join(__dirname, '..', '..', '..')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Worktree root: node_modules lives in C:\Loka, three levels up
-  outputFileTracingRoot: require('path').join(__dirname, '..', '..', '..'),
+  ...(isLocalWorktree ? { outputFileTracingRoot: worktreeRoot } : {}),
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -33,10 +44,9 @@ const nextConfig = {
       'lucide-react', 'date-fns', '@anthropic-ai/sdk'
     ],
   },
-  // Turbopack configuration (Next.js 16+) — must match outputFileTracingRoot
-  turbopack: {
-    root: require('path').join(__dirname, '..', '..', '..'),
-  },
+  // Turbopack configuration (Next.js 16+) — must match outputFileTracingRoot.
+  // Same conditional: only override in the local worktree.
+  ...(isLocalWorktree ? { turbopack: { root: worktreeRoot } } : {}),
   // Webpack optimizations for bundle splitting (when using --webpack flag)
   webpack: (config, { isServer }) => {
     if (!isServer) {
