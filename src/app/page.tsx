@@ -14,7 +14,6 @@ const BangaloreMapIllustration = lazy(() => import('@/components/BangaloreMapIll
 const BrandPlacementPin = lazy(() => import('@/components/BrandPlacementPin').then(mod => ({ default: mod.default })))
 import { brandPlacements, getPlacementCoordinates } from '@/lib/brand-placements'
 
-const BrandIntelStatStrip = lazy(() => import('@/components/BrandIntelStatStrip'))
 const BrandIntelTeaser = lazy(() => import('@/components/BrandIntelTeaser'))
 
 // Lazy load heavy components below the fold
@@ -2652,10 +2651,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Brand Intelligence — live stats strip + zone preview cards */}
-      <Suspense fallback={null}>
-        <BrandIntelStatStrip />
-      </Suspense>
+      {/* Brand Intelligence — zone preview cards */}
       <Suspense fallback={null}>
         <BrandIntelTeaser />
       </Suspense>
