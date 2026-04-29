@@ -53,10 +53,24 @@ function normalizeCategory(raw: string | null): string {
       r.includes('pan-asian') || r.includes('live grill') || r.includes('vietnamese') ||
       r.includes('andhra')) return 'Restaurant'
   if (r.includes('spa') && !r.includes('salon')) return 'Spa'
+  // Beauty & cosmetics retail (Sephora, Nykaa, MAC etc.) — must come before Salon
+  // because the DB tag 'Beauty' would otherwise fall through to 'Salon's beauty rule.
+  if (r === 'beauty' || r.includes('cosmetics') || r.includes('home fragrance') ||
+      r.includes('skin care')) return 'Beauty'
   if (r.includes('salon') || r.includes('beauty') || r.includes('nail') ||
       r.includes('slimming') || r.includes('grooming')) return 'Salon'
   if (r.includes('gym') || r.includes('fitness') || r.includes('crossfit') ||
       r.includes('yoga') || r.includes('pilates')) return 'Gym'
+  // Sports retail — Decathlon, Wildcraft etc.
+  if (r.includes('sports retail') || r.includes('sports multi-brand') ||
+      r.includes('outdoor sports') || r === 'sports') return 'Sports'
+  // Kids / baby / toys retail — FirstCry, Mothercare, Hamleys
+  if (r === 'kids' || r.includes('baby & kids') || r.includes('kids retail') ||
+      r.includes('toy ') || r === 'toys' || r.includes('kids store')) return 'Kids'
+  // Home & furniture retail — IKEA, Pepperfry, HomeStop
+  if (r.includes('furniture') || r.includes('home decor') || r.includes('homeware') ||
+      r.includes('home retail') || r === 'home' || r.includes('home & living') ||
+      r.includes('mattress')) return 'Home'
   if (r.includes('pharmacy') || r.includes('medical store') || r.includes('beauty & pharmacy')) return 'Pharmacy'
   if (r.includes('supermarket') || r.includes('hypermarket') || r.includes('grocery') ||
       r.includes('fresh') && r.includes('f&b') || r === 'grocery' ||
@@ -401,6 +415,40 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /kalyan\s*jewell/i,                        category: 'Jewellery' },
   { pattern: /joyalukkas/i,                             category: 'Jewellery' },
   { pattern: /^caratlane\b/i,                           category: 'Jewellery' },
+  // ── Beauty / Cosmetics retail ──
+  { pattern: /^sephora\b/i,                             category: 'Beauty' },
+  { pattern: /^nykaa\b|nykd\s*by\s*nykaa/i,             category: 'Beauty' },
+  { pattern: /^mac\s*cosmetics|^m\.?a\.?c\.?\s*$/i,     category: 'Beauty' },
+  { pattern: /the\s*body\s*shop/i,                      category: 'Beauty' },
+  { pattern: /sugar\s*cosmetics/i,                      category: 'Beauty' },
+  { pattern: /forest\s*essentials/i,                    category: 'Beauty' },
+  { pattern: /^l'?occitane\b/i,                         category: 'Beauty' },
+  { pattern: /^innisfree\b/i,                           category: 'Beauty' },
+  { pattern: /kiehl'?s/i,                               category: 'Beauty' },
+  { pattern: /bath\s*&\s*body\s*works/i,                category: 'Beauty' },
+  { pattern: /plum\s*goodness|plum\s*store/i,           category: 'Beauty' },
+  { pattern: /^maybelline\b/i,                          category: 'Beauty' },
+  // ── Sports retail ──
+  { pattern: /^decathlon\b/i,                           category: 'Sports' },
+  { pattern: /^wildcraft\b/i,                           category: 'Sports' },
+  { pattern: /columbia\s*sportswear/i,                  category: 'Sports' },
+  // ── Kids / toys retail ──
+  { pattern: /^firstcry/i,                              category: 'Kids' },
+  { pattern: /^mothercare\b/i,                          category: 'Kids' },
+  { pattern: /^hamleys\b/i,                             category: 'Kids' },
+  { pattern: /^toys\s*r\s*us/i,                         category: 'Kids' },
+  // ── Home & furniture retail ──
+  { pattern: /^ikea\b/i,                                category: 'Home' },
+  { pattern: /^pepperfry\b/i,                           category: 'Home' },
+  { pattern: /^urban\s*ladder\b/i,                      category: 'Home' },
+  { pattern: /^home\s*stop\b|^homestop\b/i,             category: 'Home' },
+  { pattern: /^home\s*centre\b|^homecentre\b/i,         category: 'Home' },
+  { pattern: /^home\s*town\b|^hometown\b/i,             category: 'Home' },
+  { pattern: /godrej\s*interio/i,                       category: 'Home' },
+  { pattern: /^nilkamal\b/i,                            category: 'Home' },
+  { pattern: /^wakefit\b/i,                             category: 'Home' },
+  { pattern: /^sleepwell\b/i,                           category: 'Home' },
+  { pattern: /fabindia\s*home/i,                        category: 'Home' },
 ]
 
 function forceCategory(brandName: string): string | null {
@@ -551,6 +599,39 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /^inox\b/i,                        canonical: 'INOX' },
   { match: /^cinepolis\b/i,                   canonical: 'Cinepolis' },
   { match: /miraj\s*cinema/i,                 canonical: 'Miraj Cinemas' },
+  // Beauty
+  { match: /^sephora\b/i,                     canonical: 'Sephora' },
+  { match: /^nykaa\b(\s*(luxe|on\s*trend|kiosk))?$|^nykaa\s*(luxe|on\s*trend|kiosk)\b/i, canonical: 'Nykaa' },
+  { match: /nykd\s*by\s*nykaa/i,              canonical: 'Nykd by Nykaa' },
+  { match: /^mac\s*cosmetics|^m\.?a\.?c\.?$/i, canonical: 'M·A·C' },
+  { match: /the\s*body\s*shop/i,              canonical: 'The Body Shop' },
+  { match: /sugar\s*cosmetics/i,              canonical: 'SUGAR Cosmetics' },
+  { match: /forest\s*essentials/i,            canonical: 'Forest Essentials' },
+  { match: /^l'?occitane\b/i,                 canonical: "L'Occitane" },
+  { match: /^innisfree\b/i,                   canonical: 'Innisfree' },
+  { match: /kiehl'?s/i,                       canonical: "Kiehl's" },
+  { match: /bath\s*&\s*body\s*works/i,        canonical: 'Bath & Body Works' },
+  { match: /plum\s*goodness|^plum\s*store/i,  canonical: 'Plum' },
+  // Sports
+  { match: /^decathlon\b/i,                   canonical: 'Decathlon' },
+  { match: /^wildcraft\b/i,                   canonical: 'Wildcraft' },
+  { match: /columbia\s*sportswear/i,          canonical: 'Columbia Sportswear' },
+  // Kids
+  { match: /^firstcry/i,                      canonical: 'FirstCry' },
+  { match: /^mothercare\b/i,                  canonical: 'Mothercare' },
+  { match: /^hamleys\b/i,                     canonical: 'Hamleys' },
+  // Home
+  { match: /^ikea\b/i,                        canonical: 'IKEA' },
+  { match: /^pepperfry\b/i,                   canonical: 'Pepperfry' },
+  { match: /urban\s*ladder/i,                 canonical: 'Urban Ladder' },
+  { match: /home\s*stop|^homestop\b/i,        canonical: 'HomeStop' },
+  { match: /home\s*centre|^homecentre\b/i,    canonical: 'Home Centre' },
+  { match: /home\s*town|^hometown\b/i,        canonical: 'HomeTown' },
+  { match: /godrej\s*interio/i,               canonical: 'Godrej Interio' },
+  { match: /^nilkamal\b/i,                    canonical: 'Nilkamal' },
+  { match: /^wakefit\b/i,                     canonical: 'Wakefit' },
+  { match: /^sleepwell\b/i,                   canonical: 'Sleepwell' },
+  { match: /fabindia\s*home/i,                canonical: 'Fabindia Home' },
 ]
 
 function canonicalBrand(name: string): string {
@@ -588,8 +669,23 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   'Bose', 'Sony', 'LG',
   'Acer', 'Asus', 'Lenovo', 'Dell', 'HP',
   'Airtel', 'Jio', 'Vi (Vodafone Idea)',
+  // Beauty / Cosmetics
+  'Sephora', 'Nykaa', 'Nykd by Nykaa', 'M·A·C', 'The Body Shop',
+  'SUGAR Cosmetics', 'Forest Essentials', "L'Occitane", 'Innisfree',
+  "Kiehl's", 'Bath & Body Works', 'Plum',
+  // Sports
+  'Decathlon', 'Wildcraft', 'Columbia Sportswear',
+  // Kids / Toys
+  'FirstCry', 'Mothercare', 'Hamleys',
+  // Home / Furniture
+  'IKEA', 'Pepperfry', 'Urban Ladder', 'HomeStop', 'Home Centre',
+  'HomeTown', 'Godrej Interio', 'Nilkamal', 'Wakefit', 'Sleepwell',
+  'Fabindia Home',
 ])
-const RETAIL_CATS_FILTERED: Set<string> = new Set(['Apparel', 'Footwear', 'Eyewear', 'Jewellery', 'Electronics'])
+const RETAIL_CATS_FILTERED: Set<string> = new Set([
+  'Apparel', 'Footwear', 'Eyewear', 'Jewellery', 'Electronics',
+  'Beauty', 'Sports', 'Kids', 'Home',
+])
 
 function sortBrands(entries: [string, number][]): string[] {
   return entries

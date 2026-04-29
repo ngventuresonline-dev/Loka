@@ -63,12 +63,17 @@ const CAT_COLOR: Record<string, string> = {
   'Apparel':     '#8B5CF6',
   'Jewellery':   '#F59E0B',
   'Footwear':    '#06B6D4',
+  'Eyewear':     '#0EA5E9',
   'Electronics': '#3B82F6',
   'Supermarket': '#14B8A6',
   'Pharmacy':    '#10B981',
   'Gym':         '#22C55E',
   'Salon':       '#EC4899',
   'Spa':         '#A78BFA',
+  'Beauty':      '#DB2777',
+  'Sports':      '#15803D',
+  'Kids':        '#CA8A04',
+  'Home':        '#9333EA',
   'Coworking':   '#6366F1',
   'Bar':         '#EF4444',
   'Cinema':      '#F472B6',
@@ -79,9 +84,10 @@ const CAT_COLOR: Record<string, string> = {
 // Priority order for category filter chips — QSR and key categories always visible
 const CAT_PRIORITY = [
   'Restaurant', 'Cafe', 'QSR', 'Bakery', 'Dessert',
-  'Gym', 'Salon', 'Spa',
-  'Apparel', 'Footwear', 'Jewellery', 'Electronics',
-  'Supermarket', 'Pharmacy', 'Coworking', 'Bar', 'Cinema', 'Books',
+  'Gym', 'Salon', 'Spa', 'Beauty',
+  'Apparel', 'Footwear', 'Jewellery', 'Eyewear',
+  'Electronics', 'Sports', 'Home', 'Kids',
+  'Supermarket', 'Pharmacy', 'Coworking', 'Bar', 'Cinema',
 ]
 
 function fmt(n: number) {
