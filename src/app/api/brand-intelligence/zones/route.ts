@@ -33,7 +33,7 @@ function normalizeCategory(raw: string | null): string {
       r.includes('brewery') || r === 'bar' || r.includes('cocktail bar') ||
       r.includes('lounge bar') || r.includes('rooftop bar') || r.includes('beer bar') ||
       r.includes('sports bar') || r.includes('music bar') || r.includes('rock bar') ||
-      r.includes('pub & bar') || r.includes('bar/restaurant')) return 'Bar'
+      r.includes('pub & bar') || r.includes('bar/restaurant')) return 'Bar & Brewery'
   if (r.includes('specialty coffee') || r.includes('coffee chain') || r.includes('tea cafe') ||
       r.includes('tea chain') || r.includes('french cafe') || r.includes('art cafe') ||
       r.includes('all-day cafe') || r.includes('south indian cafe') ||
@@ -138,7 +138,7 @@ const ANCHOR_BRANDS_LOWER = new Set([
   "nandhini", "meghana foods", "truffles", "hotel empire", "shree sagar",
   "udupi palace", "corner house", "maiyas", "koshy's", "the fatty bao",
   "five star chicken", "dindigul thalappakatti",
-  "smoke house deli", "monkey bar", "the permit room",
+  "smoke house deli", "monkey bar",
   "bangalore oota company", "the only place",
   // Premium fine-dining / casual — local and international
   "karavalli", "olive beach", "caperberry", "punjab grill",
@@ -362,6 +362,12 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /titan\s*eye/i,                            category: 'Eyewear' },
   { pattern: /vision\s*express/i,                       category: 'Eyewear' },
   { pattern: /^specsmakers\b/i,                         category: 'Eyewear' },
+  { pattern: /lawrence\s*&?\s*mayo/i,                   category: 'Eyewear' },
+  { pattern: /^gkb\s*(optic|lens)/i,                    category: 'Eyewear' },
+  { pattern: /sunglass\s*hut/i,                         category: 'Eyewear' },
+  { pattern: /ben\s*franklin\s*(optician|eyewear)/i,    category: 'Eyewear' },
+  { pattern: /^optorium\b/i,                            category: 'Eyewear' },
+  { pattern: /^himalaya\s*optical|^himalaya\s*opticians/i, category: 'Eyewear' },
   // ── Pharmacy (often tagged as Apparel) ──
   { pattern: /^apollo\s*pharmacy/i,                     category: 'Pharmacy' },
   { pattern: /^medplus\b/i,                             category: 'Pharmacy' },
@@ -437,6 +443,52 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /^mothercare\b/i,                          category: 'Kids' },
   { pattern: /^hamleys\b/i,                             category: 'Kids' },
   { pattern: /^toys\s*r\s*us/i,                         category: 'Kids' },
+  // ── Bar & Brewery (premium chains + Bangalore originals) ──
+  { pattern: /^toit\b/i,                                category: 'Bar & Brewery' },
+  { pattern: /byg\s*brewski/i,                          category: 'Bar & Brewery' },
+  { pattern: /arbor\s*brewing/i,                        category: 'Bar & Brewery' },
+  { pattern: /biere\s*club|^bi[èe]re\s*club/i,          category: 'Bar & Brewery' },
+  { pattern: /windmills\s*craftworks/i,                 category: 'Bar & Brewery' },
+  { pattern: /bengaluru\s*brewing/i,                    category: 'Bar & Brewery' },
+  { pattern: /sotally\s*tober/i,                        category: 'Bar & Brewery' },
+  { pattern: /^prost\s*brewpub|^prost\b/i,              category: 'Bar & Brewery' },
+  { pattern: /^hammered\b/i,                            category: 'Bar & Brewery' },
+  { pattern: /^plan\s*b\b/i,                            category: 'Bar & Brewery' },
+  { pattern: /^brewklyn\b/i,                            category: 'Bar & Brewery' },
+  { pattern: /^geist\s*brew/i,                          category: 'Bar & Brewery' },
+  { pattern: /^hoppipola\b/i,                           category: 'Bar & Brewery' },
+  { pattern: /the\s*beer\s*caf[ée]/i,                   category: 'Bar & Brewery' },
+  { pattern: /^big\s*pitcher\b/i,                       category: 'Bar & Brewery' },
+  { pattern: /tao\s*terraces/i,                         category: 'Bar & Brewery' },
+  { pattern: /^loft\s*38/i,                             category: 'Bar & Brewery' },
+  { pattern: /^hoot\b/i,                                category: 'Bar & Brewery' },
+  { pattern: /the\s*black\s*pearl/i,                    category: 'Bar & Brewery' },
+  { pattern: /^skyye\b/i,                               category: 'Bar & Brewery' },
+  { pattern: /high\s*ultra\s*lounge/i,                  category: 'Bar & Brewery' },
+  { pattern: /13th\s*floor/i,                           category: 'Bar & Brewery' },
+  { pattern: /tgi\s*friday/i,                           category: 'Bar & Brewery' },
+  { pattern: /hard\s*rock\s*caf[ée]/i,                  category: 'Bar & Brewery' },
+  { pattern: /punjabi\s*by\s*nature/i,                  category: 'Bar & Brewery' },
+  { pattern: /^1131\s*bar/i,                            category: 'Bar & Brewery' },
+  { pattern: /the\s*bier\s*library/i,                   category: 'Bar & Brewery' },
+  { pattern: /bangalore\s*brew\s*works/i,               category: 'Bar & Brewery' },
+  { pattern: /the\s*irish\s*house/i,                    category: 'Bar & Brewery' },
+  { pattern: /flying\s*elephant/i,                      category: 'Bar & Brewery' },
+  { pattern: /monkey\s*bar/i,                           category: 'Bar & Brewery' },
+  // ── Bakery (premium chains + Bangalore originals) ──
+  { pattern: /^theobroma\b/i,                           category: 'Bakery' },
+  { pattern: /glen.?s\s*bake/i,                         category: 'Bakery' },
+  { pattern: /daily\s*bread/i,                          category: 'Bakery' },
+  { pattern: /the\s*sweet\s*chariot/i,                  category: 'Bakery' },
+  { pattern: /^french\s*loaf|the\s*french\s*loaf/i,     category: 'Bakery' },
+  { pattern: /mustard\s*bakehouse/i,                    category: 'Bakery' },
+  { pattern: /^truecakes\b/i,                           category: 'Bakery' },
+  { pattern: /sugar\s*bloom/i,                          category: 'Bakery' },
+  { pattern: /^l'?opera\b/i,                            category: 'Bakery' },
+  { pattern: /karachi\s*bakery/i,                       category: 'Bakery' },
+  { pattern: /britannia.*bakery|britannia.*store/i,     category: 'Bakery' },
+  { pattern: /^lavonne\b/i,                             category: 'Bakery' },
+  { pattern: /^cinnamon\s*(boutique|wholesome)/i,       category: 'Bakery' },
   // ── Home & furniture retail ──
   { pattern: /^ikea\b/i,                                category: 'Home' },
   { pattern: /^pepperfry\b/i,                           category: 'Home' },
@@ -490,6 +542,12 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /titan\s*eye\s*\+|titan\s*eyeplus/i, canonical: 'Titan Eye+' },
   { match: /vision\s*express/i,               canonical: 'Vision Express' },
   { match: /^specsmakers/i,                   canonical: 'Specsmakers' },
+  { match: /lawrence\s*&?\s*mayo/i,           canonical: 'Lawrence & Mayo' },
+  { match: /^gkb\s*(optic|lens)/i,            canonical: 'GKB Optics' },
+  { match: /sunglass\s*hut/i,                 canonical: 'Sunglass Hut' },
+  { match: /ben\s*franklin\s*(optician|eyewear)/i, canonical: 'Ben Franklin Opticians' },
+  { match: /^optorium\b/i,                    canonical: 'Optorium' },
+  { match: /himalaya\s*optic/i,               canonical: 'Himalaya Optical' },
   // Footwear
   { match: /^bata\b|bata\s+(shoe|store|showroom|outlet)/i, canonical: 'Bata' },
   { match: /^nike\b|nike\s+(store|outlet)/i,  canonical: 'Nike' },
@@ -599,6 +657,42 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /^inox\b/i,                        canonical: 'INOX' },
   { match: /^cinepolis\b/i,                   canonical: 'Cinepolis' },
   { match: /miraj\s*cinema/i,                 canonical: 'Miraj Cinemas' },
+  // Bar & Brewery
+  { match: /^toit\b/i,                        canonical: 'Toit' },
+  { match: /byg\s*brewski/i,                  canonical: 'Byg Brewski' },
+  { match: /arbor\s*brewing/i,                canonical: 'Arbor Brewing' },
+  { match: /biere\s*club|^bi[èe]re\s*club/i,  canonical: 'Biere Club' },
+  { match: /windmills\s*craftworks/i,         canonical: 'Windmills Craftworks' },
+  { match: /bengaluru\s*brewing/i,            canonical: 'Bengaluru Brewing Co.' },
+  { match: /sotally\s*tober/i,                canonical: 'Sotally Tober' },
+  { match: /^prost\s*brewpub|^prost\b/i,      canonical: 'Prost Brewpub' },
+  { match: /^hammered\b/i,                    canonical: 'Hammered' },
+  { match: /^plan\s*b\b/i,                    canonical: 'Plan B' },
+  { match: /^brewklyn\b/i,                    canonical: 'Brewklyn' },
+  { match: /^geist\s*brew/i,                  canonical: 'Geist Brewing' },
+  { match: /^hoppipola\b/i,                   canonical: 'Hoppipola' },
+  { match: /the\s*beer\s*caf[ée]/i,           canonical: 'The Beer Cafe' },
+  { match: /^big\s*pitcher\b/i,               canonical: 'Big Pitcher' },
+  { match: /tao\s*terraces/i,                 canonical: 'Tao Terraces' },
+  { match: /^loft\s*38/i,                     canonical: 'Loft 38' },
+  { match: /the\s*black\s*pearl/i,            canonical: 'The Black Pearl' },
+  { match: /tgi\s*friday/i,                   canonical: "TGI Fridays" },
+  { match: /hard\s*rock\s*caf[ée]/i,          canonical: 'Hard Rock Cafe' },
+  { match: /the\s*irish\s*house/i,            canonical: 'The Irish House' },
+  { match: /flying\s*elephant/i,              canonical: 'The Flying Elephant' },
+  { match: /monkey\s*bar/i,                   canonical: 'Monkey Bar' },
+  { match: /^1131\s*bar/i,                    canonical: '1131 Bar + Kitchen' },
+  // Bakery
+  { match: /^theobroma\b/i,                   canonical: 'Theobroma' },
+  { match: /glen.?s\s*bake/i,                 canonical: "Glen's Bakehouse" },
+  { match: /daily\s*bread/i,                  canonical: 'Daily Bread' },
+  { match: /the\s*sweet\s*chariot/i,          canonical: 'The Sweet Chariot' },
+  { match: /^french\s*loaf|the\s*french\s*loaf/i, canonical: 'French Loaf' },
+  { match: /mustard\s*bakehouse/i,            canonical: 'Mustard Bakehouse' },
+  { match: /^truecakes\b/i,                   canonical: 'TrueCakes' },
+  { match: /sugar\s*bloom/i,                  canonical: 'Sugar Bloom' },
+  { match: /^l'?opera\b/i,                    canonical: "L'Opera" },
+  { match: /karachi\s*bakery/i,               canonical: 'Karachi Bakery' },
   // Beauty
   { match: /^sephora\b/i,                     canonical: 'Sephora' },
   { match: /^nykaa\b(\s*(luxe|on\s*trend|kiosk))?$|^nykaa\s*(luxe|on\s*trend|kiosk)\b/i, canonical: 'Nykaa' },
@@ -660,6 +754,8 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   'New Balance', 'Crocs', 'Fila', 'Red Tape',
   // Eyewear
   'Lenskart', 'Titan Eye+', 'Vision Express', 'Specsmakers',
+  'Lawrence & Mayo', 'GKB Optics', 'Sunglass Hut',
+  'Ben Franklin Opticians', 'Optorium', 'Himalaya Optical',
   // Jewellery
   'Tanishq', 'Malabar Gold & Diamonds', 'Kalyan Jewellers', 'Joyalukkas',
   'CaratLane', 'PC Jeweller', 'Senco Gold', 'Orra', 'GRT Jewellers',
@@ -681,10 +777,23 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   'IKEA', 'Pepperfry', 'Urban Ladder', 'HomeStop', 'Home Centre',
   'HomeTown', 'Godrej Interio', 'Nilkamal', 'Wakefit', 'Sleepwell',
   'Fabindia Home',
+  // Bakery
+  'Theobroma', "Glen's Bakehouse", 'Daily Bread', 'The Sweet Chariot',
+  'French Loaf', 'Mustard Bakehouse', 'TrueCakes', 'Sugar Bloom',
+  "L'Opera", 'Karachi Bakery',
+  // Bar & Brewery — premium chains + Bangalore originals
+  'Toit', 'Byg Brewski', 'Arbor Brewing', 'Biere Club',
+  'Windmills Craftworks', 'Bengaluru Brewing Co.', 'Sotally Tober',
+  'Prost Brewpub', 'Hammered', 'Plan B', 'Brewklyn', 'Geist Brewing',
+  'Hoppipola', 'The Beer Cafe', 'Big Pitcher', 'Tao Terraces',
+  'Loft 38', 'The Black Pearl', 'TGI Fridays', 'Hard Rock Cafe',
+  'The Irish House', 'The Flying Elephant', 'Monkey Bar',
+  '1131 Bar + Kitchen',
 ])
 const RETAIL_CATS_FILTERED: Set<string> = new Set([
   'Apparel', 'Footwear', 'Eyewear', 'Jewellery', 'Electronics',
-  'Beauty', 'Sports', 'Kids', 'Home',
+  'Beauty', 'Sports', 'Home',
+  'Bakery', 'Bar & Brewery',
 ])
 
 function sortBrands(entries: [string, number][]): string[] {

@@ -60,35 +60,35 @@ const CAT_COLOR: Record<string, string> = {
   'QSR':         '#E4002B',
   'Bakery':      '#F97316',
   'Dessert':     '#FBBF24',
-  'Apparel':     '#8B5CF6',
-  'Jewellery':   '#F59E0B',
-  'Footwear':    '#06B6D4',
-  'Eyewear':     '#0EA5E9',
-  'Electronics': '#3B82F6',
-  'Supermarket': '#14B8A6',
-  'Pharmacy':    '#10B981',
-  'Gym':         '#22C55E',
-  'Salon':       '#EC4899',
-  'Spa':         '#A78BFA',
-  'Beauty':      '#DB2777',
-  'Sports':      '#15803D',
-  'Kids':        '#CA8A04',
-  'Home':        '#9333EA',
-  'Coworking':   '#6366F1',
-  'Bar':         '#EF4444',
-  'Cinema':      '#F472B6',
-  'Books':       '#84CC16',
-  'Other':       '#6B7280',
+  'Apparel':        '#8B5CF6',
+  'Jewellery':      '#F59E0B',
+  'Footwear':       '#06B6D4',
+  'Eyewear':        '#0EA5E9',
+  'Electronics':    '#3B82F6',
+  'Supermarket':    '#14B8A6',
+  'Pharmacy':       '#10B981',
+  'Gym':            '#22C55E',
+  'Salon':          '#EC4899',
+  'Spa':            '#A78BFA',
+  'Beauty':         '#DB2777',
+  'Sports':         '#15803D',
+  'Home':           '#9333EA',
+  'Coworking':      '#6366F1',
+  'Bar & Brewery':  '#EF4444',
+  'Cinema':         '#F472B6',
+  'Other':          '#6B7280',
 }
 
-// Priority order for category filter chips — QSR and key categories always visible
-const CAT_PRIORITY = [
-  'Restaurant', 'Cafe', 'QSR', 'Bakery', 'Dessert',
-  'Gym', 'Salon', 'Spa', 'Beauty',
-  'Apparel', 'Footwear', 'Jewellery', 'Eyewear',
-  'Electronics', 'Sports', 'Home', 'Kids',
-  'Supermarket', 'Pharmacy', 'Coworking', 'Bar', 'Cinema',
+// Filter-chip groups by industry — used to render chips in clusters.
+const CAT_GROUPS: Array<{ label: string; cats: string[] }> = [
+  { label: 'F&B',       cats: ['Restaurant', 'Cafe', 'QSR', 'Bakery', 'Dessert', 'Bar & Brewery'] },
+  { label: 'Lifestyle', cats: ['Gym', 'Salon', 'Spa', 'Beauty'] },
+  { label: 'Fashion',   cats: ['Apparel', 'Footwear', 'Jewellery', 'Eyewear'] },
+  { label: 'Retail',    cats: ['Electronics', 'Sports', 'Home'] },
+  { label: 'Services',  cats: ['Supermarket', 'Pharmacy', 'Cinema'] },
 ]
+// Flat priority list — used by the map / panel ordering. Derived from groups.
+const CAT_PRIORITY = CAT_GROUPS.flatMap(g => g.cats)
 
 function fmt(n: number) {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -332,7 +332,6 @@ export default function BrandIntelligenceMap() {
   const presentCats = new Set(
     (data?.zones ?? []).flatMap(z => z.categories.map(c => c.category))
   )
-  const allCats = CAT_PRIORITY.filter(c => presentCats.has(c))
 
   const bars = activeZone ? activeZone.categories.slice(0, 6) : []
   const barMax = Math.max(...bars.map(c => c.count), 1)
@@ -382,27 +381,41 @@ export default function BrandIntelligenceMap() {
           )}
         </div>
 
-        {/* Category filters */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          <button
-            onClick={() => setFilter(null)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
-              !filter ? 'bg-[#FF5200] border-[#FF5200] text-white shadow-[0_0_16px_rgba(255,82,0,0.4)]'
-                      : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700'
-            }`}
-          >All</button>
-          {allCats.map(cat => (
-            <button key={cat} onClick={() => setFilter(filter === cat ? null : cat)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
-                filter === cat ? 'text-white border-transparent shadow-lg'
-                               : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700'
+        {/* Category filters — grouped by industry */}
+        <div className="mb-8 space-y-2.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-[10px] font-bold tracking-[0.18em] text-gray-400 uppercase w-16 shrink-0">Show</span>
+            <button
+              onClick={() => setFilter(null)}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-all duration-200 ${
+                !filter ? 'bg-[#FF5200] border-[#FF5200] text-white shadow-[0_0_16px_rgba(255,82,0,0.4)]'
+                        : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-900'
               }`}
-              style={filter === cat ? { backgroundColor: CAT_COLOR[cat] ?? '#FF5200', boxShadow: `0 0 20px ${CAT_COLOR[cat] ?? '#FF5200'}50` } : {}}
-            >
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLOR[cat] ?? '#FF5200' }} />
-              {cat}
-            </button>
-          ))}
+            >All</button>
+          </div>
+          {CAT_GROUPS.map(group => {
+            const cats = group.cats.filter(c => presentCats.has(c))
+            if (!cats.length) return null
+            return (
+              <div key={group.label} className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="text-[10px] font-bold tracking-[0.18em] text-gray-400 uppercase w-16 shrink-0">{group.label}</span>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {cats.map(cat => (
+                    <button key={cat} onClick={() => setFilter(filter === cat ? null : cat)}
+                      className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-[12px] sm:text-[13px] font-semibold border transition-all duration-200 ${
+                        filter === cat ? 'text-white border-transparent shadow-md'
+                                       : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-900'
+                      }`}
+                      style={filter === cat ? { backgroundColor: CAT_COLOR[cat] ?? '#FF5200', boxShadow: `0 0 16px ${CAT_COLOR[cat] ?? '#FF5200'}45` } : {}}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLOR[cat] ?? '#FF5200' }} />
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
 
         {/* Main grid */}
