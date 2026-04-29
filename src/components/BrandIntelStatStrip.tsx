@@ -25,10 +25,10 @@ function Stat({ target, label, suffix = '' }: { target: number; label: string; s
   const val = useCountUp(target)
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-white">
+      <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-gray-900">
         {val.toLocaleString()}{suffix}
       </span>
-      <span className="text-[10px] text-gray-600 uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] text-gray-500 uppercase tracking-widest">{label}</span>
     </div>
   )
 }
@@ -63,10 +63,10 @@ export default function BrandIntelStatStrip() {
   if (!data) return null
 
   return (
-    <div ref={ref} className="relative z-10 w-full bg-[#030712] border-y border-white/[0.05] overflow-hidden">
+    <div ref={ref} className="relative z-10 w-full bg-white border-y border-gray-200 overflow-hidden">
       {/* Subtle sweep */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[600px] bg-gradient-to-r from-transparent via-[#FF5200]/4 to-transparent" />
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[600px] bg-gradient-to-r from-transparent via-[#FF5200]/8 to-transparent" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
@@ -85,14 +85,14 @@ export default function BrandIntelStatStrip() {
             {visible && (
               <>
                 <Stat target={data.totalOutlets} label="Outlets" />
-                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="w-px h-8 bg-gray-200" />
                 <Stat target={data.totalBrands} label="Brands" />
-                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="w-px h-8 bg-gray-200" />
                 <Stat target={data.totalZones} label="Zones" />
-                <div className="w-px h-8 bg-white/[0.06] hidden sm:block" />
+                <div className="w-px h-8 bg-gray-200 hidden sm:block" />
                 <div className="hidden sm:flex flex-col items-center gap-0.5">
-                  <span className="text-2xl sm:text-3xl font-bold font-mono text-white">Bangalore</span>
-                  <span className="text-[10px] text-gray-600 uppercase tracking-widest">City</span>
+                  <span className="text-2xl sm:text-3xl font-bold font-mono text-gray-900">Bangalore</span>
+                  <span className="text-[10px] text-gray-500 uppercase tracking-widest">City</span>
                 </div>
               </>
             )}
@@ -101,7 +101,7 @@ export default function BrandIntelStatStrip() {
           {/* CTA */}
           <a
             href="/location-intelligence"
-            className="flex-shrink-0 flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors group"
+            className="flex-shrink-0 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors group"
           >
             <span>Explore brand intelligence</span>
             <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
