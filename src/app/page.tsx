@@ -1221,10 +1221,6 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
       </div>
 
-      <Suspense fallback={null}>
-        <BrandIntelStatStrip />
-      </Suspense>
-
       {/* Clientele Slider - Full Width */}
       <div className="relative z-10 mt-8 sm:mt-12 md:mt-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.8s_forwards]">
         <div className="text-center mb-14 md:mb-16">
@@ -2656,7 +2652,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Brand Intelligence preview cards — top zones from live DB */}
+      {/* Brand Intelligence — live stats strip + zone preview cards */}
+      <Suspense fallback={null}>
+        <BrandIntelStatStrip />
+      </Suspense>
       <Suspense fallback={null}>
         <BrandIntelTeaser />
       </Suspense>
