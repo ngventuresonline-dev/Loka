@@ -290,9 +290,111 @@ const QSR_FORCE_BRANDS_LOWER = new Set([
   "krispy kreme", "mad over donuts",
 ])
 
+// ── Brand-name → category force rules ───────────────────────────────────────
+// Google Places mis-tags brands routinely (e.g., 'Naturals Ice Cream' tagged
+// as 'Salon'; 'Apollo Pharmacy' tagged as 'Apparel'; 'Bata Shoe Store' tagged
+// as 'Apparel'). When a brand-name pattern matches one of these rules the
+// category is forced regardless of the DB tag — this is a safety net that
+// survives future scrapes too.
+// Order matters: more specific rules first.
+type ForceRule = { pattern: RegExp; category: string }
+const BRAND_FORCE_RULES: ForceRule[] = [
+  // ── Dessert (must come before Salon — 'Naturals Ice Cream' contains 'Naturals') ──
+  { pattern: /naturals\s*ice\s*cream/i,                 category: 'Dessert' },
+  { pattern: /thanco.?s.*ice\s*cream/i,                 category: 'Dessert' },
+  { pattern: /amul\s*ice\s*cream/i,                     category: 'Dessert' },
+  { pattern: /milano\s*ice\s*cream/i,                   category: 'Dessert' },
+  { pattern: /ananda\s*ice\s*cream/i,                   category: 'Dessert' },
+  { pattern: /apsara\s*ice\s*cream/i,                   category: 'Dessert' },
+  { pattern: /pabrai.?s.*ice\s*cream/i,                 category: 'Dessert' },
+  { pattern: /polar\s*bear.*ice\s*cream/i,              category: 'Dessert' },
+  { pattern: /amadora.*ice\s*cream/i,                   category: 'Dessert' },
+  { pattern: /baskin\s*robbins/i,                       category: 'Dessert' },
+  { pattern: /amore\s*gelato/i,                         category: 'Dessert' },
+  { pattern: /^gelato\s*italiano/i,                     category: 'Dessert' },
+  { pattern: /frozen\s*bottle/i,                        category: 'Dessert' },
+  { pattern: /belgian\s*waffle/i,                       category: 'Dessert' },
+  { pattern: /^keventers\b/i,                           category: 'Dessert' },
+  { pattern: /corner\s*house(?!\s*caf)/i,               category: 'Dessert' },
+  { pattern: /sweet\s*truth/i,                          category: 'Dessert' },
+  { pattern: /lavonne\s*ice\s*cream|^lick\s*\|/i,       category: 'Dessert' },
+  // ── Salon (premium chains often tagged as Apparel by Google) ──
+  { pattern: /naturals\s*(salon|signature|lounge|hair|unisex|kids|family|india|salon\s*&\s*spa)/i, category: 'Salon' },
+  { pattern: /naturals.*hair.*beauty|naturals.*beauty.*salon/i, category: 'Salon' },
+  { pattern: /green\s*trends/i,                         category: 'Salon' },
+  { pattern: /enrich\s*salon|^enrich\b/i,               category: 'Salon' },
+  { pattern: /lakme\s*salon/i,                          category: 'Salon' },
+  { pattern: /jean.?claude\s*biguine/i,                 category: 'Salon' },
+  { pattern: /bodycraft\s*salon/i,                      category: 'Salon' },
+  { pattern: /^looks\s*salon/i,                         category: 'Salon' },
+  { pattern: /toni\s*&?\s*guy|essensuals\s*by\s*toni/i, category: 'Salon' },
+  { pattern: /^vlcc\b/i,                                category: 'Salon' },
+  // ── Footwear (often tagged as Apparel) ──
+  { pattern: /^bata\b|bata\s*(shoe|store|showroom|outlet|india|shoe\s*store)/i, category: 'Footwear' },
+  { pattern: /^nike\s*(store|outlet)|^nike\s*(india|sport)|^nike$/i, category: 'Footwear' },
+  { pattern: /^adidas\s*(store|outlet|originals)|^adidas$/i, category: 'Footwear' },
+  { pattern: /^puma\s*(store|outlet)|^puma$/i,          category: 'Footwear' },
+  { pattern: /^reebok\s*(store|outlet)|^reebok$/i,      category: 'Footwear' },
+  { pattern: /^skechers\b/i,                            category: 'Footwear' },
+  { pattern: /^woodland\b/i,                            category: 'Footwear' },
+  { pattern: /^crocs\b/i,                               category: 'Footwear' },
+  { pattern: /metro\s*shoes/i,                          category: 'Footwear' },
+  { pattern: /hush\s*puppies/i,                         category: 'Footwear' },
+  { pattern: /^mochi\b/i,                               category: 'Footwear' },
+  { pattern: /^converse\b/i,                            category: 'Footwear' },
+  { pattern: /new\s*balance/i,                          category: 'Footwear' },
+  // ── Eyewear (often tagged as Apparel) ──
+  { pattern: /^lenskart/i,                              category: 'Eyewear' },
+  { pattern: /titan\s*eye/i,                            category: 'Eyewear' },
+  { pattern: /vision\s*express/i,                       category: 'Eyewear' },
+  { pattern: /^specsmakers\b/i,                         category: 'Eyewear' },
+  // ── Pharmacy (often tagged as Apparel) ──
+  { pattern: /^apollo\s*pharmacy/i,                     category: 'Pharmacy' },
+  { pattern: /^medplus\b/i,                             category: 'Pharmacy' },
+  { pattern: /wellness\s*forever/i,                     category: 'Pharmacy' },
+  { pattern: /frank\s*ross/i,                           category: 'Pharmacy' },
+  { pattern: /guardian\s*pharmacy/i,                    category: 'Pharmacy' },
+  // ── Cafe (premium chains) ──
+  { pattern: /^starbucks\b/i,                           category: 'Cafe' },
+  { pattern: /third\s*wave\s*coffee/i,                  category: 'Cafe' },
+  { pattern: /blue\s*tokai/i,                           category: 'Cafe' },
+  { pattern: /^subko\b|subko\s*coffee/i,                category: 'Cafe' },
+  { pattern: /matteo\s*coffea/i,                        category: 'Cafe' },
+  { pattern: /^cafe\s*coffee\s*day|^ccd\b/i,            category: 'Cafe' },
+  { pattern: /chai\s*point|chaayos/i,                   category: 'Cafe' },
+  { pattern: /^kahale\b/i,                              category: 'Cafe' },
+  { pattern: /katte\s*kulture/i,                        category: 'Cafe' },
+  { pattern: /ground\s*up\s*coffee/i,                   category: 'Cafe' },
+  { pattern: /kinya\s*coffee/i,                         category: 'Cafe' },
+  { pattern: /isobel\s*coffee/i,                        category: 'Cafe' },
+  // ── Bakery ──
+  { pattern: /^theobroma\b/i,                           category: 'Bakery' },
+  { pattern: /glen.?s\s*bake/i,                         category: 'Bakery' },
+  // ── Apparel premium ──
+  { pattern: /^zara\b/i,                                category: 'Apparel' },
+  { pattern: /^h\s*&\s*m\b|^h\s+and\s+m\b/i,            category: 'Apparel' },
+  { pattern: /^uniqlo\b/i,                              category: 'Apparel' },
+  // ── Jewellery (often tagged as Apparel) ──
+  { pattern: /^tanishq\b/i,                             category: 'Jewellery' },
+  { pattern: /malabar\s*gold/i,                         category: 'Jewellery' },
+  { pattern: /kalyan\s*jewell/i,                        category: 'Jewellery' },
+  { pattern: /joyalukkas/i,                             category: 'Jewellery' },
+  { pattern: /^caratlane\b/i,                           category: 'Jewellery' },
+]
+
+function forceCategory(brandName: string): string | null {
+  for (const rule of BRAND_FORCE_RULES) {
+    if (rule.pattern.test(brandName)) return rule.category
+  }
+  return null
+}
+
 function resolveCategory(brandName: string, rawCategory: string | null): string {
   const bl = brandName.toLowerCase().trim()
   if (QSR_FORCE_BRANDS_LOWER.has(bl)) return 'QSR'
+  // Force rules take priority over the DB-tagged category
+  const forced = forceCategory(brandName)
+  if (forced) return forced
   const cat = normalizeCategory(rawCategory)
   if (cat === 'Cinema'      && CINEMA_BLOCK.some(re => re.test(brandName)))     return 'Other'
   if (cat === 'Cafe'        && CAFE_BLOCK.some(re => re.test(brandName)))       return 'Other'
