@@ -628,8 +628,12 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   // ── West / North-West ─────────────────────────────────────────────────────────
   { name: 'Rajajinagar',      lat: [12.965, 13.020], lng: [77.508, 77.562] },
   { name: 'Malleshwaram',     lat: [12.972, 13.028], lng: [77.528, 77.595] },
-  { name: 'Yeshwanthpur',     lat: [13.005, 13.062], lng: [77.512, 77.582] },
-  { name: 'New BEL Road',     lat: [13.038, 13.090], lng: [77.508, 77.578] },
+  // New BEL Road covers the BEL Circle / Sanjay Nagar / RMV / Mathikere
+  // commercial strip. Listed BEFORE Yeshwanthpur so its true belt is not
+  // stolen by Yeshwanthpur's older too-wide bbox.
+  { name: 'New BEL Road',     lat: [13.025, 13.060], lng: [77.555, 77.590] },
+  // Yeshwanthpur tightened to lng 77.555 max — strictly west of New BEL Rd.
+  { name: 'Yeshwanthpur',     lat: [13.005, 13.035], lng: [77.512, 77.555] },
   { name: 'Peenya',           lat: [13.005, 13.075], lng: [77.462, 77.528] },
 
   // ── North ─────────────────────────────────────────────────────────────────────

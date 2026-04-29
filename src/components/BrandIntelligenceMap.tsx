@@ -434,12 +434,27 @@ export default function BrandIntelligenceMap() {
                   <defs>
                     <style>
                       {`
-                        .bim-zone-label  { font-size: 7px;   font-weight: 500; }
+                        /* Zone labels get a white halo (paint-order: stroke fill)
+                           so the text stays legible even when it crosses a
+                           neighbouring bubble or a connector line. */
+                        .bim-zone-label  {
+                          font-size: 7px;
+                          font-weight: 500;
+                          paint-order: stroke fill;
+                          stroke: #fff;
+                          stroke-width: 2.5px;
+                          stroke-linejoin: round;
+                          stroke-linecap: round;
+                        }
                         .bim-num-small   { font-size: 7.5px; font-weight: 800; letter-spacing: -0.3px; }
                         .bim-num-large   { font-size: 9.5px; font-weight: 800; letter-spacing: -0.3px; }
                         .bim-orr-label   { font-size: 5.5px; font-weight: 700; letter-spacing: 0.5px; }
                         @media (max-width: 640px) {
-                          .bim-zone-label { font-size: 9.5px; font-weight: 600; }
+                          .bim-zone-label {
+                            font-size: 9.5px;
+                            font-weight: 600;
+                            stroke-width: 3px;
+                          }
                           .bim-num-small  { font-size: 10px; }
                           .bim-num-large  { font-size: 13px; }
                           .bim-orr-label  { font-size: 7.5px; }
