@@ -63,7 +63,6 @@ function normalizeCategory(raw: string | null): string {
       r.includes('neighbourhood grocery') || r.includes('convenience grocery') ||
       r.includes('premium grocery') || r.includes('organic food retail')) return 'Supermarket'
   if (r.includes('cinema') || r.includes('multiplex')) return 'Cinema'
-  if (r.includes('book')) return 'Books'
   if (r.includes('electronics') || r.includes('telecom retail') ||
       r.includes('mobile & smart') || r.includes('camera')) return 'Electronics'
   if (r.includes('apparel') || r.includes('fashion') || r.includes('clothing') ||
@@ -231,11 +230,6 @@ const SALON_BLOCK: RegExp[] = [
   /multispecialit/i,
   /orthopaedic|general\s*medicine|\bxray\b|patholog/i,
 ]
-const BOOKS_BLOCK: RegExp[] = [
-  /\bstationer(y|s)?\b/i,
-  /\bxerox\b|\bphotocopy\b/i,
-  /\bprinting\s*(press|shop|studio)\b/i,
-]
 const RESTAURANT_BLOCK: RegExp[] = [
   /\bmess\b/i,
   /tiffin\s*(cent(er|re)|adda|service)/i,
@@ -272,7 +266,6 @@ function resolveCategory(brandName: string, rawCategory: string | null): string 
   if (cat === 'Electronics' && ELECTRONICS_BLOCK.some(re => re.test(brandName))) return 'Other'
   if (cat === 'Gym'         && GYM_BLOCK.some(re => re.test(brandName)))        return 'Other'
   if (cat === 'Salon'       && SALON_BLOCK.some(re => re.test(brandName)))      return 'Other'
-  if (cat === 'Books'       && BOOKS_BLOCK.some(re => re.test(brandName)))      return 'Other'
   if (cat === 'Restaurant'  && RESTAURANT_BLOCK.some(re => re.test(brandName))) return 'Other'
   if (cat === 'Bakery'      && BAKERY_BLOCK.some(re => re.test(brandName)))     return 'Other'
   return cat
