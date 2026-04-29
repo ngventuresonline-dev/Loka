@@ -270,7 +270,7 @@ export default function BrandIntelligenceMap() {
           style={{ backgroundImage: 'radial-gradient(circle, #FF5200 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-10 pb-16 md:pb-24">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">

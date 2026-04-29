@@ -217,10 +217,10 @@ export default function LocationIntelligencePage() {
       <Navbar />
 
       <div className="relative z-10 min-h-screen">
-        <div className="pt-24 sm:pt-28 md:pt-32 lg:pt-36 xl:pt-40 pb-16 sm:pb-20">
+        <div className="pt-24 sm:pt-28 md:pt-32 lg:pt-36 xl:pt-40 pb-2 sm:pb-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Hero */}
-            <div className="text-center mb-16">
+            <div className="text-center mb-8 sm:mb-10">
               {SHOW_INTELLIGENCE_REPORT_FORM && (
                 <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#FF5200]/10 to-[#E4002B]/10 border border-[#FF5200]/30 rounded-full mb-6 backdrop-blur-xl">
                   <span className="w-2 h-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-3 animate-pulse shadow-[0_0_10px_rgba(255,82,0,1)]" />
