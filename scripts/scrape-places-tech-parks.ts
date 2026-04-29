@@ -59,36 +59,77 @@ function zoneFromCoords(lat: number, lng: number): string {
 // ── Text Search queries ────────────────────────────────────────────────────────
 // Each is a {query, location} pair. Location biases the search but doesn't restrict it.
 // We cover different areas of Bangalore to get good pagination spread.
-const SEARCH_QUERIES: Array<{ label: string; query: string; lat: number; lng: number }> = [
-  // Generic park types — city-wide
-  { label: 'tech park south',      query: 'tech park Bangalore',               lat: 12.9352, lng: 77.6245 },
-  { label: 'it park south',        query: 'IT park Bangalore',                 lat: 12.9352, lng: 77.6245 },
-  { label: 'software park blr',    query: 'software park Bangalore',           lat: 12.9716, lng: 77.5946 },
-  { label: 'business park blr',    query: 'business park Bangalore',           lat: 12.9716, lng: 77.5946 },
-  { label: 'sez blr',              query: 'SEZ special economic zone Bangalore', lat: 12.9716, lng: 77.5946 },
-  { label: 'office complex south', query: 'office complex Bangalore south',    lat: 12.9116, lng: 77.6412 },
-  { label: 'corporate campus blr', query: 'corporate campus Bangalore',        lat: 12.9352, lng: 77.6245 },
-  { label: 'tech hub east',        query: 'technology hub Whitefield Bangalore', lat: 12.9847, lng: 77.7357 },
-  { label: 'tech park east',       query: 'tech park Whitefield',              lat: 12.9847, lng: 77.7357 },
-  { label: 'it park east',         query: 'IT park Whitefield Bangalore',      lat: 12.9847, lng: 77.7357 },
-  { label: 'it park north',        query: 'IT park Hebbal Bangalore',          lat: 13.0456, lng: 77.5978 },
-  { label: 'tech park north',      query: 'tech park north Bangalore',         lat: 13.0456, lng: 77.6112 },
-  { label: 'office complex ec',    query: 'office complex Electronic City Bangalore', lat: 12.8452, lng: 77.6602 },
-  { label: 'tech park ec',         query: 'tech park Electronic City',         lat: 12.8452, lng: 77.6602 },
-  // Named parks / well-known clusters
+// `strict` = require positive office keyword in the result name. Use strict for
+// generic city-wide queries (mixed results); use relaxed for named operators where
+// the query already constrains the result to a known portfolio.
+const SEARCH_QUERIES: Array<{ label: string; query: string; lat: number; lng: number; strict?: boolean }> = [
+  // Generic park types — city-wide (broad seed) — STRICT
+  { label: 'tech park south',      query: 'tech park Bangalore',               lat: 12.9352, lng: 77.6245, strict: true },
+  { label: 'it park south',        query: 'IT park Bangalore',                 lat: 12.9352, lng: 77.6245, strict: true },
+  { label: 'software park blr',    query: 'software park Bangalore',           lat: 12.9716, lng: 77.5946, strict: true },
+  { label: 'business park blr',    query: 'business park Bangalore',           lat: 12.9716, lng: 77.5946, strict: true },
+  { label: 'sez blr',              query: 'SEZ special economic zone Bangalore', lat: 12.9716, lng: 77.5946, strict: true },
+  { label: 'office complex south', query: 'office complex Bangalore south',    lat: 12.9116, lng: 77.6412, strict: true },
+  { label: 'corporate campus blr', query: 'corporate campus Bangalore',        lat: 12.9352, lng: 77.6245, strict: true },
+  { label: 'tech hub east',        query: 'technology hub Whitefield Bangalore', lat: 12.9847, lng: 77.7357, strict: true },
+  { label: 'tech park east',       query: 'tech park Whitefield',              lat: 12.9847, lng: 77.7357, strict: true },
+  { label: 'it park east',         query: 'IT park Whitefield Bangalore',      lat: 12.9847, lng: 77.7357, strict: true },
+  { label: 'it park north',        query: 'IT park Hebbal Bangalore',          lat: 13.0456, lng: 77.5978, strict: true },
+  { label: 'tech park north',      query: 'tech park north Bangalore',         lat: 13.0456, lng: 77.6112, strict: true },
+  { label: 'office complex ec',    query: 'office complex Electronic City Bangalore', lat: 12.8452, lng: 77.6602, strict: true },
+  { label: 'tech park ec',         query: 'tech park Electronic City',         lat: 12.8452, lng: 77.6602, strict: true },
+  // Named operators — major Bangalore tech park developers
   { label: 'bagmane tech park',    query: 'Bagmane Tech Park Bangalore',       lat: 12.9584, lng: 77.6501 },
   { label: 'manyata tech park',    query: 'Manyata Tech Park Bangalore',       lat: 13.0456, lng: 77.6112 },
   { label: 'embassy tech village', query: 'Embassy Tech Village Bangalore',    lat: 12.9279, lng: 77.6878 },
+  { label: 'embassy golflinks',    query: 'Embassy GolfLinks Business Park Bangalore', lat: 12.9279, lng: 77.6878 },
+  { label: 'embassy manyata',      query: 'Embassy Manyata Business Park Bangalore', lat: 13.0456, lng: 77.6112 },
+  { label: 'embassy tech square',  query: 'Embassy Tech Square Bangalore',     lat: 12.9784, lng: 77.6408 },
   { label: 'rmz ecoworld',         query: 'RMZ Ecoworld Bangalore',            lat: 12.9279, lng: 77.6878 },
+  { label: 'rmz infinity',         query: 'RMZ Infinity Bangalore',            lat: 12.9784, lng: 77.6408 },
+  { label: 'rmz galleria',         query: 'RMZ Galleria Mall Bangalore',       lat: 13.0456, lng: 77.5978 },
   { label: 'ecospace',             query: 'Ecospace Business Park Bangalore',  lat: 12.9279, lng: 77.6878 },
   { label: 'itpl',                 query: 'International Tech Park Whitefield', lat: 12.9847, lng: 77.7357 },
   { label: 'prestige tech park',   query: 'Prestige Tech Park Bangalore',      lat: 12.9847, lng: 77.7034 },
   { label: 'cessna business park', query: 'Cessna Business Park Bangalore',    lat: 12.9279, lng: 77.6878 },
   { label: 'global tech park',     query: 'Global Tech Park Bangalore',        lat: 12.9847, lng: 77.7357 },
   { label: 'salarpuria tech park', query: 'Salarpuria Tech Park Bangalore',    lat: 12.9847, lng: 77.7034 },
+  { label: 'salarpuria greenage',  query: 'Salarpuria Greenage Bangalore',     lat: 12.9116, lng: 77.6412 },
   { label: 'vrr tech park',        query: 'VRR Tech Park Bangalore',           lat: 12.9116, lng: 77.6745 },
   { label: 'divyasree tech park',  query: 'Divyasree Tech Park Bangalore',     lat: 12.9279, lng: 77.6878 },
-  { label: 'kiadb aerospace park', query: 'KIADB IT park Bangalore',           lat: 12.9716, lng: 77.5946 },
+  { label: 'mantri commercio',     query: 'Mantri Commercio Bangalore',        lat: 12.9279, lng: 77.6878 },
+  { label: 'gopalan tech park',    query: 'Gopalan IT Park Bangalore',         lat: 12.9847, lng: 77.7034 },
+  { label: 'ascendas it park',     query: 'Ascendas IT Park Bangalore',        lat: 12.9847, lng: 77.7357 },
+  { label: 'velankani tech park',  query: 'Velankani Tech Park Bangalore',     lat: 12.8452, lng: 77.6602 },
+  { label: 'pritech park',         query: 'Pritech Park Bangalore',            lat: 12.9279, lng: 77.6878 },
+  { label: 'kalyani magnum',       query: 'Kalyani Magnum Tech Park Bangalore', lat: 12.9716, lng: 77.5946 },
+  { label: 'helios business park', query: 'Helios Business Park Bangalore',    lat: 12.9279, lng: 77.6878 },
+  { label: 'dlf cybercity',        query: 'DLF Cybercity Bangalore',           lat: 13.0456, lng: 77.6112 },
+  { label: 'wtc bangalore',        query: 'World Trade Center Bangalore',      lat: 12.9716, lng: 77.5946 },
+  { label: 'brigade tech gardens', query: 'Brigade Tech Gardens Bangalore',    lat: 12.9847, lng: 77.7357 },
+  { label: 'brigade magnum',       query: 'Brigade Magnum Bangalore',          lat: 13.0456, lng: 77.5978 },
+  { label: 'brigade metropolis',   query: 'Brigade Metropolis Bangalore',      lat: 12.9847, lng: 77.7357 },
+  { label: 'karle town centre',    query: 'Karle Town Centre Bangalore',       lat: 13.0456, lng: 77.6112 },
+  { label: 'ozone tech park',      query: 'Ozone Manay Tech Park Bangalore',   lat: 12.9847, lng: 77.7357 },
+  { label: 'etv tech park',        query: 'ETV Tech Park Bangalore',           lat: 12.9279, lng: 77.6878 },
+  { label: 'ecc pegasus',          query: 'ECC Pegasus Tech Park Bangalore',   lat: 12.9279, lng: 77.6878 },
+  { label: 'sobha hrc pinnacle',   query: 'Sobha HRC Pinnacle Bangalore',      lat: 12.9279, lng: 77.6878 },
+  { label: 'vrindavan tech',       query: 'Vrindavan Tech Village Bangalore',  lat: 12.9279, lng: 77.6878 },
+  // Standalone corporate campuses functioning as tech parks
+  { label: 'wipro sarjapur',       query: 'Wipro Sarjapur campus Bangalore',   lat: 12.9116, lng: 77.6745 },
+  { label: 'infosys electronic',   query: 'Infosys Electronic City Bangalore', lat: 12.8452, lng: 77.6602 },
+  { label: 'cisco india orr',      query: 'Cisco India ORR Bangalore',         lat: 12.9556, lng: 77.7056 },
+  { label: 'microsoft manyata',    query: 'Microsoft Manyata Bangalore',       lat: 13.0456, lng: 77.6112 },
+  { label: 'amazon bagmane wtc',   query: 'Amazon Development Center Bangalore', lat: 12.9584, lng: 77.6501 },
+  { label: 'accenture whitefield', query: 'Accenture Whitefield Bangalore',    lat: 12.9847, lng: 77.7357 },
+  { label: 'goldman sachs blr',    query: 'Goldman Sachs Embassy Bangalore',   lat: 12.9279, lng: 77.6878 },
+  { label: 'ibm manyata',          query: 'IBM Manyata Bangalore',             lat: 13.0456, lng: 77.6112 },
+  { label: 'sap whitefield',       query: 'SAP Labs Whitefield Bangalore',     lat: 12.9847, lng: 77.7357 },
+  { label: 'oracle kadubeesanahalli', query: 'Oracle Kadubeesanahalli Bangalore', lat: 12.9279, lng: 77.6878 },
+  { label: 'mphasis bagmane',      query: 'Mphasis Bagmane Bangalore',         lat: 12.9584, lng: 77.6501 },
+  { label: 'dell whitefield',      query: 'Dell Whitefield Bangalore',         lat: 12.9847, lng: 77.7357 },
+  { label: 'adobe salarpuria',     query: 'Adobe Bangalore office',            lat: 12.9847, lng: 77.7034 },
+  { label: 'kiadb it park',        query: 'KIADB IT park Bangalore',           lat: 12.9716, lng: 77.5946 },
   { label: 'outer ring road it',   query: 'IT office park Outer Ring Road Bangalore', lat: 12.9556, lng: 77.7056 },
   { label: 'sarjapur office',      query: 'office complex Sarjapur Road Bangalore', lat: 12.9116, lng: 77.6745 },
   { label: 'hsr office cluster',   query: 'office complex HSR Layout Bangalore', lat: 12.9116, lng: 77.6412 },
@@ -154,16 +195,22 @@ const SKIP_PATTERNS = [
   /\b(sbi|hdfc bank|icici bank|axis bank|canara bank|union bank|bank of |atm|insurance agency)\b/i,
 ]
 
-function isLikelyOfficeOrPark(name: string, types: string[]): boolean {
+function isLikelyOfficeOrPark(name: string, types: string[], strict: boolean): boolean {
   const n = name.toLowerCase()
   if (SKIP_PATTERNS.some((re) => re.test(n))) return false
-  // Google types that definitely mean non-office
+  // Google types that definitely mean non-office (always applied)
   const hardExclude = ['lodging', 'restaurant', 'cafe', 'bar', 'school', 'hospital', 'doctor', 'pharmacy',
     'grocery_or_supermarket', 'shopping_mall', 'clothing_store', 'church', 'mosque', 'hindu_temple',
     'airport', 'bus_station', 'train_station', 'subway_station', 'atm', 'bank', 'insurance_agency']
   if (types.some((t) => hardExclude.includes(t))) return false
-  // Must have at least some indicator it's an office or park
-  const nameHasOfficeWord = /park|campus|office|tower|hub|centre|center|complex|tech|it\s|sez|building|plaza|cowork|bhive|indiqube|awfis|315work|regus|wework|springboard/i.test(n)
+  // strict=true → require positive office keyword in name (used for generic queries
+  //               like 'tech park Bangalore' which return mixed results).
+  // strict=false → trust the query intent (used for named-operator queries like
+  //               'RMZ tech park Bangalore' where the result is constrained to that
+  //               operator's portfolio anyway). Accepts names like 'Bagmane Constellation',
+  //               'RMZ NXT', 'Embassy 247' that wouldn't match the keyword regex.
+  if (!strict) return true
+  const nameHasOfficeWord = /park|campus|office|tower|hub|centre|center|complex|tech|it\s|sez|building|plaza|cowork|bhive|indiqube|awfis|315work|regus|wework|springboard|business|corporate|gateway|atria|magnum|metropolis|gardens|crystal|spectra|cyber|trade/i.test(n)
   return nameHasOfficeWord
 }
 
@@ -229,12 +276,15 @@ async function main() {
         break
       }
 
+      // Strict for generic queries; relaxed (trust query intent) for named operators
+      const strictFilter = sq.strict === true
+
       for (const place of data.results) {
         if (place.business_status === 'CLOSED_PERMANENTLY') continue
 
         const { lat, lng } = place.geometry.location
         if (!inBangalore(lat, lng)) continue
-        if (!isLikelyOfficeOrPark(place.name, place.types)) { totalSkipped++; continue }
+        if (!isLikelyOfficeOrPark(place.name, place.types, strictFilter)) { totalSkipped++; continue }
 
         const id = makeId(place.place_id)
         if (existingIds.has(id)) { totalSkipped++; continue }
@@ -258,6 +308,8 @@ async function main() {
             anchor_tenants: [],
             avg_rent_sqft: null,
             is_sez: false,
+            is_active: true,
+            data_source: 'google_places_text',
           })
           if (!error) {
             existingIds.add(id)

@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
     FROM bangalore_tech_parks tp
     WHERE tp.latitude IS NOT NULL
       AND tp.longitude IS NOT NULL
+      AND COALESCE(tp.is_active, true) = true
       AND ${distExpr} <= ${radiusM}
     ORDER BY distance_m ASC
     LIMIT 30

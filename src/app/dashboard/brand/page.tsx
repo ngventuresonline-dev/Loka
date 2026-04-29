@@ -4945,52 +4945,33 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           </span>
                         </div>
 
-                        {societiesSummary && societiesSummary.totalUnitsWithin2km > 0 && (
-                          <div className="grid grid-cols-3 gap-2 mb-4">
-                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Captive units</p>
-                              <p className="font-bold text-gray-900 text-sm">{societiesSummary.totalUnitsWithin2km.toLocaleString('en-IN')}</p>
+                        {societiesSummary && societiesSummary.societyCount > 0 && (
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            <div className="bg-green-50 rounded-xl p-3 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Societies within 2 km</p>
+                              <p className="font-bold text-gray-900 text-base">{societiesSummary.societyCount}</p>
                             </div>
-                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Avg ₹/sqft</p>
-                              <p className="font-bold text-gray-900 text-sm">₹{societiesSummary.avgPriceSqft.toLocaleString('en-IN')}</p>
-                            </div>
-                            <div className="bg-green-50 rounded-xl p-2.5 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">SEC profile</p>
-                              <p className="font-bold text-gray-900 text-sm">{societiesSummary.dominantSecProfile}</p>
+                            <div className="bg-green-50 rounded-xl p-3 text-center">
+                              <p className="text-[10px] text-gray-500 mb-0.5">Developers represented</p>
+                              <p className="font-bold text-gray-900 text-base">
+                                {new Set(nearbySocieties.map((s) => s.developer).filter(Boolean)).size || '—'}
+                              </p>
                             </div>
                           </div>
                         )}
 
                         <ul className="space-y-1.5 max-h-[240px] overflow-y-auto">
-                          {nearbySocieties.slice(0, 12).map((s) => {
-                            const secColor =
-                              s.secProfile === 'A+' ? 'bg-purple-50 text-purple-700'
-                              : s.secProfile === 'A' ? 'bg-indigo-50 text-indigo-700'
-                              : s.secProfile === 'B+' ? 'bg-blue-50 text-blue-700'
-                              : 'bg-gray-100 text-gray-600'
-                            return (
-                              <li key={s.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-gray-50">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-medium text-gray-800 truncate">{s.name}</span>
-                                    {s.secProfile && (
-                                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${secColor}`}>{s.secProfile}</span>
-                                    )}
-                                  </div>
-                                  {s.residentProfile && (
-                                    <p className="text-[10px] text-gray-400 truncate mt-0.5">{s.residentProfile}</p>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
-                                  <span className="text-gray-500">{(s.distanceM / 1000).toFixed(2)} km</span>
-                                  {s.totalUnits > 0 && (
-                                    <span className="text-[10px] text-gray-400">{s.totalUnits.toLocaleString('en-IN')} units</span>
-                                  )}
-                                </div>
-                              </li>
-                            )
-                          })}
+                          {nearbySocieties.slice(0, 12).map((s) => (
+                            <li key={s.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-gray-50">
+                              <div className="min-w-0 flex-1">
+                                <span className="font-medium text-gray-800 truncate block">{s.name}</span>
+                                <p className="text-[10px] text-gray-400 truncate mt-0.5">
+                                  {[s.developer, s.locality].filter(Boolean).join(' · ') || s.locality}
+                                </p>
+                              </div>
+                              <span className="text-gray-500 flex-shrink-0">{(s.distanceM / 1000).toFixed(2)} km</span>
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}
@@ -5005,11 +4986,11 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           </span>
                         </div>
 
-                        {techParksSummary && techParksSummary.totalEmployeesWithin3km > 0 && (
+                        {techParksSummary && techParksSummary.totalParksWithin3km > 0 && (
                           <div className="grid grid-cols-2 gap-2 mb-4">
                             <div className="bg-indigo-50 rounded-xl p-3 text-center">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Office workers within 3km</p>
-                              <p className="font-bold text-gray-900 text-base">{(techParksSummary.totalEmployeesWithin3km / 1000).toFixed(0)}K+</p>
+                              <p className="text-[10px] text-gray-500 mb-0.5">Tech parks within 3 km</p>
+                              <p className="font-bold text-gray-900 text-base">{techParksSummary.totalParksWithin3km}</p>
                             </div>
                             <div className="bg-indigo-50 rounded-xl p-3 text-center">
                               <p className="text-[10px] text-gray-500 mb-0.5">Nearest tech park</p>
@@ -5021,41 +5002,16 @@ Be specific to ${area} / ${address}. No generic statements.`,
                           </div>
                         )}
 
-                        {techParksSummary && techParksSummary.topAnchorTenants.length > 0 && (
-                          <div className="mb-3">
-                            <p className="text-[10px] text-gray-500 mb-1.5 uppercase tracking-wide font-medium">Key employers nearby</p>
-                            <div className="flex flex-wrap gap-1">
-                              {techParksSummary.topAnchorTenants.slice(0, 8).map((t) => (
-                                <span key={t} className="text-[10px] bg-gray-100 text-gray-700 rounded-full px-2 py-0.5">{t}</span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         <ul className="space-y-1.5 max-h-[200px] overflow-y-auto">
-                          {nearbyTechParks.slice(0, 10).map((tp) => {
-                            const gradeColor = tp.grade === 'A+' ? 'bg-purple-50 text-purple-700'
-                              : tp.grade === 'A' ? 'bg-indigo-50 text-indigo-700'
-                              : 'bg-gray-100 text-gray-600'
-                            return (
-                              <li key={tp.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-gray-50">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-medium text-gray-800 truncate">{tp.name}</span>
-                                    {tp.grade && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${gradeColor}`}>{tp.grade}</span>}
-                                    {tp.isSez && <span className="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">SEZ</span>}
-                                  </div>
-                                  <p className="text-[10px] text-gray-400">{tp.locality}</p>
-                                </div>
-                                <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
-                                  <span className="text-gray-500">{(tp.distanceM / 1000).toFixed(2)} km</span>
-                                  {tp.totalEmployees > 0 && (
-                                    <span className="text-[10px] text-indigo-600 font-medium">{(tp.totalEmployees / 1000).toFixed(0)}K ppl</span>
-                                  )}
-                                </div>
-                              </li>
-                            )
-                          })}
+                          {nearbyTechParks.slice(0, 10).map((tp) => (
+                            <li key={tp.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-gray-50">
+                              <div className="min-w-0 flex-1">
+                                <span className="font-medium text-gray-800 truncate block">{tp.name}</span>
+                                <p className="text-[10px] text-gray-400">{tp.locality}</p>
+                              </div>
+                              <span className="text-gray-500 flex-shrink-0">{(tp.distanceM / 1000).toFixed(2)} km</span>
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}

@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
     FROM bangalore_societies s
     WHERE s.latitude IS NOT NULL
       AND s.longitude IS NOT NULL
+      AND COALESCE(s.is_active, true) = true
       AND ${distExpr} <= ${radiusM}
     ORDER BY distance_m ASC
     LIMIT 20

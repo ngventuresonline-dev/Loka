@@ -177,10 +177,11 @@ export async function GET(
 
     try {
       const socRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-        SELECT name, developer, total_units, bhk_types, avg_price_sqft, 
+        SELECT name, developer, total_units, bhk_types, avg_price_sqft,
                avg_rent_2bhk, occupancy_pct, sec_profile, resident_profile
         FROM bangalore_societies
         WHERE LOWER(locality) LIKE ${likePattern}
+          AND COALESCE(is_active, true) = true
         ORDER BY total_units DESC NULLS LAST
         LIMIT 6
       `
@@ -193,9 +194,10 @@ export async function GET(
       const tpRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
         SELECT name, total_employees, total_companies, grade, anchor_tenants,
                avg_rent_sqft, metro_distance_m, metro_name
-        FROM bangalore_tech_parks  
-        WHERE LOWER(locality) LIKE ${likePattern}
-           OR LOWER(locality) LIKE '%outer ring road%'
+        FROM bangalore_tech_parks
+        WHERE (LOWER(locality) LIKE ${likePattern}
+           OR LOWER(locality) LIKE '%outer ring road%')
+          AND COALESCE(is_active, true) = true
         ORDER BY total_employees DESC NULLS LAST
         LIMIT 4
       `
