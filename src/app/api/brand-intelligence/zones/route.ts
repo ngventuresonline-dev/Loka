@@ -264,6 +264,17 @@ const BAKERY_BLOCK: RegExp[] = [
   /\benterprises\b/i,
   /pvt\.?\s*(ltd|limited)/i,
 ]
+const CAFE_BLOCK: RegExp[] = [
+  /fresh\s*['n]*\s*ground/i,           // CCD vending machines
+  /vending\s*machine|coffee\s*vending/i,
+  /coffee\s*(machine|dispens|cart|kiosk|point|counter)/i,
+  /tea\s*(stall|cart)/i,
+  /\bkiosk\b/i,
+  /corporate\s*vending|kaapi\s*solutions/i,
+  /\bcatering\b/i,
+  /\benterprises\b/i,
+  /pvt\.?\s*(ltd|limited)/i,
+]
 
 // ── Brand-level category overrides ───────────────────────────────────────────
 // Some brands get mis-tagged by Google Places (e.g., Domino's showing up as
@@ -282,6 +293,7 @@ function resolveCategory(brandName: string, rawCategory: string | null): string 
   if (QSR_FORCE_BRANDS_LOWER.has(bl)) return 'QSR'
   const cat = normalizeCategory(rawCategory)
   if (cat === 'Cinema'      && CINEMA_BLOCK.some(re => re.test(brandName)))     return 'Other'
+  if (cat === 'Cafe'        && CAFE_BLOCK.some(re => re.test(brandName)))       return 'Other'
   if (cat === 'Apparel'     && APPAREL_BLOCK.some(re => re.test(brandName)))    return 'Other'
   if (cat === 'Footwear'    && APPAREL_BLOCK.some(re => re.test(brandName)))    return 'Other'
   if (cat === 'Electronics' && ELECTRONICS_BLOCK.some(re => re.test(brandName))) return 'Other'
