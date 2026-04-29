@@ -1225,10 +1225,6 @@ export default function Home() {
         <BrandIntelStatStrip />
       </Suspense>
 
-      <Suspense fallback={null}>
-        <BrandIntelTeaser />
-      </Suspense>
-
       {/* Clientele Slider - Full Width */}
       <div className="relative z-10 mt-8 sm:mt-12 md:mt-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.8s_forwards]">
         <div className="text-center mb-14 md:mb-16">
@@ -2659,6 +2655,11 @@ export default function Home() {
           <div className="absolute top-0 left-0 w-20 h-px bg-gradient-to-r from-transparent to-[#FF5200] shadow-[0_0_10px_rgba(255,82,0,0.8)] animate-[scroll_3s_linear_infinite]"></div>
         </div>
       </div>
+
+      {/* Brand Intelligence preview cards — top zones from live DB */}
+      <Suspense fallback={null}>
+        <BrandIntelTeaser />
+      </Suspense>
 
       {/* Location Intelligence Section with Network Visualization */}
       <section className="relative z-10 bg-gradient-to-b from-white via-gray-50/50 to-white py-12 md:py-16 overflow-hidden">
