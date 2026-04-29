@@ -35,6 +35,11 @@ type LocationIntelPreview = {
   demographics: PreviewDemographics
 }
 
+// Per-address intelligence report form is hidden until the Mappls backend
+// is wired up. Flip this flag to true to bring back the search form,
+// preview panel, and payment modal.
+const SHOW_INTELLIGENCE_REPORT_FORM = false
+
 export default function LocationIntelligencePage() {
   const [location, setLocation] = useState('')
   const [category, setCategory] = useState('')
@@ -216,12 +221,14 @@ export default function LocationIntelligencePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Hero */}
             <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#FF5200]/10 to-[#E4002B]/10 border border-[#FF5200]/30 rounded-full mb-6 backdrop-blur-xl">
-                <span className="w-2 h-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-3 animate-pulse shadow-[0_0_10px_rgba(255,82,0,1)]" />
-                <span className="text-sm font-semibold bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">
-                  {isAdmin ? 'Unlimited access for admins' : 'First Search FREE for brands & owners'}
-                </span>
-              </div>
+              {SHOW_INTELLIGENCE_REPORT_FORM && (
+                <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#FF5200]/10 to-[#E4002B]/10 border border-[#FF5200]/30 rounded-full mb-6 backdrop-blur-xl">
+                  <span className="w-2 h-2 bg-gradient-to-r from-[#FF5200] to-[#E4002B] rounded-full mr-3 animate-pulse shadow-[0_0_10px_rgba(255,82,0,1)]" />
+                  <span className="text-sm font-semibold bg-gradient-to-r from-[#FF5200] to-[#E4002B] bg-clip-text text-transparent">
+                    {isAdmin ? 'Unlimited access for admins' : 'First Search FREE for brands & owners'}
+                  </span>
+                </div>
+              )}
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
                 <span className="text-white whitespace-nowrap">Make</span>
                 <br />
@@ -238,6 +245,7 @@ export default function LocationIntelligencePage() {
             </div>
 
             {/* Search */}
+            {SHOW_INTELLIGENCE_REPORT_FORM && (
             <div className="max-w-4xl mx-auto mb-12">
               <div className="relative group">
                 <div className="absolute -inset-[2px] bg-gradient-to-r from-[#FF5200] via-[#E4002B] to-[#FF6B35] rounded-3xl opacity-50 group-hover:opacity-100 blur-sm transition-all duration-700 animate-gradientShift bg-[length:200%_200%]" />
@@ -297,9 +305,10 @@ export default function LocationIntelligencePage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Preview */}
-            {showPreview && (
+            {SHOW_INTELLIGENCE_REPORT_FORM && showPreview && (
               <div className="max-w-5xl mx-auto mb-20">
                 <div className="bg-black/60 border border-[#FF5200]/30 rounded-3xl p-6 sm:p-8 backdrop-blur-xl">
                   {/* ... preview content unchanged ... */}
@@ -313,7 +322,7 @@ export default function LocationIntelligencePage() {
       <BrandIntelligenceMap />
 
       {/* Payment modal */}
-      {!isAdmin && showPaymentModal && (
+      {SHOW_INTELLIGENCE_REPORT_FORM && !isAdmin && showPaymentModal && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-md rounded-2xl bg-gray-900 border border-[#FF5200]/30 p-6">
             {/* ... modal content unchanged ... */}
@@ -321,16 +330,18 @@ export default function LocationIntelligencePage() {
         </div>
       )}
 
-      <PhonePeCheckout
-        redirectUrl={phonepeRedirectUrl}
-        open={!!phonepeRedirectUrl}
-        onClose={() => {
-          setPhonepeRedirectUrl(null)
-          setPhonepeMerchantOrderId(null)
-        }}
-        onConcluded={onPhonePeConcluded}
-        onCancel={() => setPhonepeRedirectUrl(null)}
-      />
+      {SHOW_INTELLIGENCE_REPORT_FORM && (
+        <PhonePeCheckout
+          redirectUrl={phonepeRedirectUrl}
+          open={!!phonepeRedirectUrl}
+          onClose={() => {
+            setPhonepeRedirectUrl(null)
+            setPhonepeMerchantOrderId(null)
+          }}
+          onConcluded={onPhonePeConcluded}
+          onCancel={() => setPhonepeRedirectUrl(null)}
+        />
+      )}
     </div>
   )
 }
