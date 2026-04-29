@@ -97,6 +97,17 @@ function normalizeCategory(raw: string | null): string {
 
 // ── Brand quality filter ──────────────────────────────────────────────────────
 const BAD_BRAND_PATTERNS = [
+  // Closure markers — never count or surface a closed business
+  /\(\s*closed\s*\)|\[\s*closed\s*\]/i,
+  /\bclosed\b/i,
+  /permanently\s*closed/i,
+  /shut\s*down|shutdown/i,
+  /out\s*of\s*business/i,
+  /ceased\s*operation/i,
+  /no\s*longer\s*open/i,
+  /-\s*closed\s*-?$/i,
+  /temporarily\s*closed/i,
+  // Original quality patterns
   /\boutcall\b/i,
   /\bout[\s-]call\b/i,
   /\bhome\s*(massage|spa|beauty|service|visit|facial|wax)/i,
@@ -550,6 +561,25 @@ const BRAND_FORCE_RULES: ForceRule[] = [
   { pattern: /^wakefit\b/i,                             category: 'Home' },
   { pattern: /^sleepwell\b/i,                           category: 'Home' },
   { pattern: /fabindia\s*home/i,                        category: 'Home' },
+  { pattern: /^furlenco\b/i,                            category: 'Home' },
+  { pattern: /^rentomojo\b/i,                           category: 'Home' },
+  { pattern: /^@?home\b\s*(by\s*nilkamal|store)?/i,     category: 'Home' },
+  { pattern: /^durian\b/i,                              category: 'Home' },
+  { pattern: /^damro\b/i,                               category: 'Home' },
+  { pattern: /style\s*spa/i,                            category: 'Home' },
+  { pattern: /stanley\s*lifestyles?/i,                  category: 'Home' },
+  { pattern: /king\s*koil/i,                            category: 'Home' },
+  { pattern: /kurl-?\s*on|kurlon/i,                     category: 'Home' },
+  { pattern: /^centuary\b/i,                            category: 'Home' },
+  // Bath / tiles / paint chains (premium home retail)
+  { pattern: /^kohler\b/i,                              category: 'Home' },
+  { pattern: /^jaquar\b/i,                              category: 'Home' },
+  { pattern: /^hindware\b/i,                            category: 'Home' },
+  { pattern: /^cera\b/i,                                category: 'Home' },
+  { pattern: /asian\s*paints/i,                         category: 'Home' },
+  { pattern: /^nerolac\b/i,                             category: 'Home' },
+  { pattern: /berger\s*paints/i,                        category: 'Home' },
+  { pattern: /^dulux\b/i,                               category: 'Home' },
 ]
 
 function forceCategory(brandName: string): string | null {
@@ -872,6 +902,24 @@ const CANONICAL_RULES: CanonicalRule[] = [
   { match: /^wakefit\b/i,                     canonical: 'Wakefit' },
   { match: /^sleepwell\b/i,                   canonical: 'Sleepwell' },
   { match: /fabindia\s*home/i,                canonical: 'Fabindia Home' },
+  { match: /^furlenco\b/i,                    canonical: 'Furlenco' },
+  { match: /^rentomojo\b/i,                   canonical: 'RentoMojo' },
+  { match: /^@?home\b/i,                      canonical: '@Home' },
+  { match: /^durian\b/i,                      canonical: 'Durian' },
+  { match: /^damro\b/i,                       canonical: 'Damro' },
+  { match: /style\s*spa/i,                    canonical: 'Style Spa' },
+  { match: /stanley\s*lifestyles?/i,          canonical: 'Stanley Lifestyles' },
+  { match: /king\s*koil/i,                    canonical: 'King Koil' },
+  { match: /kurl-?\s*on|kurlon/i,             canonical: 'Kurl-on' },
+  { match: /^centuary\b/i,                    canonical: 'Centuary' },
+  { match: /^kohler\b/i,                      canonical: 'Kohler' },
+  { match: /^jaquar\b/i,                      canonical: 'Jaquar' },
+  { match: /^hindware\b/i,                    canonical: 'Hindware' },
+  { match: /^cera\b/i,                        canonical: 'Cera' },
+  { match: /asian\s*paints/i,                 canonical: 'Asian Paints' },
+  { match: /^nerolac\b/i,                     canonical: 'Nerolac' },
+  { match: /berger\s*paints/i,                canonical: 'Berger Paints' },
+  { match: /^dulux\b/i,                       canonical: 'Dulux' },
 ]
 
 function canonicalBrand(name: string): string {
@@ -924,7 +972,12 @@ const PREMIUM_RETAIL: Set<string> = new Set([
   // Home / Furniture
   'IKEA', 'Pepperfry', 'Urban Ladder', 'HomeStop', 'Home Centre',
   'HomeTown', 'Godrej Interio', 'Nilkamal', 'Wakefit', 'Sleepwell',
-  'Fabindia Home',
+  'Fabindia Home', '@Home', 'Furlenco', 'RentoMojo', 'Durian',
+  'Damro', 'Style Spa', 'Stanley Lifestyles', 'King Koil',
+  'Kurl-on', 'Centuary',
+  // Bath / tiles / paint
+  'Kohler', 'Jaquar', 'Hindware', 'Cera',
+  'Asian Paints', 'Nerolac', 'Berger Paints', 'Dulux',
   // Bakery
   'Theobroma', "Glen's Bakehouse", 'Daily Bread', 'The Sweet Chariot',
   'French Loaf', 'Mustard Bakehouse', 'TrueCakes', 'Sugar Bloom',
@@ -1093,6 +1146,9 @@ export async function GET() {
     type ZoneAgg = { cats: Map<string, number>; brands: Map<string, number>; catBrands: Map<string, Map<string, number>> }
     const byZone = new Map<string, ZoneAgg>()
     for (const r of allRows) {
+      // Skip any row whose brand name carries a closure marker — keeps
+      // closed places out of zone counts as well as brand chip lists.
+      if (isBadBrand(r.brand_name)) continue
       const zone = classify(r.lat, r.lng)
       if (!zone) continue
       let z = byZone.get(zone)
