@@ -331,7 +331,12 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   { name: 'Marathahalli',     lat: [12.932, 12.978], lng: [77.672, 77.732] },
 
   // ── South: Jayanagar belt (before BTM so Jayanagar gets its border cafes) ─────
-  { name: 'Jayanagar',        lat: [12.912, 12.958], lng: [77.542, 77.612] },
+  // Jayanagar tightened to its true 9-block footprint:
+  //   north  = South End Rd / Lalbagh south gate (lat 12.948)
+  //   south  = 9th Block / Tilak Nagar           (lat 12.910)
+  //   west   = 3rd Block / Sarakki Lake border    (lng 77.572)
+  //   east   = 5th & 8th Block / Wilson Garden     (lng 77.608)
+  { name: 'Jayanagar',        lat: [12.910, 12.948], lng: [77.572, 77.608] },
   { name: 'Basavanagudi',     lat: [12.928, 12.972], lng: [77.540, 77.588] },
   { name: 'Langford Town',    lat: [12.938, 12.972], lng: [77.568, 77.622] },
 
@@ -348,7 +353,9 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   { name: 'Sarjapur Road',    lat: [12.848, 12.918], lng: [77.658, 77.758] },
 
   // ── South: outer belt ─────────────────────────────────────────────────────────
-  { name: 'Banashankari',     lat: [12.892, 12.945], lng: [77.508, 77.558] },
+  // Banashankari east boundary extended to 77.572 (where Jayanagar now starts)
+  // so the Banashankari Main Rd / Kanakapura Rd commercial belt is captured.
+  { name: 'Banashankari',     lat: [12.892, 12.948], lng: [77.508, 77.572] },
   { name: 'JP Nagar',         lat: [12.872, 12.928], lng: [77.538, 77.598] },
   { name: 'Vijayanagar',      lat: [12.938, 12.988], lng: [77.488, 77.548] },
   { name: 'Uttarahalli',      lat: [12.868, 12.918], lng: [77.488, 77.538] },
