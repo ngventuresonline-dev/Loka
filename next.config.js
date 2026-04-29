@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Set workspace root to prevent multiple lockfile warning
-  outputFileTracingRoot: require('path').join(__dirname),
+  // Worktree root: node_modules lives in C:\Loka, three levels up
+  outputFileTracingRoot: require('path').join(__dirname, '..', '..', '..'),
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -33,8 +33,10 @@ const nextConfig = {
       'lucide-react', 'date-fns', '@anthropic-ai/sdk'
     ],
   },
-  // Turbopack configuration (Next.js 16+)
-  turbopack: {},
+  // Turbopack configuration (Next.js 16+) — must match outputFileTracingRoot
+  turbopack: {
+    root: require('path').join(__dirname, '..', '..', '..'),
+  },
   // Webpack optimizations for bundle splitting (when using --webpack flag)
   webpack: (config, { isServer }) => {
     if (!isServer) {

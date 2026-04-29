@@ -9,6 +9,8 @@ import LogoImage from '@/components/LogoImage'
 import { getBrandLogo } from '@/lib/brand-logos'
 import { brandPlacements } from '@/lib/brand-placements'
 import { PhonePeCheckout } from '@/components/PhonePeCheckout'
+import dynamic from 'next/dynamic'
+const BrandIntelTeaser = dynamic(() => import('@/components/BrandIntelTeaser'), { ssr: false })
 
 const PRIME_ZONES = ['Indiranagar', 'Koramangala', 'Whitefield', 'MG Road', 'HSR Layout', 'Brigade Road']
 
@@ -794,6 +796,8 @@ export default function ForBrandsPage() {
           </div>
         </div>
       </section>
+
+      <BrandIntelTeaser />
 
       {/* Compare paths */}
       <section className="relative z-10 py-14 md:py-20 bg-gradient-to-b from-gray-50 to-white overflow-hidden">

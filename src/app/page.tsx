@@ -14,6 +14,8 @@ const BangaloreMapIllustration = lazy(() => import('@/components/BangaloreMapIll
 const BrandPlacementPin = lazy(() => import('@/components/BrandPlacementPin').then(mod => ({ default: mod.default })))
 import { brandPlacements, getPlacementCoordinates } from '@/lib/brand-placements'
 
+const BrandIntelStatStrip = lazy(() => import('@/components/BrandIntelStatStrip'))
+
 // Lazy load heavy components below the fold
 const BrandOnboardingForm = lazy(() => import('@/components/onboarding/BrandOnboardingForm'))
 const PropertyOwnerOnboardingForm = lazy(() => import('@/components/onboarding/PropertyOwnerOnboardingForm'))
@@ -1217,6 +1219,10 @@ export default function Home() {
         {/* Section Break Line */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF5200] to-transparent opacity-50"></div>
       </div>
+
+      <Suspense fallback={null}>
+        <BrandIntelStatStrip />
+      </Suspense>
 
       {/* Clientele Slider - Full Width */}
       <div className="relative z-10 mt-8 sm:mt-12 md:mt-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_0.8s_forwards]">

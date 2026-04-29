@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Navbar from '@/components/Navbar'
 import { PhonePeCheckout } from '@/components/PhonePeCheckout'
 import { useAuth } from '@/contexts/AuthContext'
+import dynamic from 'next/dynamic'
+const BrandIntelligenceMap = dynamic(() => import('@/components/BrandIntelligenceMap'), { ssr: false })
 
 type PreviewFootfall = {
   dailyAverage: number
@@ -307,6 +309,8 @@ export default function LocationIntelligencePage() {
           </div>
         </div>
       </div>
+
+      <BrandIntelligenceMap />
 
       {/* Payment modal */}
       {!isAdmin && showPaymentModal && (
