@@ -126,7 +126,8 @@ const ANCHOR_BRANDS_LOWER = new Set([
   "smoke house deli", "monkey bar", "the permit room",
   "bangalore oota company", "the only place",
   // Cafes — Bangalore local legends
-  "katte kulture", "matteo coffea", "dyu art cafe",
+  "katte kulture", "kahale - filter kaapi bar", "kahale",
+  "matteo coffea", "dyu art cafe",
   "the hole in the wall cafe", "hole in the wall cafe",
   "chutney chang", "sunny's restaurant", "cafe max",
   // Bars & Breweries
