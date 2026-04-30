@@ -1028,7 +1028,11 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   { name: 'Langford Town',    lat: [12.938, 12.972], lng: [77.568, 77.622] },
 
   // ── South-East ────────────────────────────────────────────────────────────────
-  { name: 'BTM Layout',       lat: [12.892, 12.938], lng: [77.568, 77.618] },
+  // BTM Layout south boundary tightened 12.892 -> 12.905 so the Bannerghatta-
+  // Road / JP Nagar 7th Phase / Bilekahalli area (e.g. Kalyani Magnum at
+  // lat 12.899) classifies to JP Nagar rather than BTM. Real BTM proper
+  // sits north of Silk Board (~lat 12.910+).
+  { name: 'BTM Layout',       lat: [12.905, 12.938], lng: [77.568, 77.618] },
   // HSR Layout extends from Sector 1 (west, ~77.620) all the way to Sector 7
   // (east, ~77.660) along the Sarjapur Road border. Listed BEFORE Bommanahalli
   // so HSR claims its own sectors back from Bommanahalli's old bbox.
