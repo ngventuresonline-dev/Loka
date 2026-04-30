@@ -1008,7 +1008,10 @@ function sortBrands(entries: [string, number][]): string[] {
 //   Arekere    (ends lng 77.618) / Hulimavu     (starts lng 77.618)
 const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number] }[] = [
   // ── Prime commercial hubs — highest overlap priority ──────────────────────────
-  { name: 'Koramangala',      lat: [12.912, 12.958], lng: [77.598, 77.658] },
+  // Koramangala east tightened to 77.638 (7th Block boundary) so HSR
+  // Sectors 6-7 — full of BHIVE / Enzyme / EBC / 315Work coworking — go to
+  // HSR Layout instead of inflating Koramangala.
+  { name: 'Koramangala',      lat: [12.912, 12.958], lng: [77.598, 77.638] },
   { name: 'Indiranagar',      lat: [12.950, 13.000], lng: [77.615, 77.678] },
   { name: 'MG Road',          lat: [12.955, 12.998], lng: [77.572, 77.638] },
   { name: 'Whitefield',       lat: [12.952, 13.005], lng: [77.732, 77.802] },

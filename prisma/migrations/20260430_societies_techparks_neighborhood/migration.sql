@@ -11,7 +11,7 @@ CREATE INDEX IF NOT EXISTS bangalore_tech_parks_neighborhood_idx ON bangalore_te
 -- Societies backfill (CTE re-declared per statement; Postgres CTEs are
 -- statement-scoped so we can't share between two UPDATEs).
 WITH zones(idx, name, lat0, lat1, lng0, lng1) AS (VALUES
-  ( 1,'Koramangala',     12.912,12.958,77.598,77.658),
+  ( 1,'Koramangala',     12.912,12.958,77.598,77.638),
   ( 2,'Indiranagar',     12.950,13.000,77.615,77.678),
   ( 3,'MG Road',         12.955,12.998,77.572,77.638),
   ( 4,'Whitefield',      12.952,13.005,77.732,77.802),
@@ -61,7 +61,7 @@ WHERE o.is_active = true AND o.latitude IS NOT NULL;
 
 -- Tech parks backfill
 WITH zones(idx, name, lat0, lat1, lng0, lng1) AS (VALUES
-  ( 1,'Koramangala',     12.912,12.958,77.598,77.658),
+  ( 1,'Koramangala',     12.912,12.958,77.598,77.638),
   ( 2,'Indiranagar',     12.950,13.000,77.615,77.678),
   ( 3,'MG Road',         12.955,12.998,77.572,77.638),
   ( 4,'Whitefield',      12.952,13.005,77.732,77.802),
