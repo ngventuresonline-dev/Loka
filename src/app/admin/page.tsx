@@ -141,6 +141,11 @@ export default function AdminPage() {
         `/api/admin/stats?range=all&userId=${user.id}&userEmail=${encodeURIComponent(user.email || '')}`,
         { credentials: 'include' }
       )
+      if (res.status === 401 || res.status === 403) {
+        // Session expired — redirect to login
+        router.replace('/auth/login')
+        return
+      }
       if (!res.ok) throw new Error(`Stats API returned ${res.status}`)
       setStats(await res.json())
     } catch (err: any) {
@@ -151,7 +156,7 @@ export default function AdminPage() {
     }
   }
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <AdminLayout>
         <div className="flex justify-center items-center min-h-[60vh]">
@@ -159,6 +164,12 @@ export default function AdminPage() {
         </div>
       </AdminLayout>
     )
+  }
+
+  // No user or not admin — redirect to login instead of blank screen
+  if (!user || user.userType !== 'admin') {
+    if (typeof window !== 'undefined') router.replace('/auth/login')
+    return null
   }
 
   const ov = stats?.overview

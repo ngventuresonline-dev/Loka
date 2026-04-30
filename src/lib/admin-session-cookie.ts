@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from 'crypto'
 /** HttpOnly cookie set by POST /api/auth/admin/login — verified in getAuthenticatedUser */
 export const ADMIN_SESSION_COOKIE = 'lz_admin_session'
 
-const MAX_AGE_SEC = 60 * 60 * 24 // 24h
+const MAX_AGE_SEC = 60 * 60 * 24 * 7 // 7 days
 
 function getSecret(): string | null {
   const s =

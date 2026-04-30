@@ -167,12 +167,12 @@ export const getSession = (): {
   
   const session = JSON.parse(sessionJson);
   
-  // Check if session is expired (24 hours)
+  // Check if session is expired (7 days)
   const now = Date.now();
   const sessionAge = now - session.timestamp;
-  const twentyFourHours = 24 * 60 * 60 * 1000;
-  
-  if (sessionAge > twentyFourHours) {
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+  if (sessionAge > sevenDays) {
     clearSession();
     return null;
   }
