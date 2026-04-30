@@ -57,12 +57,60 @@ function zoneFromCoords(lat: number, lng: number): string {
   return 'Central'
 }
 
-// Four wide-spread anchors — pageToken pagination compensates for fewer points.
+// Macro anchors — used for named-developer queries (each developer has limited
+// portfolio; 4 wide anchors cover the spread fine).
 const ANCHORS = [
   { name: 'north', lat: 13.045, lng: 77.598 },
   { name: 'east',  lat: 12.965, lng: 77.720 },
   { name: 'south', lat: 12.916, lng: 77.638 },
   { name: 'west',  lat: 12.998, lng: 77.555 },
+]
+
+// Fine-grained neighbourhood anchors — used for generic queries
+// ('apartments in {area}', 'gated community in {area}'). 40 centroids align
+// with the zones in /api/brand-intelligence/zones/route.ts so we surface
+// long-tail / lesser-known societies that named-developer searches miss.
+const NEIGHBORHOOD_ANCHORS = [
+  { name: 'Koramangala',     lat: 12.9352, lng: 77.6245 },
+  { name: 'Indiranagar',     lat: 12.9784, lng: 77.6408 },
+  { name: 'MG Road',         lat: 12.9745, lng: 77.6089 },
+  { name: 'Whitefield',      lat: 12.9847, lng: 77.7357 },
+  { name: 'Marathahalli',    lat: 12.9568, lng: 77.7011 },
+  { name: 'Jayanagar',       lat: 12.9256, lng: 77.5934 },
+  { name: 'Basavanagudi',    lat: 12.9425, lng: 77.5734 },
+  { name: 'BTM Layout',      lat: 12.9178, lng: 77.6134 },
+  { name: 'HSR Layout',      lat: 12.9116, lng: 77.6412 },
+  { name: 'Bommanahalli',    lat: 12.8950, lng: 77.6420 },
+  { name: 'Bellandur',       lat: 12.9279, lng: 77.6878 },
+  { name: 'Sarjapur Road',   lat: 12.8800, lng: 77.7100 },
+  { name: 'Banashankari',    lat: 12.9250, lng: 77.5550 },
+  { name: 'JP Nagar',        lat: 12.9078, lng: 77.5812 },
+  { name: 'Vijayanagar',     lat: 12.9620, lng: 77.5230 },
+  { name: 'Uttarahalli',     lat: 12.9000, lng: 77.5300 },
+  { name: 'Kengeri',         lat: 12.9050, lng: 77.4750 },
+  { name: 'Arekere',         lat: 12.8800, lng: 77.5860 },
+  { name: 'Hulimavu',        lat: 12.8800, lng: 77.6420 },
+  { name: 'Electronic City', lat: 12.8452, lng: 77.6602 },
+  { name: 'Shivajinagar',    lat: 12.9870, lng: 77.6020 },
+  { name: 'Frazer Town',     lat: 12.9920, lng: 77.6260 },
+  { name: 'Rajajinagar',     lat: 12.9923, lng: 77.5534 },
+  { name: 'Malleshwaram',    lat: 13.0034, lng: 77.5634 },
+  { name: 'Yeshwanthpur',    lat: 13.0280, lng: 77.5430 },
+  { name: 'New BEL Road',    lat: 13.0420, lng: 77.5700 },
+  { name: 'Peenya',          lat: 13.0300, lng: 77.5160 },
+  { name: 'RT Nagar',        lat: 13.0200, lng: 77.5980 },
+  { name: 'Hebbal',          lat: 13.0456, lng: 77.5978 },
+  { name: 'Sahakar Nagar',   lat: 13.0625, lng: 77.5860 },
+  { name: 'Manyata',         lat: 13.0456, lng: 77.6112 },
+  { name: 'Thanisandra',     lat: 13.0635, lng: 77.6280 },
+  { name: 'Yelahanka',       lat: 13.1012, lng: 77.5934 },
+  { name: 'Kalyan Nagar',    lat: 13.0260, lng: 77.6420 },
+  { name: 'Ramamurthynagar', lat: 13.0270, lng: 77.6720 },
+  { name: 'KR Puram',        lat: 13.0050, lng: 77.7020 },
+  { name: 'Brookefield',     lat: 12.9834, lng: 77.7034 },
+  { name: 'Mahadevapura',    lat: 12.9900, lng: 77.7080 },
+  { name: 'Varthur',         lat: 12.9420, lng: 77.7560 },
+  { name: 'Banaswadi',       lat: 13.0156, lng: 77.6534 },
 ]
 
 // Each developer fans out across all 4 anchors. Search query is "<seed> apartments Bangalore".
@@ -137,6 +185,46 @@ const DEVELOPER_SEEDS: DeveloperSeed[] = [
   { name: 'Salarpuria',          query: 'Salarpuria apartments Bangalore',       developer: 'Salarpuria' },
   { name: 'Sare Homes',          query: 'Sare Homes Bangalore',                  developer: 'Sare Homes' },
   { name: 'Sumadhura Infracon',  query: 'Sumadhura Infracon Bangalore',          developer: 'Sumadhura Infracon' },
+  // Tier-3 long-tail Bangalore developers
+  { name: 'Mahaveer',            query: 'Mahaveer apartments Bangalore',         developer: 'Mahaveer Group' },
+  { name: 'SJR',                 query: 'SJR Group apartments Bangalore',        developer: 'SJR Group' },
+  { name: 'SNN Builders',        query: 'SNN Builders Bangalore',                developer: 'SNN Builders' },
+  { name: 'TVS Emerald',         query: 'TVS Emerald Bangalore',                 developer: 'TVS Emerald' },
+  { name: 'Valmark',             query: 'Valmark apartments Bangalore',          developer: 'Valmark Group' },
+  { name: 'Pride Group',         query: 'Pride Group apartments Bangalore',      developer: 'Pride Group' },
+  { name: 'Pacifica',            query: 'Pacifica apartments Bangalore',         developer: 'Pacifica' },
+  { name: 'Krishvi',             query: 'Krishvi apartments Bangalore',          developer: 'Krishvi' },
+  { name: 'Sattva',              query: 'Sattva apartments Bangalore',           developer: 'Sattva Group' },
+  { name: 'Aryan Hi-Tech',       query: 'Aryan Hi-Tech apartments Bangalore',    developer: 'Aryan Hi-Tech' },
+  { name: 'Arvind SmartSpaces',  query: 'Arvind SmartSpaces Bangalore',          developer: 'Arvind SmartSpaces' },
+  { name: 'Provident Housing',   query: 'Provident Housing Bangalore',           developer: 'Provident Housing' },
+  { name: 'Sumadhura',           query: 'Sumadhura apartments Bangalore',        developer: 'Sumadhura' },
+  { name: 'NCC Urban',           query: 'NCC Urban apartments Bangalore',        developer: 'NCC Urban' },
+  { name: 'Aparna Constructions', query: 'Aparna apartments Bangalore',          developer: 'Aparna Constructions' },
+  { name: 'Century Real Estate', query: 'Century apartments Bangalore',          developer: 'Century Real Estate' },
+  { name: 'Concorde',            query: 'Concorde apartments Bangalore',         developer: 'Concorde Group' },
+  { name: 'Goyal & Co',          query: 'Goyal Bangalore apartments',            developer: 'Goyal & Co' },
+  { name: 'Jain Heights',        query: 'Jain Heights Bangalore',                developer: 'Jain Heights' },
+  { name: 'Nitesh Estates',      query: 'Nitesh Estates apartments Bangalore',   developer: 'Nitesh Estates' },
+  { name: 'Sterling Developers', query: 'Sterling Developers Bangalore',         developer: 'Sterling Developers' },
+  { name: 'Shriram Properties',  query: 'Shriram Properties Bangalore',          developer: 'Shriram Properties' },
+  { name: 'Casa Grande',         query: 'Casa Grande Bangalore',                 developer: 'Casa Grande' },
+  { name: 'Bhartiya City',       query: 'Bhartiya City apartments Bangalore',    developer: 'Bhartiya City' },
+  { name: 'Vaishnavi',           query: 'Vaishnavi developers Bangalore',        developer: 'Vaishnavi Group' },
+  { name: 'House of Hiranandani', query: 'House of Hiranandani Bangalore',       developer: 'House of Hiranandani' },
+  { name: 'Mythri',              query: 'Mythri apartments Bangalore',           developer: 'Mythri' },
+  { name: 'Saakaar',             query: 'Saakaar apartments Bangalore',          developer: 'Saakaar Developers' },
+  { name: 'Wadhwa',              query: 'Wadhwa Bangalore apartments',           developer: 'Wadhwa' },
+  { name: 'Aratt',               query: 'Aratt apartments Bangalore',            developer: 'Aratt' },
+  { name: 'Vatika',              query: 'Vatika Bangalore apartments',           developer: 'Vatika' },
+  { name: 'RNS Infrastructure',  query: 'RNS Infrastructure apartments Bangalore', developer: 'RNS Infrastructure' },
+  { name: 'Birla Estates',       query: 'Birla Estates Bangalore',               developer: 'Birla Estates' },
+  { name: 'Mahindra Lifespaces', query: 'Mahindra Lifespaces apartments Bangalore', developer: 'Mahindra Lifespaces' },
+  { name: 'Total Environment',   query: 'Total Environment Bangalore',           developer: 'Total Environment' },
+  { name: 'Adarsh',              query: 'Adarsh apartments Bangalore',           developer: 'Adarsh' },
+  { name: 'Tata Realty',         query: 'Tata Realty Bangalore',                 developer: 'Tata Realty' },
+  { name: 'L&T Realty',          query: 'L&T Realty Bangalore',                  developer: 'L&T Realty' },
+  { name: 'Shapoorji Pallonji',  query: 'Shapoorji Pallonji Bangalore',          developer: 'Shapoorji Pallonji' },
 ]
 
 // Generic patterns — catch long-tail Tier-3 developers we haven't named.
@@ -227,8 +315,10 @@ function isLikelyResidential(name: string, types: string[], strict: boolean): bo
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   console.log(`\n🏘️   Societies scraper  ${dryRun ? '(DRY RUN)' : ''}`)
-  const totalSearches = (DEVELOPER_SEEDS.length + GENERIC_PATTERNS.length) * ANCHORS.length
-  console.log(`   ${DEVELOPER_SEEDS.length} developers + ${GENERIC_PATTERNS.length} generic patterns × ${ANCHORS.length} anchors = ${totalSearches} searches\n`)
+  const totalSearches = DEVELOPER_SEEDS.length * ANCHORS.length + GENERIC_PATTERNS.length * NEIGHBORHOOD_ANCHORS.length
+  console.log(`   ${DEVELOPER_SEEDS.length} developers × ${ANCHORS.length} macro anchors`)
+  console.log(`   ${GENERIC_PATTERNS.length} generic × ${NEIGHBORHOOD_ANCHORS.length} neighbourhood anchors`)
+  console.log(`   = ${totalSearches} total searches\n`)
   console.log(`   ⚠️  Unit counts, SEC profile, prices and amenities will NOT be populated.`)
   console.log(`   Only real data from Google Places (name, coordinates, vicinity) will be stored.\n`)
 
@@ -265,11 +355,15 @@ async function main() {
       })
     }
   }
+  // Generic patterns fan out across the full 40 neighbourhood anchors so we
+  // surface long-tail / unbranded societies that named-developer searches miss.
+  // Query is rewritten as 'apartments in <neighborhood> Bangalore' for tighter
+  // local results.
   for (const pat of GENERIC_PATTERNS) {
-    for (const anchor of ANCHORS) {
+    for (const anchor of NEIGHBORHOOD_ANCHORS) {
       jobs.push({
         label: `${pat.name} @ ${anchor.name}`,
-        query: pat.query,
+        query: `${pat.name} in ${anchor.name} Bangalore`,
         lat: anchor.lat,
         lng: anchor.lng,
         developer: null,

@@ -135,7 +135,84 @@ const SEARCH_QUERIES: Array<{ label: string; query: string; lat: number; lng: nu
   { label: 'hsr office cluster',   query: 'office complex HSR Layout Bangalore', lat: 12.9116, lng: 77.6412 },
   { label: 'koramangala office',   query: 'office complex Koramangala Bangalore', lat: 12.9352, lng: 77.6245 },
   { label: 'indiranagar office',   query: 'office Indiranagar Bangalore',      lat: 12.9784, lng: 77.6408 },
+
+  // Long-tail business parks + corporate campuses (relaxed filter)
+  { label: 'akshay tech park',     query: 'Akshay Tech Park Bangalore',        lat: 12.9847, lng: 77.7357 },
+  { label: 'wework prestige',      query: 'WeWork Prestige Atlanta Bangalore', lat: 12.9784, lng: 77.6408 },
+  { label: 'wework gold standard', query: 'WeWork Galaxy Bangalore',           lat: 12.9716, lng: 77.5946 },
+  { label: 'awfis',                query: 'Awfis Bangalore',                   lat: 12.9352, lng: 77.6245 },
+  { label: 'indiqube',             query: 'IndiQube Bangalore',                lat: 12.9352, lng: 77.6245 },
+  { label: 'smartworks',           query: 'Smartworks Bangalore',              lat: 12.9716, lng: 77.5946 },
+  { label: '91springboard',        query: '91springboard Bangalore',           lat: 12.9352, lng: 77.6245 },
+  { label: 'wework',               query: 'WeWork Bangalore',                  lat: 12.9716, lng: 77.5946 },
+  { label: 'cowrks',               query: 'CoWrks Bangalore',                  lat: 12.9784, lng: 77.6408 },
+  { label: 'innov8',               query: 'Innov8 coworking Bangalore',        lat: 12.9352, lng: 77.6245 },
+  { label: '315work',              query: '315Work Avenue Bangalore',          lat: 12.9116, lng: 77.6412 },
+  { label: 'bhive workspace',      query: 'BHIVE Workspace Bangalore',         lat: 12.9352, lng: 77.6245 },
+  { label: 'pritech park',         query: 'Pritech Park Bangalore',            lat: 12.9279, lng: 77.6878 },
+  { label: 'global village',       query: 'Global Village Tech Park Bangalore', lat: 12.9116, lng: 77.5050 },
+  { label: 'vrindavan tech',       query: 'Vrindavan Tech Village Bangalore',  lat: 12.9279, lng: 77.6878 },
+  { label: 'cessna business park', query: 'Cessna Business Park Bangalore',    lat: 12.9279, lng: 77.6878 },
+  { label: 'helios business park', query: 'Helios Business Park Bangalore',    lat: 12.9116, lng: 77.6745 },
+  { label: 'embassy techsquare',   query: 'Embassy Tech Square Bangalore',     lat: 12.9279, lng: 77.6878 },
+  { label: 'rmz nxt',              query: 'RMZ NXT Bangalore',                 lat: 12.9279, lng: 77.6878 },
+  { label: 'rmz centennial',       query: 'RMZ Centennial Bangalore',          lat: 12.9847, lng: 77.7357 },
+  { label: 'prestige shantiniketan', query: 'Prestige Shantiniketan Bangalore', lat: 12.9847, lng: 77.7357 },
+  { label: 'prestige technostar',  query: 'Prestige TechnoStar Bangalore',     lat: 12.9847, lng: 77.7357 },
+  { label: 'brigade techpark whitefield', query: 'Brigade Tech Park Whitefield', lat: 12.9847, lng: 77.7357 },
+  { label: 'salarpuria touchstone', query: 'Salarpuria Touchstone Bangalore',  lat: 12.9279, lng: 77.6878 },
+  { label: 'salarpuria magnificia', query: 'Salarpuria Magnificia Bangalore',  lat: 13.0156, lng: 77.6534 },
+  { label: 'mantri commercio',     query: 'Mantri Commercio Bangalore',        lat: 12.9279, lng: 77.6878 },
+  { label: 'gopalan global axis',  query: 'Gopalan Global Axis Bangalore',     lat: 12.9847, lng: 77.7357 },
+  { label: 'eco space business',   query: 'Eco Space Business Park Bangalore', lat: 12.9279, lng: 77.6878 },
+  { label: 'kalyani magnum',       query: 'Kalyani Magnum Bangalore',          lat: 12.9352, lng: 77.6245 },
+  { label: 'wadhwa',               query: 'Wadhwa Bangalore office',           lat: 12.9116, lng: 77.6745 },
+  { label: 'dlf cybercity',        query: 'DLF Cybercity Bangalore',           lat: 12.9279, lng: 77.6878 },
+  { label: 'wtc bangalore',        query: 'World Trade Center Bangalore',      lat: 13.0290, lng: 77.5500 },
+  { label: 'wtc rmz',              query: 'WTC RMZ Bangalore',                 lat: 13.0290, lng: 77.5500 },
 ]
+
+// Per-neighbourhood generic sweep — fan 'business park in {neighborhood}',
+// 'tech park in {neighborhood}', 'office building in {neighborhood}' across
+// the 40-zone centroid set. Strict filter applied (must contain office /
+// park / tower / hub / etc. in the result name).
+const NEIGHBORHOOD_TECHPARK_ANCHORS: Array<{ name: string; lat: number; lng: number }> = [
+  { name: 'Koramangala',     lat: 12.9352, lng: 77.6245 },
+  { name: 'Indiranagar',     lat: 12.9784, lng: 77.6408 },
+  { name: 'MG Road',         lat: 12.9745, lng: 77.6089 },
+  { name: 'Whitefield',      lat: 12.9847, lng: 77.7357 },
+  { name: 'Marathahalli',    lat: 12.9568, lng: 77.7011 },
+  { name: 'Jayanagar',       lat: 12.9256, lng: 77.5934 },
+  { name: 'BTM Layout',      lat: 12.9178, lng: 77.6134 },
+  { name: 'HSR Layout',      lat: 12.9116, lng: 77.6412 },
+  { name: 'Bommanahalli',    lat: 12.8950, lng: 77.6420 },
+  { name: 'Bellandur',       lat: 12.9279, lng: 77.6878 },
+  { name: 'Sarjapur Road',   lat: 12.8800, lng: 77.7100 },
+  { name: 'JP Nagar',        lat: 12.9078, lng: 77.5812 },
+  { name: 'Vijayanagar',     lat: 12.9620, lng: 77.5230 },
+  { name: 'Electronic City', lat: 12.8452, lng: 77.6602 },
+  { name: 'Rajajinagar',     lat: 12.9923, lng: 77.5534 },
+  { name: 'Malleshwaram',    lat: 13.0034, lng: 77.5634 },
+  { name: 'Yeshwanthpur',    lat: 13.0280, lng: 77.5430 },
+  { name: 'New BEL Road',    lat: 13.0420, lng: 77.5700 },
+  { name: 'Peenya',          lat: 13.0300, lng: 77.5160 },
+  { name: 'Hebbal',          lat: 13.0456, lng: 77.5978 },
+  { name: 'Manyata',         lat: 13.0456, lng: 77.6112 },
+  { name: 'Thanisandra',     lat: 13.0635, lng: 77.6280 },
+  { name: 'Yelahanka',       lat: 13.1012, lng: 77.5934 },
+  { name: 'Kalyan Nagar',    lat: 13.0260, lng: 77.6420 },
+  { name: 'Ramamurthynagar', lat: 13.0270, lng: 77.6720 },
+  { name: 'KR Puram',        lat: 13.0050, lng: 77.7020 },
+  { name: 'Brookefield',     lat: 12.9834, lng: 77.7034 },
+  { name: 'Mahadevapura',    lat: 12.9900, lng: 77.7080 },
+  { name: 'Banaswadi',       lat: 13.0156, lng: 77.6534 },
+]
+for (const a of NEIGHBORHOOD_TECHPARK_ANCHORS) {
+  SEARCH_QUERIES.push(
+    { label: `business park ${a.name.toLowerCase()}`, query: `business park ${a.name} Bangalore`, lat: a.lat, lng: a.lng, strict: true },
+    { label: `tech park ${a.name.toLowerCase()}`,     query: `tech park ${a.name} Bangalore`,     lat: a.lat, lng: a.lng, strict: true },
+  )
+}
 
 // ── Google Places Text Search ────────────────────────────────────────────────
 type PlaceResult = {
