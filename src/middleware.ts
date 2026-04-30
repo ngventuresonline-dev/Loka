@@ -88,11 +88,40 @@ export function middleware(request: NextRequest) {
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
 
+    // script-src: https://*.run.app allows GTM server-side containers hosted on Google Cloud Run
+    const cspScriptSrc =
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'" +
+      " https://vercel.live https://va.vercel-scripts.com" +
+      " https://maps.googleapis.com https://www.googletagmanager.com" +
+      " https://*.run.app" +                          // GTM server-side / Cloud Run
+      " https://connect.facebook.net" +               // Facebook Pixel
+      " https://www.clarity.ms https://scripts.clarity.ms" + // Clarity
+      " https://td.doubleclick.net https://googleads.g.doubleclick.net;"; // Google Ads
+
+    // connect-src: https://*.run.app + wss://*.run.app allows fetch()/XHR to GTM server-side event endpoints
+    // This is required for Meta Pixel CAPI events routed through mpc2-prod-*.run.app
     const cspConnectSrc =
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google.com https://*.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.doubleclick.net https://googleads.g.doubleclick.net https://stats.g.doubleclick.net https://connect.facebook.net https://www.facebook.com https://graph.facebook.com https://an.facebook.com https://*.facebook.com https://*.facebook.net https://*.fbcdn.net https://*.fbsbx.com https://www.clarity.ms https://scripts.clarity.ms https://f.clarity.ms https://v.clarity.ms https://*.clarity.ms https://demo-1.conversionsapigateway.com https://*.conversionsapigateway.com;"
+      "connect-src 'self'" +
+      " https://*.supabase.co wss://*.supabase.co" +
+      " https://*.vercel.app https://vercel.live https://va.vercel-scripts.com" +
+      " https://vitals.vercel-insights.com" +
+      " https://maps.googleapis.com https://www.googletagmanager.com" +
+      " https://www.google.com https://*.google.com" +
+      " https://www.google-analytics.com https://*.google-analytics.com" +
+      " https://*.analytics.google.com" +
+      " https://*.run.app wss://*.run.app" +           // GTM server-side / Cloud Run events (Meta CAPI + GA4)
+      " https://*.doubleclick.net https://googleads.g.doubleclick.net https://stats.g.doubleclick.net" +
+      " https://td.doubleclick.net" +                  // Google Ads conversion ping
+      " https://connect.facebook.net https://www.facebook.com https://graph.facebook.com" +
+      " https://an.facebook.com https://*.facebook.com https://*.facebook.net" +
+      " https://*.fbcdn.net https://*.fbsbx.com" +
+      " https://www.clarity.ms https://scripts.clarity.ms https://f.clarity.ms" +
+      " https://v.clarity.ms https://*.clarity.ms" +
+      " https://demo-1.conversionsapigateway.com https://*.conversionsapigateway.com;";
+
     response.headers.set(
       'Content-Security-Policy',
-      `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://maps.googleapis.com https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob: https://www.facebook.com; font-src 'self' data: https://fonts.gstatic.com; ${cspConnectSrc} frame-src 'self' https://*.google.com https://www.googletagmanager.com https://www.facebook.com https://*.facebook.com;`
+      `default-src 'self'; ${cspScriptSrc} style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; ${cspConnectSrc} frame-src 'self' https://*.google.com https://www.googletagmanager.com https://www.facebook.com https://*.facebook.com;`
     )
 
     if (!isDev) {
