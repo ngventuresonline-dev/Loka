@@ -3,8 +3,20 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 
 export const metadata: Metadata = {
-  title: 'N&G Ventures - Commercial Real Estate Platform',
-  description: 'Connect brands with property owners for commercial real estate. AI-powered matching platform.',
+  title: 'Lokazen - Commercial Real Estate Platform',
+  description: 'Connect brands with property owners for commercial real estate in Bangalore. AI-powered matching platform.',
+  openGraph: {
+    title: 'Lokazen - Commercial Real Estate Platform',
+    description: 'Connect brands with property owners for commercial real estate in Bangalore. AI-powered matching platform.',
+    url: 'https://www.lokazen.in',
+    siteName: 'Lokazen',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Lokazen - Commercial Real Estate Platform',
+    description: 'Connect brands with property owners for commercial real estate in Bangalore.',
+  },
 }
 
 export default function RootLayout({

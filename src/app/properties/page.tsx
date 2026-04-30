@@ -1,7 +1,25 @@
+import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import PropertyCard from '@/components/PropertyCard'
 import { Property } from '@/types'
+
+export const metadata: Metadata = {
+  title: 'Available Properties | Lokazen',
+  description: 'Browse premium commercial spaces in Bangalore — retail, F&B, office and more. Detailed analytics and direct owner connections.',
+  openGraph: {
+    title: 'Available Properties | Lokazen',
+    description: 'Browse premium commercial spaces in Bangalore — retail, F&B, office and more. Detailed analytics and direct owner connections.',
+    url: 'https://www.lokazen.in/properties',
+    siteName: 'Lokazen',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Available Properties | Lokazen',
+    description: 'Browse premium commercial spaces in Bangalore — retail, F&B, office and more.',
+  },
+}
 
 // Sample data - in a real app, this would come from an API/database
 const sampleProperties: Property[] = [
