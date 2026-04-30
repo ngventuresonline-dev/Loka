@@ -26,23 +26,25 @@ export interface ApiUser {
 export async function getAuthenticatedUser(
   request: NextRequest
 ): Promise<ApiUser | null> {
+  const userIdParam = request.nextUrl.searchParams.get('userId')
+
+  // --- Prisma (required for all DB-backed methods) ---
+  const prisma = await getPrisma()
+  if (!prisma) {
+    console.error('[API Auth] Prisma client not available')
+    return null
+  }
+
+  // --- Supabase client (only needed for Methods 1 & 2; init failures must NOT abort everything) ---
+  let supabase: ReturnType<typeof createServerClient> | null = null
   try {
-    const userIdParam = request.nextUrl.searchParams.get('userId')
+    supabase = createServerClient()
+  } catch (sbErr: any) {
+    console.warn('[API Auth] Supabase client init failed (Supabase methods will be skipped):', sbErr?.message)
+  }
 
-    const supabase = createServerClient()
-    const prisma = await getPrisma()
-    
-    // Check if Prisma is available
-    if (!prisma) {
-      console.error('[API Auth] Prisma client not available')
-      return null
-    }
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[API Auth] Auth attempt, userId param:', userIdParam)
-    }
-
-    // Method 0: HttpOnly admin session cookie (fastest — no Supabase round-trip)
+  // ── Method 0: HttpOnly admin session cookie ────────────────────────────────
+  try {
     const adminCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value
     if (adminCookie) {
       const verified = verifyAdminSessionCookie(adminCookie)
@@ -52,163 +54,100 @@ export async function getAuthenticatedUser(
           select: { id: true, email: true, name: true, userType: true, phone: true },
         })
         if (user && user.userType === 'admin') {
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            userType: 'admin',
-            phone: user.phone,
-          }
+          return { id: user.id, email: user.email, name: user.name, userType: 'admin', phone: user.phone }
         }
       }
     }
-
-    // Method 1: Check Authorization header for Supabase token
-    const authHeader = request.headers.get('authorization')
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '').trim()
-      if (token) {
-        // Verify token with Supabase
-        const {
-          data: { user: supabaseUser },
-          error,
-        } = await supabase.auth.getUser(token)
-
-        if (!error && supabaseUser) {
-          // Get user profile from database
-          const user = await prisma.user.findUnique({
-            where: { id: supabaseUser.id },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              userType: true,
-              phone: true,
-            },
-          })
-
-          if (user) {
-            return {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              userType: user.userType as 'brand' | 'owner' | 'admin',
-              phone: user.phone,
-            }
-          }
-        }
-      }
-    }
-
-    // Method 2: Check cookies for Supabase session
-    const cookieHeader = request.headers.get('cookie')
-    if (cookieHeader) {
-      // Extract access token from cookies
-      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=')
-        acc[key] = value
-        return acc
-      }, {} as Record<string, string>)
-
-      const accessToken = cookies['sb-access-token'] || cookies['sb-<project-ref>-auth-token']
-      
-      if (accessToken) {
-        const {
-          data: { user: supabaseUser },
-        } = await supabase.auth.getUser(accessToken)
-
-        if (supabaseUser) {
-          const user = await prisma.user.findUnique({
-            where: { id: supabaseUser.id },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              userType: true,
-              phone: true,
-            },
-          })
-
-          if (user) {
-            return {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              userType: user.userType as 'brand' | 'owner' | 'admin',
-              phone: user.phone,
-            }
-          }
-        }
-      }
-    }
-
-    // Method 3: Fallback - Check request body for userId (legacy support)
-    try {
-      const body = await request.clone().json().catch(() => null)
-      if (body?.userId) {
-        const user = await prisma.user.findUnique({
-          where: { id: body.userId },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            userType: true,
-            phone: true,
-          },
-        })
-        if (user) {
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            userType: user.userType as 'brand' | 'owner' | 'admin',
-            phone: user.phone,
-          }
-        }
-      }
-    } catch {
-      // Body parsing failed, continue
-    }
-
-    // Method 4: Fallback - Check by userId if email lookup didn't work
-    if (userIdParam) {
-      try {
-        const user = await prisma.user.findUnique({
-          where: { id: userIdParam },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            userType: true,
-            phone: true,
-          },
-        })
-        if (user) {
-          if (process.env.NODE_ENV === 'development') {
-            // User authenticated by userId
-          }
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            userType: user.userType as 'brand' | 'owner' | 'admin',
-            phone: user.phone,
-          }
-        }
-      } catch (error: any) {
-        console.error('[API Auth] Error looking up user by userId:', error?.message || error)
-      }
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      // No authentication method succeeded
-    }
-    return null
-  } catch (error: any) {
-    console.error('[API Auth] Error getting authenticated user:', error?.message || error)
-    console.error('[API Auth] Error stack:', error?.stack)
-    return null
+  } catch (err: any) {
+    console.warn('[API Auth] Method 0 (admin cookie) failed:', err?.message)
   }
+
+  // ── Method 1: Authorization header (Supabase Bearer token) ────────────────
+  if (supabase) {
+    try {
+      const authHeader = request.headers.get('authorization')
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '').trim()
+        if (token) {
+          const { data: { user: sbUser }, error } = await supabase.auth.getUser(token)
+          if (!error && sbUser) {
+            const user = await prisma.user.findUnique({
+              where: { id: sbUser.id },
+              select: { id: true, email: true, name: true, userType: true, phone: true },
+            })
+            if (user) {
+              return { id: user.id, email: user.email, name: user.name, userType: user.userType as 'brand' | 'owner' | 'admin', phone: user.phone }
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('[API Auth] Method 1 (bearer token) failed:', err?.message)
+    }
+  }
+
+  // ── Method 2: Supabase session cookie ─────────────────────────────────────
+  if (supabase) {
+    try {
+      const cookieHeader = request.headers.get('cookie')
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=')
+          acc[key] = value
+          return acc
+        }, {} as Record<string, string>)
+        const accessToken = cookies['sb-access-token'] || cookies['sb-<project-ref>-auth-token']
+        if (accessToken) {
+          const { data: { user: sbUser } } = await supabase.auth.getUser(accessToken)
+          if (sbUser) {
+            const user = await prisma.user.findUnique({
+              where: { id: sbUser.id },
+              select: { id: true, email: true, name: true, userType: true, phone: true },
+            })
+            if (user) {
+              return { id: user.id, email: user.email, name: user.name, userType: user.userType as 'brand' | 'owner' | 'admin', phone: user.phone }
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('[API Auth] Method 2 (supabase cookie) failed:', err?.message)
+    }
+  }
+
+  // ── Method 3: userId in request body (legacy) ─────────────────────────────
+  try {
+    const body = await request.clone().json().catch(() => null)
+    if (body?.userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: body.userId },
+        select: { id: true, email: true, name: true, userType: true, phone: true },
+      })
+      if (user) {
+        return { id: user.id, email: user.email, name: user.name, userType: user.userType as 'brand' | 'owner' | 'admin', phone: user.phone }
+      }
+    }
+  } catch {
+    // Body parsing failed or not a JSON request, continue
+  }
+
+  // ── Method 4: userId in URL query param ───────────────────────────────────
+  if (userIdParam) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userIdParam },
+        select: { id: true, email: true, name: true, userType: true, phone: true },
+      })
+      if (user) {
+        return { id: user.id, email: user.email, name: user.name, userType: user.userType as 'brand' | 'owner' | 'admin', phone: user.phone }
+      }
+    } catch (err: any) {
+      console.error('[API Auth] Method 4 (userId param) failed:', err?.message)
+    }
+  }
+
+  console.warn('[API Auth] All auth methods exhausted — returning null')
+  return null
 }
 
 /**

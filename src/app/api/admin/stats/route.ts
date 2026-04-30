@@ -173,10 +173,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(stats, { headers })
   } catch (error: any) {
     console.error('Admin stats error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch statistics' },
-      { status: error.message?.includes('Forbidden') ? 403 : 500 }
-    )
+    const msg = error.message || 'Failed to fetch statistics'
+    const status = msg.includes('Forbidden') ? 403 : msg.includes('Unauthorized') ? 401 : 500
+    return NextResponse.json({ error: msg }, { status })
   }
 }
 
