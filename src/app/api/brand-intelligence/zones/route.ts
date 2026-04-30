@@ -1075,9 +1075,13 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   { name: 'Peenya',           lat: [13.005, 13.075], lng: [77.462, 77.528] },
 
   // ── North ─────────────────────────────────────────────────────────────────────
-  { name: 'RT Nagar',         lat: [12.998, 13.048], lng: [77.555, 77.618] },
-  { name: 'Hebbal',           lat: [13.022, 13.082], lng: [77.540, 77.628] },
-  { name: 'Sahakar Nagar',    lat: [13.038, 13.095], lng: [77.545, 77.622] },
+  // RT Nagar / Hebbal / Sahakar Nagar east boundaries tightened so the
+  // Manyata Embassy Business Park / Karle Town Centre cluster (lat ~13.045,
+  // lng ~77.618-77.624) classifies to Manyata instead of leaking into
+  // Hebbal (was lng 77.628) or Sahakar Nagar (was lng 77.622).
+  { name: 'RT Nagar',         lat: [12.998, 13.048], lng: [77.555, 77.605] },
+  { name: 'Hebbal',           lat: [13.022, 13.082], lng: [77.540, 77.610] },
+  { name: 'Sahakar Nagar',    lat: [13.038, 13.095], lng: [77.545, 77.600] },
   { name: 'Manyata',          lat: [13.025, 13.082], lng: [77.598, 77.668] },
   { name: 'Thanisandra',      lat: [13.045, 13.098], lng: [77.598, 77.672] },
   { name: 'Yelahanka',        lat: [13.075, 13.158], lng: [77.538, 77.648] },
