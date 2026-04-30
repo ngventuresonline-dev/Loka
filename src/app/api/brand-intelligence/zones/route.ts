@@ -1047,11 +1047,29 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   { name: 'Bellandur',        lat: [12.918, 12.952], lng: [77.660, 77.715] },
   { name: 'Sarjapur Road',    lat: [12.848, 12.918], lng: [77.660, 77.795] },
 
+  // ── Major road corridors — local-vocabulary names ────────────────────────────
+  // Locals describe location by the road, not a bbox neighbourhood. These
+  // corridor zones win priority over the smaller specific neighbourhoods
+  // they overlap (Uttarahalli, Banashankari, JP Nagar, etc.).
+  // Kanakapura Road: Banashankari-south → Konanakunte → Vajarahalli → Anekal
+  // (e.g. Prestige Falcon City at lat 12.885, lng 77.563, postal 560062).
+  { name: 'Kanakapura Road',  lat: [12.830, 12.918], lng: [77.500, 77.575] },
+  // Bannerghatta Road: BTM-south → Bilekahalli → IIM → Akshay Nagar → Bannerghatta
+  // (e.g. Kalyani Magnum at lat 12.899, lng 77.597, postal 560076).
+  // Replaces 'Arekere' (which was only one specific spot in this corridor).
+  { name: 'Bannerghatta Road',lat: [12.825, 12.910], lng: [77.580, 77.625] },
+  // Hosur Road: Madivala-south → Bommasandra → Singasandra → Begur → Bommanahalli south
+  { name: 'Hosur Road',       lat: [12.830, 12.880], lng: [77.625, 77.690] },
+  // Old Madras Road: Indiranagar-east → Kalyan Nagar south → Ramamurthynagar north
+  { name: 'Old Madras Road',  lat: [12.975, 13.005], lng: [77.660, 77.730] },
+  // Mysore Road: Vijayanagar west → Nayandahalli → Bidadi
+  { name: 'Mysore Road',      lat: [12.928, 12.985], lng: [77.450, 77.510] },
+  // Tumkur Road: Yeshwanthpur-NW → Peenya → Nelamangala
+  { name: 'Tumkur Road',      lat: [13.005, 13.080], lng: [77.460, 77.530] },
+
   // ── South: outer belt ─────────────────────────────────────────────────────────
-  // Uttarahalli listed BEFORE Banashankari so its main-road commercial strip
-  // (lat ~12.91, lng ~77.55 — Subramanyapura, Pantaloons, Forum South stores,
-  // McDonald's, KFC, "Domino's Uttarahalli Hobli", Boba Bhai etc.) doesn't
-  // get stolen by Banashankari's older too-wide bbox.
+  // Uttarahalli proper (Uttarahalli main road / Subramanyapura). Note that
+  // Falcon City / Konanakunte are now correctly in Kanakapura Road above.
   { name: 'Uttarahalli',      lat: [12.880, 12.918], lng: [77.510, 77.560] },
   // Banashankari proper sits NORTH of Uttarahalli — BSK 1st–3rd Stage,
   // Banashankari Temple, Kathriguppe, Padmanabhanagar.
@@ -1060,10 +1078,8 @@ const NEIGHBORHOODS: { name: string; lat: [number, number]; lng: [number, number
   { name: 'Vijayanagar',      lat: [12.938, 12.988], lng: [77.488, 77.548] },
   { name: 'Kengeri',          lat: [12.868, 12.945], lng: [77.442, 77.502] },
 
-  // ── Bannerghatta Road corridor — hard east/west split at lng 77.618 ───────────
-  { name: 'Arekere',          lat: [12.838, 12.915], lng: [77.548, 77.618] },
-  // Hulimavu starts exactly where Arekere ends — no containment, no gap
-  { name: 'Hulimavu',         lat: [12.838, 12.915], lng: [77.618, 77.668] },
+  // ── Hulimavu — specific area east of Bannerghatta Road corridor ───────────────
+  { name: 'Hulimavu',         lat: [12.838, 12.910], lng: [77.618, 77.668] },
   { name: 'Electronic City',  lat: [12.790, 12.848], lng: [77.625, 77.718] },
 
   // ── Central ───────────────────────────────────────────────────────────────────
