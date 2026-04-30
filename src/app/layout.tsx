@@ -46,9 +46,12 @@ export const metadata: Metadata = {
     creator: '@lokazen',
   },
   icons: {
-    icon: '/lokazen-favicon.svg',
-    shortcut: '/lokazen-favicon.svg',
-    apple: '/lokazen-favicon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/lokazen-favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/lokazen-favicon.png',
   },
   metadataBase: new URL('https://lokazen.in'),
   alternates: {
@@ -69,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preload critical resources */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -79,7 +82,7 @@ export default function RootLayout({
         <link rel="prefetch" href="/api/brands" as="fetch" crossOrigin="anonymous" />
         <link rel="prefetch" href="/api/properties?limit=20" as="fetch" crossOrigin="anonymous" />
       </head>
-      <body className="font-sans antialiased text-gray-900">
+      <body className="font-sans antialiased text-gray-900" suppressHydrationWarning>
         {/* Google Tag Manager */}
         <Script
           id="gtm-init"
