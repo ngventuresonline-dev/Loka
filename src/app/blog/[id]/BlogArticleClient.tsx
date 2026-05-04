@@ -108,25 +108,32 @@ export default function BlogArticleClient({ post }: BlogArticleClientProps) {
           </div>
 
           {post.variant === 'placements' && (
-            <div className="mb-12 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/80 px-4 py-4">
-              <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 shrink-0">Featured brands</span>
-              <div className="flex flex-wrap justify-center gap-2">
+            <div className="mb-12 rounded-2xl border border-zinc-200/80 bg-gradient-to-b from-white to-zinc-50/50 px-4 py-5 sm:px-6 sm:py-6 shadow-sm">
+              <p className="text-center text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-zinc-500 mb-4">
+                Featured brands
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4">
                 {getHeroBrandLogos(10).map(({ brand, logoSrc }) => (
                   <div
                     key={brand}
                     title={brand}
-                    className="flex h-11 w-11 items-center justify-center rounded-lg border border-white bg-white shadow-sm"
+                    className="group flex min-h-9 items-center justify-center transition-transform duration-200 hover:scale-[1.03]"
                   >
                     {logoSrc ? (
                       <Image
                         src={publicSrc(logoSrc)}
                         alt={`${brand} logo`}
-                        width={40}
-                        height={40}
-                        className="max-h-8 w-auto max-w-[2.25rem] object-contain"
+                        width={112}
+                        height={36}
+                        className="h-7 w-auto max-w-[4.5rem] sm:max-w-[5rem] object-contain object-center opacity-[0.9] group-hover:opacity-100"
                       />
                     ) : (
-                      <span className="text-xs font-bold text-[#FF5200]">{brand.charAt(0)}</span>
+                      <span
+                        className="flex h-7 min-w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#FF5200]/12 to-[#E4002B]/8 text-xs font-bold text-[#c2410c] ring-1 ring-[#FF5200]/15"
+                        aria-hidden
+                      >
+                        {brand.charAt(0)}
+                      </span>
                     )}
                   </div>
                 ))}
@@ -169,17 +176,17 @@ export default function BlogArticleClient({ post }: BlogArticleClientProps) {
                       className="rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-[#FF5200]/30 transition-all"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="shrink-0 w-20 h-20 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+                        <div className="shrink-0 w-[4.5rem] h-16 sm:h-[4.5rem] rounded-2xl bg-zinc-50/90 flex items-center justify-center overflow-hidden p-1.5 ring-1 ring-zinc-200/60">
                           {logo ? (
                             <Image
                               src={publicSrc(logo)}
                               alt={`${row.brand} logo`}
                               width={80}
                               height={80}
-                              className="object-contain max-h-14 w-auto max-w-[4.5rem]"
+                              className="object-contain max-h-12 w-auto max-w-[3.5rem] sm:max-w-[3.75rem]"
                             />
                           ) : (
-                            <span className="text-xl font-bold text-[#FF5200]" aria-hidden>
+                            <span className="text-lg font-bold text-[#FF5200]" aria-hidden>
                               {row.brand.charAt(0)}
                             </span>
                           )}

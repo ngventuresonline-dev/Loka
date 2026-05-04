@@ -125,38 +125,41 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
               </div>
             </div>
 
-            {/* Partner logos + Lokazen mark — light panel (no broken invert on SVG) */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="flex justify-center mb-5">
+            {/* Partner marks — soft “logo cloud” (no cramped squares) */}
+            <div className="rounded-2xl border border-zinc-200/80 bg-gradient-to-b from-white to-zinc-50/40 p-6 md:p-7 shadow-[0_12px_40px_-18px_rgba(0,0,0,0.08)]">
+              <div className="mb-4 flex justify-center">
                 <Image
                   src="/lokazen-logo-text.svg"
                   alt="Lokazen"
                   width={200}
                   height={56}
-                  className="h-10 w-auto max-w-full object-contain object-left"
+                  className="h-9 w-auto max-w-full object-contain"
                   priority
                 />
               </div>
-              <p className="text-center text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-4">
+              <p className="text-center text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-zinc-500 mb-5">
                 Brands on our map
               </p>
-              <div className="flex flex-wrap justify-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-4">
                 {heroBrands.map(({ brand, logoSrc }) => (
                   <div
                     key={brand}
                     title={brand}
-                    className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-100 bg-zinc-50/80 shadow-sm"
+                    className="group flex min-h-[2.5rem] items-center justify-center px-1 transition-transform duration-200 hover:scale-[1.03]"
                   >
                     {logoSrc ? (
                       <Image
                         src={publicSrc(logoSrc)}
                         alt={`${brand} logo`}
-                        width={48}
-                        height={48}
-                        className="max-h-10 w-auto max-w-[2.75rem] object-contain"
+                        width={120}
+                        height={40}
+                        className="h-8 w-auto max-w-[5.25rem] sm:max-w-[5.5rem] object-contain object-center opacity-[0.88] transition-opacity duration-200 group-hover:opacity-100"
                       />
                     ) : (
-                      <span className="text-sm font-bold text-[#FF5200]" aria-hidden>
+                      <span
+                        className="flex h-8 min-w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#FF5200]/12 to-[#E4002B]/8 px-2 text-xs font-bold text-[#c2410c] ring-1 ring-[#FF5200]/15"
+                        aria-hidden
+                      >
                         {brand.charAt(0)}
                       </span>
                     )}
@@ -165,7 +168,7 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
               </div>
               <Link
                 href="/#brand-placements"
-                className="mt-5 block text-center text-sm font-semibold text-[#FF5200] hover:text-[#E4002B] transition-colors"
+                className="mt-6 block text-center text-sm font-semibold text-[#FF5200] underline-offset-2 hover:underline hover:text-[#E4002B] transition-colors"
               >
                 See live placement map →
               </Link>
