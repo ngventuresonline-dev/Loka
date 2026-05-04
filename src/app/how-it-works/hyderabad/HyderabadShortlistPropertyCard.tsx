@@ -176,6 +176,7 @@ export function HyderabadShortlistPropertyCard({
         <div className="mt-auto flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Link
             href={p.pdf}
+            prefetch={false}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-lg bg-[#FF5200] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#E4002B] transition-colors text-center"
@@ -184,6 +185,7 @@ export function HyderabadShortlistPropertyCard({
           </Link>
           <Link
             href={p.maps}
+            prefetch={false}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-lg border-2 border-[#FF5200]/40 bg-white px-4 py-2.5 text-sm font-semibold text-[#B83200] hover:border-[#FF5200] hover:bg-[#FF5200]/5 transition-colors text-center"
