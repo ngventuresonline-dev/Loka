@@ -184,9 +184,7 @@ export default function HyderabadHowItWorksPage() {
               Confirmed visit schedule
             </h2>
             <p className="mt-3 max-w-2xl text-sm sm:text-base text-stone-600 leading-relaxed">
-              Five properties scheduled across Jubilee Hills. Tap any time slot to open the property in Maps. Use the
-              brand feedback column on each row to share who is attending, priorities, and questions so Lokazen can prep
-              before you arrive.
+              Five properties scheduled across Jubilee Hills. Tap any time slot to open the property in Maps.
             </p>
 
             <VisitScheduleFeedback />
