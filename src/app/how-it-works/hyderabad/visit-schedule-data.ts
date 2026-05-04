@@ -26,8 +26,8 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     time: '2:00 PM',
     title: 'P5 — JH Checkpost Bungalow (beside SABOO)',
     bfi: 72,
-    status: 'Scheduled',
-    note: 'Partner confirming keys with owner',
+    status: 'Confirmed',
+    note: 'Keys and access confirmed with owner',
     mapsUrl: 'https://maps.app.goo.gl/84p1nLeXnvTfeR5u5',
   },
   {
@@ -36,8 +36,8 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     title: 'P3 — Road 45, Aidu Kitchen',
     lead: true,
     bfi: 85,
-    status: 'Scheduled',
-    note: 'Developer to confirm shortly',
+    status: 'Confirmed',
+    note: 'Confirmed with developer',
     mapsUrl: 'https://maps.app.goo.gl/iJ7ULdRGos1tJkEM6',
   },
   {
