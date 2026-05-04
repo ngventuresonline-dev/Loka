@@ -67,7 +67,7 @@ const PROPERTIES: ShortlistProperty[] = [
       'Metro access, corner visibility, rent at market. 3,200 sqft fits brief cleanly. Black Fuel 1.5km.',
     chips: ['3,200 sqft', '₹3.2L/mo', 'Corner frontage'],
     image: '/properties/hyd/jh-checkpost-corner.png',
-    pdf: '/lir/TheKind_LIR_Road92_v3.pdf',
+    pdf: '/lir/TheKind_LIR_JHCheckpost_2.pdf',
     maps: 'https://www.google.com/maps/place/Jubilee+Hills+Check+Post/@17.4298,78.4089,17z',
   },
   {
