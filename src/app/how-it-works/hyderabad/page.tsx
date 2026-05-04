@@ -171,7 +171,8 @@ export default function HyderabadHowItWorksPage() {
               Confirmed visit schedule
             </h2>
             <p className="mt-3 max-w-2xl text-sm sm:text-base text-stone-600 leading-relaxed">
-              Five properties scheduled across Jubilee Hills. Tap any time slot to open the property in Maps.
+              Five properties scheduled across Jubilee Hills. Tap any time slot to open the property in Maps. Use the
+              site visit toggle on each row when your team has finished that stop — it saves on this device only.
             </p>
 
             <VisitScheduleFeedback />

@@ -1,4 +1,7 @@
-import { ExternalLink, MapPin, Route } from 'lucide-react'
+'use client'
+
+import { useCallback, useLayoutEffect, useState } from 'react'
+import { Check, ExternalLink, MapPin, Route } from 'lucide-react'
 import {
   VISIT_SCHEDULE,
   VISIT_ROUTE_MAPS_URL,
@@ -6,15 +9,98 @@ import {
   visitStatusStyles,
 } from './visit-schedule-data'
 
+const DONE_LS_KEY = 'lokazen-hyd-visit-site-done-v1'
+
+function loadDoneMap(): Record<string, boolean> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(DONE_LS_KEY)
+    if (!raw) return {}
+    const p = JSON.parse(raw) as unknown
+    if (typeof p !== 'object' || p === null || Array.isArray(p)) return {}
+    const out: Record<string, boolean> = {}
+    for (const [k, v] of Object.entries(p)) {
+      if (typeof v === 'boolean') out[k] = v
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+function VisitDoneBar({
+  rowId,
+  done,
+  onToggle,
+}: {
+  rowId: string
+  done: boolean
+  onToggle: (id: string) => void
+}) {
+  return (
+    <div
+      className={`mt-3 flex min-h-10 flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors sm:py-2.5 ${
+        done ? 'border-emerald-200 bg-emerald-50/90' : 'border-[#E8E1D3] bg-[#FAF7F1]/90'
+      }`}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        {done ? (
+          <Check className="h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2.5} aria-hidden />
+        ) : null}
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-600 sm:text-xs">
+          Site visit done
+        </span>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={done}
+        aria-label={done ? 'Mark site visit as not complete' : 'Mark site visit as complete'}
+        onClick={() => onToggle(rowId)}
+        className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5200] ${
+          done ? 'justify-end bg-emerald-600' : 'justify-start bg-stone-300'
+        }`}
+      >
+        <span className="pointer-events-none block h-6 w-6 rounded-full bg-white shadow-sm ring-1 ring-black/5" />
+      </button>
+    </div>
+  )
+}
+
 export function VisitScheduleFeedback() {
+  const [visitDone, setVisitDone] = useState<Record<string, boolean>>({})
+
+  useLayoutEffect(() => {
+    setVisitDone(loadDoneMap())
+  }, [])
+
+  const toggleDone = useCallback((id: string) => {
+    setVisitDone((prev) => {
+      const next = { ...prev, [id]: !prev[id] }
+      try {
+        localStorage.setItem(DONE_LS_KEY, JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }, [])
+
   return (
     <>
       <ol className="mt-8 sm:mt-10 space-y-3 sm:space-y-4 list-none p-0 m-0">
         {VISIT_SCHEDULE.map((row) => {
           const st = visitStatusStyles(row.status)
+          const isDone = Boolean(visitDone[row.rowId])
           return (
             <li key={row.rowId}>
-              <div className="rounded-xl border border-[#E8E1D3] border-l-[3px] border-l-[#FF5200]/35 bg-white pl-3.5 transition-colors duration-200 hover:bg-[#F5F1EA]/70 sm:pl-4 md:border-l-4 md:pl-5">
+              <div
+                className={`rounded-xl border border-l-[3px] border-l-[#FF5200]/35 pl-3.5 transition-colors duration-200 sm:pl-4 md:border-l-4 md:pl-5 ${
+                  isDone
+                    ? 'border-emerald-200/80 bg-emerald-50/30 hover:bg-emerald-50/50'
+                    : 'border-[#E8E1D3] bg-white hover:bg-[#F5F1EA]/70'
+                }`}
+              >
                 <div className="flex flex-col gap-3 py-4 pr-4 sm:py-5 sm:pr-5 md:grid md:grid-cols-[140px_minmax(0,1fr)_auto] md:gap-x-6 md:gap-y-1 md:items-start md:py-5 md:pr-6">
                   <a
                     href={row.mapsUrl}
@@ -56,6 +142,7 @@ export function VisitScheduleFeedback() {
                       <p className="mt-2 text-sm font-semibold text-stone-800">POC: {row.poc}</p>
                     ) : null}
                     <p className="mt-2 text-sm text-stone-600 leading-relaxed">{row.note}</p>
+                    <VisitDoneBar rowId={row.rowId} done={isDone} onToggle={toggleDone} />
                   </div>
 
                   <div className="flex pt-1 md:justify-end md:pt-0.5">
