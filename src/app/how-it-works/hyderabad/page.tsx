@@ -171,10 +171,7 @@ export default function HyderabadHowItWorksPage() {
               Confirmed visit schedule
             </h2>
             <p className="mt-3 max-w-2xl text-sm sm:text-base text-stone-600 leading-relaxed">
-              Five properties scheduled across Jubilee Hills. Tap any time slot to open the property in Maps. Use{' '}
-              <strong className="font-semibold text-stone-700">Site visit done</strong> after each stop — when{' '}
-              NEXT_PUBLIC_KIND_HYD_P1_PROPERTY_ID (and P2, P3, P5, P6) match your database properties, toggles sync to
-              site_visits for the visit day set by NEXT_PUBLIC_KIND_HYD_VISIT_DAY (IST calendar date).
+              Five properties scheduled across Jubilee Hills. Tap any time slot to open the location in Google Maps.
             </p>
 
             <VisitScheduleFeedback />
