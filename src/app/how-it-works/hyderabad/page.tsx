@@ -1,9 +1,9 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { ExternalLink, MapPin, Route } from 'lucide-react'
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import { VisitScheduleFeedback } from './VisitScheduleFeedback'
+import { HyderabadShortlistPropertyCard } from './HyderabadShortlistPropertyCard'
+import type { Verdict } from './hyderabad-shortlist-types'
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -19,10 +19,9 @@ const plusJakarta = Plus_Jakarta_Sans({
   variable: '--font-plusjakarta',
 })
 
-type Verdict = 'Lead Rec' | 'Strong Rec' | 'Conditional' | 'Pass'
-
 type ShortlistProperty = {
   id: string
+  feedbackCode: string
   bfi: number
   verdict: Verdict
   name: string
@@ -37,6 +36,7 @@ type ShortlistProperty = {
 const PROPERTIES: ShortlistProperty[] = [
   {
     id: 'P3',
+    feedbackCode: 'P3',
     bfi: 85,
     verdict: 'Lead Rec',
     name: 'P3 — Road No. 45, Jubilee Hills (Aidu Kitchen)',
@@ -49,6 +49,7 @@ const PROPERTIES: ShortlistProperty[] = [
   },
   {
     id: 'P6',
+    feedbackCode: 'P6',
     bfi: 80,
     verdict: 'Strong Rec',
     name: 'P6 — Road No. 59, Jubilee Hills (OKA)',
@@ -61,6 +62,7 @@ const PROPERTIES: ShortlistProperty[] = [
   },
   {
     id: 'P2',
+    feedbackCode: 'P2',
     bfi: 78,
     verdict: 'Strong Rec',
     name: 'P2 — Jubilee Hills Checkpost (Corner Unit)',
@@ -74,6 +76,7 @@ const PROPERTIES: ShortlistProperty[] = [
   },
   {
     id: 'P4',
+    feedbackCode: 'P4',
     bfi: 74,
     verdict: 'Conditional',
     name: 'P4 — Plot 484/A, Road No. 36, Jubilee Hills',
@@ -86,6 +89,7 @@ const PROPERTIES: ShortlistProperty[] = [
   },
   {
     id: 'P5',
+    feedbackCode: 'P5',
     bfi: 72,
     verdict: 'Conditional',
     name: 'P5 — JH Checkpost Road, G+2+PH Bungalow',
@@ -98,6 +102,7 @@ const PROPERTIES: ShortlistProperty[] = [
   },
   {
     id: 'P1',
+    feedbackCode: 'P1',
     bfi: 68,
     verdict: 'Conditional',
     name: 'P1 — Road No. 92, Jubilee Hills (Villa)',
@@ -110,6 +115,7 @@ const PROPERTIES: ShortlistProperty[] = [
   },
   {
     id: 'BH',
+    feedbackCode: 'BH-RD3',
     bfi: 40,
     verdict: 'Pass',
     name: 'BH Road 3 — Green Valley, Banjara Hills (PASS)',
@@ -122,92 +128,6 @@ const PROPERTIES: ShortlistProperty[] = [
     pass: true,
   },
 ]
-
-function bfiBadgeClass(bfi: number): string {
-  if (bfi >= 80) return 'bg-emerald-600 text-white'
-  if (bfi >= 65) return 'bg-amber-500 text-stone-900'
-  return 'bg-red-600 text-white'
-}
-
-function verdictPillClass(verdict: Verdict, pass?: boolean): string {
-  if (pass || verdict === 'Pass') {
-    return 'bg-stone-200 text-stone-700 border border-stone-300'
-  }
-  if (verdict === 'Lead Rec') return 'bg-[#FF5200]/15 text-[#B83200] border border-[#FF5200]/30'
-  if (verdict === 'Strong Rec') return 'bg-emerald-50 text-emerald-900 border border-emerald-200'
-  return 'bg-amber-50 text-amber-950 border border-amber-200'
-}
-
-type VisitStatus = 'Confirmed' | 'Scheduled' | 'Awaiting confirmation'
-
-type VisitSlot = {
-  time: string
-  title: string
-  lead?: boolean
-  bfi: number
-  status: VisitStatus
-  note: string
-  mapsUrl: string
-}
-
-const VISIT_SCHEDULE: VisitSlot[] = [
-  {
-    time: '1:00 PM',
-    title: 'P1 — Road 92 Villa (Behind Hakim\'s Aalim)',
-    bfi: 68,
-    status: 'Confirmed',
-    note: 'Nikesh will also show BH Road 3 (BFI 40) ~3km from here',
-    mapsUrl: 'https://maps.app.goo.gl/gu8fVhyiJE1WGE959',
-  },
-  {
-    time: '2:00 PM',
-    title: 'P5 — JH Checkpost Bungalow (beside SABOO)',
-    bfi: 72,
-    status: 'Scheduled',
-    note: 'Partner confirming keys with owner',
-    mapsUrl: 'https://maps.app.goo.gl/84p1nLeXnvTfeR5u5',
-  },
-  {
-    time: '3:00 PM',
-    title: 'P3 — Road 45, Aidu Kitchen',
-    lead: true,
-    bfi: 85,
-    status: 'Scheduled',
-    note: 'Developer to confirm shortly',
-    mapsUrl: 'https://maps.app.goo.gl/iJ7ULdRGos1tJkEM6',
-  },
-  {
-    time: '3:30 – 4:00 PM',
-    title: 'P6 — Road 59, OKA Bar & Bistro',
-    bfi: 80,
-    status: 'Confirmed',
-    note: 'Confirmed with partner',
-    mapsUrl: 'https://maps.app.goo.gl/gsDtZVr89nAXpqNv8',
-  },
-  {
-    time: 'TBC',
-    title: 'P2 — JH Checkpost Corner Unit',
-    bfi: 78,
-    status: 'Awaiting confirmation',
-    note: 'Last visit — confirmation pending',
-    mapsUrl:
-      'https://www.google.com/maps/place/17%C2%B025\'53.0%22N+78%C2%B025\'17.1%22E/@17.4313889,78.4214167,17z',
-  },
-]
-
-const VISIT_ROUTE_MAPS_URL =
-  'https://www.google.com/maps/dir/17.4153686,78.4211877/17.418447,78.41287/17.4271923,78.4060177/17.4302067,78.3978765/17.4313889,78.4214167'
-
-function visitStatusStyles(status: VisitStatus): { dot: string; text: string } {
-  switch (status) {
-    case 'Confirmed':
-      return { dot: 'bg-emerald-500', text: 'text-emerald-700' }
-    case 'Scheduled':
-      return { dot: 'bg-amber-500', text: 'text-amber-800' }
-    case 'Awaiting confirmation':
-      return { dot: 'bg-stone-400', text: 'text-stone-500' }
-  }
-}
 
 export default function HyderabadHowItWorksPage() {
   const fontVars = `${fraunces.variable} ${plusJakarta.variable}`
@@ -264,97 +184,12 @@ export default function HyderabadHowItWorksPage() {
               Confirmed visit schedule
             </h2>
             <p className="mt-3 max-w-2xl text-sm sm:text-base text-stone-600 leading-relaxed">
-              Five properties scheduled across Jubilee Hills. Tap any time slot to open the property in Maps.
+              Five properties scheduled across Jubilee Hills. Tap any time slot to open the property in Maps. Use the
+              brand feedback column on each row to share who is attending, priorities, and questions so Lokazen can prep
+              before you arrive.
             </p>
 
-            <ol className="mt-8 sm:mt-10 space-y-3 sm:space-y-4 list-none p-0 m-0">
-              {VISIT_SCHEDULE.map((row, index) => {
-                const st = visitStatusStyles(row.status)
-                return (
-                  <li key={index}>
-                    <div className="rounded-xl border border-[#E8E1D3] border-l-[3px] border-l-[#FF5200]/35 bg-white pl-3.5 transition-colors duration-200 hover:bg-[#F5F1EA]/70 sm:pl-4 md:border-l-4 md:pl-5">
-                      <div className="flex flex-col gap-3 py-4 pr-4 sm:py-5 sm:pr-5 md:grid md:grid-cols-[140px_minmax(0,1fr)_auto] md:gap-x-6 md:gap-y-1 md:items-start md:py-5 md:pr-6">
-                        <a
-                          href={row.mapsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group/time flex shrink-0 items-center gap-2 text-xs font-semibold text-stone-600 hover:text-[#B83200] sm:text-sm md:w-[140px] md:flex-col md:items-start md:gap-2 md:text-lg md:font-semibold md:text-[#1A1A14] md:leading-none"
-                          aria-label={`Open ${row.title} in Maps at ${row.time}`}
-                        >
-                          <MapPin
-                            className="h-4 w-4 shrink-0 text-[#FF5200] md:h-5 md:w-5"
-                            aria-hidden
-                          />
-                          <span className="border-b border-dashed border-stone-300 group-hover/time:border-[#FF5200]/50 md:border-0">
-                            {row.time}
-                          </span>
-                        </a>
-
-                        <div className="min-w-0 md:pt-0.5">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-                            <h3 className="text-base font-bold text-[#1A1A14] leading-snug sm:text-[17px]">
-                              {row.title}
-                            </h3>
-                            {row.lead ? (
-                              <span className="inline-flex items-center rounded-md bg-[#FF5200]/12 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[#B83200] ring-1 ring-[#FF5200]/25">
-                                LEAD
-                              </span>
-                            ) : null}
-                            <span
-                              className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${bfiBadgeClass(row.bfi)}`}
-                            >
-                              BFI {row.bfi}
-                            </span>
-                          </div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className={`h-2 w-2 shrink-0 rounded-full ${st.dot}`} aria-hidden />
-                            <span className={`text-sm font-medium ${st.text}`}>{row.status}</span>
-                          </div>
-                          <p className="mt-2 text-sm text-stone-600 leading-relaxed">{row.note}</p>
-                        </div>
-
-                        <div className="flex pt-1 md:justify-end md:pt-0.5">
-                          <a
-                            href={row.mapsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#B83200] hover:text-[#FF5200] transition-colors"
-                          >
-                            Open in Maps
-                            <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                )
-              })}
-            </ol>
-
-            <div className="mt-4 sm:mt-5 rounded-xl border border-[#E8E1D3] bg-[#F5F1EA] p-4 sm:p-5 md:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-                <div className="flex min-w-0 gap-3">
-                  <Route className="h-5 w-5 shrink-0 text-[#FF5200] mt-0.5" aria-hidden />
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-                      Multi-stop route
-                    </p>
-                    <p className="mt-1 text-sm sm:text-base text-stone-700 font-medium leading-snug">
-                      Open all 5 stops in Google Maps
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href={VISIT_ROUTE_MAPS_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-[#FF5200] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#E4002B] transition-colors sm:self-center"
-                >
-                  Open route
-                  <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
-                </a>
-              </div>
-            </div>
+            <VisitScheduleFeedback />
           </div>
         </section>
 
@@ -365,67 +200,7 @@ export default function HyderabadHowItWorksPage() {
           </h2>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
             {PROPERTIES.map((p) => (
-              <article
-                key={p.id}
-                className={`group flex flex-col rounded-2xl border bg-white overflow-hidden shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                  p.pass ? 'border-stone-300 bg-stone-50/80' : 'border-[#E8E1D3]'
-                }`}
-              >
-                <div className="relative aspect-[16/9] w-full bg-stone-200 shrink-0">
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    fill
-                    className={`object-cover ${p.pass ? 'brightness-[0.92] contrast-[0.98]' : ''}`}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                  />
-                  <div
-                    className={`absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-bold shadow-sm ${bfiBadgeClass(p.bfi)}`}
-                  >
-                    BFI {p.bfi}
-                  </div>
-                </div>
-
-                <div className="flex flex-col flex-1 p-5 sm:p-6">
-                  <span
-                    className={`inline-flex w-fit max-w-full rounded-full px-2.5 py-1 text-[11px] sm:text-xs font-semibold mb-3 ${verdictPillClass(p.verdict, p.pass)}`}
-                  >
-                    {p.verdict}
-                  </span>
-                  <h3 className={`${fraunces.className} text-lg sm:text-xl font-bold text-[#1A1A14] leading-snug mb-3`}>
-                    {p.name}
-                  </h3>
-                  <p className="text-sm text-stone-600 leading-relaxed flex-1 mb-4">{p.summary}</p>
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    {p.chips.map((c) => (
-                      <span
-                        key={c}
-                        className="inline-block rounded-md border border-[#E8E1D3] bg-[#FAF7F1] px-2 py-1 text-[11px] sm:text-xs font-medium text-stone-700"
-                      >
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-auto flex flex-col sm:flex-row gap-2 sm:gap-3">
-                    <Link
-                      href={p.pdf}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-lg bg-[#FF5200] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#E4002B] transition-colors text-center"
-                    >
-                      View Full LIR
-                    </Link>
-                    <Link
-                      href={p.maps}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-lg border-2 border-[#FF5200]/40 bg-white px-4 py-2.5 text-sm font-semibold text-[#B83200] hover:border-[#FF5200] hover:bg-[#FF5200]/5 transition-colors text-center"
-                    >
-                      View on Maps
-                    </Link>
-                  </div>
-                </div>
-              </article>
+              <HyderabadShortlistPropertyCard key={p.id} p={p} headingFontClass={fraunces.className} />
             ))}
           </div>
         </section>
