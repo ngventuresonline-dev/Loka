@@ -432,17 +432,19 @@ enum site_visit_status_enum {
 }
 
 model SiteVisit {
-  id           String                 @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
-  ownerId      String                 @map("owner_id") @db.VarChar(36)
-  brandId      String                 @map("brand_id") @db.VarChar(36)
-  propertyId   String                 @map("property_id") @db.VarChar(36)
-  inquiryId    String?                @map("inquiry_id") @db.VarChar(36)
-  scheduledAt  DateTime               @map("scheduled_at") @db.Timestamp(6)
-  status       site_visit_status_enum @default(scheduled)
-  outcome      String?                @db.VarChar(80)
-  notes        String?                @db.Text
-  createdAt    DateTime?              @map("created_at") @default(now()) @db.Timestamp(6)
-  updatedAt    DateTime?              @map("updated_at") @default(now()) @db.Timestamp(6)
+  id                      String                 @id @default(dbgenerated("(gen_random_uuid())::character varying(36)")) @db.VarChar(36)
+  ownerId                 String                 @map("owner_id") @db.VarChar(36)
+  brandId                 String                 @map("brand_id") @db.VarChar(36)
+  propertyId              String                 @map("property_id") @db.VarChar(36)
+  inquiryId               String?                @map("inquiry_id") @db.VarChar(36)
+  scheduledAt             DateTime               @map("scheduled_at") @db.Timestamp(6)
+  status                  site_visit_status_enum @default(scheduled)
+  outcome                 String?                @db.VarChar(80)
+  notes                   String?                @db.Text
+  visitConfirmedByBrand   Boolean                @default(false) @map("visit_confirmed_by_brand")
+  brandConfirmedAt        DateTime?              @map("brand_confirmed_at") @db.Timestamptz(6)
+  createdAt               DateTime?              @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt               DateTime?              @map("updated_at") @default(now()) @db.Timestamp(6)
 
   owner    User     @relation("site_visits_owner_idTousers", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   brand    User     @relation("site_visits_brand_idTousers", fields: [brandId], references: [id], onDelete: Cascade, onUpdate: NoAction)

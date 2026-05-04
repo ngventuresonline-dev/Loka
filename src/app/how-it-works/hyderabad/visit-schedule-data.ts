@@ -1,5 +1,17 @@
 export type VisitStatus = 'Confirmed' | 'Scheduled' | 'Awaiting confirmation'
 
+/** IST calendar day (YYYY-MM-DD) for matching `site_visits.scheduled_at` (set `NEXT_PUBLIC_KIND_HYD_VISIT_DAY` in env). */
+export const VISIT_SCHEDULE_IST_DATE =
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_KIND_HYD_VISIT_DAY?.trim()) || '2026-05-04'
+
+/** UUID of `properties.id` — set `NEXT_PUBLIC_KIND_HYD_P1_PROPERTY_ID` (and P2, P3, P5, P6) when site_visits rows exist. */
+function kindHydPropertyId(envKey: string): string | null {
+  if (typeof process === 'undefined') return null
+  const v = process.env[`NEXT_PUBLIC_KIND_HYD_${envKey}_PROPERTY_ID`]?.trim()
+  if (!v || v.length < 32) return null
+  return v
+}
+
 export type VisitSlot = {
   rowId: string
   time: string
@@ -11,6 +23,8 @@ export type VisitSlot = {
   poc?: string
   note: string
   mapsUrl: string
+  /** When set, brand visit-done toggle syncs to `site_visits` for this property on `VISIT_SCHEDULE_IST_DATE`. */
+  propertyId: string | null
 }
 
 export const VISIT_SCHEDULE: VisitSlot[] = [
@@ -23,6 +37,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     poc: 'Nikesh',
     note: 'Will also show BH Road 3 (BFI 40) ~3km from here',
     mapsUrl: 'https://maps.app.goo.gl/gu8fVhyiJE1WGE959',
+    propertyId: kindHydPropertyId('P1'),
   },
   {
     rowId: 'p5-bungalow',
@@ -33,6 +48,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     poc: 'Aravind',
     note: 'Keys and access confirmed with owner',
     mapsUrl: 'https://maps.app.goo.gl/84p1nLeXnvTfeR5u5',
+    propertyId: kindHydPropertyId('P5'),
   },
   {
     rowId: 'p3-aidu',
@@ -44,6 +60,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     poc: 'Amann · Developer',
     note: 'Confirmed with developer',
     mapsUrl: 'https://maps.app.goo.gl/iJ7ULdRGos1tJkEM6',
+    propertyId: kindHydPropertyId('P3'),
   },
   {
     rowId: 'p6-oka',
@@ -54,6 +71,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     poc: 'Saif',
     note: 'Confirmed with partner',
     mapsUrl: 'https://maps.app.goo.gl/gsDtZVr89nAXpqNv8',
+    propertyId: kindHydPropertyId('P6'),
   },
   {
     rowId: 'p2-corner',
@@ -64,6 +82,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     note: 'Last visit — confirmation pending',
     mapsUrl:
       'https://www.google.com/maps/place/17%C2%B025\'53.0%22N+78%C2%B025\'17.1%22E/@17.4313889,78.4214167,17z',
+    propertyId: kindHydPropertyId('P2'),
   },
 ]
 
