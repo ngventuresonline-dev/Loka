@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 
-const ALLOWED_CODES = new Set(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'BH-RD3'])
+const ALLOWED_CODES = new Set(['P1', 'P2', 'P3', 'P5', 'P6', 'BH-RD3'])
 
 const RENT_OK = new Set(['yes', 'no', 'negotiate', 'unsure'])
 const SIZE_OK = new Set(['yes', 'no', 'too_small', 'too_large', 'unsure'])

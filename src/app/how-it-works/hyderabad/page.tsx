@@ -75,19 +75,6 @@ const PROPERTIES: ShortlistProperty[] = [
       'https://www.google.com/maps/place/17%C2%B025\'53.0%22N+78%C2%B025\'17.1%22E/@17.4313889,78.4214167,17z/data=!3m1!4b1!4m4!3m3!8m2!3d17.4313889!4d78.4214167!18m1!1e1?entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D',
   },
   {
-    id: 'P4',
-    feedbackCode: 'P4',
-    bfi: 74,
-    verdict: 'Conditional',
-    name: 'P4 — Plot 484/A, Road No. 36, Jubilee Hills',
-    summary:
-      'Peddamma Gudi Metro at doorstep. Peddamma Temple opposite — thousands of daily devotees. ALANATI premium neighbour. Shell condition, rent above market.',
-    chips: ['4,000 sqft G+1', '₹12L/mo (nego. ₹8–9L)', '50ft frontage'],
-    image: '/properties/hyd/road36-plot484a.png',
-    pdf: '/lir/TheKind_LIR_Road36_Plot484A.pdf',
-    maps: 'https://maps.app.goo.gl/ZrCszDwEzgwfL64o9',
-  },
-  {
     id: 'P5',
     feedbackCode: 'P5',
     bfi: 72,
@@ -146,17 +133,17 @@ export default function HyderabadHowItWorksPage() {
               Confidential · April–May 2026 · The Kind Roastery × Lokazen
             </p>
             <h1 className={`${fraunces.className} text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[#1A1A14] max-w-4xl leading-[1.1]`}>
-              Hyderabad shortlist — 7 properties evaluated
+              Hyderabad shortlist — 6 properties evaluated
             </h1>
             <p className="mt-6 text-base sm:text-lg text-stone-600 max-w-3xl leading-relaxed">
               Each property has been ground-checked, scored on the Lokazen BFI, and presented as a full Location Intelligence Report. Click any card for the detailed LIR.
             </p>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm sm:text-base font-semibold text-stone-800 border-t border-[#E8E1D3] pt-8">
-              <span>7 Properties</span>
+              <span>6 Properties</span>
               <span className="text-stone-300 hidden sm:inline" aria-hidden>
                 ·
               </span>
-              <span>6 Recommended</span>
+              <span>5 Recommended</span>
               <span className="text-stone-300 hidden sm:inline" aria-hidden>
                 ·
               </span>
