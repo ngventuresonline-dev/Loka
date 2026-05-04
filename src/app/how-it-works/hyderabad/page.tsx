@@ -42,7 +42,7 @@ const PROPERTIES: ShortlistProperty[] = [
     summary:
       "Hyderabad's most active premium F&B corridor. ₹1.5–2.2Cr existing fitout. TRUE BLACK 100m away validates specialty demand. Road 45's first all-veg specialty roastery.",
     chips: ['5,000 sqft SBU', '₹16L/mo (nego. ₹11–12L)', '40–50ft frontage'],
-    image: '/properties/hyd/road45-aidu.jpg',
+    image: '/properties/hyd/road45-aidu.png',
     pdf: '/lir/TheKind_LIR_Road45_v2.pdf',
     maps: 'https://www.google.com/maps/place/Aidu+Kitchen/@17.4271923,78.4060177,19z',
   },
@@ -54,7 +54,7 @@ const PROPERTIES: ShortlistProperty[] = [
     summary:
       "OKA Bar & Bistro fitout intact — double-height indoor, courtyard, rooftop al fresco. Adjacent to Chutney's (18,456 reviews). 4 distinct seating zones.",
     chips: ['6,000 sqft G+2', '₹12L/mo', 'Valet parking'],
-    image: '/properties/hyd/road59-oka.jpg',
+    image: '/properties/hyd/road59-oka.png',
     pdf: '/lir/TheKind_LIR_OKA_Road59.pdf',
     maps: 'https://maps.app.goo.gl/71EBWD19zX47R1rz5',
   },
@@ -66,7 +66,7 @@ const PROPERTIES: ShortlistProperty[] = [
     summary:
       'Metro access, corner visibility, rent at market. 3,200 sqft fits brief cleanly. Black Fuel 1.5km.',
     chips: ['3,200 sqft', '₹3.2L/mo', 'Corner frontage'],
-    image: '/properties/hyd/jh-checkpost-corner.jpg',
+    image: '/properties/hyd/jh-checkpost-corner.png',
     pdf: '/lir/TheKind_LIR_Road92_v3.pdf',
     maps: 'https://www.google.com/maps/place/Jubilee+Hills+Check+Post/@17.4298,78.4089,17z',
   },
@@ -78,7 +78,7 @@ const PROPERTIES: ShortlistProperty[] = [
     summary:
       'Peddamma Gudi Metro at doorstep. Peddamma Temple opposite — thousands of daily devotees. ALANATI premium neighbour. Shell condition, rent above market.',
     chips: ['4,000 sqft G+1', '₹12L/mo (nego. ₹8–9L)', '50ft frontage'],
-    image: '/properties/hyd/road36-plot484a.jpg',
+    image: '/properties/hyd/road36-plot484a.png',
     pdf: '/lir/TheKind_LIR_Road36_Plot484A.pdf',
     maps: 'https://maps.app.goo.gl/ZrCszDwEzgwfL64o9',
   },
@@ -90,7 +90,7 @@ const PROPERTIES: ShortlistProperty[] = [
     summary:
       'Independent bungalow beside SABOO Luxury Showroom. KBR Park 400m. 70ft frontage with penthouse terrace potential. Size 2x brief — needs partial floor arrangement.',
     chips: ['11,000 sqft G+2+PH', '₹9.5L/mo', '70ft frontage'],
-    image: '/properties/hyd/jh-checkpost-bungalow.jpg',
+    image: '/properties/hyd/jh-checkpost-bungalow.png',
     pdf: '/lir/TheKind_LIR_Road_92__Bungalow.pdf',
     maps: 'https://maps.app.goo.gl/SVmKchEGo4Xz1mK79',
   },
@@ -102,7 +102,7 @@ const PROPERTIES: ShortlistProperty[] = [
     summary:
       "Behind Hakim's Aalim. KBR Park 500m drives morning + evening peaks. Blue Tokai Jubilee Hills closure removes nearest specialty competitor. Visibility must be ground-truthed.",
     chips: ['4,500 sqft SBU', '₹5L/mo (counter ₹3.75–4.25L)', '60ft frontage'],
-    image: '/properties/hyd/road92-villa.jpg',
+    image: '/properties/hyd/road92-villa.png',
     pdf: '/lir/TheKind_LIR_Road92_v3.pdf',
     maps: 'https://maps.app.goo.gl/pLZDjFDxV2sFhPacA',
   },
@@ -114,7 +114,7 @@ const PROPERTIES: ShortlistProperty[] = [
     summary:
       'Secondary road, no metro. Katha Specialty Coffee in same micro-market. Currently occupied by DINEHILL. Size 2x brief at high fixed cost. Lokazen recommends pass.',
     chips: ['10,000 sqft', '₹10L/mo', 'Currently occupied'],
-    image: '/properties/hyd/bh-road3.jpg',
+    image: '/properties/hyd/bh-road3.png',
     pdf: '/lir/TheKind_LIR_BH_Road3.pdf',
     maps: 'https://maps.app.goo.gl/wN2qMXR87j8c2hydA',
     pass: true,
