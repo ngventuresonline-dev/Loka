@@ -68,7 +68,8 @@ const PROPERTIES: ShortlistProperty[] = [
     chips: ['3,200 sqft', '₹3.2L/mo', 'Corner frontage'],
     image: '/properties/hyd/jh-checkpost-corner.png',
     pdf: '/lir/TheKind_LIR_JHCheckpost_2.pdf',
-    maps: 'https://www.google.com/maps/place/Jubilee+Hills+Check+Post/@17.4298,78.4089,17z',
+    maps:
+      'https://www.google.com/maps/place/17%C2%B025\'53.0%22N+78%C2%B025\'17.1%22E/@17.4313889,78.4214167,17z/data=!3m1!4b1!4m4!3m3!8m2!3d17.4313889!4d78.4214167!18m1!1e1?entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D',
   },
   {
     id: 'P4',
