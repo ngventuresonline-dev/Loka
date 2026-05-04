@@ -52,6 +52,9 @@ export function VisitScheduleFeedback() {
                       <span className={`h-2 w-2 shrink-0 rounded-full ${st.dot}`} aria-hidden />
                       <span className={`text-sm font-medium ${st.text}`}>{row.status}</span>
                     </div>
+                    {row.poc ? (
+                      <p className="mt-2 text-sm font-semibold text-stone-800">POC: {row.poc}</p>
+                    ) : null}
                     <p className="mt-2 text-sm text-stone-600 leading-relaxed">{row.note}</p>
                   </div>
 

@@ -7,6 +7,8 @@ export type VisitSlot = {
   lead?: boolean
   bfi: number
   status: VisitStatus
+  /** On-site / coordination contact */
+  poc?: string
   note: string
   mapsUrl: string
 }
@@ -18,7 +20,8 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     title: "P1 — Road 92 Villa (Behind Hakim's Aalim)",
     bfi: 68,
     status: 'Confirmed',
-    note: 'Nikesh will also show BH Road 3 (BFI 40) ~3km from here',
+    poc: 'Nikesh',
+    note: 'Will also show BH Road 3 (BFI 40) ~3km from here',
     mapsUrl: 'https://maps.app.goo.gl/gu8fVhyiJE1WGE959',
   },
   {
@@ -27,6 +30,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     title: 'P5 — JH Checkpost Bungalow (beside SABOO)',
     bfi: 72,
     status: 'Confirmed',
+    poc: 'Aravind',
     note: 'Keys and access confirmed with owner',
     mapsUrl: 'https://maps.app.goo.gl/84p1nLeXnvTfeR5u5',
   },
@@ -37,6 +41,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     lead: true,
     bfi: 85,
     status: 'Confirmed',
+    poc: 'Amann · Developer',
     note: 'Confirmed with developer',
     mapsUrl: 'https://maps.app.goo.gl/iJ7ULdRGos1tJkEM6',
   },
@@ -46,6 +51,7 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     title: 'P6 — Road 59, OKA Bar & Bistro',
     bfi: 80,
     status: 'Confirmed',
+    poc: 'Saif',
     note: 'Confirmed with partner',
     mapsUrl: 'https://maps.app.goo.gl/gsDtZVr89nAXpqNv8',
   },
