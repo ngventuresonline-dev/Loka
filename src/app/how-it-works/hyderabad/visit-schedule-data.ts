@@ -55,20 +55,11 @@ export const VISIT_SCHEDULE: VisitSlot[] = [
     note: 'Confirmed with partner',
     mapsUrl: 'https://maps.app.goo.gl/gsDtZVr89nAXpqNv8',
   },
-  {
-    rowId: 'p2-corner',
-    time: 'TBC',
-    title: 'P2 — JH Checkpost Corner Unit',
-    bfi: 78,
-    status: 'Awaiting confirmation',
-    note: 'Last visit — confirmation pending',
-    mapsUrl:
-      'https://www.google.com/maps/place/17%C2%B025\'53.0%22N+78%C2%B025\'17.1%22E/@17.4313889,78.4214167,17z',
-  },
 ]
 
+/** Multi-stop route matching remaining schedule stops (P2 removed — no longer available). */
 export const VISIT_ROUTE_MAPS_URL =
-  'https://www.google.com/maps/dir/17.4153686,78.4211877/17.418447,78.41287/17.4271923,78.4060177/17.4302067,78.3978765/17.4313889,78.4214167'
+  'https://www.google.com/maps/dir/17.4153686,78.4211877/17.418447,78.41287/17.4271923,78.4060177/17.4302067,78.3978765'
 
 export function visitStatusStyles(status: VisitStatus): { dot: string; text: string } {
   switch (status) {

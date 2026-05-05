@@ -136,7 +136,7 @@ export function VisitScheduleFeedback() {
                 Multi-stop route
               </p>
               <p className="mt-1 text-sm font-medium leading-snug text-stone-700 sm:text-base">
-                Open all 5 stops in Google Maps
+                Open all 4 stops in Google Maps
               </p>
             </div>
           </div>

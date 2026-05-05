@@ -61,20 +61,6 @@ const PROPERTIES: ShortlistProperty[] = [
     maps: 'https://maps.app.goo.gl/71EBWD19zX47R1rz5',
   },
   {
-    id: 'P2',
-    feedbackCode: 'P2',
-    bfi: 78,
-    verdict: 'Strong Rec',
-    name: 'P2 — Jubilee Hills Checkpost (Corner Unit)',
-    summary:
-      'Metro access, corner visibility, rent at market. 3,200 sqft fits brief cleanly. Black Fuel 1.5km.',
-    chips: ['3,200 sqft', '₹3.2L/mo', 'Corner frontage'],
-    image: '/properties/hyd/jh-checkpost-corner.png',
-    pdf: '/lir/TheKind_LIR_JHCheckpost_2.pdf',
-    maps:
-      'https://www.google.com/maps/place/17%C2%B025\'53.0%22N+78%C2%B025\'17.1%22E/@17.4313889,78.4214167,17z/data=!3m1!4b1!4m4!3m3!8m2!3d17.4313889!4d78.4214167!18m1!1e1?entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D',
-  },
-  {
     id: 'P5',
     feedbackCode: 'P5',
     bfi: 72,
@@ -86,6 +72,20 @@ const PROPERTIES: ShortlistProperty[] = [
     image: '/properties/hyd/jh-checkpost-bungalow.png',
     pdf: '/lir/TheKind_LIR_Road_92__Bungalow.pdf',
     maps: 'https://maps.app.goo.gl/SVmKchEGo4Xz1mK79',
+  },
+  {
+    id: 'P7',
+    feedbackCode: 'P7',
+    bfi: 70,
+    verdict: 'Conditional',
+    name: 'P7 — Road No. 44, Jubilee Hills (Commercial Bungalow)',
+    summary:
+      'Street-facing commercial bungalow on Road 44 — multi-level cream façade with strong curb presence in a premium Jubilee Hills corridor. Size, rent, and conversion terms in the LIR.',
+    chips: ['Commercial bungalow', 'Road 44, JH', 'Multi-level street frontage'],
+    image: '/properties/hyd/road44-jh-commercial-bungalow.png',
+    pdf: '/lir/TheKind_LIR_Road44_JH.pdf',
+    maps:
+      'https://www.google.com/maps/search/?api=1&query=Road+44%2C+Jubilee+Hills%2C+Hyderabad%2C+Telangana',
   },
   {
     id: 'P1',
@@ -183,7 +183,7 @@ export default function HyderabadHowItWorksPage() {
               Confirmed visit schedule
             </h2>
             <p className="mt-3 max-w-2xl text-sm sm:text-base text-stone-600 leading-relaxed">
-              Five properties scheduled across Jubilee Hills. Tap any time slot to open the location in Google Maps.
+              Four properties scheduled across Jubilee Hills. Tap any time slot to open the location in Google Maps.
             </p>
 
             <VisitScheduleFeedback />
