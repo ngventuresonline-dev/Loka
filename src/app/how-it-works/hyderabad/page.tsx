@@ -84,8 +84,7 @@ const PROPERTIES: ShortlistProperty[] = [
     chips: ['Commercial bungalow', 'Road 44, JH', 'Multi-level street frontage'],
     image: '/properties/hyd/road44-jh-commercial-bungalow.png',
     pdf: '/lir/TheKind_LIR_Road44_JH.pdf',
-    maps:
-      'https://www.google.com/maps/search/?api=1&query=Road+44%2C+Jubilee+Hills%2C+Hyderabad%2C+Telangana',
+    maps: "https://www.google.com/maps/place/17%C2%B026'06.5%22N+78%C2%B023'53.2%22E",
   },
   {
     id: 'P1',
