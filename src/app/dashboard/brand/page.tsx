@@ -3093,7 +3093,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       {/* Full-width image banner */}
                       <div className="relative h-[100px] bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden">
                         {imgSrc ? (
-                          <Image src={imgSrc} alt={m.property.title} fill className="object-cover" unoptimized />
+                          <Image src={imgSrc} alt={m.property.title} fill className="object-cover" unoptimized={imgSrc.startsWith('http') && !imgSrc.includes('lokazen.in')} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center opacity-40">
                             <BuildingIcon className="w-10 h-10" />
@@ -3184,7 +3184,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                     <Link key={v.id} href={`/properties/${encodePropertyId(v.propertyId)}`} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-orange-200 hover:shadow-sm lg:bg-white/5 lg:border-white/10 lg:hover:bg-white/10 lg:hover:border-white/20 transition-all">
                       <div className="relative h-28 bg-gray-100">
                         {Array.isArray(v.property.images) && v.property.images[0] ? (
-                          <Image src={v.property.images[0]} alt={v.property.title} fill className="object-cover" unoptimized />
+                          <Image src={v.property.images[0]} alt={v.property.title} fill className="object-cover" unoptimized={v.property.images[0].startsWith('http') && !v.property.images[0].includes('lokazen.in')} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-orange-50"><BuildingIcon /></div>
                         )}
@@ -3222,7 +3222,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                     <Link key={sp.id} href={`/properties/${encodePropertyId(sp.property.id)}`} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-orange-200 hover:shadow-sm lg:bg-white/5 lg:border-white/10 lg:hover:bg-white/10 lg:hover:border-white/20 transition-all">
                       <div className="relative h-28 bg-gray-100">
                         {Array.isArray(sp.property.images) && (sp.property.images as string[])[0] ? (
-                          <Image src={(sp.property.images as string[])[0]} alt={sp.property.title} fill className="object-cover" unoptimized />
+                          <Image src={(sp.property.images as string[])[0]} alt={sp.property.title} fill className="object-cover" unoptimized={(sp.property.images as string[])[0].startsWith('http') && !(sp.property.images as string[])[0].includes('lokazen.in')} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-orange-50"><BuildingIcon /></div>
                         )}
@@ -3258,7 +3258,7 @@ Be specific to ${area} / ${address}. No generic statements.`,
                       <div className="flex gap-2.5">
                         <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           {Array.isArray(inq.property.images) && inq.property.images[0] ? (
-                            <Image src={inq.property.images[0]} alt={inq.property.title} fill className="object-cover" unoptimized />
+                            <Image src={inq.property.images[0]} alt={inq.property.title} fill className="object-cover" unoptimized={inq.property.images[0].startsWith('http') && !inq.property.images[0].includes('lokazen.in')} />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-orange-50"><BuildingIcon className="w-5 h-5" /></div>
                           )}

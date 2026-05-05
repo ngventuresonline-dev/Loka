@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000

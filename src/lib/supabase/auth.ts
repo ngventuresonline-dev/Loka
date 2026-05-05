@@ -124,7 +124,7 @@ export async function signIn(
     console.log('[Supabase Auth] Fetching user profile from database', { userId: data.user.id })
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, name, phone, user_type')
       .eq('id', data.user.id)
       .single()
 
@@ -211,7 +211,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     console.log('[Supabase Auth] Fetching user profile from database', { userId: user.id })
     const { data: profile, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, name, phone, user_type')
       .eq('id', user.id)
       .single()
 

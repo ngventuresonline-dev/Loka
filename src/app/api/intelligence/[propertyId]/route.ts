@@ -48,6 +48,7 @@ export async function GET(
   let competitors = await prisma.competitor.findMany({
     where: { propertyId },
     orderBy: { distance: 'asc' },
+    take: 500,
   })
 
   if (categoryFilter) {

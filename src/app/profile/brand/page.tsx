@@ -287,7 +287,7 @@ function BrandProfileContent() {
                           alt={view.property.title}
                           fill
                           className="object-cover"
-                          unoptimized
+                          unoptimized={view.property.images[0].startsWith('http') && !view.property.images[0].includes('lokazen.in')}
                         />
                       ) : (
                         <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
@@ -334,7 +334,7 @@ function BrandProfileContent() {
                             alt={saved.property.title}
                             fill
                             className="object-cover"
-                            unoptimized
+                            unoptimized={saved.property.images[0].startsWith('http') && !saved.property.images[0].includes('lokazen.in')}
                           />
                         ) : (
                           <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="wide" />
@@ -406,7 +406,7 @@ function BrandProfileContent() {
                             alt={inquiry.property.title}
                             fill
                             className="object-cover"
-                            unoptimized
+                            unoptimized={inquiry.property.images[0].startsWith('http') && !inquiry.property.images[0].includes('lokazen.in')}
                           />
                         ) : (
                           <LokazenNodesPlaceholder className="h-full w-full" aspectRatio="square" />

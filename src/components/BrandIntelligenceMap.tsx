@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import type { ZoneData, ZonesResponse } from '@/app/api/brand-intelligence/zones/route'
 
 const ZONE_POS: Record<string, { x: number; y: number; label: string }> = {
@@ -325,14 +325,22 @@ export default function BrandIntelligenceMap() {
       .finally(() => setLoading(false))
   }, [])
 
-  const zoneMap = new Map((data?.zones ?? []).map(z => [z.zone, z]))
-  const activeZone = selected ? zoneMap.get(selected) ?? null : null
-  const maxOutlets = Math.max(...(data?.zones ?? []).map(z => z.totalOutlets), 1)
-
-  const presentCats = new Set(
-    (data?.zones ?? []).flatMap(z => z.categories.map(c => c.category))
+  const zoneMap = useMemo(
+    () => new Map((data?.zones ?? []).map(z => [z.zone, z])),
+    [data]
   )
-  const allCats = CAT_PRIORITY.filter(c => presentCats.has(c))
+  const activeZone = selected ? zoneMap.get(selected) ?? null : null
+  const maxOutlets = useMemo(
+    () => Math.max(...(data?.zones ?? []).map(z => z.totalOutlets), 1),
+    [data]
+  )
+
+  const allCats = useMemo(() => {
+    const presentCats = new Set(
+      (data?.zones ?? []).flatMap(z => z.categories.map(c => c.category))
+    )
+    return CAT_PRIORITY.filter(c => presentCats.has(c))
+  }, [data])
 
   const bars = activeZone ? activeZone.categories.slice(0, 6) : []
   const barMax = Math.max(...bars.map(c => c.count), 1)

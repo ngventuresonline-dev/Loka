@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -500,20 +500,22 @@ function PropertiesResultsContent() {
   }
 
   // Sort matches
-  const sortedMatches = [...matches].sort((a, b) => {
-    switch (sortBy) {
-      case 'best-match':
-        return b.bfiScore - a.bfiScore
-      case 'price-low':
-        return a.property.price - b.property.price
-      case 'price-high':
-        return b.property.price - a.property.price
-      case 'newest':
-        return new Date(b.property.createdAt).getTime() - new Date(a.property.createdAt).getTime()
-      default:
-        return 0
-    }
-  })
+  const sortedMatches = useMemo(() => {
+    return [...matches].sort((a, b) => {
+      switch (sortBy) {
+        case 'best-match':
+          return b.bfiScore - a.bfiScore
+        case 'price-low':
+          return a.property.price - b.property.price
+        case 'price-high':
+          return b.property.price - a.property.price
+        case 'newest':
+          return new Date(b.property.createdAt).getTime() - new Date(a.property.createdAt).getTime()
+        default:
+          return 0
+      }
+    })
+  }, [matches, sortBy])
 
   // Pagination
   const totalPages = Math.ceil(sortedMatches.length / itemsPerPage)
@@ -521,16 +523,16 @@ function PropertiesResultsContent() {
   const paginatedMatches = sortedMatches.slice(startIndex, startIndex + itemsPerPage)
 
   // Remove filter
-  const removeFilter = (filterType: string) => {
+  const removeFilter = useCallback((filterType: string) => {
     const params = new URLSearchParams(searchParams.toString())
     params.delete(filterType)
     router.push(`/properties/results?${params.toString()}`)
-  }
+  }, [router, searchParams])
 
   // Clear all filters
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     router.push('/properties/results')
-  }
+  }, [router])
 
   // Edit filters - return to brand filter page with pre-filled values
   const handleEditFilters = () => {
@@ -808,7 +810,7 @@ function PropertiesResultsContent() {
                       type="text"
                       required
                       value={contactFormData.name}
-                      onChange={(e) => setContactFormData({ ...contactFormData, name: e.target.value })}
+                      onChange={(e) => setContactFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
                     />
                   </div>
@@ -818,7 +820,7 @@ function PropertiesResultsContent() {
                       type="tel"
                       required
                       value={contactFormData.phone}
-                      onChange={(e) => setContactFormData({ ...contactFormData, phone: e.target.value })}
+                      onChange={(e) => setContactFormData(prev => ({ ...prev, phone: e.target.value }))}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
                     />
                   </div>
@@ -826,7 +828,7 @@ function PropertiesResultsContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Best Time to Call</label>
                     <select
                       value={contactFormData.bestTime}
-                      onChange={(e) => setContactFormData({ ...contactFormData, bestTime: e.target.value })}
+                      onChange={(e) => setContactFormData(prev => ({ ...prev, bestTime: e.target.value }))}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
                     >
                       <option value="">Select time</option>
@@ -839,7 +841,7 @@ function PropertiesResultsContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Additional Requirements</label>
                     <textarea
                       value={contactFormData.additionalRequirements}
-                      onChange={(e) => setContactFormData({ ...contactFormData, additionalRequirements: e.target.value })}
+                      onChange={(e) => setContactFormData(prev => ({ ...prev, additionalRequirements: e.target.value }))}
                       rows={3}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
                     />
@@ -1001,7 +1003,7 @@ function PropertiesResultsContent() {
                   type="text"
                   required
                   value={requirementsFormData.name}
-                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, name: e.target.value })}
+                  onChange={(e) => setRequirementsFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                   placeholder="Your full name"
                 />
@@ -1013,7 +1015,7 @@ function PropertiesResultsContent() {
                   type="tel"
                   required
                   value={requirementsFormData.phone}
-                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, phone: e.target.value })}
+                  onChange={(e) => setRequirementsFormData(prev => ({ ...prev, phone: e.target.value }))}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                   placeholder="+91 98765 43210"
                 />
@@ -1025,7 +1027,7 @@ function PropertiesResultsContent() {
                   type="email"
                   required
                   value={requirementsFormData.email}
-                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, email: e.target.value })}
+                  onChange={(e) => setRequirementsFormData(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200]"
                   placeholder="your.email@example.com"
                 />
@@ -1035,7 +1037,7 @@ function PropertiesResultsContent() {
                 <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Requirements</label>
                 <textarea
                   value={requirementsFormData.requirements}
-                  onChange={(e) => setRequirementsFormData({ ...requirementsFormData, requirements: e.target.value })}
+                  onChange={(e) => setRequirementsFormData(prev => ({ ...prev, requirements: e.target.value }))}
                   rows={6}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5200] resize-y"
                   placeholder="Your property requirements (pre-filled from your search filters)"
