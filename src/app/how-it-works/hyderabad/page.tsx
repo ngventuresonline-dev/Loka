@@ -156,6 +156,18 @@ export default function HyderabadHowItWorksPage() {
           </div>
         </header>
 
+        {/* Property grid */}
+        <section className="border-b border-[#E8E1D3] bg-[#FAF7F1] py-12 sm:py-16 md:py-20" aria-labelledby="shortlist-heading">
+          <h2 id="shortlist-heading" className="sr-only">
+            Shortlisted properties by BFI
+          </h2>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+            {PROPERTIES.map((p) => (
+              <HyderabadShortlistPropertyCard key={p.id} p={p} headingFontClass={fraunces.className} />
+            ))}
+          </div>
+        </section>
+
         {/* Visit schedule */}
         <section className="border-b border-[#E8E1D3] bg-white py-12 sm:py-14 md:py-16" aria-labelledby="visit-schedule-heading">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -175,18 +187,6 @@ export default function HyderabadHowItWorksPage() {
             </p>
 
             <VisitScheduleFeedback />
-          </div>
-        </section>
-
-        {/* Property grid */}
-        <section className="py-12 sm:py-16 md:py-20" aria-labelledby="shortlist-heading">
-          <h2 id="shortlist-heading" className="sr-only">
-            Shortlisted properties by BFI
-          </h2>
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-            {PROPERTIES.map((p) => (
-              <HyderabadShortlistPropertyCard key={p.id} p={p} headingFontClass={fraunces.className} />
-            ))}
           </div>
         </section>
 
