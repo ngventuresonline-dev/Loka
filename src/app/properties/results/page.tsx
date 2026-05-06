@@ -29,7 +29,7 @@ function PropertiesResultsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [aiMatching, setAiMatching] = useState(true)
+  const [aiMatching, setAiMatching] = useState(false)
   const [matchingStep, setMatchingStep] = useState(0)
   const [matches, setMatches] = useState<MatchResult[]>([])
   const [totalMatches, setTotalMatches] = useState(0)
@@ -205,11 +205,7 @@ function PropertiesResultsContent() {
   const fetchMatches = async () => {
     try {
       setLoading(true)
-      setAiMatching(true)
       setMatchingStep(0)
-      
-      setMatchingStep(1) // "Scanning property database..."
-      setMatchingStep(2) // "Calculating Brand Fit Index (BFI)..."
       
       // Check if user is logged in as a brand - if yes, use brand profile automatically
       let response

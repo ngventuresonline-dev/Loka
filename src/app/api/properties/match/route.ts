@@ -139,14 +139,6 @@ export async function POST(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           ownerId: true,
-          owner: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true
-            }
-          }
         }
       })
       
@@ -174,14 +166,6 @@ export async function POST(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           ownerId: true,
-          owner: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true
-            }
-          }
         },
         take: 80,
         orderBy: {
