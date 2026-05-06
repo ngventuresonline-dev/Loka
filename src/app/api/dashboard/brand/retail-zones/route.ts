@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/get-prisma'
 
+// Location-keyed data (lat/lng/radius); changes rarely. 1h cache.
+export const revalidate = 3600
+
 export type NearbyRetailZone = {
   id: string
   name: string
