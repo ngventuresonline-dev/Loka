@@ -197,6 +197,21 @@ function numOr(
   return Number.isFinite(n) ? n : fallback
 }
 
+// Per-brand in-memory response cache. Brand profile + property inventory
+// don't change minute-to-minute, so a short TTL slashes repeat-load cost
+// (e.g. dashboard tab switches) without staleness risk.
+const BRAND_MATCHES_CACHE_TTL_MS = 60 * 1000
+const brandMatchesCache = new Map<string, { data: unknown; expires: number }>()
+
+function makeBrandCacheHeaders(): Record<string, string> {
+  // private = per-brand, can't share across users at the CDN
+  // max-age=30 = browser-cached for 30s on tab switches
+  // stale-while-revalidate=120 = serve stale + refresh in background
+  return {
+    'Cache-Control': 'private, max-age=30, stale-while-revalidate=120',
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
@@ -204,6 +219,13 @@ export async function GET(request: NextRequest) {
 
     if (!brandId) {
       return NextResponse.json({ error: 'brandId is required' }, { status: 400 })
+    }
+
+    const cached = brandMatchesCache.get(brandId)
+    if (cached && cached.expires > Date.now()) {
+      return NextResponse.json(cached.data, {
+        headers: { ...makeBrandCacheHeaders(), 'X-Cache': 'HIT' },
+      })
     }
 
     const prisma = await getPrisma()
@@ -264,7 +286,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN property_location_cache plc ON plc.property_id = p.id
       WHERE p.status = 'approved' AND p.is_available = true
       ORDER BY p.created_at DESC
-      LIMIT 150
+      LIMIT 80
     `.catch((e: unknown) => {
       console.error('[Brand Matches API] property raw query failed:', e)
       return []
@@ -449,7 +471,7 @@ export async function GET(request: NextRequest) {
 
     const scored: ScoredMatch[] = preScoredList
 
-    return NextResponse.json({
+    const responseData = {
       matches: scored.map((m) => ({
         property: {
           id: m.p.id,
@@ -473,6 +495,21 @@ export async function GET(request: NextRequest) {
         coords: m.coords && areUsablePinCoords(m.coords) ? m.coords : null,
       })),
       total: scored.length,
+    }
+
+    brandMatchesCache.set(brandId, {
+      data: responseData,
+      expires: Date.now() + BRAND_MATCHES_CACHE_TTL_MS,
+    })
+    if (brandMatchesCache.size > 200) {
+      const now = Date.now()
+      for (const [k, v] of brandMatchesCache) {
+        if (v.expires < now) brandMatchesCache.delete(k)
+      }
+    }
+
+    return NextResponse.json(responseData, {
+      headers: { ...makeBrandCacheHeaders(), 'X-Cache': 'MISS' },
     })
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to fetch brand matches'
