@@ -9,24 +9,55 @@ import { getPropertyCoordinatesFromRow, getMapLinkFromAmenities } from '@/lib/pr
 // Simple in-memory cache for match results — 5 minute TTL
 const matchCache = new Map<string, { data: any; expires: number }>()
 
-function getMatchCacheKey(body: any): string {
+interface MatchBody {
+  businessType?: string
+  sizeRange?: { min?: number; max?: number }
+  locations?: string[]
+  budgetRange?: { min?: number; max?: number }
+  timeline?: string
+  propertyType?: string
+  propertyId?: string
+}
+
+function getMatchCacheKey(body: MatchBody): string {
   const { businessType, locations, budgetRange, sizeRange } = body
   return JSON.stringify({ businessType, locations: (locations || []).sort(), budgetRange, sizeRange })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    let body
-    try {
-      body = await request.json()
-    } catch (parseError: any) {
-      console.error('[API Match] JSON parse error:', parseError)
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400 }
-      )
-    }
+function parseBodyFromQuery(searchParams: URLSearchParams): MatchBody {
+  const num = (k: string): number | undefined => {
+    const v = searchParams.get(k)
+    if (v == null || v === '') return undefined
+    const n = Number(v)
+    return Number.isFinite(n) ? n : undefined
+  }
+  const sizeMin = num('sizeMin')
+  const sizeMax = num('sizeMax')
+  const budgetMin = num('budgetMin')
+  const budgetMax = num('budgetMax')
+  const locationsRaw = searchParams.get('locations') || ''
+  const locations = locationsRaw
+    ? locationsRaw.split(',').map(s => s.trim()).filter(Boolean)
+    : []
 
+  const body: MatchBody = {
+    businessType: searchParams.get('businessType') || undefined,
+    locations,
+    timeline: searchParams.get('timeline') || undefined,
+    propertyType: searchParams.get('propertyType') || undefined,
+    propertyId: searchParams.get('propertyId') || undefined,
+  }
+  if (sizeMin !== undefined || sizeMax !== undefined) {
+    body.sizeRange = { min: sizeMin, max: sizeMax }
+  }
+  if (budgetMin !== undefined || budgetMax !== undefined) {
+    body.budgetRange = { min: budgetMin, max: budgetMax }
+  }
+  return body
+}
+
+async function processMatchRequest(body: MatchBody) {
+  try {
     const {
       businessType,
       sizeRange,
@@ -75,10 +106,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Size filter - keep flexible so we don't exclude viable options; BFI will score
-    if (sizeRange && sizeRange.min > 0) {
-      const sizeMinExpanded = Math.max(0, Math.floor(sizeRange.min * 0.4))
-      const sizeMaxExpanded = sizeRange.max ? Math.ceil(sizeRange.max * 2) : 1000000
-      
+    const sizeMin = sizeRange?.min ?? 0
+    const sizeMax = sizeRange?.max ?? 0
+    if (sizeRange && sizeMin > 0) {
+      const sizeMinExpanded = Math.max(0, Math.floor(sizeMin * 0.4))
+      const sizeMaxExpanded = sizeMax ? Math.ceil(sizeMax * 2) : 1000000
+
       where.size = {
         gte: sizeMinExpanded,
         lte: sizeMaxExpanded
@@ -87,12 +120,14 @@ export async function POST(request: NextRequest) {
 
     // Budget: do NOT hard-cut by max. We want to show properties in preferred areas even if over budget (score will reflect it).
     // Only enforce a minimum floor so we don't get irrelevant low-rent; allow up to 4x max so premium areas (e.g. Indiranagar) are included.
-    if (budgetRange && (budgetRange.min > 0 || budgetRange.max > 0)) {
-      const minBudget = budgetRange.min || 0
-      const maxBudget = budgetRange.max || 20000000
+    const budgetMin = budgetRange?.min ?? 0
+    const budgetMax = budgetRange?.max ?? 0
+    if (budgetRange && (budgetMin > 0 || budgetMax > 0)) {
+      const minBudget = budgetMin || 0
+      const maxBudget = budgetMax || 20000000
       const minBudgetAdjusted = Math.max(0, Math.floor(minBudget * 0.8))
       const maxBudgetAdjusted = Math.ceil(maxBudget * 4) // Include premium areas; BFI will score down over-budget
-      
+
       where.price = {
         gte: minBudgetAdjusted,
         lte: maxBudgetAdjusted
@@ -368,7 +403,7 @@ export async function POST(request: NextRequest) {
 
     // Return proper error response with success: false
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: error?.message || 'Failed to find matches',
         details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
@@ -378,3 +413,32 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  let body: MatchBody
+  try {
+    body = await request.json()
+  } catch (parseError: any) {
+    console.error('[API Match] JSON parse error:', parseError)
+    return NextResponse.json(
+      { error: 'Invalid JSON in request body' },
+      { status: 400 }
+    )
+  }
+  return processMatchRequest(body || {})
+}
+
+// GET mirror of POST so the response can be edge-cached.
+// Filter combos translate to query params; identical params hit the
+// CDN cache and skip the function entirely on repeat searches.
+export async function GET(request: NextRequest) {
+  const body = parseBodyFromQuery(request.nextUrl.searchParams)
+  const response = await processMatchRequest(body)
+  // Force public CDN-cacheable headers; the POST flow uses 'private' for
+  // its in-memory cache HIT path, which would prevent edge caching.
+  response.headers.set(
+    'Cache-Control',
+    'public, s-maxage=300, stale-while-revalidate=600'
+  )
+  response.headers.delete('X-Cache')
+  return response
+}

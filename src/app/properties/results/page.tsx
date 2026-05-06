@@ -296,30 +296,18 @@ function PropertiesResultsContent() {
       // Fallback: Use manual search with query params (for non-logged-in users or if brand profile fails)
       setMatchingStep(3) // "Ranking matches by AI score..."
       
-      // Parse size range from URL or use defaults
-      const sizeRange = filters.sizeMin > 0 || filters.sizeMax < 100000
-        ? { min: filters.sizeMin, max: filters.sizeMax }
-        : undefined
+      // Build query params so the CDN can cache repeat searches
+      const matchParams = new URLSearchParams()
+      if (filters.businessType) matchParams.set('businessType', filters.businessType)
+      if (filters.locations.length > 0) matchParams.set('locations', filters.locations.join(','))
+      if (filters.timeline) matchParams.set('timeline', filters.timeline)
+      if (filters.propertyType) matchParams.set('propertyType', filters.propertyType)
+      if (filters.sizeMin > 0) matchParams.set('sizeMin', String(filters.sizeMin))
+      if (filters.sizeMax < 100000) matchParams.set('sizeMax', String(filters.sizeMax))
+      if (filters.budgetMin > 0) matchParams.set('budgetMin', String(filters.budgetMin))
+      if (filters.budgetMax < 10000000) matchParams.set('budgetMax', String(filters.budgetMax))
 
-      const budgetRange = filters.budgetMin > 0 || filters.budgetMax < 10000000
-        ? { min: filters.budgetMin, max: filters.budgetMax }
-        : undefined
-
-      response = await fetchWithTimeout(
-        '/api/properties/match',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            businessType: filters.businessType,
-            sizeRange,
-            locations: filters.locations,
-            budgetRange,
-            timeline: filters.timeline,
-            propertyType: filters.propertyType
-          })
-        }
-      )
+      response = await fetchWithTimeout(`/api/properties/match?${matchParams.toString()}`)
 
       if (!response.ok) {
         // Log detailed error information
