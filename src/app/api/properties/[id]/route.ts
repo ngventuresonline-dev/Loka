@@ -74,14 +74,6 @@ export async function GET(
         },
       }
       
-      // Check if status column exists and include it
-      try {
-        await prisma.$queryRawUnsafe(`SELECT status FROM properties WHERE id = $1 LIMIT 1`, propertyId)
-        // Status column exists, Prisma will include it automatically in findUnique
-      } catch {
-        // Status column doesn't exist, that's fine
-      }
-      
       property = await prisma.property.findUnique({
         where: { 
           id: propertyId,

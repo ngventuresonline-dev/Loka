@@ -3,6 +3,7 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run vercel-build",
   "framework": "nextjs",
+  "regions": ["bom1"],
   "crons": [
     {
       "path": "/api/cron/refresh-intel-cache",

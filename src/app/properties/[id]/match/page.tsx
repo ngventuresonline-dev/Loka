@@ -19,7 +19,6 @@ import { buildMatchReasonStrings } from '@/lib/property-match-reasons'
 import {
   formatPropertyAddressLine,
   isPlaceholderMatchProperty,
-  propertyFromMatchPayload,
   propertyFromPublicApiJson,
 } from '@/lib/match-page-property'
 import { trackInquiry, trackScheduleViewing } from '@/lib/tracking'
@@ -47,14 +46,6 @@ const LocationIntelligenceSection = dynamic(
   () => import('@/components/LocationIntelligenceSection'),
   { ssr: false }
 )
-
-const LOADING_PHRASES = [
-  'Mapping your perfect location fit...',
-  'Scoring budget, size, and footfall signals...',
-  'Curating spaces brands actually want to visit...',
-  'Running brand–property compatibility checks...',
-  'Finalizing your tailored match shortlist...'
-]
 
 function deriveZone(address: string = '', city: string = ''): string {
   const text = `${address} ${city}`.toLowerCase()
@@ -126,7 +117,6 @@ function MatchDetailsContent() {
   const [visitDateTime, setVisitDateTime] = useState('')
   const [visitNotes, setVisitNotes] = useState('')
   const [visitSubmitting, setVisitSubmitting] = useState(false)
-  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
@@ -209,16 +199,6 @@ function MatchDetailsContent() {
     })
   }, [propertyId])
 
-  useEffect(() => {
-    if (!loading) return
-
-    const interval = setInterval(() => {
-      setLoadingPhraseIndex((prev) => (prev + 1) % LOADING_PHRASES.length)
-    }, 1800)
-
-    return () => clearInterval(interval)
-  }, [loading])
-
   // Prefill notes using AI-ish template based on property and prefilled data
   useEffect(() => {
     if (showExpertModal && matchDetails && !expertNotes) {
@@ -261,8 +241,9 @@ function MatchDetailsContent() {
         ? { min: filters.budgetMin, max: filters.budgetMax }
         : undefined
 
-      // PARALLELIZE API calls for faster loading with timeout
-      // Optimize: pass propertyId to match API so it only fetches that property
+      // Single API call: fetch property data only.
+      // BFI score + breakdown are computed client-side using the same
+      // calculateBFI function the server uses — saves a full roundtrip.
       const timeout = 22000
       const fetchWithTimeout = (url: string, options?: RequestInit) => {
         return Promise.race([
@@ -275,31 +256,18 @@ function MatchDetailsContent() {
 
       // Use slug from URL for fetch - ensures we request the exact property in the URL
       const slug = (params?.id as string) || propertyId
-      const [propertyResponse, matchResponse] = await Promise.allSettled([
-        fetchWithTimeout(`/api/properties/${encodeURIComponent(slug)}?quick=1`),
-        fetchWithTimeout('/api/properties/match', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            propertyId, // Pass propertyId to optimize match API
-            businessType: filters.businessType,
-            sizeRange,
-            locations: filters.locations,
-            budgetRange,
-            timeline: filters.timeline,
-            propertyType: filters.propertyType
-          })
-        })
-      ])
+      let propertyResponseValue: Response | null = null
+      try {
+        propertyResponseValue = await fetchWithTimeout(`/api/properties/${encodeURIComponent(slug)}?quick=1`)
+      } catch {
+        propertyResponseValue = null
+      }
 
-      // Process responses from Promise.allSettled
       let property: any | null = null
-      let matchPayload: any = null
 
-      // Handle property response - /api/properties/[id] returns { success, property }
-      if (propertyResponse.status === 'fulfilled' && propertyResponse.value.ok) {
+      if (propertyResponseValue && propertyResponseValue.ok) {
         try {
-          const propertyData = await propertyResponse.value.json()
+          const propertyData = await propertyResponseValue.json()
           const raw = propertyData?.property ?? propertyData
           const normalized = propertyFromPublicApiJson(raw as Record<string, unknown>)
           if (normalized) property = normalized
@@ -308,16 +276,6 @@ function MatchDetailsContent() {
           property = null
         }
       }
-
-      // Handle match response
-      if (matchResponse.status === 'fulfilled' && matchResponse.value.ok) {
-        matchPayload = await matchResponse.value.json()
-      }
-
-      const rowMatch =
-        matchPayload && Array.isArray(matchPayload.matches)
-          ? matchPayload.matches.find((m: { property?: { id?: string } }) => m.property?.id === propertyId)
-          : null
 
       // If property not loaded, create fallback (superseded by match row when available)
       if (!property) {
@@ -343,13 +301,7 @@ function MatchDetailsContent() {
       }
 
       fallbackProperty = property as Property
-
-      // Prefer real listing from property API; if fetch failed/slow, use the same row the BFI was computed on
-      let displayProperty: Property = fallbackProperty as Property
-      const fromMatch = rowMatch?.property ? propertyFromMatchPayload(rowMatch.property as Record<string, unknown>) : null
-      if (isPlaceholderMatchProperty(displayProperty) && fromMatch) {
-        displayProperty = fromMatch
-      }
+      const displayProperty: Property = fallbackProperty as Property
 
       const brandRequirements = {
         locations: filters.locations,
@@ -360,29 +312,9 @@ function MatchDetailsContent() {
         businessType: filters.businessType || '',
       }
 
-      let bfiScore = 75
-      let breakdown: MatchBreakdown = {
-        locationScore: 80,
-        sizeScore: 75,
-        budgetScore: 70,
-        typeScore: 80,
-      }
-
-      if (matchPayload && Array.isArray(matchPayload.matches)) {
-        const match = matchPayload.matches.find((m: { property?: { id?: string } }) => m.property?.id === propertyId)
-        if (match) {
-          bfiScore = match.bfiScore ?? bfiScore
-          breakdown = match.breakdown ?? breakdown
-        } else {
-          const computed = calculateBFI(displayProperty, brandRequirements)
-          bfiScore = computed.score
-          breakdown = computed.breakdown
-        }
-      } else {
-        const computed = calculateBFI(displayProperty, brandRequirements)
-        bfiScore = computed.score
-        breakdown = computed.breakdown
-      }
+      const computed = calculateBFI(displayProperty, brandRequirements)
+      const bfiScore = computed.score
+      const breakdown: MatchBreakdown = computed.breakdown
 
       const matchReasons = buildMatchReasonStrings(
         displayProperty,
@@ -615,12 +547,25 @@ function MatchDetailsContent() {
     return (
       <div className="min-h-screen bg-white">
         <Navbar hideOnMobile={true} />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <LokazenNodesLoader size="lg" className="mb-4" />
-            <p className="text-gray-700 font-semibold tracking-tight">
-              {LOADING_PHRASES[loadingPhraseIndex]}
-            </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 lg:pt-28 pb-20">
+          <div className="animate-pulse">
+            <div className="h-6 w-40 bg-gray-200 rounded mb-4" />
+            <div className="h-9 sm:h-11 w-3/4 bg-gray-200 rounded mb-3" />
+            <div className="h-4 w-1/2 bg-gray-200 rounded mb-8" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="lg:col-span-2 h-72 sm:h-96 bg-gray-200 rounded-2xl" />
+              <div className="space-y-4">
+                <div className="h-32 bg-gray-200 rounded-2xl" />
+                <div className="h-24 bg-gray-200 rounded-2xl" />
+                <div className="h-16 bg-gray-200 rounded-2xl" />
+              </div>
+            </div>
+            <div className="h-10 w-64 bg-gray-200 rounded mb-4" />
+            <div className="space-y-3">
+              <div className="h-4 w-full bg-gray-200 rounded" />
+              <div className="h-4 w-11/12 bg-gray-200 rounded" />
+              <div className="h-4 w-10/12 bg-gray-200 rounded" />
+            </div>
           </div>
         </div>
         <Footer />
